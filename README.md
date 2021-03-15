@@ -9,3 +9,9 @@ This CLI (and plugin) is still in development, but aims to expose OCM/ACM's func
 ## Contributing
 
 See our [Contributing Document](CONTRIBUTING.md) for more information.  
+
+## Commands
+
+The commands are composed of a verb and a noum and then a number of parameters.
+
+

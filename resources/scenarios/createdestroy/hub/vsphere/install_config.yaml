@@ -1,0 +1,50 @@
+# Copyright Contributors to the Open Cluster Management project
+
+apiVersion: v1
+metadata:
+  name: {{ .managedCluster.name }}
+baseDomain: {{ .managedCluster.vsphere.baseDnsDomain }}
+controlPlane:
+  hyperthreading: Enabled
+  name: master
+  replicas: 3
+  platform:
+    vsphere:
+      cpus:  4
+      coresPerSocket:  2
+      memoryMB:  16384
+      osDisk:
+        diskSizeGB: 120
+compute:
+- hyperthreading: Enabled
+  name: worker
+  replicas: 3
+  platform:
+    vsphere:
+      cpus:  4
+      coresPerSocket:  2
+      memoryMB:  16384
+      osDisk:
+        diskSizeGB: 120
+networking:
+  clusterNetwork:
+  - cidr: 10.128.0.0/14
+    hostPrefix: 23
+  machineCIDR: 10.0.0.0/16
+  networkType: OpenShiftSDN
+  serviceNetwork:
+  - 172.30.0.0/16
+platform:
+  vsphere:
+    vCenter: {{ .managedCluster.vsphere.vcenter }}
+    username: {{ .managedCluster.vsphere.username }}
+    password: {{ .managedCluster.vsphere.password }}
+    datacenter: {{ .managedCluster.vsphere.datacenter }}
+    defaultDatastore: {{ .managedCluster.vsphere.datastore }}
+    cluster: {{ .managedCluster.vsphere.cluster }}
+    apiVIP: {{ .managedCluster.vsphere.apiVIP }}
+    ingressVIP: {{ .managedCluster.vsphere.ingressVIP }}
+    network: {{ .managedCluster.vsphere.network }}
+pullSecret: "" # skip, hive will inject based on it's secrets
+sshKey: |-
+{{ .managedCluster.sshPublicKey | indent 4 }}

@@ -1,0 +1,4 @@
+# Copyright Contributors to the Open Cluster Management project
+
+{{ index .data "crds.yaml" | b64dec }}
+{{ index .data "import.yaml" | b64dec }}

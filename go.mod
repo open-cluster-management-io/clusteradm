@@ -2,14 +2,11 @@ module github.com/open-cluster-management/cm-cli
 
 go 1.15
 
-replace (
-	// github.com/open-cluster-management/library-go => /Users/dvernier/acm/library-go
-	k8s.io/client-go => k8s.io/client-go v0.20.4
-)
+replace k8s.io/client-go => k8s.io/client-go v0.20.4
 
 require (
 	github.com/ghodss/yaml v1.0.0
-	github.com/open-cluster-management/library-go v0.0.0-20210310132350-10c402d74b0a
+	github.com/open-cluster-management/library-go v0.0.0-20210315131340-4ab01e821fbc
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
 	k8s.io/api v0.20.4

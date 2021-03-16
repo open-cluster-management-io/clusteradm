@@ -7,7 +7,7 @@ replace k8s.io/client-go => k8s.io/client-go v0.20.4
 require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/open-cluster-management/library-go v0.0.0-20210315131340-4ab01e821fbc
-	github.com/spf13/cobra v1.1.1
+	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	k8s.io/api v0.20.4
 	k8s.io/apimachinery v0.20.4

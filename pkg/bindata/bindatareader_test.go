@@ -1,4 +1,3 @@
-// Copyright (c) Red Hat, Inc.
 // Copyright Contributors to the Open Cluster Management project
 
 package bindata
@@ -186,7 +185,7 @@ func TestNewBindataReader(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewBindataReader(""); !reflect.DeepEqual(got, tt.want) {
+			if got := NewBindataReader(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewBindataReader() = %v, want %v", got, tt.want)
 			}
 		})

@@ -1,24 +1,25 @@
+// Copyright Contributors to the Open Cluster Management project
 package create
 
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"github.com/open-cluster-management/cm-cli/pkg/cmd/apply"
 
 	"github.com/ghodss/yaml"
 	"github.com/open-cluster-management/cm-cli/pkg/bindata"
+	"github.com/open-cluster-management/cm-cli/pkg/helpers"
 	"github.com/open-cluster-management/library-go/pkg/templateprocessor"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/open-cluster-management/cm-cli/pkg/cmd/applierscenarios"
-	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
@@ -29,8 +30,10 @@ const (
 )
 
 const (
-	createClusterScenarioDirectory = "scnearios/createdestroy/hub/common"
+	createClusterScenarioDirectory = "scenarios/create"
 )
+
+var valuesTemplatePath = filepath.Join(createClusterScenarioDirectory, "values-template.yaml")
 
 var createClusteExample = `
 # Create a cluster
@@ -73,6 +76,8 @@ func NewCmdCreateCluster(streams genericclioptions.IOStreams) *cobra.Command {
 		},
 	}
 
+	cmd.SetUsageTemplate(applierscenarios.UsageTempate(cmd, valuesTemplatePath))
+
 	o.applierScenariosOptions.AddFlags(cmd.Flags())
 	o.applierScenariosOptions.ConfigFlags.AddFlags(cmd.Flags())
 
@@ -100,7 +105,7 @@ func (o *CreateClusterOptions) Validate() (err error) {
 	}
 	cloud := icloud.(string)
 	if cloud != AWS && cloud != AZURE && cloud != GCP && cloud != VSPHERE {
-		return fmt.Errorf("Supported cloud type are (%s, %s, %s, %s) and got %s", AWS, AZURE, GCP, VSPHERE, cloud)
+		return fmt.Errorf("supported cloud type are (%s, %s, %s, %s) and got %s", AWS, AZURE, GCP, VSPHERE, cloud)
 	}
 	o.cloud = cloud
 
@@ -117,18 +122,10 @@ func (o *CreateClusterOptions) Validate() (err error) {
 }
 
 func (o *CreateClusterOptions) Run() error {
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	// if you want to change the loading rules (which files in which order), you can do so here
-
-	configOverrides := &clientcmd.ConfigOverrides{}
-	// if you want to change override values or bind them to flags, there are methods to help you
-
-	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
-	config, err := kubeConfig.ClientConfig()
+	client, err := helpers.GetClientFromFlags()
 	if err != nil {
 		return err
 	}
-	client, err := crclient.New(config, crclient.Options{})
 
 	pullSecret := &corev1.Secret{}
 	err = client.Get(
@@ -164,7 +161,9 @@ func (o *CreateClusterOptions) Run() error {
 		return err
 	}
 
-	installConfig, err := tp.TemplateResource("scenarios/createdestroy/hub/"+o.cloud+"/install_config.yaml", o.values)
+	installConfig, err := tp.TemplateResource(
+		filepath.Join(createClusterScenarioDirectory, "hub", o.cloud, "install_config.yaml"),
+		o.values)
 	if err != nil {
 		return err
 	}
@@ -188,5 +187,7 @@ func (o *CreateClusterOptions) Run() error {
 		IOStreams: o.applierScenariosOptions.IOStreams,
 	}
 
-	return applyOptions.ApplyWithValues(reader, "scenarios/createdestroy/hub/common", o.values)
+	return applyOptions.ApplyWithValues(reader,
+		filepath.Join(createClusterScenarioDirectory, "hub", "common"),
+		o.values)
 }

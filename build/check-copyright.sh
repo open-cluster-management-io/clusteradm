@@ -6,9 +6,10 @@
 # NOTE: When running against a node repo, delete the node_modules directories first!  Then npm ci once all the
 #       copyright changes are incorporated.
 
+# set -x
 TMP_FILE="tmp_file"
 
-ALL_FILES=$(find . -name "*")
+ALL_FILES=$(find . -name "*" | grep -v build-harness | grep -v kind_kubeconfig.yaml | grep -v test/functional/tmp | grep -v _generated )
 
 COMMUNITY_COPY_HEADER_FILE="$PWD/build/copyright-header.txt"
 
@@ -24,11 +25,11 @@ echo "Desired copyright header is: $COMMUNITY_COPY_HEADER_STRING"
 # NOTE: Only use one newline or javascript and typescript linter/prettier will complain about the extra blank lines
 NEWLINE="\n"
 
+ERROR=false
+
 for FILE in $ALL_FILES
 do
-    echo "FILE: $FILE:"
     if [[ -d $FILE ]] ; then
-        echo -e "\t-Directory; skipping"
         continue
     fi
 
@@ -45,7 +46,7 @@ do
     fi
 
     if [[ $FILE  == *".md" ]]; then
-        COMMENT_START="[comment]: # ( "
+        COMMENT_START="\[comment\]: # ( "
         COMMENT_END=" )"
     fi
 
@@ -70,12 +71,16 @@ do
 
         COMMUNITY_HEADER_AS_COMMENT="$COMMENT_START$COMMUNITY_COPY_HEADER_STRING$COMMENT_END"
 
-        if grep -q "$COMMUNITY_HEADER_AS_COMMENT" "$FILE"; then
-            echo "\t- Header already exists; skipping"
+        if ! grep -q "$COMMUNITY_HEADER_AS_COMMENT" "$FILE"; then
+            echo "FILE: $FILE:"
+            echo -e "\t- Need add Community copyright header to file"
+            ERROR=true
         fi
-    else
-        echo -e "\t- DO NOTHING"
     fi
 done
 
+if $ERROR == true 
+then
+  exit 1
+fi
 rm -f $TMP_FILE

@@ -1,7 +1,9 @@
+// Copyright Contributors to the Open Cluster Management project
 package delete
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/open-cluster-management/cm-cli/pkg/cmd/apply"
 
@@ -17,6 +19,12 @@ var deleteClusteExample = `
 # Delete a cluster
 %[1]s cm create cluster --values values.yaml
 `
+
+const (
+	deleteClusterScenarioDirectory = "scenarios/destroy"
+)
+
+var valuesTemplatePath = filepath.Join(deleteClusterScenarioDirectory, "values-template.yaml")
 
 type DeleteClusterOptions struct {
 	applierScenariosOptions *applierscenarios.ApplierScenariosOptions
@@ -53,6 +61,8 @@ func NewCmdDeleteCluster(streams genericclioptions.IOStreams) *cobra.Command {
 		},
 	}
 
+	cmd.SetUsageTemplate(applierscenarios.UsageTempate(cmd, valuesTemplatePath))
+
 	o.applierScenariosOptions.AddFlags(cmd.Flags())
 	o.applierScenariosOptions.ConfigFlags.AddFlags(cmd.Flags())
 
@@ -88,28 +98,10 @@ func (o *DeleteClusterOptions) Validate() (err error) {
 }
 
 func (o *DeleteClusterOptions) Run() error {
+
+	//TODO this could be simplified by just creating new templates
+	// managedcluster, clusterName with only the name of the cluster.
 	reader := bindata.NewBindataReader()
-
-	// tp, err := templateprocessor.NewTemplateProcessor(
-	// 	reader,
-	// 	&templateprocessor.Options{},
-	// )
-	// if err != nil {
-	// 	return err
-	// }
-
-	// installConfig, err := tp.TemplateResource("scenarios/createdestroy/hub/"+o.cloud+"/install_config.yaml", o.values)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// valueic := make(map[string]interface{})
-	// err = yaml.Unmarshal(installConfig, &valueic)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// o.values["installConfig"] = valueic
 
 	applyOptions := &apply.ApplyOptions{
 		OutFile:     o.applierScenariosOptions.OutFile,
@@ -122,11 +114,15 @@ func (o *DeleteClusterOptions) Run() error {
 		IOStreams: o.applierScenariosOptions.IOStreams,
 	}
 
-	err := applyOptions.ApplyWithValues(reader, "scenarios/createdestroy/hub/common/managed_cluster_cr.yaml", o.values)
+	err := applyOptions.ApplyWithValues(reader,
+		filepath.Join(deleteClusterScenarioDirectory, "hub", "common", "managed_cluster_cr.yaml"),
+		o.values)
 	if err != nil {
 		return err
 	}
 
-	return applyOptions.ApplyWithValues(reader, "scenarios/createdestroy/hub/common/cluster_deployment_cr.yaml", o.values)
+	return applyOptions.ApplyWithValues(reader,
+		filepath.Join(deleteClusterScenarioDirectory, "hub", "common", "cluster_deployment_cr.yaml"),
+		o.values)
 
 }

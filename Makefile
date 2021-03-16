@@ -1,3 +1,5 @@
+# Copyright Contributors to the Open Cluster Management project
+
 BEFORE_SCRIPT := $(shell build/before-make.sh)
 
 SCRIPTS_PATH ?= build

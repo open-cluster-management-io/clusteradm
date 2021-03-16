@@ -7,18 +7,25 @@ A CLI and kubernetes CLI plugin that allows you to interact with OCM/ACM to prov
 
 ### CLI
 ```bash
-go get -u github.com/open-cluster-management/cm-cli/cmd
+git clone https://github.com/open-cluster-management/cm-cli.git
+cd cm-cli
+make build
 ```
 
 ### oc/kubectl Plugin
 
+
 ```bash
-go get -u github.com/open-cluster-management/cm-cli/cmd && mv $GOPATH/bin/cm $GOPATH/bin/kubectl-cm
+git clone https://github.com/open-cluster-management/cm-cli.git
+cd cm-cli
+make build && mv $GOPATH/bin/cm $GOPATH/bin/kubectl-cm
 ```
 ### oc Plugin only
 
 ```bash
-go get -u github.com/open-cluster-management/cm-cli/cmd && mv $GOPATH/bin/cm $GOPATH/bin/oc-cm
+git clone https://github.com/open-cluster-management/cm-cli.git
+cd cm-cli
+make build && mv $GOPATH/bin/cm $GOPATH/bin/oc-cm
 ```
 
 ## Dislaimer

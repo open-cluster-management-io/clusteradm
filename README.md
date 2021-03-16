@@ -1,6 +1,25 @@
+[comment]: # ( Copyright Contributors to the Open Cluster Management project )
 # Open Cluster Management CLI & CLI Plugin
 
 A CLI and kubernetes CLI plugin that allows you to interact with OCM/ACM to provision and managed your Hybrid Cloud presence from the command-line.
+
+## Installation
+
+### CLI
+```bash
+go get -u github.com/open-cluster-management/cm-cli/cmd
+```
+
+### oc/kubectl Plugin
+
+```bash
+go get -u github.com/open-cluster-management/cm-cli/cmd && mv $GOPATH/bin/cm $GOPATH/bin/kubectl-cm
+```
+### oc Plugin only
+
+```bash
+go get -u github.com/open-cluster-management/cm-cli/cmd && mv $GOPATH/bin/cm $GOPATH/bin/oc-cm
+```
 
 ## Dislaimer
 

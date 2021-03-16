@@ -1,6 +1,12 @@
+// Copyright Contributors to the Open Cluster Management project
 package applierscenarios
 
 import (
+	"fmt"
+	"path/filepath"
+
+	"github.com/open-cluster-management/cm-cli/pkg/bindata"
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
@@ -38,4 +44,13 @@ func (o *ApplierScenariosOptions) AddFlags(flagSet *pflag.FlagSet) {
 	flagSet.IntVar(&o.Timeout, "t", 5, "Timeout in second to apply one resource, default 5 sec")
 	flagSet.BoolVar(&o.Force, "force", false, "If set, the finalizers will be removed before delete")
 	flagSet.BoolVar(&o.Silent, "s", false, "If set the applier will run silently")
+}
+
+func UsageTempate(cmd *cobra.Command, valuesTemplatePath string) string {
+	baseUsage := cmd.UsageTemplate()
+	b, err := bindata.Asset(filepath.Join(valuesTemplatePath))
+	if err != nil {
+		return fmt.Sprintf("%s\n\n Values template:\n%s", baseUsage, err.Error())
+	}
+	return fmt.Sprintf("%s\n\n Values template:\n%s", baseUsage, string(b))
 }

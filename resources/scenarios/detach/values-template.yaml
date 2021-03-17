@@ -1,0 +1,5 @@
+# Copyright Contributors to the Open Cluster Management project
+
+managedClusterName: # <cluster_name>, this value is overwritten by the --name parameter
+
+

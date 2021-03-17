@@ -7,6 +7,8 @@ SCRIPTS_PATH ?= build
 # Install software dependencies
 INSTALL_DEPENDENCIES ?= ${SCRIPTS_PATH}/install-dependencies.sh
 
+GOPATH := ${shell go env GOPATH}
+
 export GOPACKAGES   = $(shell go list ./... | grep -v /vendor | grep -v /build | grep -v /test )
 
 .PHONY: deps
@@ -16,6 +18,17 @@ deps:
 .PHONY: build
 build: go-bindata
 	go install ./cmd/cm.go
+
+.PHONY: install
+install: build
+
+.PHONY: oc-plugin
+oc-plugin: build
+	mv ${GOPATH}/bin/cm ${GOPATH}/bin/oc_cm
+
+.PHONY: kubectl-plugin
+kubectl-plugin: build
+	mv ${GOPATH}/bin/cm ${GOPATH}/bin/kubectl_cm
 
 .PHONY: check
 ## Runs a set of required checks

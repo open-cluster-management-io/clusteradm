@@ -4,6 +4,7 @@ package create
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/open-cluster-management/cm-cli/pkg/cmd/apply"
@@ -38,10 +39,14 @@ var valuesTemplatePath = filepath.Join(createClusterScenarioDirectory, "values-t
 var createClusteExample = `
 # Create a cluster
 %[1]s cm create cluster --values values.yaml
+
+# Create a cluster
+%[1]s cm create cluster --values values.yaml
 `
 
 type CreateClusterOptions struct {
 	applierScenariosOptions *applierscenarios.ApplierScenariosOptions
+	clusterName             string
 	cloud                   string
 	values                  map[string]interface{}
 }
@@ -59,7 +64,7 @@ func NewCmdCreateCluster(streams genericclioptions.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "cluster",
 		Short:        "Create a cluster",
-		Example:      fmt.Sprintf(createClusteExample, "oc/kubectl"),
+		Example:      fmt.Sprintf(createClusteExample, os.Args[0]),
 		SilenceUsage: true,
 		RunE: func(c *cobra.Command, args []string) error {
 			if err := o.Complete(c, args); err != nil {
@@ -77,6 +82,7 @@ func NewCmdCreateCluster(streams genericclioptions.IOStreams) *cobra.Command {
 	}
 
 	cmd.SetUsageTemplate(applierscenarios.UsageTempate(cmd, valuesTemplatePath))
+	cmd.Flags().StringVar(&o.clusterName, "name", "", "Name of the cluster to import")
 
 	o.applierScenariosOptions.AddFlags(cmd.Flags())
 	o.applierScenariosOptions.ConfigFlags.AddFlags(cmd.Flags())
@@ -109,14 +115,18 @@ func (o *CreateClusterOptions) Validate() (err error) {
 	}
 	o.cloud = cloud
 
-	iname, ok := mc["name"]
-	if !ok {
-		return fmt.Errorf("cluster name is missing")
+	if o.clusterName == "" {
+		iname, ok := mc["name"]
+		if !ok {
+			return fmt.Errorf("cluster name is missing")
+		}
+		o.clusterName = iname.(string)
+		if len(o.clusterName) == 0 {
+			return fmt.Errorf("managedCluster.name not specified")
+		}
 	}
-	name := iname.(string)
-	if len(name) == 0 {
-		return fmt.Errorf("managedCluster.name not specified")
-	}
+
+	mc["name"] = o.clusterName
 
 	return nil
 }

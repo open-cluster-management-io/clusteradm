@@ -1,7 +1,7 @@
 # Copyright Contributors to the Open Cluster Management project
 
 managedCluster:
-  name: #<cluster-name>
+  name: #<cluster-name>, this value is overwritten by the --name parameter
   cloud: vsphere # clouds values can be aws, azure, gcp, vsphere
   vendor: OpenShift
   ocpImage: # ocp image (ie: quay.io/openshift-release-dev/ocp-release:4.3.40-x86_64)
@@ -16,7 +16,6 @@ managedCluster:
       enabled: true
     iamPolicyController:
       enabled: true
-    version: 2.2.0
   sshPublicKey: |-
     Public key
   sshPrivateKey: |-

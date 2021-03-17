@@ -5,7 +5,9 @@ A CLI and kubernetes CLI plugin that allows you to interact with OCM/ACM to prov
 
 ## Installation
 
+The binary will be installed in GOPATH/bin
 ### CLI
+
 ```bash
 git clone https://github.com/open-cluster-management/cm-cli.git
 cd cm-cli
@@ -14,18 +16,17 @@ make build
 
 ### oc/kubectl Plugin
 
-
 ```bash
 git clone https://github.com/open-cluster-management/cm-cli.git
 cd cm-cli
-make build && mv $GOPATH/bin/cm $GOPATH/bin/kubectl-cm
+make kubectl-plugin
 ```
 ### oc Plugin only
 
 ```bash
 git clone https://github.com/open-cluster-management/cm-cli.git
 cd cm-cli
-make build && mv $GOPATH/bin/cm $GOPATH/bin/oc-cm
+make oc-plugin
 ```
 
 ## Dislaimer

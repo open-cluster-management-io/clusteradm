@@ -3,6 +3,7 @@ package verbs
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/open-cluster-management/cm-cli/pkg/cmd/apply"
 	"github.com/open-cluster-management/cm-cli/pkg/cmd/attach"
@@ -30,7 +31,7 @@ func NewVerb(verb string, streams genericclioptions.IOStreams) *cobra.Command {
 	case "attach":
 		return newVerbAttach(verb, streams)
 	case "applier":
-		return newVerbApply(verb, streams)
+		return newVerbApplier(verb, streams)
 	case "detach":
 		return newVerbDetach(verb, streams)
 	}
@@ -86,13 +87,13 @@ func newVerbList(verb string, streams genericclioptions.IOStreams) *cobra.Comman
 	return cmd
 }
 
-func newVerbApply(verb string, streams genericclioptions.IOStreams) *cobra.Command {
+func newVerbApplier(verb string, streams genericclioptions.IOStreams) *cobra.Command {
 	o := apply.NewApplierOptions(streams)
 
 	cmd := &cobra.Command{
 		Use:          verb,
 		Short:        "apply templates",
-		Example:      fmt.Sprintf(apply.ApplyExample, "kubectl"),
+		Example:      fmt.Sprintf(apply.ApplyExample, os.Args[0]),
 		SilenceUsage: true,
 		RunE: func(c *cobra.Command, args []string) error {
 			if err := o.Complete(c, args); err != nil {

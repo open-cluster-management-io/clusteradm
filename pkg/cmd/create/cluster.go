@@ -4,14 +4,13 @@ package create
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/open-cluster-management/cm-cli/pkg/cmd/apply"
 
 	"github.com/ghodss/yaml"
-	"github.com/open-cluster-management/cm-cli/pkg/bindata"
 	"github.com/open-cluster-management/cm-cli/pkg/helpers"
+	"github.com/open-cluster-management/cm-cli/pkg/resources"
 	"github.com/open-cluster-management/library-go/pkg/templateprocessor"
 
 	corev1 "k8s.io/api/core/v1"
@@ -38,10 +37,10 @@ var valuesTemplatePath = filepath.Join(createClusterScenarioDirectory, "values-t
 
 var createClusteExample = `
 # Create a cluster
-%[1]s cm create cluster --values values.yaml
+%[1]s create cluster --values values.yaml
 
 # Create a cluster
-%[1]s cm create cluster --values values.yaml
+%[1]s create cluster --values values.yaml
 `
 
 type CreateClusterOptions struct {
@@ -64,7 +63,7 @@ func NewCmdCreateCluster(streams genericclioptions.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "cluster",
 		Short:        "Create a cluster",
-		Example:      fmt.Sprintf(createClusteExample, os.Args[0]),
+		Example:      fmt.Sprintf(createClusteExample, helpers.GetExampleHeader()),
 		SilenceUsage: true,
 		RunE: func(c *cobra.Command, args []string) error {
 			if err := o.Complete(c, args); err != nil {
@@ -94,6 +93,10 @@ func (o *CreateClusterOptions) Complete(cmd *cobra.Command, args []string) (err 
 	o.values, err = apply.ConvertValuesFileToValuesMap(o.applierScenariosOptions.ValuesPath, "")
 	if err != nil {
 		return err
+	}
+
+	if len(o.values) == 0 {
+		return fmt.Errorf("values are missing")
 	}
 
 	return nil
@@ -162,7 +165,7 @@ func (o *CreateClusterOptions) Run() error {
 
 	o.values["pullSecret"] = valueps
 
-	reader := bindata.NewBindataReader()
+	reader := resources.NewResourcesReader()
 	tp, err := templateprocessor.NewTemplateProcessor(
 		reader,
 		&templateprocessor.Options{},

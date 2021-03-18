@@ -3,6 +3,10 @@
 
 A CLI and kubernetes CLI plugin that allows you to interact with OCM/ACM to provision and managed your Hybrid Cloud presence from the command-line.
 
+## Requierments 
+
+Go 1.16 is required in order to build or contribute on this project as it leverage the `go:embed` tip.
+
 ## Installation
 
 The binary will be installed in GOPATH/bin

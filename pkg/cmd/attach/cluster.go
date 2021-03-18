@@ -4,7 +4,6 @@ package attach
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -13,10 +12,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/open-cluster-management/cm-cli/pkg/bindata"
 	"github.com/open-cluster-management/cm-cli/pkg/cmd/applierscenarios"
 	"github.com/open-cluster-management/cm-cli/pkg/cmd/apply"
 	"github.com/open-cluster-management/cm-cli/pkg/helpers"
+	"github.com/open-cluster-management/cm-cli/pkg/resources"
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -24,10 +23,10 @@ import (
 
 var attachClusteExample = `
 # Attach a cluster
-%[1]s cm attach cluster --values values.yaml
+%[1]s attach cluster --values values.yaml
 
 # Attach a cluster with overwritting the cluster name
-%[1]s cm attach cluster --values values.yaml --name mycluster
+%[1]s attach cluster --values values.yaml --name mycluster
 `
 
 const (
@@ -59,7 +58,7 @@ func NewCmdAttachCluster(streams genericclioptions.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "cluster",
 		Short:        "Import a cluster",
-		Example:      fmt.Sprintf(attachClusteExample, os.Args[0]),
+		Example:      fmt.Sprintf(attachClusteExample, helpers.GetExampleHeader()),
 		SilenceUsage: true,
 		RunE: func(c *cobra.Command, args []string) error {
 			if err := o.Complete(c, args); err != nil {
@@ -93,6 +92,10 @@ func (o *AttachClusterOptions) Complete(cmd *cobra.Command, args []string) (err 
 	o.values, err = apply.ConvertValuesFileToValuesMap(o.applierScenariosOptions.ValuesPath, "")
 	if err != nil {
 		return err
+	}
+
+	if len(o.values) == 0 {
+		return fmt.Errorf("values are missing")
 	}
 
 	if o.clusterKubeConfig == "" {
@@ -156,7 +159,7 @@ func (o *AttachClusterOptions) Validate() error {
 }
 
 func (o *AttachClusterOptions) Run() (err error) {
-	reader := bindata.NewBindataReader()
+	reader := resources.NewResourcesReader()
 
 	applyOptions := &apply.ApplyOptions{
 		OutFile:     o.applierScenariosOptions.OutFile,
@@ -210,7 +213,7 @@ func (o *AttachClusterOptions) Run() (err error) {
 				return err
 			}
 			if !o.applierScenariosOptions.Silent {
-				fmt.Printf("Execute this command on the managed cluster\noc cm applier -d %s\n", o.importFile)
+				fmt.Printf("Execute this command on the managed cluster\n%s applier -d %s\n", helpers.GetExampleHeader(), o.importFile)
 			}
 		}
 	}

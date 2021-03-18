@@ -1,6 +1,10 @@
+// Copyright Contributors to the Open Cluster Management project
+
 package helpers
 
 import (
+	"os"
+
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"k8s.io/client-go/tools/clientcmd"
@@ -19,4 +23,15 @@ func GetClientFromFlags() (client crclient.Client, err error) {
 		return nil, err
 	}
 	return crclient.New(config, crclient.Options{})
+}
+
+func GetExampleHeader() string {
+	switch os.Args[0] {
+	case "oc":
+		return "oc cm"
+	case "kubectl":
+		return "kubectl cm"
+	default:
+		return os.Args[0]
+	}
 }

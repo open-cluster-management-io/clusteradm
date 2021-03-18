@@ -1,6 +1,6 @@
 module github.com/open-cluster-management/cm-cli
 
-go 1.15
+go 1.16
 
 replace k8s.io/client-go => k8s.io/client-go v0.20.4
 
@@ -16,4 +16,5 @@ require (
 	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.4.0
 	sigs.k8s.io/controller-runtime v0.6.2
+	sigs.k8s.io/yaml v1.2.0
 )

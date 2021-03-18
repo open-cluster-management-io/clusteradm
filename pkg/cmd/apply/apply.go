@@ -83,16 +83,16 @@ func (o *ApplyOptions) Run() error {
 	return o.Apply()
 }
 
-func (o *ApplyOptions) discardKlogOutput() {
-	if o.OutFile != "" {
-		klog.SetOutput(ioutil.Discard)
-	}
-}
+// func (o *ApplyOptions) discardKlogOutput() {
+// 	// if o.OutFile != "" {
+// 	klog.SetOutput(ioutil.Discard)
+// 	// }
+// }
 
 //Apply applies the resources
 func (o *ApplyOptions) Apply() (err error) {
 
-	o.discardKlogOutput()
+	// o.discardKlogOutput()
 
 	values, err := ConvertValuesFileToValuesMap(o.ValuesPath, o.Prefix)
 	if err != nil {

@@ -3,9 +3,8 @@ package applierscenarios
 
 import (
 	"fmt"
-	"path/filepath"
 
-	"github.com/open-cluster-management/cm-cli/pkg/bindata"
+	"github.com/open-cluster-management/cm-cli/pkg/resources"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -48,7 +47,7 @@ func (o *ApplierScenariosOptions) AddFlags(flagSet *pflag.FlagSet) {
 
 func UsageTempate(cmd *cobra.Command, valuesTemplatePath string) string {
 	baseUsage := cmd.UsageTemplate()
-	b, err := bindata.Asset(filepath.Join(valuesTemplatePath))
+	b, err := resources.NewResourcesReader().Asset(valuesTemplatePath)
 	if err != nil {
 		return fmt.Sprintf("%s\n\n Values template:\n%s", baseUsage, err.Error())
 	}

@@ -3,12 +3,12 @@ package detach
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
-	"github.com/open-cluster-management/cm-cli/pkg/bindata"
 	"github.com/open-cluster-management/cm-cli/pkg/cmd/applierscenarios"
 	"github.com/open-cluster-management/cm-cli/pkg/cmd/apply"
+	"github.com/open-cluster-management/cm-cli/pkg/helpers"
+	"github.com/open-cluster-management/cm-cli/pkg/resources"
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -16,10 +16,10 @@ import (
 
 var detachClusteExample = `
 # Detach a cluster
-%[1]s cm detach cluster --values values.yaml
+%[1]s detach cluster --values values.yaml
 
 # Detach a cluster with overwritting the cluster name
-%[1]s cm detach cluster --values values.yaml --name mycluster
+%[1]s detach cluster --values values.yaml --name mycluster
 `
 
 const (
@@ -47,7 +47,7 @@ func NewCmdDetachCluster(streams genericclioptions.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "cluster",
 		Short:        "detach a cluster",
-		Example:      fmt.Sprintf(detachClusteExample, os.Args[0]),
+		Example:      fmt.Sprintf(detachClusteExample, helpers.GetExampleHeader()),
 		SilenceUsage: true,
 		RunE: func(c *cobra.Command, args []string) error {
 			if err := o.Complete(c, args); err != nil {
@@ -79,6 +79,10 @@ func (o *DetachClusterOptions) Complete(cmd *cobra.Command, args []string) (err 
 		return err
 	}
 
+	if len(o.values) == 0 {
+		return fmt.Errorf("values are missing")
+	}
+
 	return nil
 }
 
@@ -100,7 +104,7 @@ func (o *DetachClusterOptions) Validate() error {
 }
 
 func (o *DetachClusterOptions) Run() error {
-	reader := bindata.NewBindataReader()
+	reader := resources.NewResourcesReader()
 
 	applyOptions := &apply.ApplyOptions{
 		OutFile:     o.applierScenariosOptions.OutFile,

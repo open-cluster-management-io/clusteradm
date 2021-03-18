@@ -3,12 +3,12 @@ package delete
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/open-cluster-management/cm-cli/pkg/cmd/apply"
+	"github.com/open-cluster-management/cm-cli/pkg/helpers"
 
-	"github.com/open-cluster-management/cm-cli/pkg/bindata"
+	"github.com/open-cluster-management/cm-cli/pkg/resources"
 
 	"github.com/open-cluster-management/cm-cli/pkg/cmd/applierscenarios"
 
@@ -18,10 +18,10 @@ import (
 
 var deleteClusteExample = `
 # Delete a cluster
-%[1]s cm delete cluster --values values.yaml
+%[1]s delete cluster --values values.yaml
 
 # Delete a cluster with overwritting the cluster name
-%[1]s cm delete cluster --values values.yaml --name mycluster
+%[1]s delete cluster --values values.yaml --name mycluster
 `
 
 const (
@@ -49,7 +49,7 @@ func NewCmdDeleteCluster(streams genericclioptions.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "cluster",
 		Short:        "Delete a cluster",
-		Example:      fmt.Sprintf(deleteClusteExample, os.Args[0]),
+		Example:      fmt.Sprintf(deleteClusteExample, helpers.GetExampleHeader()),
 		SilenceUsage: true,
 		RunE: func(c *cobra.Command, args []string) error {
 			if err := o.Complete(c, args); err != nil {
@@ -81,6 +81,10 @@ func (o *DeleteClusterOptions) Complete(cmd *cobra.Command, args []string) (err 
 		return err
 	}
 
+	if len(o.values) == 0 {
+		return fmt.Errorf("values are missing")
+	}
+
 	return nil
 }
 
@@ -109,7 +113,7 @@ func (o *DeleteClusterOptions) Validate() (err error) {
 
 func (o *DeleteClusterOptions) Run() error {
 
-	reader := bindata.NewBindataReader()
+	reader := resources.NewResourcesReader()
 
 	applyOptions := &apply.ApplyOptions{
 		OutFile:     o.applierScenariosOptions.OutFile,

@@ -21,4 +21,3 @@ spec:
     enabled: {{ .managedCluster.addons.certPolicyController.enabled }}
   iamPolicyController:
     enabled: {{ .managedCluster.addons.iamPolicyController.enabled }}
-  version: {{ .managedCluster.addons.version }}

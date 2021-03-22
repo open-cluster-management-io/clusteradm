@@ -3,13 +3,12 @@ package verbs
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/open-cluster-management/cm-cli/pkg/cmd/apply"
-	"github.com/open-cluster-management/cm-cli/pkg/cmd/attach"
-	"github.com/open-cluster-management/cm-cli/pkg/cmd/create"
-	"github.com/open-cluster-management/cm-cli/pkg/cmd/delete"
-	"github.com/open-cluster-management/cm-cli/pkg/cmd/detach"
+	attachcluster "github.com/open-cluster-management/cm-cli/pkg/cmd/attach/cluster"
+	createcluster "github.com/open-cluster-management/cm-cli/pkg/cmd/create/cluster"
+	deletecluster "github.com/open-cluster-management/cm-cli/pkg/cmd/delete/cluster"
+	detachcluster "github.com/open-cluster-management/cm-cli/pkg/cmd/detach/cluster"
 	"github.com/spf13/cobra"
 
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -43,7 +42,7 @@ func newVerbCreate(verb string, streams genericclioptions.IOStreams) *cobra.Comm
 		Use: verb,
 	}
 	cmd.AddCommand(
-		create.NewCmdCreateCluster(streams),
+		createcluster.NewCmd(streams),
 	)
 
 	return cmd
@@ -72,7 +71,7 @@ func newVerbDelete(verb string, streams genericclioptions.IOStreams) *cobra.Comm
 		Use: verb,
 	}
 	cmd.AddCommand(
-		delete.NewCmdDeleteCluster(streams),
+		deletecluster.NewCmd(streams),
 	)
 
 	return cmd
@@ -88,30 +87,7 @@ func newVerbList(verb string, streams genericclioptions.IOStreams) *cobra.Comman
 }
 
 func newVerbApplier(verb string, streams genericclioptions.IOStreams) *cobra.Command {
-	o := apply.NewApplierOptions(streams)
-
-	cmd := &cobra.Command{
-		Use:          verb,
-		Short:        "apply templates",
-		Example:      fmt.Sprintf(apply.ApplyExample, os.Args[0]),
-		SilenceUsage: true,
-		RunE: func(c *cobra.Command, args []string) error {
-			if err := o.Complete(c, args); err != nil {
-				return err
-			}
-			if err := o.Validate(); err != nil {
-				return err
-			}
-			if err := o.Run(); err != nil {
-				return err
-			}
-
-			return nil
-		},
-	}
-
-	o.AddFlags(cmd.Flags())
-	o.ConfigFlags.AddFlags(cmd.Flags())
+	cmd := apply.NewCmd(streams)
 
 	return cmd
 }
@@ -122,7 +98,7 @@ func newVerbAttach(verb string, streams genericclioptions.IOStreams) *cobra.Comm
 		Short: "Attach cluster to hub",
 	}
 
-	cmd.AddCommand(attach.NewCmdAttachCluster(streams))
+	cmd.AddCommand(attachcluster.NewCmd(streams))
 
 	return cmd
 }
@@ -133,7 +109,7 @@ func newVerbDetach(verb string, streams genericclioptions.IOStreams) *cobra.Comm
 		Short: "Detatch a cluster from the hub",
 	}
 
-	cmd.AddCommand(detach.NewCmdDetachCluster(streams))
+	cmd.AddCommand(detachcluster.NewCmd(streams))
 
 	return cmd
 }

@@ -1,0 +1,39 @@
+# Copyright Contributors to the Open Cluster Management project
+
+managedCluster:
+  name: fake #<cluster-name>, this value is overwritten by the --name parameter
+  cloud: vsphere # clouds values can be aws, azure, gcp, vsphere
+  vendor: OpenShift
+  ocpImage: quay.io/openshift-release-dev/ocp-release:4.6.17-x86_64
+  addons:
+    applicationManager:
+      enabled: true
+    policyController:
+      enabled: true
+    searchCollector:
+      enabled: true
+    certPolicyController:
+      enabled: true
+    iamPolicyController:
+      enabled: true
+  sshPublicKey: |-
+    Public key
+  sshPrivateKey: |-
+    -----BEGIN RSA PRIVATE KEY-----
+    private key
+    -----END RSA PRIVATE KEY-----
+  vsphere:
+    username: myUser
+    password: myPassword
+    vcenter: myVcenter
+    cacertificate: |-
+      -----BEGIN CERTIFICATE-----
+      vSphere certificate
+      -----END CERTIFICATE-----
+    cluster: myCluster
+    datacenter: myDataCenter
+    datastore: myDatastore
+    network: myNetwork
+    baseDnsDomain: myBaseDnsDomain # baseDomain of your cluster (ie: mycompany.com)
+    apiVIP: myAPIVIP
+    ingressVIP: myIngressVIP

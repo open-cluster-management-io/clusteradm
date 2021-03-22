@@ -3,35 +3,15 @@
 package helpers
 
 import (
-	"os"
-
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
-func GetClientFromFlags() (client crclient.Client, err error) {
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	// if you want to change the loading rules (which files in which order), you can do so here
-
-	configOverrides := &clientcmd.ConfigOverrides{}
-	// if you want to change override values or bind them to flags, there are methods to help you
-
-	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
-	config, err := kubeConfig.ClientConfig()
+func GetClientFromFlags(configFlags *genericclioptions.ConfigFlags) (client crclient.Client, err error) {
+	config, err := configFlags.ToRESTConfig()
 	if err != nil {
 		return nil, err
 	}
 	return crclient.New(config, crclient.Options{})
-}
-
-func GetExampleHeader() string {
-	switch os.Args[0] {
-	case "oc":
-		return "oc cm"
-	case "kubectl":
-		return "kubectl cm"
-	default:
-		return os.Args[0]
-	}
 }

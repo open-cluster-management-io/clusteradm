@@ -1,0 +1,29 @@
+# Copyright Contributors to the Open Cluster Management project
+
+managedCluster:
+  name: fake #<cluster-name>, this value is overwritten by the --name parameter
+  cloud: aws # clouds values can be aws, azure, gcp, vsphere
+  vendor: OpenShift
+  ocpImage: quay.io/openshift-release-dev/ocp-release:4.6.17-x86_64
+  addons:
+    applicationManager:
+      enabled: true
+    policyController:
+      enabled: true
+    searchCollector:
+      enabled: true
+    certPolicyController:
+      enabled: true
+    iamPolicyController:
+      enabled: true
+  sshPublicKey: |-
+    Public key
+  sshPrivateKey: |-
+    -----BEGIN RSA PRIVATE KEY-----
+    private key
+    -----END RSA PRIVATE KEY-----
+  aws:
+    baseDnsDomain: myBaseDnsDomain # baseDomain of your cluster (ie: mycompany.com)
+    awsAccessKeyID: myAccessKeyID
+    awsSecretAccessKeyID: mySecretAccessKeyID
+    region: myRegion # Region (ie: us-east-1)

@@ -22,4 +22,3 @@ spec:
     enabled: {{ .addons.certPolicyController.enabled }}
   iamPolicyController:
     enabled: {{ .addons.iamPolicyController.enabled }}
-  version: {{ .addons.version }}

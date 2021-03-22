@@ -1,0 +1,11 @@
+# Copyright Contributors to the Open Cluster Management project
+apiVersion: operator.open-cluster-management.io/v1
+kind: ClusterManager
+metadata:
+  labels:
+    installer.name: multiclusterhub
+    installer.namespace: open-cluster-management
+  name: cluster-manager
+spec:
+  registrationImagePullSpec: fake-registration-image
+  workImagePullSpec: fake-work-image

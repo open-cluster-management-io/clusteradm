@@ -1,0 +1,11 @@
+# Copyright Contributors to the Open Cluster Management project
+
+apiVersion: operator.open-cluster-management.io/v1
+kind: MultiClusterHub
+metadata:
+  name: multiclusterhub
+  namespace: open-cluster-management
+spec:
+  availabilityConfig: High
+status:
+  currentVersion: 2.3.0

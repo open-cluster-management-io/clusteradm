@@ -10,25 +10,25 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/ghodss/yaml"
+	"github.com/open-cluster-management/cm-cli/pkg/helpers"
 	"github.com/open-cluster-management/library-go/pkg/applier"
 	"github.com/open-cluster-management/library-go/pkg/templateprocessor"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/klog"
+
+	// "k8s.io/klog"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var ApplyExample = `
+var example = `
 # Import a cluster
 %[1]s --values values.yaml
 `
 
-type ApplyOptions struct {
+type Options struct {
 	ConfigFlags *genericclioptions.ConfigFlags
 
 	OutFile    string
@@ -44,53 +44,83 @@ type ApplyOptions struct {
 	genericclioptions.IOStreams
 }
 
-func NewApplierOptions(streams genericclioptions.IOStreams) *ApplyOptions {
-	return &ApplyOptions{
+func newOptions(streams genericclioptions.IOStreams) *Options {
+	return &Options{
 		ConfigFlags: genericclioptions.NewConfigFlags(true),
 
 		IOStreams: streams,
 	}
 }
 
-//AddFlags returns a flagset
-func (o *ApplyOptions) AddFlags(flagSet *pflag.FlagSet) {
-	flagSet.StringVarP(&o.OutFile, "output", "o", "",
+func NewCmd(streams genericclioptions.IOStreams) *cobra.Command {
+	o := newOptions(streams)
+
+	cmd := &cobra.Command{
+		Use:          "applier",
+		Short:        "apply templates",
+		Example:      fmt.Sprintf(example, os.Args[0]),
+		SilenceUsage: true,
+		RunE: func(c *cobra.Command, args []string) error {
+			if err := o.complete(c, args); err != nil {
+				return err
+			}
+			if err := o.validate(); err != nil {
+				return err
+			}
+			if err := o.run(); err != nil {
+				return err
+			}
+
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVarP(&o.OutFile, "output", "o", "",
 		"Output file. If set nothing will be applied but a file will be generate "+
 			"which you can apply later with 'kubectl <create|apply|delete> -f")
-	flagSet.StringVarP(&o.Directory, "directory", "d", "", "The directory or file containing the template(s)")
-	flagSet.StringVar(&o.ValuesPath, "values", "", "The file containing the values")
-	flagSet.BoolVar(&o.DryRun, "dry-run", false, "if set only the rendered yaml will be shown, default false")
-	flagSet.StringVarP(&o.Prefix, "prefix", "p", "", "The prefix to add to each value names, for example 'Values'")
-	flagSet.BoolVar(&o.Delete, "delete", false,
+	cmd.Flags().StringVarP(&o.Directory, "directory", "d", "", "The directory or file containing the template(s)")
+	cmd.Flags().StringVar(&o.ValuesPath, "values", "", "The file containing the values")
+	cmd.Flags().BoolVar(&o.DryRun, "dry-run", false, "if set only the rendered yaml will be shown, default false")
+	cmd.Flags().StringVarP(&o.Prefix, "prefix", "p", "", "The prefix to add to each value names, for example 'Values'")
+	cmd.Flags().BoolVar(&o.Delete, "delete", false,
 		"if set only the resource defined in the yamls will be deleted, default false")
-	flagSet.IntVar(&o.Timeout, "timout", 5, "Timeout in second to apply one resource, default 5 sec")
-	flagSet.BoolVarP(&o.Force, "force", "f", false, "If set, the finalizers will be removed before delete")
-	flagSet.BoolVar(&o.Silent, "silent", false, "If set the applier will run silently")
+	cmd.Flags().IntVar(&o.Timeout, "timout", 5, "Timeout in second to apply one resource, default 5 sec")
+	cmd.Flags().BoolVarP(&o.Force, "force", "f", false, "If set, the finalizers will be removed before delete")
+	cmd.Flags().BoolVar(&o.Silent, "silent", false, "If set the applier will run silently")
+
+	o.ConfigFlags.AddFlags(cmd.Flags())
+
+	return cmd
 }
 
-//Complete retrieve missing options
-func (o *ApplyOptions) Complete(cmd *cobra.Command, args []string) error {
+//complete retrieve missing options
+func (o *Options) complete(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-//Validate validates the options
-func (o *ApplyOptions) Validate() error {
-	return o.CheckOptions()
+//validate validates the options
+func (o *Options) validate() error {
+	return o.checkOptions()
 }
 
-//Run runs the commands
-func (o *ApplyOptions) Run() error {
-	return o.Apply()
+//run runs the commands
+func (o *Options) run() error {
+	client, err := helpers.GetClientFromFlags(o.ConfigFlags)
+	if err != nil {
+		return err
+	}
+
+	return o.apply(client)
 }
 
-// func (o *ApplyOptions) discardKlogOutput() {
+// func (o *Options) discardKlogOutput() {
 // 	// if o.OutFile != "" {
 // 	klog.SetOutput(ioutil.Discard)
 // 	// }
 // }
 
-//Apply applies the resources
-func (o *ApplyOptions) Apply() (err error) {
+//apply applies the resources
+func (o *Options) apply(client crclient.Client) (err error) {
 
 	// o.discardKlogOutput()
 
@@ -101,7 +131,7 @@ func (o *ApplyOptions) Apply() (err error) {
 
 	templateReader := templateprocessor.NewYamlFileReader(o.Directory)
 
-	return o.ApplyWithValues(templateReader, "", values)
+	return o.ApplyWithValues(client, templateReader, "", values)
 }
 
 func ConvertValuesFileToValuesMap(path, prefix string) (values map[string]interface{}, err error) {
@@ -139,12 +169,12 @@ func ConvertValuesFileToValuesMap(path, prefix string) (values map[string]interf
 		values = valuesc
 	}
 
-	klog.V(4).Infof("values:\n%v", values)
+	// klog.V(4).Infof("values:\n%v", values)
 
 	return values, nil
 }
 
-func (o *ApplyOptions) ApplyWithValues(templateReader templateprocessor.TemplateReader, path string, values map[string]interface{}) (err error) {
+func (o *Options) ApplyWithValues(client crclient.Client, templateReader templateprocessor.TemplateReader, path string, values map[string]interface{}) (err error) {
 	if o.OutFile != "" {
 		templateProcessor, err := templateprocessor.NewTemplateProcessor(templateReader, &templateprocessor.Options{})
 		if err != nil {
@@ -154,25 +184,9 @@ func (o *ApplyOptions) ApplyWithValues(templateReader templateprocessor.Template
 		if err != nil {
 			return err
 		}
-		out := templateprocessor.ConvertArrayOfBytesToString(outV)
-		klog.V(1).Infof("result:\n%s", out)
+		// out := templateprocessor.ConvertArrayOfBytesToString(outV)
+		// klog.V(1).Infof("result:\n%s", out)
 		return ioutil.WriteFile(filepath.Clean(o.OutFile), []byte(templateprocessor.ConvertArrayOfBytesToString(outV)), 0600)
-	}
-
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	// if you want to change the loading rules (which files in which order), you can do so here
-
-	configOverrides := &clientcmd.ConfigOverrides{}
-	// if you want to change override values or bind them to flags, there are methods to help you
-
-	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
-	config, err := kubeConfig.ClientConfig()
-	if err != nil {
-		return err
-	}
-	client, err := crclient.New(config, crclient.Options{})
-	if err != nil {
-		return err
 	}
 
 	applierOptions := &applier.Options{
@@ -210,9 +224,9 @@ func (o *ApplyOptions) ApplyWithValues(templateReader templateprocessor.Template
 	return nil
 }
 
-//CheckOptions checks the options
-func (o *ApplyOptions) CheckOptions() error {
-	klog.V(2).Infof("-d: %s", o.Directory)
+//checkOptions checks the options
+func (o *Options) checkOptions() error {
+	// klog.V(2).Infof("-d: %s", o.Directory)
 	if o.Directory == "" {
 		return fmt.Errorf("-d must be set")
 	}

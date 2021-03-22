@@ -9,6 +9,9 @@ INSTALL_DEPENDENCIES ?= ${SCRIPTS_PATH}/install-dependencies.sh
 
 GOPATH := ${shell go env GOPATH}
 
+export PROJECT_DIR            = $(shell 'pwd')
+export PROJECT_NAME			  = $(shell basename ${PROJECT_DIR})
+
 export GOPACKAGES   = $(shell go list ./... | grep -v /vendor | grep -v /build | grep -v /test )
 
 .PHONY: deps
@@ -41,3 +44,7 @@ check-copyright:
 .PHONY: test
 test:
 	@build/run-unit-tests.sh
+
+.PHONY: functional-test-full
+functional-test-full: deps install
+	@build/run-functional-tests.sh

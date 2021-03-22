@@ -4,7 +4,6 @@ package resources
 
 import (
 	"embed"
-	"fmt"
 	"path/filepath"
 
 	"sigs.k8s.io/yaml"
@@ -33,7 +32,6 @@ func (b *Resources) AssetNames() ([]string, error) {
 
 func (b *Resources) assetWalk(f string) ([]string, error) {
 	assets := make([]string, 0)
-	fmt.Printf("%v", files)
 	file, err := files.Open(f)
 	if err != nil {
 		return assets, err

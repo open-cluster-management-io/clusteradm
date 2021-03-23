@@ -16,7 +16,7 @@ export GOPACKAGES   = $(shell go list ./... | grep -v /vendor | grep -v /build |
 
 .PHONY: deps
 deps:
-	$(INSTALL_DEPENDENCIES)
+	@$(INSTALL_DEPENDENCIES)
 
 .PHONY: build
 build: 

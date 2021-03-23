@@ -4,7 +4,7 @@ package verbs
 import (
 	"fmt"
 
-	"github.com/open-cluster-management/cm-cli/pkg/cmd/apply"
+	appliercmd "github.com/open-cluster-management/applier/pkg/applier/cmd"
 	attachcluster "github.com/open-cluster-management/cm-cli/pkg/cmd/attach/cluster"
 	createcluster "github.com/open-cluster-management/cm-cli/pkg/cmd/create/cluster"
 	deletecluster "github.com/open-cluster-management/cm-cli/pkg/cmd/delete/cluster"
@@ -87,7 +87,7 @@ func newVerbList(verb string, streams genericclioptions.IOStreams) *cobra.Comman
 }
 
 func newVerbApplier(verb string, streams genericclioptions.IOStreams) *cobra.Command {
-	cmd := apply.NewCmd(streams)
+	cmd := appliercmd.NewCmd(streams)
 
 	return cmd
 }

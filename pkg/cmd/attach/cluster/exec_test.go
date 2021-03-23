@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	appliercmd "github.com/open-cluster-management/applier/pkg/applier/cmd"
 	"github.com/open-cluster-management/cm-cli/pkg/cmd/applierscenarios"
-	"github.com/open-cluster-management/cm-cli/pkg/cmd/apply"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -277,7 +277,7 @@ func TestOptions_runWithClient(t *testing.T) {
 		},
 	}
 	client := crclientfake.NewFakeClient(&importSecret)
-	values, err := apply.ConvertValuesFileToValuesMap(filepath.Join(attachClusterTestDir, "values-with-data.yaml"), "")
+	values, err := appliercmd.ConvertValuesFileToValuesMap(filepath.Join(attachClusterTestDir, "values-with-data.yaml"), "")
 	if err != nil {
 		t.Fatal(err)
 	}

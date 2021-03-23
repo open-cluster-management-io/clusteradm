@@ -6,7 +6,7 @@ import (
 	"embed"
 	"path/filepath"
 
-	"sigs.k8s.io/yaml"
+	"github.com/ghodss/yaml"
 )
 
 type Resources struct{}

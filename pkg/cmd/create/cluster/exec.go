@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/open-cluster-management/cm-cli/pkg/cmd/apply"
+	appliercmd "github.com/open-cluster-management/applier/pkg/applier/cmd"
 
 	"github.com/ghodss/yaml"
+	"github.com/open-cluster-management/applier/pkg/templateprocessor"
 	"github.com/open-cluster-management/cm-cli/pkg/helpers"
 	"github.com/open-cluster-management/cm-cli/pkg/resources"
-	"github.com/open-cluster-management/library-go/pkg/templateprocessor"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -28,7 +28,7 @@ const (
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
-	o.values, err = apply.ConvertValuesFileToValuesMap(o.applierScenariosOptions.ValuesPath, "")
+	o.values, err = appliercmd.ConvertValuesFileToValuesMap(o.applierScenariosOptions.ValuesPath, "")
 	if err != nil {
 		return err
 	}
@@ -130,7 +130,7 @@ func (o *Options) runWithClient(client crclient.Client) error {
 
 	o.values["installConfig"] = valueic
 
-	applyOptions := &apply.Options{
+	applyOptions := &appliercmd.Options{
 		OutFile:     o.applierScenariosOptions.OutFile,
 		ConfigFlags: o.applierScenariosOptions.ConfigFlags,
 

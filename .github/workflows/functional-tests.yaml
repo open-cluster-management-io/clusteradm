@@ -1,0 +1,23 @@
+# Copyright Contributors to the Open Cluster Management project
+
+name: Go
+
+on:
+  push:
+    branches: [ main, release-* ]
+  pull_request:
+    branches: [ main, release-* ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.15
+
+    - name: Functional Tests
+      run: make functional-test-full

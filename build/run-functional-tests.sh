@@ -45,7 +45,7 @@ then
    ERROR_REPORT=$ERROR_REPORT+"cm create cluster vSphere failed\n"
 fi
 
-echo "Test attach/cluster/hub.sh manual"
+echo "Test cm attach cluster manual"
 cm attach cluster --values $TEST_DIR/attach/cluster/manual_values.yaml -o $TEST_RESULT_DIR/manual_result.yaml
 diff -u $TEST_DIR/attach/cluster/manual_result.yaml $TEST_RESULT_DIR/manual_result.yaml
 if [ $? != 0 ]

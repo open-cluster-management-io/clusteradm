@@ -3,6 +3,8 @@
 
 _script_dir=$(dirname "$0")
 mkdir -p test/unit/coverage
+rm -rf test/unit/tmp
+mkdir test/unit/tmp
 echo 'mode: atomic' > test/unit/coverage/cover.out
 echo '' > test/unit/coverage/cover.tmp
 echo -e "${GOPACKAGES// /\\n}" | xargs -n1 -I{} $_script_dir/test-package.sh {} ${GOPACKAGES// /,}

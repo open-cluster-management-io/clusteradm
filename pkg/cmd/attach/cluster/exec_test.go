@@ -264,7 +264,7 @@ func TestAttachClusterOptions_Validate(t *testing.T) {
 
 func TestOptions_runWithClient(t *testing.T) {
 	generatedImportFileName := filepath.Join(testDir, "tmp", "import.yaml")
-	resultImportFileName := filepath.Join(attachClusterTestDir, "import.yaml")
+	resultImportFileName := filepath.Join(attachClusterTestDir, "import_result.yaml")
 	os.Remove(generatedImportFileName)
 	importSecret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{

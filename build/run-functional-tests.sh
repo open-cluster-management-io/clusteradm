@@ -8,7 +8,7 @@ ERROR_REPORT=""
 CLUSTER_NAME=$PROJECT_NAME-functional-test
 kind create cluster --name $CLUSTER_NAME
 # Configure the kind cluster
-applier -d $TEST_DIR/resources
+cm applier -d $TEST_DIR/resources
 
 rm -rf $TEST_RESULT_DIR
 mkdir -p $TEST_RESULT_DIR

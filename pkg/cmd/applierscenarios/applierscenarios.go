@@ -18,11 +18,12 @@ var ApplierScenariosExample = `
 type ApplierScenariosOptions struct {
 	ConfigFlags *genericclioptions.ConfigFlags
 
-	OutFile    string
-	ValuesPath string
-	Timeout    int
-	Force      bool
-	Silent     bool
+	OutFile         string
+	ValuesPath      string
+	Timeout         int
+	Force           bool
+	Silent          bool
+	OutTemplatesDir string
 
 	genericclioptions.IOStreams
 }
@@ -36,13 +37,14 @@ func NewApplierScenariosOptions(streams genericclioptions.IOStreams) *ApplierSce
 }
 
 func (o *ApplierScenariosOptions) AddFlags(flagSet *pflag.FlagSet) {
-	flagSet.StringVarP(&o.OutFile, "outFile", "o", "",
+	flagSet.StringVarP(&o.OutFile, "outfile", "o", "",
 		"Output file. If set nothing will be applied but a file will be generate "+
 			"which you can apply later with 'kubectl <create|apply|delete> -f")
 	flagSet.StringVar(&o.ValuesPath, "values", "", "The files containing the values")
 	flagSet.IntVar(&o.Timeout, "t", 5, "Timeout in second to apply one resource, default 5 sec")
-	flagSet.BoolVar(&o.Force, "force", false, "If set, the finalizers will be removed before delete")
-	flagSet.BoolVar(&o.Silent, "s", false, "If set the applier will run silently")
+	flagSet.BoolVarP(&o.Force, "force", "f", false, "If set, the finalizers will be removed before delete")
+	flagSet.BoolVar(&o.Silent, "silent", false, "If set the applier will run silently")
+	flagSet.StringVar(&o.OutTemplatesDir, "out-templates-dir", "", "The templates will be saved in the provided directory")
 }
 
 func UsageTempate(cmd *cobra.Command, valuesTemplatePath string) string {

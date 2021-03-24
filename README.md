@@ -45,4 +45,7 @@ See our [Contributing Document](CONTRIBUTING.md) for more information.
 
 The commands are composed of a verb and a noum and then a number of parameters.
 
+## Cluster commands
+[applier](docs/applier.md)
+[cluster](docs/cluster.md)
 

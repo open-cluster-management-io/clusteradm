@@ -11,6 +11,9 @@ import (
 	"testing"
 )
 
+var testDir = filepath.Join("..", "..", "test", "unit")
+var testDirTmp = filepath.Join(testDir, "tmp")
+
 func TestResources_Asset(t *testing.T) {
 	asset := "scenarios/attach/hub/managed_cluster_cr.yaml"
 	basset, errFile := ioutil.ReadFile(asset)
@@ -177,6 +180,45 @@ func TestNewResourcesReader(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := NewResourcesReader(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewResourcesReader() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestResources_ExtractAssets(t *testing.T) {
+	type args struct {
+		prefix string
+		dir    string
+	}
+	tests := []struct {
+		name    string
+		r       *Resources
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Existing prefix",
+			args: args{
+				prefix: "scenarios/attach/hub",
+				dir:    filepath.Join(testDirTmp, "exist_prefix"),
+			},
+			wantErr: false,
+		},
+		{
+			name: "Existing name",
+			args: args{
+				prefix: "scenarios/attach/hub/managed_cluster_cr.yaml",
+				dir:    filepath.Join(testDirTmp, "exist_name"),
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Resources{}
+			os.RemoveAll(tt.args.dir)
+			if err := r.ExtractAssets(tt.args.prefix, tt.args.dir); (err != nil) != tt.wantErr {
+				t.Errorf("Resources.ExtractAssets() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

@@ -19,6 +19,9 @@ var testDir = filepath.Join("..", "..", "..", "..", "test", "unit")
 var deleteClusterTestDir = filepath.Join(testDir, "resources", "delete", "cluster")
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+	if o.applierScenariosOptions.OutTemplatesDir != "" {
+		return nil
+	}
 	o.values, err = appliercmd.ConvertValuesFileToValuesMap(o.applierScenariosOptions.ValuesPath, "")
 	if err != nil {
 		return err
@@ -32,6 +35,9 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 }
 
 func (o *Options) validate() (err error) {
+	if o.applierScenariosOptions.OutTemplatesDir != "" {
+		return nil
+	}
 	imc, ok := o.values["managedCluster"]
 	if !ok || imc == nil {
 		return fmt.Errorf("managedCluster is missing")
@@ -55,6 +61,10 @@ func (o *Options) validate() (err error) {
 }
 
 func (o *Options) run() error {
+	if o.applierScenariosOptions.OutTemplatesDir != "" {
+		reader := resources.NewResourcesReader()
+		return reader.ExtractAssets(scenarioDirectory, o.applierScenariosOptions.OutTemplatesDir)
+	}
 	client, err := helpers.GetClientFromFlags(o.applierScenariosOptions.ConfigFlags)
 	if err != nil {
 		return err

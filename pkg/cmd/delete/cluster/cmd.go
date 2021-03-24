@@ -22,7 +22,7 @@ var example = `
 `
 
 const (
-	scenarioDirectory = "scenarios/destroy"
+	scenarioDirectory = "scenarios/delete"
 )
 
 var valuesTemplatePath = filepath.Join(scenarioDirectory, "values-template.yaml")

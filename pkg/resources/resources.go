@@ -4,7 +4,10 @@ package resources
 
 import (
 	"embed"
+	"io/ioutil"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/ghodss/yaml"
 )
@@ -16,6 +19,10 @@ type Resources struct{}
 //scenarios/destroy/hub/common/_helpers.tpl
 //go:embed scenarios scenarios/*/*/*/_helpers.tpl
 var files embed.FS
+
+func NewResourcesReader() *Resources {
+	return &Resources{}
+}
 
 func (*Resources) Asset(name string) ([]byte, error) {
 	return files.ReadFile(name)
@@ -65,6 +72,36 @@ func (*Resources) ToJSON(b []byte) ([]byte, error) {
 	return yaml.YAMLToJSON(b)
 }
 
-func NewResourcesReader() *Resources {
-	return &Resources{}
+func (r *Resources) ExtractAssets(prefix, dir string) error {
+	assetNames, err := r.AssetNames()
+	if err != nil {
+		return err
+	}
+	for _, assetName := range assetNames {
+		if !strings.HasPrefix(assetName, prefix) {
+			continue
+		}
+		relPath, err := filepath.Rel(prefix, assetName)
+		if err != nil {
+			return err
+		}
+		path := filepath.Join(dir, relPath)
+
+		if relPath == "." {
+			path = filepath.Join(dir, filepath.Base(assetName))
+		}
+		err = os.MkdirAll(filepath.Dir(path), os.FileMode(0700))
+		if err != nil {
+			return err
+		}
+		data, err := r.Asset(assetName)
+		if err != nil {
+			return err
+		}
+		err = ioutil.WriteFile(path, data, os.FileMode(0600))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

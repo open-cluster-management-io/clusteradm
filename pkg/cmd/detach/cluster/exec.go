@@ -17,6 +17,9 @@ var testDir = filepath.Join("..", "..", "..", "..", "test", "unit")
 var detachClusterTestDir = filepath.Join(testDir, "resources", "detach", "cluster")
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+	if o.applierScenariosOptions.OutTemplatesDir != "" {
+		return nil
+	}
 	o.values, err = appliercmd.ConvertValuesFileToValuesMap(o.applierScenariosOptions.ValuesPath, "")
 	if err != nil {
 		return err
@@ -30,6 +33,9 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 }
 
 func (o *Options) validate() error {
+	if o.applierScenariosOptions.OutTemplatesDir != "" {
+		return nil
+	}
 	if o.clusterName == "" {
 		iname, ok := o.values["managedClusterName"]
 		if !ok || iname == nil {
@@ -47,6 +53,10 @@ func (o *Options) validate() error {
 }
 
 func (o *Options) run() error {
+	if o.applierScenariosOptions.OutTemplatesDir != "" {
+		reader := resources.NewResourcesReader()
+		return reader.ExtractAssets(scenarioDirectory, o.applierScenariosOptions.OutTemplatesDir)
+	}
 	client, err := helpers.GetClientFromFlags(o.applierScenariosOptions.ConfigFlags)
 	if err != nil {
 		return err

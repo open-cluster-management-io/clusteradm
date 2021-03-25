@@ -10,6 +10,9 @@ import (
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+var testDir = filepath.Join("..", "..", "..", "..", "test", "unit")
+var detachClusterTestDir = filepath.Join(testDir, "resources", "detach", "cluster")
+
 func TestOptions_complete(t *testing.T) {
 	type fields struct {
 		applierScenariosOptions *applierscenarios.ApplierScenariosOptions

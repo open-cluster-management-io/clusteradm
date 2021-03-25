@@ -15,9 +15,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var testDir = filepath.Join("..", "..", "..", "..", "test", "unit")
-var deleteClusterTestDir = filepath.Join(testDir, "resources", "delete", "cluster")
-
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	if o.applierScenariosOptions.OutTemplatesDir != "" {
 		return nil
@@ -87,15 +84,7 @@ func (o *Options) runWithClient(client crclient.Client) error {
 		IOStreams: o.applierScenariosOptions.IOStreams,
 	}
 
-	err := applyOptions.ApplyWithValues(client, reader,
-		filepath.Join(deleteClusterTestDir, "managed_cluster_cr.yaml"),
-		o.values)
-	if err != nil {
-		return err
-	}
-
 	return applyOptions.ApplyWithValues(client, reader,
-		filepath.Join(deleteClusterTestDir, "cluster_deployment_cr.yaml"),
+		filepath.Join(scenarioDirectory, "hub", "common"),
 		o.values)
-
 }

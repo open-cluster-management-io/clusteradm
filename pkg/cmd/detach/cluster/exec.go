@@ -13,9 +13,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var testDir = filepath.Join("..", "..", "..", "..", "test", "unit")
-var detachClusterTestDir = filepath.Join(testDir, "resources", "detach", "cluster")
-
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	if o.applierScenariosOptions.OutTemplatesDir != "" {
 		return nil
@@ -79,7 +76,7 @@ func (o *Options) runWithClient(client crclient.Client) error {
 	}
 
 	return applyOptions.ApplyWithValues(client, reader,
-		filepath.Join(detachClusterTestDir, "managed_cluster_cr.yaml"),
+		filepath.Join(scenarioDirectory, "hub"),
 		o.values)
 
 }

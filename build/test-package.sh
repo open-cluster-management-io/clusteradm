@@ -23,13 +23,16 @@ mkdir -p $_tap_out_dir
 
 # Run tests
 # DO NOT USE -coverpkg=./...
-go test -v -cover -coverpkg=$_cover_pkgs -covermode=atomic -coverprofile=test/unit/coverage/cover.tmp $_package 2> >( grep -v "warning: no packages being tested depend on" >&2 ) | $GOPATH/bin/patter | tee $_tap_out_dir/$_tap_name.tap | grep -v "TAP version 13" | grep -v ": PASS:" | grep -v -i "# /us"
+go test -v -cover -coverpkg=$_cover_pkgs -covermode=atomic -coverprofile=test/unit/coverage/cover.out.tmp $_package 2> >( grep -v "warning: no packages being tested depend on" >&2 ) | $GOPATH/bin/patter | tee $_tap_out_dir/$_tap_name.tap | grep -v "TAP version 13" | grep -v ": PASS:" | grep -v -i "# /us"
 
 # Merge coverage files
-if [ -f test/unit/coverage/cover.tmp ]; then
+if [ -f test/unit/coverage/cover.out.tmp ]; then
+    # Filtering
+    cat test/unit/coverage/cover.out.tmp | grep -v "cmd.go" | grep -v "client.go" > test/unit/coverage/cover.tmp
     $GOPATH/bin/gocovmerge test/unit/coverage/cover.tmp test/unit/coverage/cover.out > test/unit/coverage/cover.all
     mv test/unit/coverage/cover.all test/unit/coverage/cover.out
+    rm -f test/unit/coverage/cover.tmp
 fi
 
 # Clean up temporary files
-rm -f test/unit/coverage/cover.tmp
+rm -f test/unit/coverage/cover.out.tmp

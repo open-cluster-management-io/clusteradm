@@ -14,8 +14,7 @@ import (
 	crclientfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-var testDir = filepath.Join("..", "..", "..", "..", "test", "unit")
-var createClusterTestDir = filepath.Join(testDir, "resources", "create", "cluster")
+var testDir = filepath.Join("test", "unit")
 
 func TestOptions_complete(t *testing.T) {
 	type fields struct {
@@ -38,7 +37,7 @@ func TestOptions_complete(t *testing.T) {
 			name: "Failed, empty values",
 			fields: fields{
 				applierScenariosOptions: &applierscenarios.ApplierScenariosOptions{
-					ValuesPath: filepath.Join(createClusterTestDir, "values-empty.yaml"),
+					ValuesPath: filepath.Join(testDir, "values-empty.yaml"),
 				},
 			},
 			wantErr: true,
@@ -47,7 +46,7 @@ func TestOptions_complete(t *testing.T) {
 			name: "Sucess, with values",
 			fields: fields{
 				applierScenariosOptions: &applierscenarios.ApplierScenariosOptions{
-					ValuesPath: filepath.Join(createClusterTestDir, "values-fake-aws.yaml"),
+					ValuesPath: filepath.Join(testDir, "values-fake-aws.yaml"),
 				},
 			},
 			wantErr: false,
@@ -255,7 +254,7 @@ func TestOptions_runWithClient(t *testing.T) {
 		},
 	}
 	client := crclientfake.NewFakeClient(&pullSecret)
-	valuesAWS, err := appliercmd.ConvertValuesFileToValuesMap(filepath.Join(createClusterTestDir, "values-fake-aws.yaml"), "")
+	valuesAWS, err := appliercmd.ConvertValuesFileToValuesMap(filepath.Join(testDir, "values-fake-aws.yaml"), "")
 	if err != nil {
 		t.Fatal(err)
 	}

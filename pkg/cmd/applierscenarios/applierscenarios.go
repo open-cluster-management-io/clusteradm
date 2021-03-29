@@ -4,7 +4,6 @@ package applierscenarios
 import (
 	"fmt"
 
-	"github.com/open-cluster-management/cm-cli/pkg/resources"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -47,9 +46,9 @@ func (o *ApplierScenariosOptions) AddFlags(flagSet *pflag.FlagSet) {
 	flagSet.StringVar(&o.OutTemplatesDir, "out-templates-dir", "", "The templates will be saved in the provided directory")
 }
 
-func UsageTempate(cmd *cobra.Command, valuesTemplatePath string) string {
+func UsageTempate(cmd *cobra.Command, reader ApplierScenarioReader, valuesTemplatePath string) string {
 	baseUsage := cmd.UsageTemplate()
-	b, err := resources.NewResourcesReader().Asset(valuesTemplatePath)
+	b, err := reader.Asset(valuesTemplatePath)
 	if err != nil {
 		return fmt.Sprintf("%s\n\n Values template:\n%s", baseUsage, err.Error())
 	}

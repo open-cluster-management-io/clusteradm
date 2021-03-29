@@ -18,8 +18,7 @@ import (
 	crclientfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-var testDir = filepath.Join("..", "..", "..", "..", "test", "unit")
-var attachClusterTestDir = filepath.Join(testDir, "resources", "attach", "cluster")
+var testDir = filepath.Join("test", "unit")
 
 func TestOptions_complete(t *testing.T) {
 	type fields struct {
@@ -54,7 +53,7 @@ func TestOptions_complete(t *testing.T) {
 			name: "Failed, empty values",
 			fields: fields{
 				applierScenariosOptions: &applierscenarios.ApplierScenariosOptions{
-					ValuesPath: filepath.Join(attachClusterTestDir, "values-empty.yaml"),
+					ValuesPath: filepath.Join(testDir, "values-empty.yaml"),
 				},
 			},
 			wantErr: true,
@@ -63,7 +62,7 @@ func TestOptions_complete(t *testing.T) {
 			name: "Sucess, not replacing values",
 			fields: fields{
 				applierScenariosOptions: &applierscenarios.ApplierScenariosOptions{
-					ValuesPath: filepath.Join(attachClusterTestDir, "values-with-data.yaml"),
+					ValuesPath: filepath.Join(testDir, "values-with-data.yaml"),
 				},
 			},
 			wantErr: false,
@@ -72,7 +71,7 @@ func TestOptions_complete(t *testing.T) {
 			name: "Sucess, replacing values",
 			fields: fields{
 				applierScenariosOptions: &applierscenarios.ApplierScenariosOptions{
-					ValuesPath: filepath.Join(attachClusterTestDir, "values-with-data.yaml"),
+					ValuesPath: filepath.Join(testDir, "values-with-data.yaml"),
 				},
 				clusterServer:     "overwriteServer",
 				clusterToken:      "overwriteToken",
@@ -141,7 +140,9 @@ func TestAttachClusterOptions_Validate(t *testing.T) {
 			fields: fields{
 				applierScenariosOptions: &applierscenarios.ApplierScenariosOptions{},
 				values: map[string]interface{}{
-					"managedClusterName": "local-cluster",
+					"managedCluster": map[string]interface{}{
+						"name": "local-cluster",
+					},
 				},
 			},
 			wantErr: false,
@@ -151,7 +152,9 @@ func TestAttachClusterOptions_Validate(t *testing.T) {
 			fields: fields{
 				applierScenariosOptions: &applierscenarios.ApplierScenariosOptions{},
 				values: map[string]interface{}{
-					"managedClusterName": "",
+					"managedCluster": map[string]interface{}{
+						"name": "",
+					},
 				},
 			},
 			wantErr: true,
@@ -169,8 +172,11 @@ func TestAttachClusterOptions_Validate(t *testing.T) {
 			fields: fields{
 				applierScenariosOptions: &applierscenarios.ApplierScenariosOptions{},
 				values: map[string]interface{}{
-					"managedClusterName": "test-cluster",
+					"managedCluster": map[string]interface{}{
+						"name": "test-cluster",
+					},
 				},
+
 				clusterName: "local-cluster",
 			},
 			wantErr: false,
@@ -180,7 +186,9 @@ func TestAttachClusterOptions_Validate(t *testing.T) {
 			fields: fields{
 				applierScenariosOptions: &applierscenarios.ApplierScenariosOptions{},
 				values: map[string]interface{}{
-					"managedClusterName": "cluster-test",
+					"managedCluster": map[string]interface{}{
+						"name": "cluster-test",
+					},
 				},
 			},
 			wantErr: true,
@@ -190,8 +198,11 @@ func TestAttachClusterOptions_Validate(t *testing.T) {
 			fields: fields{
 				applierScenariosOptions: &applierscenarios.ApplierScenariosOptions{},
 				values: map[string]interface{}{
-					"managedClusterName": "cluster-test",
+					"managedCluster": map[string]interface{}{
+						"name": "cluster-test",
+					},
 				},
+
 				clusterKubeConfig: "fake-config",
 			},
 			wantErr: false,
@@ -201,8 +212,11 @@ func TestAttachClusterOptions_Validate(t *testing.T) {
 			fields: fields{
 				applierScenariosOptions: &applierscenarios.ApplierScenariosOptions{},
 				values: map[string]interface{}{
-					"managedClusterName": "cluster-test",
+					"managedCluster": map[string]interface{}{
+						"name": "cluster-test",
+					},
 				},
+
 				clusterToken:  "fake-token",
 				clusterServer: "fake-server",
 			},
@@ -213,7 +227,9 @@ func TestAttachClusterOptions_Validate(t *testing.T) {
 			fields: fields{
 				applierScenariosOptions: &applierscenarios.ApplierScenariosOptions{},
 				values: map[string]interface{}{
-					"managedClusterName": "cluster-test",
+					"managedCluster": map[string]interface{}{
+						"name": "cluster-test",
+					},
 				},
 				clusterToken: "fake-token",
 			},
@@ -224,7 +240,9 @@ func TestAttachClusterOptions_Validate(t *testing.T) {
 			fields: fields{
 				applierScenariosOptions: &applierscenarios.ApplierScenariosOptions{},
 				values: map[string]interface{}{
-					"managedClusterName": "cluster-test",
+					"managedCluster": map[string]interface{}{
+						"name": "cluster-test",
+					},
 				},
 				clusterServer: "fake-server",
 			},
@@ -235,7 +253,9 @@ func TestAttachClusterOptions_Validate(t *testing.T) {
 			fields: fields{
 				applierScenariosOptions: &applierscenarios.ApplierScenariosOptions{},
 				values: map[string]interface{}{
-					"managedClusterName": "cluster-test",
+					"managedCluster": map[string]interface{}{
+						"name": "cluster-test",
+					},
 				},
 				clusterKubeConfig: "fake-config",
 				clusterToken:      "fake-token",
@@ -263,8 +283,13 @@ func TestAttachClusterOptions_Validate(t *testing.T) {
 }
 
 func TestOptions_runWithClient(t *testing.T) {
-	generatedImportFileName := filepath.Join(testDir, "tmp", "import.yaml")
-	resultImportFileName := filepath.Join(attachClusterTestDir, "import_result.yaml")
+	dir, err := ioutil.TempDir(testDir, "tmp")
+	if err != nil {
+		t.Error(err)
+	}
+	defer os.RemoveAll(dir)
+	generatedImportFileName := filepath.Join(dir, "import.yaml")
+	resultImportFileName := filepath.Join(testDir, "import_result.yaml")
 	os.Remove(generatedImportFileName)
 	importSecret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -277,7 +302,7 @@ func TestOptions_runWithClient(t *testing.T) {
 		},
 	}
 	client := crclientfake.NewFakeClient(&importSecret)
-	values, err := appliercmd.ConvertValuesFileToValuesMap(filepath.Join(attachClusterTestDir, "values-with-data.yaml"), "")
+	values, err := appliercmd.ConvertValuesFileToValuesMap(filepath.Join(testDir, "values-with-data.yaml"), "")
 	if err != nil {
 		t.Fatal(err)
 	}

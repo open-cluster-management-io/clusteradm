@@ -8,7 +8,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
-func GetClientFromFlags(configFlags *genericclioptions.ConfigFlags) (client crclient.Client, err error) {
+func GetControllerRuntimeClientFromFlags(configFlags *genericclioptions.ConfigFlags) (client crclient.Client, err error) {
 	config, err := configFlags.ToRESTConfig()
 	if err != nil {
 		return nil, err

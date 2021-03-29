@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/open-cluster-management/cm-cli/pkg/cmd/applierscenarios"
+	"github.com/open-cluster-management/cm-cli/pkg/cmd/detach/cluster/scenario"
 	"github.com/open-cluster-management/cm-cli/pkg/helpers"
 
 	"github.com/spf13/cobra"
@@ -21,7 +22,7 @@ var example = `
 `
 
 const (
-	scenarioDirectory = "scenarios/detach"
+	scenarioDirectory = "detach"
 )
 
 var valuesTemplatePath = filepath.Join(scenarioDirectory, "values-template.yaml")
@@ -50,7 +51,7 @@ func NewCmd(streams genericclioptions.IOStreams) *cobra.Command {
 		},
 	}
 
-	cmd.SetUsageTemplate(applierscenarios.UsageTempate(cmd, valuesTemplatePath))
+	cmd.SetUsageTemplate(applierscenarios.UsageTempate(cmd, scenario.GetApplierScenarioResourcesReader(), valuesTemplatePath))
 	cmd.Flags().StringVar(&o.clusterName, "name", "", "Name of the cluster to import")
 
 	o.applierScenariosOptions.AddFlags(cmd.Flags())

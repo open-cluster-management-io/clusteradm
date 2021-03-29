@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 
 	appliercmd "github.com/open-cluster-management/applier/pkg/applier/cmd"
+	"github.com/open-cluster-management/cm-cli/pkg/cmd/create/cluster/scenario"
 
 	"github.com/ghodss/yaml"
 	"github.com/open-cluster-management/applier/pkg/templateprocessor"
 	"github.com/open-cluster-management/cm-cli/pkg/helpers"
-	"github.com/open-cluster-management/cm-cli/pkg/resources"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -80,10 +80,10 @@ func (o *Options) validate() (err error) {
 
 func (o *Options) run() error {
 	if o.applierScenariosOptions.OutTemplatesDir != "" {
-		reader := resources.NewResourcesReader()
-		return reader.ExtractAssets(scenarioDirectory, o.applierScenariosOptions.OutTemplatesDir)
+		return scenario.GetApplierScenarioResourcesReader().ExtractAssets(scenarioDirectory,
+			o.applierScenariosOptions.OutTemplatesDir)
 	}
-	client, err := helpers.GetClientFromFlags(o.applierScenariosOptions.ConfigFlags)
+	client, err := helpers.GetControllerRuntimeClientFromFlags(o.applierScenariosOptions.ConfigFlags)
 	if err != nil {
 		return err
 	}
@@ -116,7 +116,7 @@ func (o *Options) runWithClient(client crclient.Client) error {
 
 	o.values["pullSecret"] = valueps
 
-	reader := resources.NewResourcesReader()
+	reader := scenario.GetApplierScenarioResourcesReader()
 	tp, err := templateprocessor.NewTemplateProcessor(
 		reader,
 		&templateprocessor.Options{},

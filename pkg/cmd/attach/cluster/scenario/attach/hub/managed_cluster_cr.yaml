@@ -1,0 +1,15 @@
+# Copyright Contributors to the Open Cluster Management project
+
+apiVersion: cluster.open-cluster-management.io/v1
+kind: ManagedCluster
+metadata:
+  labels:
+    cloud: auto-detect
+    vendor: auto-detect
+    {{ if eq .managedCluster.name "local-cluster" }}
+    local-cluster: "true"
+    {{ end }}
+  name: "{{ .managedCluster.name }}"
+spec:
+  hubAcceptsClient: true
+  leaseDurationSeconds: 60

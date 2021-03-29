@@ -6,8 +6,9 @@ import (
 	"path/filepath"
 
 	appliercmd "github.com/open-cluster-management/applier/pkg/applier/cmd"
+	"github.com/open-cluster-management/cm-cli/pkg/cmd/detach/cluster/scenario"
 	"github.com/open-cluster-management/cm-cli/pkg/helpers"
-	"github.com/open-cluster-management/cm-cli/pkg/resources"
+
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spf13/cobra"
@@ -33,28 +34,34 @@ func (o *Options) validate() error {
 	if o.applierScenariosOptions.OutTemplatesDir != "" {
 		return nil
 	}
+	imc, ok := o.values["managedCluster"]
+	if !ok || imc == nil {
+		return fmt.Errorf("managedCluster is missing")
+	}
+	mc := imc.(map[string]interface{})
+
 	if o.clusterName == "" {
-		iname, ok := o.values["managedClusterName"]
+		iname, ok := mc["name"]
 		if !ok || iname == nil {
 			return fmt.Errorf("cluster name is missing")
 		}
 		o.clusterName = iname.(string)
 		if len(o.clusterName) == 0 {
-			return fmt.Errorf("managedClusterName not specified")
+			return fmt.Errorf("managedCluster.name not specified")
 		}
 	}
 
-	o.values["managedClusterName"] = o.clusterName
+	mc["name"] = o.clusterName
 
 	return nil
 }
 
 func (o *Options) run() error {
 	if o.applierScenariosOptions.OutTemplatesDir != "" {
-		reader := resources.NewResourcesReader()
+		reader := scenario.GetApplierScenarioResourcesReader()
 		return reader.ExtractAssets(scenarioDirectory, o.applierScenariosOptions.OutTemplatesDir)
 	}
-	client, err := helpers.GetClientFromFlags(o.applierScenariosOptions.ConfigFlags)
+	client, err := helpers.GetControllerRuntimeClientFromFlags(o.applierScenariosOptions.ConfigFlags)
 	if err != nil {
 		return err
 	}
@@ -62,7 +69,7 @@ func (o *Options) run() error {
 }
 
 func (o *Options) runWithClient(client crclient.Client) error {
-	reader := resources.NewResourcesReader()
+	reader := scenario.GetApplierScenarioResourcesReader()
 
 	applyOptions := &appliercmd.Options{
 		OutFile:     o.applierScenariosOptions.OutFile,

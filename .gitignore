@@ -8,6 +8,7 @@
 
 # Test binary, built with `go test -c`
 *.test
+tmp*
 test/unit/coverage
 test/unit/tmp
 test/functional/tmp

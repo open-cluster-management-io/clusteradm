@@ -1,0 +1,17 @@
+# Copyright Contributors to the Open Cluster Management project
+
+apiVersion: hive.openshift.io/v1
+kind: MachinePool
+metadata:
+  name: {{ .managedCluster.name }}-worker
+  namespace: "{{ .managedCluster.name }}"
+spec:
+  clusterDeploymentRef:
+    name: "{{ .managedCluster.name }}"
+  name: worker
+  platform: 
+{{ block "platform" . }}
+{{ $p := index .installConfig.compute 0 "platform" }}
+{{ toYaml $p | indent 4 }}
+{{ end }}
+  replicas: {{ index .installConfig.compute 0 "replicas" }}

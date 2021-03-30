@@ -1,0 +1,4 @@
+#file extensions to ignore on top of .gitignore
+.copyrightignore
+_generated.go
+test/functional/resources/hive_v1_clusterdeployment_crd.yaml

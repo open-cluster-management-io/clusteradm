@@ -2,27 +2,27 @@
 
 managedCluster:
   name: # <cluster_name>, this value is overwritten by the --name parameter
-addons:
-  applicationManager:
-    enabled: true
-    argocdCluster: false
-  policyController:
-    enabled: true
-  searchCollector:
-    enabled: true
-  certPolicyController:
-    enabled: true
-  iamPolicyController:
-    enabled: true
-# Define the number of time the import must be tentavelly executed.
-autoImportRetry: 5
-# For automatically import the cluster, 
-# provide the kubeconfig or the server/token pair
-# The cluster kubeconfig, token and server can also be passed as parameter
-# The parameters override these values
-kubeConfig: |-
-  <Kubeconfig>
-token: <token>
-server: <api_server_url>
-  
+  addons:
+    applicationManager:
+      enabled: true
+      argocdCluster: false
+    policyController:
+      enabled: true
+    searchCollector:
+      enabled: true
+    certPolicyController:
+      enabled: true
+    iamPolicyController:
+      enabled: true
+  # Define the number of time the import must be tentavelly executed.
+  autoImportRetry: 5
+  # For automatically import the cluster, 
+  # provide the kubeconfig or the server/token pair
+  # The cluster kubeconfig, token and server can also be passed as parameter
+  # The parameters override these values
+  kubeConfig: |-
+    <Kubeconfig>
+  token: <token>
+  server: <api_server_url>
+    
 

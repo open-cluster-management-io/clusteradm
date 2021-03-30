@@ -10,6 +10,8 @@ import (
 	"github.com/ghodss/yaml"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -34,31 +36,45 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		return fmt.Errorf("values are missing")
 	}
 
+	imc, ok := o.values["managedCluster"]
+	if !ok || imc == nil {
+		return fmt.Errorf("managedCluster is missing")
+	}
+	mc := imc.(map[string]interface{})
+
 	if o.clusterKubeConfig == "" {
-		if ikubeConfig, ok := o.values["kubeConfig"]; ok {
+		if ikubeConfig, ok := mc["kubeConfig"]; ok {
 			o.clusterKubeConfig = ikubeConfig.(string)
 		}
 	}
-	o.values["kubeConfig"] = o.clusterKubeConfig
+	mc["kubeConfig"] = o.clusterKubeConfig
 
 	if o.clusterServer == "" {
-		if iclusterServer, ok := o.values["server"]; ok {
+		if iclusterServer, ok := mc["server"]; ok {
 			o.clusterServer = iclusterServer.(string)
 		}
 	}
-	o.values["server"] = o.clusterServer
+	mc["server"] = o.clusterServer
 
 	if o.clusterToken == "" {
-		if iclusterToken, ok := o.values["token"]; ok {
+		if iclusterToken, ok := mc["token"]; ok {
 			o.clusterToken = iclusterToken.(string)
 		}
 	}
-	o.values["token"] = o.clusterToken
+	mc["token"] = o.clusterToken
 
 	return nil
 }
 
 func (o *Options) validate() error {
+	client, err := helpers.GetControllerRuntimeClientFromFlags(o.applierScenariosOptions.ConfigFlags)
+	if err != nil {
+		return err
+	}
+	return o.validateWithClient(client)
+}
+
+func (o *Options) validateWithClient(client crclient.Client) error {
 	if o.applierScenariosOptions.OutTemplatesDir != "" {
 		return nil
 	}
@@ -92,11 +108,29 @@ func (o *Options) validate() error {
 			return fmt.Errorf("server or token is missing or should be removed")
 		}
 
+		cd := unstructured.Unstructured{}
+		cd.SetKind("ClusterDeployment")
+		cd.SetAPIVersion("hive.openshift.io/v1")
+		err := client.Get(context.TODO(),
+			crclient.ObjectKey{
+				Name:      o.clusterName,
+				Namespace: o.clusterName,
+			}, &cd)
+
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				return err
+			}
+		} else {
+			o.hiveScenario = true
+		}
+
 		if o.applierScenariosOptions.OutFile == "" &&
 			o.clusterKubeConfig == "" &&
 			o.clusterToken == "" &&
 			o.clusterServer == "" &&
-			o.importFile == "" {
+			o.importFile == "" &&
+			!o.hiveScenario {
 			return fmt.Errorf("either kubeConfig or token/server or import-file must be provided")
 		}
 	}
@@ -136,7 +170,8 @@ func (o *Options) runWithClient(client crclient.Client) (err error) {
 		return err
 	}
 
-	if o.importFile != "" &&
+	if !o.hiveScenario &&
+		o.importFile != "" &&
 		o.applierScenariosOptions.OutFile == "" &&
 		o.clusterName != "local-cluster" {
 		time.Sleep(10 * time.Second)
@@ -169,6 +204,7 @@ func (o *Options) runWithClient(client crclient.Client) (err error) {
 		}
 		if !o.applierScenariosOptions.Silent {
 			fmt.Printf("Execute this command on the managed cluster\n%s applier -d %s\n", helpers.GetExampleHeader(), o.importFile)
+			return nil
 		}
 	}
 	return nil

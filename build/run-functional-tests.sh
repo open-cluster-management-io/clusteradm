@@ -2,16 +2,21 @@
 # Copyright Contributors to the Open Cluster Management project
 
 # set -x
+set -e
 TEST_DIR=test/functional
 TEST_RESULT_DIR=$TEST_DIR/tmp
 ERROR_REPORT=""
 CLUSTER_NAME=$PROJECT_NAME-functional-test
-kind create cluster --name $CLUSTER_NAME
-# Configure the kind cluster
-cm applier -d $TEST_DIR/resources
+export KUBECONFIG=$TEST_DIR/tmp/kind.yaml
 
 rm -rf $TEST_RESULT_DIR
 mkdir -p $TEST_RESULT_DIR
+
+kind create cluster --name ${CLUSTER_NAME}
+kind get kubeconfig --name ${CLUSTER_NAME} > ${TEST_DIR}/tmp/kind.yaml
+
+# Configure the kind cluster
+cm applier -d $TEST_DIR/resources
 
 echo "Test cm create cluster AWS"
 cm create cluster --values $TEST_DIR/create/cluster/aws_values.yaml -o $TEST_RESULT_DIR/aws_result.yaml

@@ -12,13 +12,13 @@ spec:
     cloud: auto-detect
     vendor: auto-detect
   applicationManager:
-    enabled: {{ .addons.applicationManager.enabled }}
-    argocdCluster: {{ .addons.applicationManager.argocdCluster }}
+    enabled: {{ .managedCluster.addons.applicationManager.enabled }}
+    argocdCluster: {{ .managedCluster.addons.applicationManager.argocdCluster }}
   policyController:
-    enabled: {{ .addons.policyController.enabled }}
+    enabled: {{ .managedCluster.addons.policyController.enabled }}
   searchCollector:
-    enabled: {{ .addons.searchCollector.enabled }}
+    enabled: {{ .managedCluster.addons.searchCollector.enabled }}
   certPolicyController:
-    enabled: {{ .addons.certPolicyController.enabled }}
+    enabled: {{ .managedCluster.addons.certPolicyController.enabled }}
   iamPolicyController:
-    enabled: {{ .addons.iamPolicyController.enabled }}
+    enabled: {{ .managedCluster.addons.iamPolicyController.enabled }}

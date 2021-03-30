@@ -94,33 +94,42 @@ func TestOptions_complete(t *testing.T) {
 			if err := o.complete(tt.args.cmd, tt.args.args); (err != nil) != tt.wantErr {
 				t.Errorf("Options.complete() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if tt.name == "Sucess, replacing values" {
-				if o.values["kubeConfig"] != o.clusterKubeConfig {
-					t.Errorf("Expect %s got %s", o.clusterKubeConfig, o.values["kubeConfig"])
+			if !tt.wantErr {
+				imc, ok := o.values["managedCluster"]
+				if !ok || imc == nil {
+					t.Errorf("missing managedCluster")
 				}
-				if o.values["server"] != o.clusterServer {
-					t.Errorf("Expect %s got %s", o.clusterServer, o.values["server"])
+				mc := imc.(map[string]interface{})
+
+				if tt.name == "Sucess, replacing values" {
+					if mc["kubeConfig"] != o.clusterKubeConfig {
+						t.Errorf("Expect %s got %s", o.clusterKubeConfig, mc["kubeConfig"])
+					}
+					if mc["server"] != o.clusterServer {
+						t.Errorf("Expect %s got %s", o.clusterServer, mc["server"])
+					}
+					if mc["token"] != o.clusterToken {
+						t.Errorf("Expect %s got %s", o.clusterToken, mc["token"])
+					}
 				}
-				if o.values["token"] != o.clusterToken {
-					t.Errorf("Expect %s got %s", o.clusterToken, o.values["token"])
-				}
-			}
-			if tt.name == "Sucess, not replacing values" {
-				if o.values["kubeConfig"] != "myKubeConfig" {
-					t.Errorf("Expect %s got %s", "myKubeConfig", o.values["kubeConfig"])
-				}
-				if o.values["server"] != "myServer" {
-					t.Errorf("Expect %s got %s", "myServer", o.values["server"])
-				}
-				if o.values["token"] != "myToken" {
-					t.Errorf("Expect %s got %s", "myToken", o.values["token"])
+				if tt.name == "Sucess, not replacing values" {
+					if mc["kubeConfig"] != "myKubeConfig" {
+						t.Errorf("Expect %s got %s", "myKubeConfig", mc["kubeConfig"])
+					}
+					if mc["server"] != "myServer" {
+						t.Errorf("Expect %s got %s", "myServer", mc["server"])
+					}
+					if mc["token"] != "myToken" {
+						t.Errorf("Expect %s got %s", "myToken", mc["token"])
+					}
 				}
 			}
 		})
 	}
 }
 
-func TestAttachClusterOptions_Validate(t *testing.T) {
+func TestAttachClusterOptions_ValidateWithClient(t *testing.T) {
+	client := crclientfake.NewFakeClient()
 	type fields struct {
 		applierScenariosOptions *applierscenarios.ApplierScenariosOptions
 		values                  map[string]interface{}
@@ -275,7 +284,7 @@ func TestAttachClusterOptions_Validate(t *testing.T) {
 				clusterKubeConfig:       tt.fields.clusterKubeConfig,
 				importFile:              tt.fields.importFile,
 			}
-			if err := o.validate(); (err != nil) != tt.wantErr {
+			if err := o.validateWithClient(client); (err != nil) != tt.wantErr {
 				t.Errorf("AttachClusterOptions.Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

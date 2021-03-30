@@ -15,6 +15,7 @@ type Options struct {
 	clusterToken            string
 	clusterKubeConfig       string
 	importFile              string
+	hiveScenario            bool
 }
 
 func newOptions(streams genericclioptions.IOStreams) *Options {

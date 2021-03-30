@@ -18,6 +18,8 @@ cm <verb> cluster <options...>
 cat values.yaml | cm <verb> cluster
 ```
 
+The values.yaml have the same format and so if one is used for `create` it can be used for `attach`, `delete`, `detach`.
+
 ## Help
 
 ```bash
@@ -29,6 +31,12 @@ cm <verbs> cluster -h
 ### Attach Cluster
 
 The `attach` verb provides the capability to attach a cluster to a hub.
+The `attach` can be done on different ways. 
+1. Manually, meaning once you ran the `attach` you still have to run an `cm apply` command (provided by the execution of the `attach` command) to install the agent on the managed cluster.
+2. Automatically by providing the kubeconfig in the [values.yaml](../pkg/cmd/attach/cluster/scenario/attach/values-template.yaml), then a secret will be created on the hub cluster and the system will use it to install the agent. The secret is deleled if the `attach` failed or succeed and so the credentials are not kept on the hub.
+3. Automatically by providing the pair server/token in the [values.yaml](../pkg/cmd/attach/cluster/scenario/attach/values-template.yaml) and again a secret will be created on the hub and the system will use it to install the agent. The secret is deleled if the `attach` failed or succeed and so the credentials are not kept on the hub.
+4. Automatically when the cluster was provisionned with hive. If the cluster was provisionned with hive, a clusterdeployemnt custom resource exists which contain a secret to access the remote cluster and thus if you `attach` a hive cluster, you don't have to provide any credential to access the cluster. The system will find out the credentials and attach the cluster.
+5. Attaching the hub: by default the hub is attached but if you detached it and want to reattach it you just have to provide a [values.yaml](../pkg/cmd/attach/cluster/scenario/attach/values-template.yaml) with a cluster name `local-cluster`. The system will recognized that name and use the cluster credentials to do the attach.
 
 ### Detach Cluster
 

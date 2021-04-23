@@ -7,13 +7,13 @@ baseDomain: {{ .managedCluster.gcp.baseDnsDomain }}
 controlPlane:
   hyperthreading: Enabled
   name: master
-  replicas: 3
+  replicas: {{ if .managedCluster.master }}{{ .managedCluster.master.replicas }}{{ else }}3{{end}}
   platform:
     gcp:
       type: n1-standard-4
 compute:
 - hyperthreading: Enabled
-  name: worker
+  replicas: {{ if .managedCluster.worker }}{{ .managedCluster.worker.replicas }}{{ else }}3{{end}}
   replicas: 3
   platform:
     gcp:

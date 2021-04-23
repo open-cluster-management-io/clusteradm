@@ -155,7 +155,7 @@ spec:
 	}
 
 	reader := templateprocessor.NewYamlStringReader(existingMC, templateprocessor.KubernetesYamlsDelimiter)
-	a, err := applier.NewApplier(reader, &templateprocessor.Options{}, client, nil, nil, applier.DefaultKubernetesMerger, &applier.Options{})
+	a, err := applier.NewApplier(reader, &templateprocessor.Options{}, client, nil, nil, &applier.Options{})
 	if err != nil {
 		t.Error(err)
 	}

@@ -7,25 +7,25 @@ baseDomain: {{ .managedCluster.aws.baseDnsDomain }}
 controlPlane:
   hyperthreading: Enabled
   name: master
-  replicas: 3
+  replicas: {{ if .managedCluster.master }}{{ .managedCluster.master.replicas }}{{ else }}3{{end}}
   platform:
     aws:
       rootVolume:
         iops: 4000
         size: 100
         type: io1
-      type: m5.4xlarge
+      type: {{ if .managedCluster.aws.master }}{{ default "m5.xlarge" .managedCluster.aws.master.type }}{{ else }}m5.xlarge{{end}}
 compute:
 - hyperthreading: Enabled
   name: worker
-  replicas: 3
+  replicas: {{ if .managedCluster.worker }}{{ .managedCluster.worker.replicas }}{{ else }}3{{end}}
   platform:
     aws:
       rootVolume:
         iops: 2000
         size: 100
         type: io1
-      type: m5.4xlarge
+      type: {{ if .managedCluster.aws.worker }}{{ default "m5.xlarge" .managedCluster.aws.worker.type }}{{ else }}m5.xlarge{{end}}
 networking:
   clusterNetwork:
   - cidr: 10.128.0.0/14

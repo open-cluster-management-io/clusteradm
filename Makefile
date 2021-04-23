@@ -14,6 +14,10 @@ export PROJECT_NAME			  = $(shell basename ${PROJECT_DIR})
 
 export GOPACKAGES   = $(shell go list ./... | grep -v /vendor | grep -v /build | grep -v /test )
 
+.PHONY: clean
+clean:
+	kind delete cluster --name ${PROJECT_NAME}-functional-test
+	
 .PHONY: deps
 deps:
 	@$(INSTALL_DEPENDENCIES)

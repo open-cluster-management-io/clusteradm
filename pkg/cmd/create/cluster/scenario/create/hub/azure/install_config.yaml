@@ -7,7 +7,7 @@ baseDomain: {{ .managedCluster.azure.baseDnsDomain }}
 controlPlane:
   hyperthreading: Enabled
   name: master
-  replicas: 3
+  replicas: {{ if .managedCluster.master }}{{ .managedCluster.master.replicas }}{{ else }}3{{end}}
   platform:
     azure:
       osDisk:
@@ -16,7 +16,7 @@ controlPlane:
 compute:
 - hyperthreading: Enabled
   name: worker
-  replicas: 3
+  replicas: {{ if .managedCluster.worker }}{{ .managedCluster.worker.replicas }}{{ else }}3{{end}}
   platform:
     azure:
       type:  Standard_D2s_v3

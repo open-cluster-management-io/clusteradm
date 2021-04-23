@@ -1,6 +1,10 @@
 # Copyright Contributors to the Open Cluster Management project
 
 managedCluster:
+  master: 
+    replicas: 3 #Number of master node, default 3
+  worker:
+    replicas: 3 #Number of worker node, default 3
   name: #<cluster-name>, this value is overwritten by the --name parameter
   cloud: vsphere # clouds values can be aws, azure, gcp, vsphere
   vendor: OpenShift
@@ -27,6 +31,10 @@ managedCluster:
     awsAccessKeyID:
     awsSecretAccessKeyID:
     region: # Region (ie: us-east-1)
+    master:
+      type: m5.xlarge
+    worker:
+      type: m5.xlarge
   azure:
     baseDnsDomain: # baseDomain of your cluster (ie: mycompany.com)
     baseDomainRGN:

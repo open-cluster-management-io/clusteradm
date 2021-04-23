@@ -18,21 +18,15 @@ cd cm-cli
 make build
 ```
 
-### oc/kubectl Plugin
+### Plugin
+
+This will create a binary `oc-cm` and `kubectl-cm` in the `$GOPATH/go/bin` allowing you to call `oc cm` or `kubectl cm`
 
 ```bash
 git clone https://github.com/open-cluster-management/cm-cli.git
 cd cm-cli
-make kubectl-plugin
+make plugin
 ```
-### oc Plugin only
-
-```bash
-git clone https://github.com/open-cluster-management/cm-cli.git
-cd cm-cli
-make oc-plugin
-```
-
 ## Dislaimer
 
 This CLI (and plugin) is still in development, but aims to expose OCM/ACM's functional through a useful and lightweight CLI and kubectl/oc CLI plugin.  Some features may not be present, fully implemented, and it might be buggy!  

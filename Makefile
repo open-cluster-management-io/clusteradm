@@ -29,13 +29,10 @@ build:
 .PHONY: install
 install: build
 
-.PHONY: oc-plugin
-oc-plugin: build
-	mv ${GOPATH}/bin/cm ${GOPATH}/bin/oc_cm
-
-.PHONY: kubectl-plugin
-kubectl-plugin: build
-	mv ${GOPATH}/bin/cm ${GOPATH}/bin/kubectl_cm
+.PHONY: plugin
+plugin: build
+	cp ${GOPATH}/bin/cm ${GOPATH}/bin/oc-cm
+	cp ${GOPATH}/bin/cm ${GOPATH}/bin/kubectl-cm
 
 .PHONY: check
 ## Runs a set of required checks

@@ -2,7 +2,7 @@
 
 managedCluster:
   name: mycluster
-  cloud: azure # clouds values can be aws, azure, gcp
+  cloud: azure # clouds values can be aws, azure, gcp, openstack, vsphere
   vendor: OpenShift
   ocpImage: quay.io/openshift-release-dev/ocp-release:4.6.17-x86_64
   addons:

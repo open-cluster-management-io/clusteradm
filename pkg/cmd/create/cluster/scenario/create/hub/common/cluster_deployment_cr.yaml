@@ -18,6 +18,9 @@ spec:
 {{ if (eq .managedCluster.cloud "gcp") }}
   baseDomain: {{ .managedCluster.gcp.baseDnsDomain }}
 {{ end }}
+{{ if (eq .managedCluster.cloud "openstack") }}
+  baseDomain: {{ .managedCluster.openstack.baseDnsDomain }}
+{{ end }}
 {{ if (eq .managedCluster.cloud "vsphere") }}
   baseDomain: {{ .managedCluster.vsphere.baseDnsDomain }}
 {{ end }}
@@ -39,6 +42,10 @@ spec:
 {{ if (eq .managedCluster.cloud "gcp") }}
     gcp:
       region: {{ .managedCluster.gcp.region }}
+{{ end }}
+{{ if (eq .managedCluster.cloud "openstack") }}
+    openstack:
+      cloud: {{ .managedCluster.openstack.cloud }}
 {{ end }}
 {{ if (eq .managedCluster.cloud "vsphere") }}
     vsphere:

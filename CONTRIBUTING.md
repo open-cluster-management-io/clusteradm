@@ -76,5 +76,5 @@ A total coverage is shown when running `make test`. For the time being, the `cmd
 
 ## Functional tests
 
-- The project runs functional-tests `make functional-test-full`, this test deploys a [KiND](https://kind.sigs.k8s.io/) cluster, install some resource using the applier and then runs a set of tests against that cluster [run-functional-tests.sh](build/run-functional-tests.sh). 
+- The project runs functional-tests `make functional-test-full`, this test deploys a [KiND](https://kind.sigs.k8s.io/) cluster, install some resource using the applier and then runs a set of tests against that cluster [run-functional-tests.sh](build/run-functional-tests.sh).  A prerequisite is that Docker is already running.
 - The `make functional-tests-full` is part of the PR acceptance and it is launched using git-actions.

@@ -15,7 +15,7 @@ export PROJECT_NAME			  = $(shell basename ${PROJECT_DIR})
 export GOPACKAGES   = $(shell go list ./... | grep -v /vendor | grep -v /build | grep -v /test )
 
 .PHONY: clean
-clean:
+clean: clean-test
 	kind delete cluster --name ${PROJECT_NAME}-functional-test
 	
 .PHONY: deps
@@ -45,6 +45,13 @@ check-copyright:
 .PHONY: test
 test:
 	@build/run-unit-tests.sh
+
+.PHONY: clean-test
+clean-test: 
+	-rm -r ./test/unit/coverage
+	-rm -r ./test/unit/tmp
+	-rm -r ./test/functional/tmp
+	-rm -r ./test/out
 
 .PHONY: functional-test-full
 functional-test-full: deps install

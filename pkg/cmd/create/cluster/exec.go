@@ -21,10 +21,11 @@ import (
 )
 
 const (
-	AWS     = "aws"
-	AZURE   = "azure"
-	GCP     = "gcp"
-	VSPHERE = "vsphere"
+	AWS       = "aws"
+	AZURE     = "azure"
+	GCP       = "gcp"
+	OPENSTACK = "openstack"
+	VSPHERE   = "vsphere"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -57,8 +58,8 @@ func (o *Options) validate() (err error) {
 		return fmt.Errorf("cloud type is missing")
 	}
 	cloud := icloud.(string)
-	if cloud != AWS && cloud != AZURE && cloud != GCP && cloud != VSPHERE {
-		return fmt.Errorf("supported cloud type are (%s, %s, %s, %s) and got %s", AWS, AZURE, GCP, VSPHERE, cloud)
+	if cloud != AWS && cloud != AZURE && cloud != GCP && cloud != OPENSTACK && cloud != VSPHERE {
+		return fmt.Errorf("supported cloud type are (%s, %s, %s, %s, %s) and got %s", AWS, AZURE, GCP, OPENSTACK, VSPHERE, cloud)
 	}
 	o.cloud = cloud
 

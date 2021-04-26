@@ -1,0 +1,46 @@
+# Copyright Contributors to the Open Cluster Management project
+
+managedCluster:
+  name: fake #<cluster-name>, this value is overwritten by the --name parameter
+  cloud: openstack # clouds values can be aws, azure, gcp, openstack, vsphere
+  vendor: OpenShift
+  ocpImage: quay.io/openshift-release-dev/ocp-release:4.6.17-x86_64
+  addons:
+    applicationManager:
+      enabled: true
+    policyController:
+      enabled: true
+    searchCollector:
+      enabled: true
+    certPolicyController:
+      enabled: true
+    iamPolicyController:
+      enabled: true
+  sshPublicKey: |-
+    Public key
+  sshPrivateKey: |-
+    -----BEGIN RSA PRIVATE KEY-----
+    private key
+    -----END RSA PRIVATE KEY-----
+  openstack:
+    baseDnsDomain: # baseDomain of your cluster (ie: mycompany.com)
+    cloudsYaml: |-
+      clouds:
+        openstack:
+          auth:
+            auth_url: https://abcd
+            username: "fakeuser"
+            password: "fakepwd"
+            project_id: 12345678
+            project_name: "fakeproject"
+            user_domain_name: "redhat.com"
+          region_name: "regionOne"
+          interface: "public"
+          identity_api_version: 3
+    cloud: openstack
+    externalNetwork: external
+    apiFloatingIP: "1.1.1.1"
+    ingressFloatingIP: "2.2.2.2"
+    masterFlavor: m1.xlarge
+    workerFlavor: m1.2xlarge
+    machineNetworkCIDR: "10.0.0.0/16"

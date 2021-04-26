@@ -6,7 +6,7 @@ managedCluster:
   worker:
     replicas: 3 #Number of worker node, default 3
   name: #<cluster-name>, this value is overwritten by the --name parameter
-  cloud: vsphere # clouds values can be aws, azure, gcp, vsphere
+  cloud: vsphere # clouds values can be aws, azure, gcp, openstack, vsphere
   vendor: OpenShift
   ocpImage: # ocp image (ie: quay.io/openshift-release-dev/ocp-release:4.3.40-x86_64)
   addons:
@@ -66,3 +66,16 @@ managedCluster:
     baseDnsDomain: # baseDomain of your cluster (ie: mycompany.com)
     apiVIP:
     ingressVIP:
+  openstack:
+    baseDnsDomain: # baseDomain of your cluster (ie: mycompany.com)
+    cloudsYaml: |-
+      clouds:
+        openstack:
+          auth:
+    cloud:
+    externalNetwork:
+    apiFloatingIP:
+    ingressFloatingIP:
+    masterFlavor:
+    workerFlavor:
+    machineNetworkCIDR:  

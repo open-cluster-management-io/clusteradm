@@ -12,6 +12,7 @@ tmp*
 test/unit/coverage
 test/unit/tmp
 test/functional/tmp
+test/out
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out

@@ -42,6 +42,14 @@ then
    ERROR_REPORT=$ERROR_REPORT+"cm create cluster GCP failed\n"
 fi
 
+echo "Test cm create cluster OpenStack"
+cm create cluster --values $TEST_DIR/create/cluster/openstack_values.yaml -o $TEST_RESULT_DIR/openstack_result.yaml
+diff -u $TEST_DIR/create/cluster/openstack_result.yaml $TEST_RESULT_DIR/openstack_result.yaml
+if [ $? != 0 ]
+then
+   ERROR_REPORT=$ERROR_REPORT+"cm create cluster OpenStack failed\n"
+fi
+
 echo "Test cm create cluster vSphere"
 cm create cluster --values $TEST_DIR/create/cluster/vsphere_values.yaml -o $TEST_RESULT_DIR/vsphere_result.yaml
 diff -u $TEST_DIR/create/cluster/vsphere_result.yaml $TEST_RESULT_DIR/vsphere_result.yaml

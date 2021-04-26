@@ -2,7 +2,7 @@
 
 managedCluster:
   name: fake #<cluster-name>, this value is overwritten by the --name parameter
-  cloud: gcp # clouds values can be aws, azure, gcp, vsphere
+  cloud: gcp # clouds values can be aws, azure, gcp, openstack, vsphere
   vendor: OpenShift
   ocpImage: quay.io/openshift-release-dev/ocp-release:4.6.17-x86_64
   addons:

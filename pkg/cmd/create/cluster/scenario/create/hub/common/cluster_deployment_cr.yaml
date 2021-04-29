@@ -27,7 +27,7 @@ spec:
   clusterName: "{{ .managedCluster.name }}"
   controlPlaneConfig:
     servingCertificates: {}
-  installAttemptsLimit: 2
+  installAttemptsLimit: {{ default 1 .managedCluster.installAttemptsLimit}}
   installed: false
   platform:
 {{ if (eq .managedCluster.cloud "aws") }}

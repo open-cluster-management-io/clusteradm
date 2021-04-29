@@ -10,10 +10,12 @@ controlPlane:
   replicas: {{ if .managedCluster.master }}{{ .managedCluster.master.replicas }}{{ else }}3{{end}}
   platform:
     aws:
+{{ if .managedCluster.aws.master }}
+{{ if .managedCluster.aws.master.rootVolume }}
       rootVolume:
-        iops: 4000
-        size: 100
-        type: io1
+{{ toYaml .managedCluster.aws.master.rootVolume | indent 8}}
+{{end}}
+{{end}}
       type: {{ if .managedCluster.aws.master }}{{ default "m5.xlarge" .managedCluster.aws.master.type }}{{ else }}m5.xlarge{{end}}
 compute:
 - hyperthreading: Enabled
@@ -21,10 +23,12 @@ compute:
   replicas: {{ if .managedCluster.worker }}{{ .managedCluster.worker.replicas }}{{ else }}3{{end}}
   platform:
     aws:
+{{ if .managedCluster.aws.worker }}
       rootVolume:
-        iops: 2000
-        size: 100
-        type: io1
+{{ if .managedCluster.aws.worker.rootVolume }}
+{{ toYaml .managedCluster.aws.worker.rootVolume | indent 8}}
+{{end}}
+{{end}}
       type: {{ if .managedCluster.aws.worker }}{{ default "m5.xlarge" .managedCluster.aws.worker.type }}{{ else }}m5.xlarge{{end}}
 networking:
   clusterNetwork:

@@ -59,7 +59,14 @@ func TestOptions_complete(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Sucess, not replacing values",
+			name: "Failed, no values.yaml, no name",
+			fields: fields{
+				applierScenariosOptions: &applierscenarios.ApplierScenariosOptions{},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Success, not replacing values",
 			fields: fields{
 				applierScenariosOptions: &applierscenarios.ApplierScenariosOptions{
 					ValuesPath: filepath.Join(testDir, "values-with-data.yaml"),
@@ -68,14 +75,23 @@ func TestOptions_complete(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Sucess, replacing values",
+			name: "Success, no values.yaml",
+			fields: fields{
+				applierScenariosOptions: &applierscenarios.ApplierScenariosOptions{},
+				clusterName:             "mycluster",
+				clusterKubeConfig:       filepath.Join(testDir, "fake-kubeconfig.yaml"),
+			},
+			wantErr: false,
+		},
+		{
+			name: "Success, replacing values",
 			fields: fields{
 				applierScenariosOptions: &applierscenarios.ApplierScenariosOptions{
 					ValuesPath: filepath.Join(testDir, "values-with-data.yaml"),
 				},
 				clusterServer:     "overwriteServer",
 				clusterToken:      "overwriteToken",
-				clusterKubeConfig: "overwriteKubeConfig",
+				clusterKubeConfig: filepath.Join(testDir, "fake-kubeconfig.yaml"),
 			},
 			wantErr: false,
 		},
@@ -101,7 +117,15 @@ func TestOptions_complete(t *testing.T) {
 				}
 				mc := imc.(map[string]interface{})
 
-				if tt.name == "Sucess, replacing values" {
+				if tt.name == "Success, no values.yaml" {
+					if mc["name"] != o.clusterName {
+						t.Errorf("Expect %s got %s", o.clusterName, mc["name"])
+					}
+					if mc["kubeConfig"] != o.clusterKubeConfig {
+						t.Errorf("Expect %s got %s", o.clusterKubeConfig, mc["kubeConfig"])
+					}
+				}
+				if tt.name == "Success, replacing values" {
 					if mc["kubeConfig"] != o.clusterKubeConfig {
 						t.Errorf("Expect %s got %s", o.clusterKubeConfig, mc["kubeConfig"])
 					}
@@ -112,7 +136,7 @@ func TestOptions_complete(t *testing.T) {
 						t.Errorf("Expect %s got %s", o.clusterToken, mc["token"])
 					}
 				}
-				if tt.name == "Sucess, not replacing values" {
+				if tt.name == "Success, not replacing values" {
 					if mc["kubeConfig"] != "myKubeConfig" {
 						t.Errorf("Expect %s got %s", "myKubeConfig", mc["kubeConfig"])
 					}

@@ -54,7 +54,22 @@ func TestOptions_complete(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Sucess, with values",
+			name: "Success, no values.yaml, no name",
+			fields: fields{
+				applierScenariosOptions: &applierscenarios.ApplierScenariosOptions{},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Success, no values.yaml",
+			fields: fields{
+				applierScenariosOptions: &applierscenarios.ApplierScenariosOptions{},
+				clusterName:             "myCluster",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Success, with values",
 			fields: fields{
 				applierScenariosOptions: &applierscenarios.ApplierScenariosOptions{
 					ValuesPath: filepath.Join(testDir, "values-fake.yaml"),
@@ -72,6 +87,18 @@ func TestOptions_complete(t *testing.T) {
 			}
 			if err := o.complete(tt.args.cmd, tt.args.args); (err != nil) != tt.wantErr {
 				t.Errorf("Options.complete() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				imc, ok := o.values["managedCluster"]
+				if !ok || imc == nil {
+					t.Errorf("missing managedCluster")
+				}
+				mc := imc.(map[string]interface{})
+				if tt.name == "Success, no values.yaml" {
+					if mc["name"] != o.clusterName {
+						t.Errorf("Expect %s got %s", o.clusterName, mc["name"])
+					}
+				}
 			}
 		})
 	}

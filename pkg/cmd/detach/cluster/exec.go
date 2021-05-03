@@ -18,9 +18,22 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	if o.applierScenariosOptions.OutTemplatesDir != "" {
 		return nil
 	}
-	o.values, err = appliercmd.ConvertValuesFileToValuesMap(o.applierScenariosOptions.ValuesPath, "")
-	if err != nil {
-		return err
+	//Check if default values must be used
+	if o.applierScenariosOptions.ValuesPath == "" {
+		if o.clusterName != "" {
+			o.values = make(map[string]interface{})
+			mc := make(map[string]interface{})
+			mc["name"] = o.clusterName
+			o.values["managedCluster"] = mc
+		} else {
+			return fmt.Errorf("values or name are missing")
+		}
+	} else {
+		//Read values
+		o.values, err = appliercmd.ConvertValuesFileToValuesMap(o.applierScenariosOptions.ValuesPath, "")
+		if err != nil {
+			return err
+		}
 	}
 
 	if len(o.values) == 0 {

@@ -1,7 +1,6 @@
 # Copyright Contributors to the Open Cluster Management project
 
 managedCluster:
-  installAttemptsLimit: 1 #Number of attempt install, default 1
   master: 
     replicas: 3 #Number of master node, default 3
   worker:
@@ -32,20 +31,18 @@ managedCluster:
     awsAccessKeyID:
     awsSecretAccessKeyID:
     region: # Region (ie: us-east-1)
-    #Optional
-    # master: 
-    #   rootVolume:
-    #     iops: 4000
-    #     size: 100
-    #     type: gp2
-    #   type: m5.xlarge
-    #Optional
-    # worker:
-    #   rootVolume:
-    #     iops: 2000
-    #     size: 100
-    #     type: gp2
-    #   type: m5.xlarge
+    master:
+      type: m5.xlarge
+      rootVolume: # see below the default values 
+        iops: 4000
+        size: 100
+        type: gp2
+    worker:
+      type: m5.xlarge
+      rootVolume: # see below the default values 
+        iops: 2000
+        size: 100
+        type: gp2
   azure:
     baseDnsDomain: # baseDomain of your cluster (ie: mycompany.com)
     baseDomainRGN:

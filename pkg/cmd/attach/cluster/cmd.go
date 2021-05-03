@@ -26,6 +26,7 @@ const (
 )
 
 var valuesTemplatePath = filepath.Join(scenarioDirectory, "values-template.yaml")
+var valuesDefaultPath = filepath.Join(scenarioDirectory, "values-default.yaml")
 
 // NewCmd provides a cobra command wrapping NewCmdImportCluster
 func NewCmd(streams genericclioptions.IOStreams) *cobra.Command {
@@ -55,7 +56,7 @@ func NewCmd(streams genericclioptions.IOStreams) *cobra.Command {
 	cmd.Flags().StringVar(&o.clusterName, "name", "", "Name of the cluster to import")
 	cmd.Flags().StringVar(&o.clusterServer, "cluster-server", "", "cluster server url of the cluster to import")
 	cmd.Flags().StringVar(&o.clusterToken, "cluster-token", "", "token to access the cluster to import")
-	cmd.Flags().StringVar(&o.clusterKubeConfig, "cluster-kubeconfigr", "", "path to the kubeconfig the cluster to import")
+	cmd.Flags().StringVar(&o.clusterKubeConfig, "cluster-kubeconfig", "", "path to the kubeconfig the cluster to import")
 	cmd.Flags().StringVar(&o.importFile, "import-file", "", "the file which will contain the import secret for manual import")
 
 	o.applierScenariosOptions.AddFlags(cmd.Flags())

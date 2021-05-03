@@ -1,0 +1,16 @@
+# Copyright Contributors to the Open Cluster Management project
+
+managedCluster:
+  addons:
+    applicationManager:
+      enabled: true
+      argocdCluster: false
+    policyController:
+      enabled: true
+    searchCollector:
+      enabled: true
+    certPolicyController:
+      enabled: true
+    iamPolicyController:
+      enabled: true
+  autoImportRetry: 5

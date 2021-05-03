@@ -4,6 +4,7 @@ package cluster
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"path/filepath"
 	"time"
 
@@ -27,13 +28,30 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	if o.applierScenariosOptions.OutTemplatesDir != "" {
 		return nil
 	}
-	o.values, err = appliercmd.ConvertValuesFileToValuesMap(o.applierScenariosOptions.ValuesPath, "")
-	if err != nil {
-		return err
-	}
 
-	if len(o.values) == 0 {
-		return fmt.Errorf("values are missing")
+	//Check if default values must be used
+	if o.applierScenariosOptions.ValuesPath == "" {
+		if o.clusterName != "" {
+			reader := scenario.GetApplierScenarioResourcesReader()
+			b, err := reader.Asset(valuesDefaultPath)
+			if err != nil {
+				return err
+			}
+			err = yaml.Unmarshal(b, &o.values)
+			if err != nil {
+				return err
+			}
+			mc := o.values["managedCluster"].(map[string]interface{})
+			mc["name"] = o.clusterName
+		} else {
+			return fmt.Errorf("values or name are missing")
+		}
+	} else {
+		//Read values
+		o.values, err = appliercmd.ConvertValuesFileToValuesMap(o.applierScenariosOptions.ValuesPath, "")
+		if err != nil {
+			return err
+		}
 	}
 
 	imc, ok := o.values["managedCluster"]
@@ -46,7 +64,14 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		if ikubeConfig, ok := mc["kubeConfig"]; ok {
 			o.clusterKubeConfig = ikubeConfig.(string)
 		}
+	} else {
+		b, err := ioutil.ReadFile(o.clusterKubeConfig)
+		if err != nil {
+			return err
+		}
+		o.clusterKubeConfig = string(b)
 	}
+
 	mc["kubeConfig"] = o.clusterKubeConfig
 
 	if o.clusterServer == "" {

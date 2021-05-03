@@ -14,7 +14,7 @@ import (
 
 //go:embed embed_test
 var files embed.FS
-var testDir = filepath.Join("..", "..", "test", "unit")
+var testDir = filepath.Join("..", "..", "..", "test", "unit")
 var testDirTmp = filepath.Join(testDir, "tmp")
 
 func TestResources_Asset(t *testing.T) {

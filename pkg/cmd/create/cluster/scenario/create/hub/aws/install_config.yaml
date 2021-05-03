@@ -14,7 +14,17 @@ controlPlane:
 {{ if .managedCluster.aws.master.rootVolume }}
       rootVolume:
 {{ toYaml .managedCluster.aws.master.rootVolume | indent 8}}
-{{end}}
+{{ else }}
+      rootVolume: # see below the default values 
+        iops: 4000
+        size: 100
+        type: gp2
+{{ end }}
+{{ else }}
+      rootVolume: # see below the default values 
+        iops: 4000
+        size: 100
+        type: gp2
 {{end}}
       type: {{ if .managedCluster.aws.master }}{{ default "m5.xlarge" .managedCluster.aws.master.type }}{{ else }}m5.xlarge{{end}}
 compute:
@@ -24,11 +34,21 @@ compute:
   platform:
     aws:
 {{ if .managedCluster.aws.worker }}
-      rootVolume:
 {{ if .managedCluster.aws.worker.rootVolume }}
+      rootVolume:
 {{ toYaml .managedCluster.aws.worker.rootVolume | indent 8}}
-{{end}}
-{{end}}
+{{ else }}
+      rootVolume: # see below the default values 
+        iops: 2000
+        size: 100
+        type: gp2
+{{ end }}
+{{ else }}
+      rootVolume: # see below the default values 
+        iops: 2000
+        size: 100
+        type: gp2
+{{ end }}
       type: {{ if .managedCluster.aws.worker }}{{ default "m5.xlarge" .managedCluster.aws.worker.type }}{{ else }}m5.xlarge{{end}}
 networking:
   clusterNetwork:

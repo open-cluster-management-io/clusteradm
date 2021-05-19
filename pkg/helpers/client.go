@@ -13,5 +13,6 @@ func GetControllerRuntimeClientFromFlags(configFlags *genericclioptions.ConfigFl
 	if err != nil {
 		return nil, err
 	}
+	config.QPS = 20
 	return crclient.New(config, crclient.Options{})
 }

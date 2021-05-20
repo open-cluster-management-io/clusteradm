@@ -18,7 +18,7 @@ var testDir = filepath.Join("..", "..", "..", "test", "unit")
 var testDirTmp = filepath.Join(testDir, "tmp")
 
 func TestResources_Asset(t *testing.T) {
-	asset := "embed_test/detach/hub/managed_cluster_cr.yaml"
+	asset := "embed_test/namespace.yaml"
 	basset, errFile := ioutil.ReadFile(asset)
 	if errFile != nil {
 		t.Error(errFile)
@@ -37,7 +37,7 @@ func TestResources_Asset(t *testing.T) {
 			name: "Existing asset",
 			b:    NewApplierScenarioResourcesReader(&files),
 			args: args{
-				name: "embed_test/detach/hub/managed_cluster_cr.yaml",
+				name: "embed_test/namespace.yaml",
 			},
 			want:    basset,
 			wantErr: false,

@@ -1,7 +1,0 @@
-# Copyright Contributors to the Open Cluster Management project
-
-apiVersion: hive.openshift.io/v1
-kind: ClusterDeployment
-metadata:
-  name: "{{ .managedCluster.name }}"
-  namespace: "{{ .managedCluster.name }}"

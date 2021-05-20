@@ -18,7 +18,7 @@ import (
 
 func main() {
 	streams := genericclioptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr}
-	root := NewRootCMD("clusteradm", streams)
+	root, _ := NewRootCmd("clusteradm", streams)
 	if err := root.Execute(); err != nil {
 		os.Exit(1)
 	}

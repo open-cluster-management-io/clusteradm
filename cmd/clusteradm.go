@@ -24,13 +24,13 @@ func main() {
 	}
 }
 
-func NewRootCMD(parent string, streams genericclioptions.IOStreams) *cobra.Command {
+func NewRootCmd(parent string, streams genericclioptions.IOStreams) (*cobra.Command, cmdutil.Factory) {
 
 	configFlags := genericclioptions.NewConfigFlags(true).WithDeprecatedPasswordFlag()
 	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
 	f := cmdutil.NewFactory(matchVersionKubeConfigFlags)
 
-	root := newCmdCMVerbs(parent, f, streams)
+	root := newCmdVerbs(parent, f, streams)
 
 	flags := root.PersistentFlags()
 	matchVersionKubeConfigFlags.AddFlags(flags)
@@ -43,11 +43,11 @@ func NewRootCMD(parent string, streams genericclioptions.IOStreams) *cobra.Comma
 	configFlags.AddFlags(flags)
 	root.AddCommand(cmdconfig.NewCmdConfig(f, clientcmd.NewDefaultPathOptions(), streams))
 	root.AddCommand(options.NewCmdOptions(streams.Out))
-	return root
+	return root, f
 }
 
 // NewCmdNamespace provides a cobra command wrapping NamespaceOptions
-func newCmdCMVerbs(parent string, f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
+func newCmdVerbs(parent string, f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{Use: parent}
 	cmd.AddCommand(
 		verbs.NewVerb(parent, "get", f, streams),

@@ -1,5 +1,5 @@
 [comment]: # ( Copyright Contributors to the Open Cluster Management project )
-# clusteeradm CLI & CLI Plugin
+# clusteradm CLI & CLI Plugin
 
 A CLI and kubernetes CLI plugin that allows you to interact with OCM/ACM to provision and managed your Hybrid Cloud presence from the command-line.
 
@@ -9,11 +9,11 @@ Go 1.16 is required in order to build or contribute on this project as it levera
 
 ## Installation
 
-The binary will be installed in GOPATH/bin
+The binary will be installed in `$GOPATH/bin`
 ### CLI
 
 ```bash
-git clone https://open-cluster-management.io/clusteradm.git
+git clone https://open-cluster-management-io/clusteradm.git
 cd clusteradmin
 make build
 cm
@@ -23,7 +23,7 @@ cm
 
 This will create a binary `oc-clusteradm` and `kubectl-clusteradm` in the `$GOPATH/go/bin` allowing you to call `oc clusteradm` or `kubectl clusteradm`
 ```bash
-git clone https://open-cluster-management.io/clusteradm.git
+git clone https://open-cluster-management-io/clusteradm.git
 cd clusteradm
 make plugin
 kubectl clusteradm

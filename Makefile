@@ -32,7 +32,7 @@ install: build
 .PHONY: plugin
 plugin: build
 	cp ${GOPATH}/bin/clusteradm ${GOPATH}/bin/oc-clusteradm
-	cp ${GOPATH}/bin/clusteradm${GOPATH}/bin/kubectl-clusteradm
+	cp ${GOPATH}/bin/clusteradm ${GOPATH}/bin/kubectl-clusteradm
 
 .PHONY: check
 ## Runs a set of required checks

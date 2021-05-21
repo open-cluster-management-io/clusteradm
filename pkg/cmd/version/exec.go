@@ -25,7 +25,7 @@ func (o *Options) validate() error {
 	return nil
 }
 func (o *Options) run() (err error) {
-	fmt.Printf("client\t\tversion: %s\n", clusteradm.GetVersion())
+	fmt.Printf("client\t\tversion\t:%s\n", clusteradm.GetVersion())
 	client, err := helpers.GetControllerRuntimeClientFromFlags(o.ConfigFlags)
 	if err != nil {
 		return err
@@ -46,9 +46,9 @@ func (o *Options) runWithClient(client crclient.Client) (err error) {
 		return fmt.Errorf("found more than one configmap with labelset %v", ls)
 	}
 	if v, ok := cms.Items[0].Labels["ocm-release-version"]; ok {
-		fmt.Printf("ocm release\tversion: %s\n", v)
+		fmt.Printf("server release\tversion\t:%s\n", v)
 	} else {
-		fmt.Printf("ocm release\tversion: not found")
+		fmt.Printf("server release\tversion\t: not found")
 	}
 	ns := cms.Items[0].Namespace
 	acmRegistryDeployment := &apps.Deployment{}
@@ -58,7 +58,7 @@ func (o *Options) runWithClient(client crclient.Client) (err error) {
 	}
 	for _, c := range acmRegistryDeployment.Spec.Template.Spec.Containers {
 		if strings.Contains(c.Image, "acm-custom-registry") {
-			fmt.Printf("ocm image\tversion: %s\n", strings.Split(c.Image, ":")[1])
+			fmt.Printf("server image\ttag\t:%s\n", strings.Split(c.Image, ":")[1])
 			break
 		}
 	}

@@ -13,7 +13,7 @@ The binary will be installed in GOPATH/bin
 ### CLI
 
 ```bash
-git clone https://github.com/open-cluster-management-io/clusteradm.git
+git clone https://open-cluster-management.io/clusteradm.git
 cd clusteradmin
 make build
 cm
@@ -23,7 +23,7 @@ cm
 
 This will create a binary `oc-clusteradm` and `kubectl-clusteradm` in the `$GOPATH/go/bin` allowing you to call `oc clusteradm` or `kubectl clusteradm`
 ```bash
-git clone https://github.com/open-cluster-management-io/clusteradm.git
+git clone https://open-cluster-management.io/clusteradm.git
 cd clusteradm
 make plugin
 kubectl clusteradm

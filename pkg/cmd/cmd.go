@@ -3,7 +3,6 @@
 package cmd
 
 import (
-	"github.com/open-cluster-management-io/clusteradm/pkg/cmd/verbs"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/tools/clientcmd"
@@ -11,6 +10,7 @@ import (
 	cmdconfig "k8s.io/kubectl/pkg/cmd/config"
 	"k8s.io/kubectl/pkg/cmd/options"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+	"open-cluster-management.io/clusteradm/pkg/cmd/verbs"
 )
 
 func NewRootCmd(parent string, streams genericclioptions.IOStreams) (*cobra.Command, cmdutil.Factory) {

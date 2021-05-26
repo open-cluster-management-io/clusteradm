@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 )
 
 var example = `
@@ -16,8 +17,8 @@ var example = `
 `
 
 // NewCmd provides a cobra command wrapping NewCmdImportCluster
-func NewCmd(streams genericclioptions.IOStreams) *cobra.Command {
-	o := newOptions(streams)
+func NewCmd(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
+	o := newOptions(f, streams)
 	cmd := &cobra.Command{
 		Use:          "version",
 		Short:        "get the versions of the different components",

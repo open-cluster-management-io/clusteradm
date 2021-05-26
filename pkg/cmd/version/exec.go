@@ -45,22 +45,35 @@ func (o *Options) runWithClient(client crclient.Client) (err error) {
 	if len(cms.Items) > 1 {
 		return fmt.Errorf("found more than one configmap with labelset %v", ls)
 	}
-	if v, ok := cms.Items[0].Labels["ocm-release-version"]; ok {
-		fmt.Printf("server release\tversion\t:%s\n", v)
-	} else {
-		fmt.Printf("server release\tversion\t: not found")
-	}
-	ns := cms.Items[0].Namespace
-	acmRegistryDeployment := &apps.Deployment{}
-	err = client.Get(context.TODO(), crclient.ObjectKey{Name: "acm-custom-registry", Namespace: ns}, acmRegistryDeployment)
-	if err != nil {
-		return nil
-	}
-	for _, c := range acmRegistryDeployment.Spec.Template.Spec.Containers {
-		if strings.Contains(c.Image, "acm-custom-registry") {
-			fmt.Printf("server image\ttag\t:%s\n", strings.Split(c.Image, ":")[1])
-			break
+	//ACM environment
+	if len(cms.Items) != 0 {
+		if v, ok := cms.Items[0].Labels["ocm-release-version"]; ok {
+			fmt.Printf("server release\tversion\t:%s\n", v)
+		} else {
+			fmt.Printf("server release\tversion\t: not found")
 		}
+		ns := cms.Items[0].Namespace
+		acmRegistryDeployment := &apps.Deployment{}
+		err = client.Get(context.TODO(), crclient.ObjectKey{Name: "acm-custom-registry", Namespace: ns}, acmRegistryDeployment)
+		if err != nil {
+			return nil
+		}
+		for _, c := range acmRegistryDeployment.Spec.Template.Spec.Containers {
+			if strings.Contains(c.Image, "acm-custom-registry") {
+				fmt.Printf("server image\ttag\t:%s\n", strings.Split(c.Image, ":")[1])
+				break
+			}
+		}
+	} else {
+		discoveryClient, err := o.factory.ToDiscoveryClient()
+		if err != nil {
+			return err
+		}
+		serverVersion, err := discoveryClient.ServerVersion()
+		if err != nil {
+			return err
+		}
+		fmt.Printf("server release\tversion\t:%s\n", serverVersion.GitVersion)
 	}
 	return nil
 }

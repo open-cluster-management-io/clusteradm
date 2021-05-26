@@ -11,7 +11,7 @@ import (
 )
 
 func NewVerbVersion(verb string, f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
-	cmd := version.NewCmd(streams)
+	cmd := version.NewCmd(f, streams)
 
 	return cmd
 }

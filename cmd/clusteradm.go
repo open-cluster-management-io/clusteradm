@@ -50,7 +50,6 @@ func main() {
 func newCmdVerbs(parent string, f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{Use: parent}
 	cmd.AddCommand(
-		verbs.NewVerbGet("get", f, streams),
 		verbs.NewVerbVersion("version", f, streams),
 	)
 

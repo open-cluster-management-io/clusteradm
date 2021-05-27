@@ -1,7 +1,7 @@
 [comment]: # ( Copyright Contributors to the Open Cluster Management project )
 # clusteradm CLI & CLI Plugin
 
-A CLI and kubernetes CLI plugin that allows you to interact with open-cluster-management to provision and managed your Hybrid Cloud presence from the command-line.
+A CLI and kubernetes CLI plugin that allows you to interact with open-cluster-management to manage your Hybrid Cloud presence from the command-line.
 
 ## Requirements
 

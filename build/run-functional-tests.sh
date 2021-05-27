@@ -16,11 +16,11 @@ kind create cluster --name ${CLUSTER_NAME}
 #Wait for cluster to setup
 sleep 10
 
-echo "Test clusteradm get secret"
-clusteradm get secret -n default
+echo "Test clusteradm version"
+clusteradm version
 if [ $? != 0 ]
 then
-   ERROR_REPORT=$ERROR_REPORT+"clusteradm get secret -n default failed\n"
+   ERROR_REPORT=$ERROR_REPORT+"clusteradm version failed\n"
 fi
 
 if [ -z "$ERROR_REPORT" ]

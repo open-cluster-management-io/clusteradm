@@ -1,9 +1,11 @@
 // Copyright Contributors to the Open Cluster Management project
-package version
+package hub
 
 import (
 	"fmt"
+	"path/filepath"
 
+	"open-cluster-management.io/clusteradm/pkg/cmd/init/hub/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 
 	"github.com/spf13/cobra"
@@ -12,16 +14,23 @@ import (
 )
 
 var example = `
-# Version
-%[1]s version
+# Init hub
+%[1]s init hub
 `
 
-// NewCmd provides a cobra command wrapping NewCmdImportCluster
+const (
+	scenarioDirectory = "init"
+)
+
+var valuesTemplatePath = filepath.Join(scenarioDirectory, "values-template.yaml")
+
+// NewCmd ...
 func NewCmd(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
 	o := newOptions(f, streams)
+
 	cmd := &cobra.Command{
-		Use:          "version",
-		Short:        "get the versions of the different components",
+		Use:          "hub",
+		Short:        "init hub",
 		Example:      fmt.Sprintf(example, helpers.GetExampleHeader()),
 		SilenceUsage: true,
 		RunE: func(c *cobra.Command, args []string) error {
@@ -38,6 +47,8 @@ func NewCmd(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Comma
 			return nil
 		},
 	}
+
+	cmd.SetUsageTemplate(helpers.UsageTempate(cmd, scenario.GetScenarioResourcesReader(), valuesTemplatePath))
 
 	return cmd
 }

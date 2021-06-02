@@ -36,7 +36,7 @@ else
    echo $CMDINITRESULT
 fi
 
-CMDJOIN=`echo $CMDINITRESULT | cut -d ':' -f2 -f3 -f4 | cut -d '<' -f1`
+CMDJOIN=`echo $CMDINITRESULT | cut -d ':' -f2,3,4 | cut -d '<' -f1`
 CMDJOIN="$CMDJOIN c1"
 echo "Join command: "$CMDJOIN
 kubectl config use-context kind-${CLUSTER_NAME}-spoke

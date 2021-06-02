@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/client-go/discovery"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -69,21 +70,16 @@ func (o *Options) run() error {
 	if err != nil {
 		return err
 	}
-	err = helpers.ApplyCustomResouces(dynamicClient, reader, scenarioDirectory, o.values, "init/clustermanagers.cr.yaml")
+	discoveryClient := discovery.NewDiscoveryClientForConfigOrDie(restConfig)
+	err = helpers.ApplyCustomResouces(dynamicClient, discoveryClient, reader, scenarioDirectory, o.values, "init/clustermanagers.cr.yaml")
 	if err != nil {
 		return err
 	}
 
-	apiServerInternal, err := helpers.GetAPIServer(kubeClient)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("login into the cluster and run: %s join --hub-token %s.%s --hub-server %s [--hub-server-internal %s] --name <cluster_name>\n",
+	fmt.Printf("login into the cluster and run: %s join --hub-token %s.%s --hub-apiserver %s --cluster-name <cluster_name>\n",
 		helpers.GetExampleHeader(),
 		o.values.Hub.TokenID,
 		o.values.Hub.TokenSecret,
-		apiServerInternal,
 		restConfig.Host,
 	)
 

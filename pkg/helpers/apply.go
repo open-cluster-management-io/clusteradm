@@ -9,14 +9,18 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/restmapper"
 	"k8s.io/klog"
 
 	"github.com/openshift/library-go/pkg/operator/events"
@@ -75,11 +79,11 @@ func ApplyDirectly(clients *resourceapply.ClientHolder,
 }
 
 func ApplyCustomResouces(client dynamic.Interface,
+	discoveryClient discovery.DiscoveryInterface,
 	reader ScenarioReader,
 	templateName string,
 	values interface{},
 	files ...string) error {
-	// recorder := events.NewInMemoryRecorder(GetExampleHeader())
 	for _, name := range files {
 		asset, err := mustTempalteAsset(name, templateName, reader, values)
 		if err != nil {
@@ -94,17 +98,27 @@ func ApplyCustomResouces(client dynamic.Interface,
 			return err
 		}
 		gvk := gvks[0]
-		resource, err := getResource(u.GetKind())
+		mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(discoveryClient))
+		mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 		if err != nil {
 			return err
 		}
-		dr := client.Resource(gvk.GroupVersion().WithResource(resource))
-		if u.GetNamespace() != "" {
-			_, err = dr.Namespace(u.GetNamespace()).
-				Create(context.TODO(), u, metav1.CreateOptions{})
+		// resource, err := getResource(u.GetKind())
+		// if err != nil {
+		// 	return err
+		// }
+		// dr := client.Resource(gvk.GroupVersion().WithResource(resource))
+		dr := client.Resource(mapping.Resource)
+		ug, err := dr.Namespace(u.GetNamespace()).Get(context.TODO(), u.GetName(), metav1.GetOptions{})
+		if err != nil {
+			if errors.IsNotFound(err) {
+				_, err = dr.Namespace(u.GetNamespace()).
+					Create(context.TODO(), u, metav1.CreateOptions{})
+			}
 		} else {
-			_, err = dr.
-				Create(context.TODO(), u, metav1.CreateOptions{})
+			u.SetResourceVersion(ug.GetResourceVersion())
+			_, err = dr.Namespace(u.GetNamespace()).
+				Update(context.TODO(), u, metav1.UpdateOptions{})
 		}
 		if err != nil {
 			return err

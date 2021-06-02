@@ -8,6 +8,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+	acceptclusters "open-cluster-management.io/clusteradm/pkg/cmd/accept"
 	inithub "open-cluster-management.io/clusteradm/pkg/cmd/init"
 	joinhub "open-cluster-management.io/clusteradm/pkg/cmd/join"
 )
@@ -24,4 +25,8 @@ func NewVerbInit(parent string, f cmdutil.Factory, streams genericclioptions.IOS
 
 func NewVerbJoin(parent string, f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
 	return joinhub.NewCmd(f, streams)
+}
+
+func NewVerbAccept(parent string, f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
+	return acceptclusters.NewCmd(f, streams)
 }

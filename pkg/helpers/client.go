@@ -50,9 +50,11 @@ func GetCACert(kubeClient kubernetes.Interface) ([]byte, error) {
 		cluster := clusters[0].Cluster
 		return cluster.CertificateAuthorityData, nil
 	}
+	fmt.Printf("Search for kube-root-ca.crt")
 	if errors.IsNotFound(err) {
 		cm, err := kubeClient.CoreV1().ConfigMaps("kube-public").Get(context.TODO(), "kube-root-ca.crt", metav1.GetOptions{})
 		if err != nil {
+			fmt.Printf("Failed to getkube-root-ca.crt")
 			return nil, err
 		}
 		return []byte(cm.Data["ca.crt"]), nil
@@ -63,6 +65,7 @@ func GetCACert(kubeClient kubernetes.Interface) ([]byte, error) {
 func getClusterInfoKubeConfig(kubeClient kubernetes.Interface) (*clientcmdapiv1.Config, error) {
 	cm, err := kubeClient.CoreV1().ConfigMaps("kube-public").Get(context.TODO(), "cluster-info", metav1.GetOptions{})
 	if err != nil {
+		fmt.Printf("Error cluster-info: %s", err)
 		return nil, err
 	}
 	config := &clientcmdapiv1.Config{}

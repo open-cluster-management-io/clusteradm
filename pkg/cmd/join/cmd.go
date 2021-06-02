@@ -3,9 +3,7 @@ package join
 
 import (
 	"fmt"
-	"path/filepath"
 
-	"open-cluster-management.io/clusteradm/pkg/cmd/join/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 
 	"github.com/spf13/cobra"
@@ -14,15 +12,13 @@ import (
 )
 
 var example = `
-# Init hub
-%[1]s join hub
+# Join a cluster to the hub
+%[1]s join --hub-token <tokenID.tokenSecret> --hub-apiserver <hub_apiserveR_url> --name <cluster_name>
 `
 
 const (
 	scenarioDirectory = "join"
 )
-
-var valuesTemplatePath = filepath.Join(scenarioDirectory, "values-template.yaml")
 
 // NewCmd ...
 func NewCmd(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
@@ -48,10 +44,8 @@ func NewCmd(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Comma
 		},
 	}
 
-	cmd.SetUsageTemplate(helpers.UsageTempate(cmd, scenario.GetScenarioResourcesReader(), valuesTemplatePath))
 	cmd.Flags().StringVar(&o.token, "hub-token", "", "The token to access the hub")
-	cmd.Flags().StringVar(&o.hubServerExternal, "hub-server", "", "The external api server url to the hub")
-	cmd.Flags().StringVar(&o.hubServerInternal, "hub-server-internal", "", "The internal api server url to the hub")
-	cmd.Flags().StringVar(&o.clusterName, "name", "", "The name of the joining cluster")
+	cmd.Flags().StringVar(&o.hubAPIServer, "hub-apiserver", "", "The api server url to the hub")
+	cmd.Flags().StringVar(&o.clusterName, "cluster-name", "", "The name of the joining cluster")
 	return cmd
 }

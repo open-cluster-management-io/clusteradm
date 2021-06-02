@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package init
+package accept
 
 import (
 	"fmt"
@@ -12,12 +12,12 @@ import (
 )
 
 var example = `
-# Init the hub
-%[1]s init
+# Accept clusters
+%[1]s accept --clusters <cluster_1>,<cluster_2>,...
 `
 
 const (
-	scenarioDirectory = "init"
+	scenarioDirectory = "accept"
 )
 
 // NewCmd ...
@@ -25,8 +25,8 @@ func NewCmd(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Comma
 	o := newOptions(f, streams)
 
 	cmd := &cobra.Command{
-		Use:          "init",
-		Short:        "init the hub",
+		Use:          "accept",
+		Short:        "accept a list of clusters",
 		Example:      fmt.Sprintf(example, helpers.GetExampleHeader()),
 		SilenceUsage: true,
 		RunE: func(c *cobra.Command, args []string) error {
@@ -43,6 +43,8 @@ func NewCmd(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Comma
 			return nil
 		},
 	}
+
+	cmd.Flags().StringVar(&o.clusters, "clusters", "", "Names of the cluster to accept (comma separated)")
 
 	return cmd
 }

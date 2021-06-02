@@ -1,11 +1,11 @@
 // Copyright Contributors to the Open Cluster Management project
-package hub
+package init
 
 import (
 	"fmt"
 	"path/filepath"
 
-	"open-cluster-management.io/clusteradm/pkg/cmd/init/hub/scenario"
+	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 
 	"github.com/spf13/cobra"
@@ -29,7 +29,7 @@ func NewCmd(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Comma
 	o := newOptions(f, streams)
 
 	cmd := &cobra.Command{
-		Use:          "hub",
+		Use:          "init",
 		Short:        "init hub",
 		Example:      fmt.Sprintf(example, helpers.GetExampleHeader()),
 		SilenceUsage: true,

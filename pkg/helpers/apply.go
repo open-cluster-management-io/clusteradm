@@ -3,19 +3,21 @@ package helpers
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strings"
 	"text/template"
 
 	"github.com/Masterminds/sprig"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
-	operatorapiv1 "open-cluster-management.io/api/operator/v1"
+	"k8s.io/klog"
 
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
@@ -29,73 +31,28 @@ var (
 
 func ApplyDeployment(
 	client kubernetes.Interface,
-	generationStatuses []operatorapiv1.GenerationStatus,
 	reader ScenarioReader,
 	templateName string,
-	values map[string]interface{},
-	name string) (operatorapiv1.GenerationStatus, error) {
-	// s := scheme.Scheme
-	// s.AddKnownTypes(appsv1.SchemeGroupVersion, &appsv1.Deployment{})
+	values interface{},
+	files ...string) error {
+	genericScheme.AddKnownTypes(appsv1.SchemeGroupVersion, &appsv1.Deployment{})
 	recorder := events.NewInMemoryRecorder(GetExampleHeader())
-	deploymentBytes, err := mustTempalteAsset(name, templateName, reader, values)
-	if err != nil {
-		return operatorapiv1.GenerationStatus{}, err
-	}
-	deployment, _, err := genericCodec.Decode(deploymentBytes, nil, nil)
-	if err != nil {
-		return operatorapiv1.GenerationStatus{}, fmt.Errorf("%q: %v", name, err)
-	}
-	generationStatus := NewGenerationStatus(appsv1.SchemeGroupVersion.WithResource("deployments"), deployment)
-	currentGenerationStatus := FindGenerationStatus(generationStatuses, generationStatus)
-
-	if currentGenerationStatus != nil {
-		generationStatus.LastGeneration = currentGenerationStatus.LastGeneration
-	}
-	updatedDeployment, updated, err := resourceapply.ApplyDeployment(
-		client.AppsV1(),
-		recorder,
-		deployment.(*appsv1.Deployment), generationStatus.LastGeneration)
-	if err != nil {
-		return generationStatus, fmt.Errorf("%q (%T): %v", name, deployment, err)
-	}
-
-	if updated {
-		generationStatus.LastGeneration = updatedDeployment.ObjectMeta.Generation
-	}
-
-	return generationStatus, nil
-}
-
-func NewGenerationStatus(gvr schema.GroupVersionResource, object runtime.Object) operatorapiv1.GenerationStatus {
-	accessor, _ := meta.Accessor(object)
-	return operatorapiv1.GenerationStatus{
-		Group:          gvr.Group,
-		Version:        gvr.Version,
-		Resource:       gvr.Resource,
-		Namespace:      accessor.GetNamespace(),
-		Name:           accessor.GetName(),
-		LastGeneration: accessor.GetGeneration(),
-	}
-}
-
-func FindGenerationStatus(generationStatuses []operatorapiv1.GenerationStatus, generation operatorapiv1.GenerationStatus) *operatorapiv1.GenerationStatus {
-	for i := range generationStatuses {
-		if generationStatuses[i].Group != generation.Group {
-			continue
+	for _, name := range files {
+		deploymentBytes, err := mustTempalteAsset(name, templateName, reader, values)
+		if err != nil {
+			return err
 		}
-		if generationStatuses[i].Resource != generation.Resource {
-			continue
+		deployment, sch, err := genericCodec.Decode(deploymentBytes, nil, nil)
+		if err != nil {
+			return fmt.Errorf("%q: %v %v", name, sch, err)
 		}
-		if generationStatuses[i].Version != generation.Version {
-			continue
+		_, _, err = resourceapply.ApplyDeployment(
+			client.AppsV1(),
+			recorder,
+			deployment.(*appsv1.Deployment), 0)
+		if err != nil {
+			return fmt.Errorf("%q (%T): %v", name, deployment, err)
 		}
-		if generationStatuses[i].Name != generation.Name {
-			continue
-		}
-		if generationStatuses[i].Namespace != generation.Namespace {
-			continue
-		}
-		return &generationStatuses[i]
 	}
 	return nil
 }
@@ -103,12 +60,85 @@ func FindGenerationStatus(generationStatuses []operatorapiv1.GenerationStatus, g
 func ApplyDirectly(clients *resourceapply.ClientHolder,
 	reader ScenarioReader,
 	templateName string,
-	values map[string]interface{},
-	files ...string) []resourceapply.ApplyResult {
+	values interface{},
+	files ...string) error {
 	recorder := events.NewInMemoryRecorder(GetExampleHeader())
-	return resourceapply.ApplyDirectly(clients, recorder, func(name string) ([]byte, error) {
+	resourceResults := resourceapply.ApplyDirectly(clients, recorder, func(name string) ([]byte, error) {
 		return mustTempalteAsset(name, templateName, reader, values)
 	}, files...)
+	for _, result := range resourceResults {
+		if result.Error != nil {
+			return fmt.Errorf("%q (%T): %v", result.File, result.Type, result.Error)
+		}
+	}
+	return nil
+}
+
+func ApplyCustomResouces(client dynamic.Interface,
+	reader ScenarioReader,
+	templateName string,
+	values interface{},
+	files ...string) error {
+	// recorder := events.NewInMemoryRecorder(GetExampleHeader())
+	for _, name := range files {
+		asset, err := mustTempalteAsset(name, templateName, reader, values)
+		if err != nil {
+			return err
+		}
+		u, err := bytesToUnstructured(reader, asset)
+		if err != nil {
+			return err
+		}
+		gvks, _, err := genericScheme.ObjectKinds(u)
+		if err != nil {
+			return err
+		}
+		gvk := gvks[0]
+		resource, err := getResource(u.GetKind())
+		if err != nil {
+			return err
+		}
+		dr := client.Resource(gvk.GroupVersion().WithResource(resource))
+		if u.GetNamespace() != "" {
+			_, err = dr.Namespace(u.GetNamespace()).
+				Create(context.TODO(), u, metav1.CreateOptions{})
+		} else {
+			_, err = dr.
+				Create(context.TODO(), u, metav1.CreateOptions{})
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func getResource(kind string) (string, error) {
+	switch kind {
+	case "ClusterManager":
+		return "clustermanagers", nil
+	case "Klusterlet":
+		return "klusterlets", nil
+	default:
+		return "", fmt.Errorf("kind: %s not supported", kind)
+	}
+}
+
+func bytesToUnstructured(reader ScenarioReader, asset []byte) (*unstructured.Unstructured, error) {
+	j, err := reader.ToJSON(asset)
+	if err != nil {
+		return nil, err
+	}
+	u := &unstructured.Unstructured{}
+	_, _, err = unstructured.UnstructuredJSONScheme.Decode(j, nil, u)
+	if err != nil {
+		klog.V(5).Infof("Error: %s", err)
+		//In case it is not a kube yaml
+		if !runtime.IsMissingKind(err) {
+			return nil, err
+		}
+	}
+	return u, nil
 }
 
 func getTemplate(templateName string) *template.Template {
@@ -120,9 +150,9 @@ func getTemplate(templateName string) *template.Template {
 	return tmpl
 }
 
-func mustTempalteAsset(file, templateName string, reader ScenarioReader, values map[string]interface{}) ([]byte, error) {
+func mustTempalteAsset(name, templateName string, reader ScenarioReader, values interface{}) ([]byte, error) {
 	tmpl := getTemplate(templateName)
-	b, err := reader.Asset(file)
+	b, err := reader.Asset(name)
 	if err != nil {
 		return nil, err
 	}

@@ -52,6 +52,7 @@ func newCmdVerbs(parent string, f cmdutil.Factory, streams genericclioptions.IOS
 	cmd.AddCommand(
 		verbs.NewVerbVersion("version", f, streams),
 		verbs.NewVerbInit("init", f, streams),
+		verbs.NewVerbJoin("join", f, streams),
 	)
 
 	return cmd

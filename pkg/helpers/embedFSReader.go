@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/ghodss/yaml"
 )
 
 type ScenarioReader interface {
@@ -16,6 +18,7 @@ type ScenarioReader interface {
 	//List all available assets in the data source
 	AssetNames(excluded []string) ([]string, error)
 	ExtractAssets(prefix, dir string, excluded []string) error
+	ToJSON(b []byte) ([]byte, error)
 }
 
 type ScenarioResourcesReader struct {
@@ -36,9 +39,9 @@ func (r *ScenarioResourcesReader) Asset(name string) ([]byte, error) {
 	return r.files.ReadFile(name)
 }
 
-func (b *ScenarioResourcesReader) AssetNames(excluded []string) ([]string, error) {
+func (r *ScenarioResourcesReader) AssetNames(excluded []string) ([]string, error) {
 	assetNames := make([]string, 0)
-	got, err := b.assetWalk(".")
+	got, err := r.assetWalk(".")
 	if err != nil {
 		return nil, err
 	}
@@ -122,4 +125,8 @@ func (r *ScenarioResourcesReader) ExtractAssets(prefix, dir string, exclusded []
 		}
 	}
 	return nil
+}
+
+func (r *ScenarioResourcesReader) ToJSON(b []byte) ([]byte, error) {
+	return yaml.YAMLToJSON(b)
 }

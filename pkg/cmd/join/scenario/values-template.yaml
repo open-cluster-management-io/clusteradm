@@ -1,0 +1,7 @@
+# Copyright Contributors to the Open Cluster Management project
+hub:
+  clusterName: cluster2
+  token: hifklm.abcdefghijklmnop
+  hubServerInternal:
+  hubServerExternal:
+

@@ -36,14 +36,14 @@ Anyone can comment on issues and submit reviews for pull requests. In order to b
 - The project tries to follow the following grammar for the commands:
 
 ```bash
-clusteradm <verb> <noun>
+clusteradm <verb> [<noun>]
 ```
 
 - A number of verbs are already defined in [verbs](pkg/cmd/verbs/verbs.go), if you would like to add a new verb or noun, please contact the [OWNERS](OWNERS).
 
 - The noun represents the object on which the verb applies.
 
-- Each pair (verb/noum) has its own package.
+- Each pair (verb/[noum]) has its own package.
 
 - Inside the package, the code is split in 3 files: The [cmd.go](pkg/cmd/version/cmd.go) which creates the cobra command, the [options.go](pkg/cmd/version/options.go) which defines the different option parameters for the command and the the [exec.go](pkg/cmd/version/exec.go) which contains the code to execute the command.
 

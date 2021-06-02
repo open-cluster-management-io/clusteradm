@@ -9,7 +9,6 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/tools/clientcmd"
 	cliflag "k8s.io/component-base/cli/flag"
-	kubectlcmd "k8s.io/kubectl/pkg/cmd"
 	cmdconfig "k8s.io/kubectl/pkg/cmd/config"
 	"k8s.io/kubectl/pkg/cmd/options"
 	"k8s.io/kubectl/pkg/cmd/plugin"
@@ -39,7 +38,6 @@ func main() {
 	//enable plugin functionality: all `os.Args[0]-<binary>` in the $PATH will be available for plugin
 	plugin.ValidPluginFilenamePrefixes = []string{os.Args[0]}
 	root.AddCommand(plugin.NewCmdPlugin(f, streams))
-	root.AddCommand(kubectlcmd.NewDefaultKubectlCommand())
 
 	if err := root.Execute(); err != nil {
 		os.Exit(1)

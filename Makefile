@@ -16,7 +16,8 @@ export GOPACKAGES   = $(shell go list ./... | grep -v /vendor | grep -v /build |
 
 .PHONY: clean
 clean: clean-test
-	kind delete cluster --name ${PROJECT_NAME}-functional-test
+	kind delete cluster --name ${PROJECT_NAME}-functional-test-hub
+	kind delete cluster --name ${PROJECT_NAME}-functional-test-spoke
 	
 .PHONY: deps
 deps:

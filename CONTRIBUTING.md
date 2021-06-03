@@ -55,13 +55,15 @@ clusteradm <verb> [<noun>]
 
 ## Client
 
-- The [helpers](pkg/helpers/client.go) package contains methods to get a client. For the time being only a `sigs.k8s.io/controller-runtime/pkg/client` is used as it is the one needed for the applier, but if you would like to use another client for other goals, please add the method to create client in that package. The most important to to get the config from:
+- The [main](cmd/clusteradm.go) provides a cmdutil.Factory which can be laverage to get different clients and also the *rest.Config. The factory can be passed to the cobra.Command and then save in the Options.
 
 ```Go
-config, err := configFlags.ToRESTConfig()
+	kubeClient, err := o.factory.KubernetesClientSet()
 ```
 
-as it uses also the parameters like `--server` or `--kubeconfig` to generate the client.
+```Go
+config, err := f.ToRESTConfig()
+```
 
 ## Unit tests
 

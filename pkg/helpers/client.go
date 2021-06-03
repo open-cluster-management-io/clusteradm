@@ -12,20 +12,7 @@ import (
 	"github.com/ghodss/yaml"
 	"k8s.io/client-go/kubernetes"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
-
-	crclient "sigs.k8s.io/controller-runtime/pkg/client"
-
-	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
-
-func GetControllerRuntimeClientFromFlags(configFlags *genericclioptions.ConfigFlags) (client crclient.Client, err error) {
-	config, err := configFlags.ToRESTConfig()
-	if err != nil {
-		return nil, err
-	}
-	config.QPS = 20
-	return crclient.New(config, crclient.Options{})
-}
 
 func GetAPIServer(kubeClient kubernetes.Interface) (string, error) {
 	config, err := getClusterInfoKubeConfig(kubeClient)

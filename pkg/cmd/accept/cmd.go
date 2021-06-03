@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package version
+package accept
 
 import (
 	"fmt"
@@ -12,16 +12,21 @@ import (
 )
 
 var example = `
-# Version
-%[1]s version
+# Accept clusters
+%[1]s accept --clusters <cluster_1>,<cluster_2>,...
 `
 
-// NewCmd provides a cobra command wrapping NewCmdImportCluster
+const (
+	scenarioDirectory = "accept"
+)
+
+// NewCmd ...
 func NewCmd(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
 	o := newOptions(f, streams)
+
 	cmd := &cobra.Command{
-		Use:          "version",
-		Short:        "get the versions of the different components",
+		Use:          "accept",
+		Short:        "accept a list of clusters",
 		Example:      fmt.Sprintf(example, helpers.GetExampleHeader()),
 		SilenceUsage: true,
 		RunE: func(c *cobra.Command, args []string) error {
@@ -38,6 +43,8 @@ func NewCmd(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Comma
 			return nil
 		},
 	}
+
+	cmd.Flags().StringVar(&o.clusters, "clusters", "", "Names of the cluster to accept (comma separated)")
 
 	return cmd
 }

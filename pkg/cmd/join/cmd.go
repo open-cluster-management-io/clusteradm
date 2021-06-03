@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package version
+package join
 
 import (
 	"fmt"
@@ -12,16 +12,21 @@ import (
 )
 
 var example = `
-# Version
-%[1]s version
+# Join a cluster to the hub
+%[1]s join --hub-token <tokenID.tokenSecret> --hub-apiserver <hub_apiserveR_url> --name <cluster_name>
 `
 
-// NewCmd provides a cobra command wrapping NewCmdImportCluster
+const (
+	scenarioDirectory = "join"
+)
+
+// NewCmd ...
 func NewCmd(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
 	o := newOptions(f, streams)
+
 	cmd := &cobra.Command{
-		Use:          "version",
-		Short:        "get the versions of the different components",
+		Use:          "join",
+		Short:        "join a hub",
 		Example:      fmt.Sprintf(example, helpers.GetExampleHeader()),
 		SilenceUsage: true,
 		RunE: func(c *cobra.Command, args []string) error {
@@ -39,5 +44,8 @@ func NewCmd(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Comma
 		},
 	}
 
+	cmd.Flags().StringVar(&o.token, "hub-token", "", "The token to access the hub")
+	cmd.Flags().StringVar(&o.hubAPIServer, "hub-apiserver", "", "The api server url to the hub")
+	cmd.Flags().StringVar(&o.clusterName, "cluster-name", "", "The name of the joining cluster")
 	return cmd
 }

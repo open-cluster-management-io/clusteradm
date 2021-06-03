@@ -28,4 +28,28 @@ The commands are composed of a verb and a noun and then a number of parameters.
 
 ### version
 
+Display the clusteradm version and the kubeversion
+
 `clusteradm version`
+
+### init
+
+Initialize the hub by deploying the hub side resources to manage clusters.
+
+`clusteradm init`
+
+it returns the command line to launch on the spoke to join the hub.
+
+### join
+
+Install the agent on the spoke.
+
+`clusteradm join --hub-token <token> --hub-apiserver <hub_apiserver_url> --cluster_name c1`
+
+it returns the command line to launch on the hub the accept the spoke onboarding.
+
+### accept
+
+Accept the CSRs on the hub to approve the spoke clusters to join the hub.
+
+`clustardm accept --clusters <cluster1>, <cluster2>,....`

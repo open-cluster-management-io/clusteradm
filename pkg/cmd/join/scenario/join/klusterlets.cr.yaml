@@ -1,0 +1,12 @@
+# Copyright Contributors to the Open Cluster Management project
+apiVersion: operator.open-cluster-management.io/v1
+kind: Klusterlet
+metadata:
+  name: klusterlet
+spec:
+  registrationImagePullSpec: quay.io/open-cluster-management/registration
+  workImagePullSpec: quay.io/open-cluster-management/work
+  clusterName: {{ .ClusterName }}
+  namespace: open-cluster-management-agent
+  externalServerURLs:
+  - url: {{ .Hub.APIServer }}

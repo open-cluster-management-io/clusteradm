@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package version
+package init
 
 import (
 	"fmt"
@@ -12,16 +12,21 @@ import (
 )
 
 var example = `
-# Version
-%[1]s version
+# Init the hub
+%[1]s init
 `
 
-// NewCmd provides a cobra command wrapping NewCmdImportCluster
+const (
+	scenarioDirectory = "init"
+)
+
+// NewCmd ...
 func NewCmd(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
 	o := newOptions(f, streams)
+
 	cmd := &cobra.Command{
-		Use:          "version",
-		Short:        "get the versions of the different components",
+		Use:          "init",
+		Short:        "init the hub",
 		Example:      fmt.Sprintf(example, helpers.GetExampleHeader()),
 		SilenceUsage: true,
 		RunE: func(c *cobra.Command, args []string) error {

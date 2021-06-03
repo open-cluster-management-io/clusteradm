@@ -174,7 +174,7 @@ func (o *Options) createKubeConfig(externalClientUnSecure *kubernetes.Clientset,
 	bootstrapExternalConfigUnSecure clientcmdapiv1.Config) (string, error) {
 	ca, err := helpers.GetCACert(externalClientUnSecure)
 	if err != nil {
-		fmt.Printf("Failed to get CA")
+		// fmt.Printf("Failed to get CA")
 		return "", err
 	}
 
@@ -183,7 +183,7 @@ func (o *Options) createKubeConfig(externalClientUnSecure *kubernetes.Clientset,
 		if errors.IsNotFound(err) {
 			hubAPIServerInternal = o.hubAPIServer
 		} else {
-			fmt.Printf("Failed to GetAPIServer")
+			// fmt.Printf("Failed to GetAPIServer")
 			return "", err
 		}
 	}

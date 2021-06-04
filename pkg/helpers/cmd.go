@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"open-cluster-management.io/clusteradm/pkg/helpers/asset"
 )
 
 func GetExampleHeader() string {
@@ -20,7 +21,7 @@ func GetExampleHeader() string {
 	}
 }
 
-func UsageTempate(cmd *cobra.Command, reader ScenarioReader, valuesTemplatePath string) string {
+func UsageTempate(cmd *cobra.Command, reader asset.ScenarioReader, valuesTemplatePath string) string {
 	baseUsage := cmd.UsageTemplate()
 	b, err := reader.Asset(valuesTemplatePath)
 	if err != nil {

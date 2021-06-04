@@ -1,16 +1,19 @@
 // Copyright Contributors to the Open Cluster Management project
-package helpers
+package apply
 
 import (
 	"bytes"
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"text/template"
 
 	"github.com/Masterminds/sprig"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"open-cluster-management.io/clusteradm/pkg/helpers"
+	"open-cluster-management.io/clusteradm/pkg/helpers/asset"
 
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -27,6 +30,10 @@ import (
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 )
 
+const (
+	ErrorEmptyAssetAfterTemplating = "ERROR_EMPTY_ASSET_AFTER_TEMPLATING"
+)
+
 var (
 	genericScheme = runtime.NewScheme()
 	genericCodecs = serializer.NewCodecFactory(genericScheme)
@@ -35,15 +42,18 @@ var (
 
 func ApplyDeployment(
 	client kubernetes.Interface,
-	reader ScenarioReader,
-	templateName string,
+	reader asset.ScenarioReader,
 	values interface{},
+	headerFile string,
 	files ...string) error {
 	genericScheme.AddKnownTypes(appsv1.SchemeGroupVersion, &appsv1.Deployment{})
-	recorder := events.NewInMemoryRecorder(GetExampleHeader())
+	recorder := events.NewInMemoryRecorder(helpers.GetExampleHeader())
 	for _, name := range files {
-		deploymentBytes, err := MustTempalteAsset(name, templateName, reader, values)
+		deploymentBytes, err := MustTempalteAsset(name, headerFile, reader, values)
 		if err != nil {
+			if IsEmptyAsset(err) {
+				continue
+			}
 			return err
 		}
 		deployment, sch, err := genericCodec.Decode(deploymentBytes, nil, nil)
@@ -62,16 +72,16 @@ func ApplyDeployment(
 }
 
 func ApplyDirectly(clients *resourceapply.ClientHolder,
-	reader ScenarioReader,
-	templateName string,
+	reader asset.ScenarioReader,
 	values interface{},
+	headerFile string,
 	files ...string) error {
-	recorder := events.NewInMemoryRecorder(GetExampleHeader())
+	recorder := events.NewInMemoryRecorder(helpers.GetExampleHeader())
 	resourceResults := resourceapply.ApplyDirectly(clients, recorder, func(name string) ([]byte, error) {
-		return MustTempalteAsset(name, templateName, reader, values)
+		return MustTempalteAsset(name, headerFile, reader, values)
 	}, files...)
 	for _, result := range resourceResults {
-		if result.Error != nil {
+		if result.Error != nil && !IsEmptyAsset(result.Error) {
 			return fmt.Errorf("%q (%T): %v", result.File, result.Type, result.Error)
 		}
 	}
@@ -80,13 +90,16 @@ func ApplyDirectly(clients *resourceapply.ClientHolder,
 
 func ApplyCustomResouces(client dynamic.Interface,
 	discoveryClient discovery.DiscoveryInterface,
-	reader ScenarioReader,
-	templateName string,
+	reader asset.ScenarioReader,
 	values interface{},
+	headerFile string,
 	files ...string) error {
 	for _, name := range files {
-		asset, err := MustTempalteAsset(name, templateName, reader, values)
+		asset, err := MustTempalteAsset(name, headerFile, reader, values)
 		if err != nil {
+			if IsEmptyAsset(err) {
+				continue
+			}
 			return err
 		}
 		u, err := bytesToUnstructured(reader, asset)
@@ -122,18 +135,7 @@ func ApplyCustomResouces(client dynamic.Interface,
 	return nil
 }
 
-func getResource(kind string) (string, error) {
-	switch kind {
-	case "ClusterManager":
-		return "clustermanagers", nil
-	case "Klusterlet":
-		return "klusterlets", nil
-	default:
-		return "", fmt.Errorf("kind: %s not supported", kind)
-	}
-}
-
-func bytesToUnstructured(reader ScenarioReader, asset []byte) (*unstructured.Unstructured, error) {
+func bytesToUnstructured(reader asset.ScenarioReader, asset []byte) (*unstructured.Unstructured, error) {
 	j, err := reader.ToJSON(asset)
 	if err != nil {
 		return nil, err
@@ -159,8 +161,18 @@ func getTemplate(templateName string) *template.Template {
 	return tmpl
 }
 
-func MustTempalteAsset(name, templateName string, reader ScenarioReader, values interface{}) ([]byte, error) {
-	tmpl := getTemplate(templateName)
+//MustTempalteAsset generates textual output for an file name.
+//If a headerFile is specified it will be added as a header of the file.
+func MustTempalteAsset(name, headerFile string, reader asset.ScenarioReader, values interface{}) ([]byte, error) {
+	tmpl := getTemplate(name)
+	h := []byte{}
+	var err error
+	if headerFile != "" {
+		h, err = reader.Asset(headerFile)
+		if err != nil {
+			return nil, err
+		}
+	}
 	b, err := reader.Asset(name)
 	if err != nil {
 		return nil, err
@@ -170,17 +182,34 @@ func MustTempalteAsset(name, templateName string, reader ScenarioReader, values 
 	if err != nil {
 		return nil, err
 	}
+	tmplParsed, err = tmplParsed.Parse(string(h))
+	if err != nil {
+		return nil, err
+	}
 
 	err = tmplParsed.Execute(&buf, values)
 	if err != nil {
 		return nil, err
 	}
 
-	// recorder.Eventf("templated:\n%s\n---", buf.String())
-	trim := strings.TrimSuffix(buf.String(), "\n")
-	trim = strings.TrimSpace(trim)
-	if len(trim) == 0 {
-		return nil, nil
+	if isEmpty(buf.Bytes()) {
+		return nil, fmt.Errorf("asset %s becomes %s", name, ErrorEmptyAssetAfterTemplating)
 	}
+
 	return buf.Bytes(), nil
+}
+
+func isEmpty(body []byte) bool {
+	//Remove comments
+	re := regexp.MustCompile("#.*")
+	bodyNoComment := re.ReplaceAll(body, nil)
+	//Remove blank lines
+	trim := strings.TrimSuffix(string(bodyNoComment), "\n")
+	trim = strings.TrimSpace(trim)
+
+	return len(trim) == 0
+}
+
+func IsEmptyAsset(err error) bool {
+	return strings.Contains(err.Error(), ErrorEmptyAssetAfterTemplating)
 }

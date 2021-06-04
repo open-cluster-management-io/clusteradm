@@ -3,10 +3,12 @@ package init
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
+	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 
 	"github.com/spf13/cobra"
 
@@ -61,17 +63,21 @@ func (o *Options) run() error {
 		"init/service_account.yaml",
 	}
 
-	err = helpers.ApplyDirectly(clientHolder, reader, scenarioDirectory, o.values, files...)
+	err = apply.ApplyDirectly(clientHolder, reader, o.values, "", files...)
 	if err != nil {
 		return err
 	}
 
-	err = helpers.ApplyDeployment(kubeClient, reader, scenarioDirectory, o.values, "init/operator.yaml")
+	err = apply.ApplyDeployment(kubeClient, reader, o.values, "", "init/operator.yaml")
 	if err != nil {
 		return err
 	}
+	//quick fix for https://github.com/open-cluster-management-io/clusteradm/issues/12
+	fmt.Printf("Wait 10 sec... for the crd to be effective\n")
+	time.Sleep(10 * time.Second)
+
 	discoveryClient := discovery.NewDiscoveryClientForConfigOrDie(restConfig)
-	err = helpers.ApplyCustomResouces(dynamicClient, discoveryClient, reader, scenarioDirectory, o.values, "init/clustermanagers.cr.yaml")
+	err = apply.ApplyCustomResouces(dynamicClient, discoveryClient, reader, o.values, "", "init/clustermanagers.cr.yaml")
 	if err != nil {
 		return err
 	}

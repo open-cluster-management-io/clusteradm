@@ -4,12 +4,12 @@ package scenario
 import (
 	"embed"
 
-	"open-cluster-management.io/clusteradm/pkg/helpers"
+	"open-cluster-management.io/clusteradm/pkg/helpers/asset"
 )
 
 //go:embed join
 var files embed.FS
 
-func GetScenarioResourcesReader() *helpers.ScenarioResourcesReader {
-	return helpers.NewScenarioResourcesReader(&files)
+func GetScenarioResourcesReader() *asset.ScenarioResourcesReader {
+	return asset.NewScenarioResourcesReader(&files)
 }

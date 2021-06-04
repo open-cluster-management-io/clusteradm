@@ -16,10 +16,6 @@ var example = `
 %[1]s accept --clusters <cluster_1>,<cluster_2>,...
 `
 
-const (
-	scenarioDirectory = "accept"
-)
-
 // NewCmd ...
 func NewCmd(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
 	o := newOptions(f, streams)

@@ -1,0 +1,4 @@
+{{- define "myfunc" }}
+{{ $result := "hello" }}
+{{ $result }}
+{{- end }}

@@ -8,14 +8,12 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/kubernetes"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
-
-	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spf13/cobra"
 	certificatesv1 "k8s.io/api/certificates/v1"
+	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 )
 
 const (
@@ -48,24 +46,27 @@ func (o *Options) validate() error {
 }
 
 func (o *Options) run() error {
-	client, err := helpers.GetControllerRuntimeClientFromFlags(o.ConfigFlags)
+	kubeClient, err := o.factory.KubernetesClientSet()
 	if err != nil {
 		return err
 	}
-	return o.runWithClient(client)
+	restConfig, err := o.factory.ToRESTConfig()
+	if err != nil {
+		return err
+	}
+	clusterClient, err := clusterclientset.NewForConfig(restConfig)
+	if err != nil {
+		return err
+	}
+	return o.runWithClient(kubeClient, clusterClient)
 }
 
-func (o *Options) runWithClient(client crclient.Client) error {
+func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient *clusterclientset.Clientset) error {
 	for _, clusterName := range o.values.clusters {
 
-		csrs := &certificatesv1.CertificateSigningRequestList{}
-		ls := labels.SelectorFromSet(labels.Set{
-			clusterLabel: clusterName,
-		})
-		err := client.List(context.TODO(),
-			csrs,
-			&crclient.ListOptions{
-				LabelSelector: ls,
+		csrs, err := kubeClient.CertificatesV1().CertificateSigningRequests().List(context.TODO(),
+			metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("%v = %v", clusterLabel, clusterName),
 			})
 		if err != nil {
 			return err
@@ -130,24 +131,15 @@ func (o *Options) runWithClient(client crclient.Client) error {
 			fmt.Printf("no CSR to approve for cluster %s\n", clusterName)
 		}
 
-		mc := &unstructured.Unstructured{}
-		mc.SetKind("ManagedCluster")
-		mc.SetAPIVersion("cluster.open-cluster-management.io/v1")
-		err = client.Get(context.TODO(),
-			crclient.ObjectKey{
-				Name: clusterName,
-			},
-			mc)
+		mc, err := clusterClient.ClusterV1().ManagedClusters().Get(context.TODO(),
+			clusterName,
+			metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
-		spec := mc.Object["spec"].(map[string]interface{})
-		hubAcceptsClient, ok := spec["hubAcceptsClient"]
-		if !ok || !hubAcceptsClient.(bool) {
-			patch := crclient.MergeFrom(mc.DeepCopyObject())
-			spec["hubAcceptsClient"] = true
-
-			err = client.Patch(context.TODO(), mc, patch)
+		if !mc.Spec.HubAcceptsClient {
+			mc.Spec.HubAcceptsClient = true
+			_, err = clusterClient.ClusterV1().ManagedClusters().Update(context.TODO(), mc, metav1.UpdateOptions{})
 			if err != nil {
 				return err
 			}

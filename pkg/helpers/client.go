@@ -12,20 +12,7 @@ import (
 	"github.com/ghodss/yaml"
 	"k8s.io/client-go/kubernetes"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
-
-	crclient "sigs.k8s.io/controller-runtime/pkg/client"
-
-	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
-
-func GetControllerRuntimeClientFromFlags(configFlags *genericclioptions.ConfigFlags) (client crclient.Client, err error) {
-	config, err := configFlags.ToRESTConfig()
-	if err != nil {
-		return nil, err
-	}
-	config.QPS = 20
-	return crclient.New(config, crclient.Options{})
-}
 
 func GetAPIServer(kubeClient kubernetes.Interface) (string, error) {
 	config, err := getClusterInfoKubeConfig(kubeClient)
@@ -50,11 +37,9 @@ func GetCACert(kubeClient kubernetes.Interface) ([]byte, error) {
 		cluster := clusters[0].Cluster
 		return cluster.CertificateAuthorityData, nil
 	}
-	fmt.Printf("Search for kube-root-ca.crt")
 	if errors.IsNotFound(err) {
 		cm, err := kubeClient.CoreV1().ConfigMaps("kube-public").Get(context.TODO(), "kube-root-ca.crt", metav1.GetOptions{})
 		if err != nil {
-			fmt.Printf("Failed to getkube-root-ca.crt")
 			return nil, err
 		}
 		return []byte(cm.Data["ca.crt"]), nil
@@ -65,7 +50,6 @@ func GetCACert(kubeClient kubernetes.Interface) ([]byte, error) {
 func getClusterInfoKubeConfig(kubeClient kubernetes.Interface) (*clientcmdapiv1.Config, error) {
 	cm, err := kubeClient.CoreV1().ConfigMaps("kube-public").Get(context.TODO(), "cluster-info", metav1.GetOptions{})
 	if err != nil {
-		fmt.Printf("Error cluster-info: %s", err)
 		return nil, err
 	}
 	config := &clientcmdapiv1.Config{}

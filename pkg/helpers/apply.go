@@ -42,7 +42,7 @@ func ApplyDeployment(
 	genericScheme.AddKnownTypes(appsv1.SchemeGroupVersion, &appsv1.Deployment{})
 	recorder := events.NewInMemoryRecorder(GetExampleHeader())
 	for _, name := range files {
-		deploymentBytes, err := mustTempalteAsset(name, templateName, reader, values)
+		deploymentBytes, err := MustTempalteAsset(name, templateName, reader, values)
 		if err != nil {
 			return err
 		}
@@ -68,7 +68,7 @@ func ApplyDirectly(clients *resourceapply.ClientHolder,
 	files ...string) error {
 	recorder := events.NewInMemoryRecorder(GetExampleHeader())
 	resourceResults := resourceapply.ApplyDirectly(clients, recorder, func(name string) ([]byte, error) {
-		return mustTempalteAsset(name, templateName, reader, values)
+		return MustTempalteAsset(name, templateName, reader, values)
 	}, files...)
 	for _, result := range resourceResults {
 		if result.Error != nil {
@@ -85,7 +85,7 @@ func ApplyCustomResouces(client dynamic.Interface,
 	values interface{},
 	files ...string) error {
 	for _, name := range files {
-		asset, err := mustTempalteAsset(name, templateName, reader, values)
+		asset, err := MustTempalteAsset(name, templateName, reader, values)
 		if err != nil {
 			return err
 		}
@@ -103,11 +103,6 @@ func ApplyCustomResouces(client dynamic.Interface,
 		if err != nil {
 			return err
 		}
-		// resource, err := getResource(u.GetKind())
-		// if err != nil {
-		// 	return err
-		// }
-		// dr := client.Resource(gvk.GroupVersion().WithResource(resource))
 		dr := client.Resource(mapping.Resource)
 		ug, err := dr.Namespace(u.GetNamespace()).Get(context.TODO(), u.GetName(), metav1.GetOptions{})
 		if err != nil {
@@ -164,7 +159,7 @@ func getTemplate(templateName string) *template.Template {
 	return tmpl
 }
 
-func mustTempalteAsset(name, templateName string, reader ScenarioReader, values interface{}) ([]byte, error) {
+func MustTempalteAsset(name, templateName string, reader ScenarioReader, values interface{}) ([]byte, error) {
 	tmpl := getTemplate(templateName)
 	b, err := reader.Asset(name)
 	if err != nil {

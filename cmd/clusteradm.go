@@ -1,6 +1,6 @@
 // Copyright Contributors to the Open Cluster Management project
 
-package cmd
+package main
 
 import (
 	"os"
@@ -31,7 +31,6 @@ func main() {
 		&cobra.Command{
 			Use: "clusteradm",
 		}
-	// root := newCmdVerbs("clusteradm", f, streams)
 
 	flags := root.PersistentFlags()
 	matchVersionKubeConfigFlags.AddFlags(flags)

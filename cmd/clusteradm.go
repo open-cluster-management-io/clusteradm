@@ -1,6 +1,6 @@
 // Copyright Contributors to the Open Cluster Management project
 
-package main
+package cmd
 
 import (
 	"os"
@@ -13,7 +13,12 @@ import (
 	"k8s.io/kubectl/pkg/cmd/options"
 	"k8s.io/kubectl/pkg/cmd/plugin"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
-	"open-cluster-management.io/clusteradm/pkg/cmd/verbs"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
+	"open-cluster-management.io/clusteradm/pkg/cmd/version"
+
+	acceptclusters "open-cluster-management.io/clusteradm/pkg/cmd/accept"
+	inithub "open-cluster-management.io/clusteradm/pkg/cmd/init"
+	joinhub "open-cluster-management.io/clusteradm/pkg/cmd/join"
 )
 
 func main() {
@@ -22,7 +27,11 @@ func main() {
 	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
 	f := cmdutil.NewFactory(matchVersionKubeConfigFlags)
 
-	root := newCmdVerbs("clusteradm", f, streams)
+	root :=
+		&cobra.Command{
+			Use: "clusteradm",
+		}
+	// root := newCmdVerbs("clusteradm", f, streams)
 
 	flags := root.PersistentFlags()
 	matchVersionKubeConfigFlags.AddFlags(flags)
@@ -39,20 +48,24 @@ func main() {
 	plugin.ValidPluginFilenamePrefixes = []string{os.Args[0]}
 	root.AddCommand(plugin.NewCmdPlugin(f, streams))
 
+	groups := ktemplates.CommandGroups{
+		{
+			Message: "General commands:",
+			Commands: []*cobra.Command{
+				version.NewCmd(f, streams),
+			},
+		},
+		{
+			Message: "Registration commands:",
+			Commands: []*cobra.Command{
+				inithub.NewCmd(f, streams),
+				joinhub.NewCmd(f, streams),
+				acceptclusters.NewCmd(f, streams),
+			},
+		},
+	}
+	groups.Add(root)
 	if err := root.Execute(); err != nil {
 		os.Exit(1)
 	}
-}
-
-// NewCmdNamespace provides a cobra command wrapping NamespaceOptions
-func newCmdVerbs(parent string, f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
-	cmd := &cobra.Command{Use: parent}
-	cmd.AddCommand(
-		verbs.NewVerbVersion("version", f, streams),
-		verbs.NewVerbInit("init", f, streams),
-		verbs.NewVerbJoin("join", f, streams),
-		verbs.NewVerbAccept("accept", f, streams),
-	)
-
-	return cmd
 }

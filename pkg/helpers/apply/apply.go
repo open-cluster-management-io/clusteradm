@@ -1,16 +1,19 @@
 // Copyright Contributors to the Open Cluster Management project
-package helpers
+package apply
 
 import (
 	"bytes"
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"text/template"
 
 	"github.com/Masterminds/sprig"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"open-cluster-management.io/clusteradm/pkg/helpers"
+	"open-cluster-management.io/clusteradm/pkg/helpers/asset"
 
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -27,23 +30,32 @@ import (
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 )
 
+const (
+	ErrorEmptyAssetAfterTemplating = "ERROR_EMPTY_ASSET_AFTER_TEMPLATING"
+)
+
 var (
 	genericScheme = runtime.NewScheme()
 	genericCodecs = serializer.NewCodecFactory(genericScheme)
 	genericCodec  = genericCodecs.UniversalDeserializer()
 )
 
+//ApplyDeployment applies a appsv1.Deployment template
 func ApplyDeployment(
 	client kubernetes.Interface,
-	reader ScenarioReader,
-	templateName string,
+	reader asset.ScenarioReader,
 	values interface{},
+	headerFile string,
 	files ...string) error {
 	genericScheme.AddKnownTypes(appsv1.SchemeGroupVersion, &appsv1.Deployment{})
-	recorder := events.NewInMemoryRecorder(GetExampleHeader())
+	recorder := events.NewInMemoryRecorder(helpers.GetExampleHeader())
+	//Render each file
 	for _, name := range files {
-		deploymentBytes, err := MustTempalteAsset(name, templateName, reader, values)
+		deploymentBytes, err := MustTempalteAsset(name, headerFile, reader, values)
 		if err != nil {
+			if IsEmptyAsset(err) {
+				continue
+			}
 			return err
 		}
 		deployment, sch, err := genericCodec.Decode(deploymentBytes, nil, nil)
@@ -61,32 +73,39 @@ func ApplyDeployment(
 	return nil
 }
 
+//ApplyDirectly applies standard kubernetes resources.
 func ApplyDirectly(clients *resourceapply.ClientHolder,
-	reader ScenarioReader,
-	templateName string,
+	reader asset.ScenarioReader,
 	values interface{},
+	headerFile string,
 	files ...string) error {
-	recorder := events.NewInMemoryRecorder(GetExampleHeader())
+	recorder := events.NewInMemoryRecorder(helpers.GetExampleHeader())
+	//Apply resources
 	resourceResults := resourceapply.ApplyDirectly(clients, recorder, func(name string) ([]byte, error) {
-		return MustTempalteAsset(name, templateName, reader, values)
+		return MustTempalteAsset(name, headerFile, reader, values)
 	}, files...)
+	//Check errors
 	for _, result := range resourceResults {
-		if result.Error != nil {
+		if result.Error != nil && !IsEmptyAsset(result.Error) {
 			return fmt.Errorf("%q (%T): %v", result.File, result.Type, result.Error)
 		}
 	}
 	return nil
 }
 
+//ApplyCustomResouces applies custom resources
 func ApplyCustomResouces(client dynamic.Interface,
 	discoveryClient discovery.DiscoveryInterface,
-	reader ScenarioReader,
-	templateName string,
+	reader asset.ScenarioReader,
 	values interface{},
+	headerFile string,
 	files ...string) error {
 	for _, name := range files {
-		asset, err := MustTempalteAsset(name, templateName, reader, values)
+		asset, err := MustTempalteAsset(name, headerFile, reader, values)
 		if err != nil {
+			if IsEmptyAsset(err) {
+				continue
+			}
 			return err
 		}
 		u, err := bytesToUnstructured(reader, asset)
@@ -122,18 +141,8 @@ func ApplyCustomResouces(client dynamic.Interface,
 	return nil
 }
 
-func getResource(kind string) (string, error) {
-	switch kind {
-	case "ClusterManager":
-		return "clustermanagers", nil
-	case "Klusterlet":
-		return "klusterlets", nil
-	default:
-		return "", fmt.Errorf("kind: %s not supported", kind)
-	}
-}
-
-func bytesToUnstructured(reader ScenarioReader, asset []byte) (*unstructured.Unstructured, error) {
+//bytesToUnstructured converts an asset to unstructured.
+func bytesToUnstructured(reader asset.ScenarioReader, asset []byte) (*unstructured.Unstructured, error) {
 	j, err := reader.ToJSON(asset)
 	if err != nil {
 		return nil, err
@@ -150,6 +159,7 @@ func bytesToUnstructured(reader ScenarioReader, asset []byte) (*unstructured.Uns
 	return u, nil
 }
 
+//getTemplate generate the template for rendering.
 func getTemplate(templateName string) *template.Template {
 	tmpl := template.New(templateName).
 		Option("missingkey=zero").
@@ -159,8 +169,21 @@ func getTemplate(templateName string) *template.Template {
 	return tmpl
 }
 
-func MustTempalteAsset(name, templateName string, reader ScenarioReader, values interface{}) ([]byte, error) {
-	tmpl := getTemplate(templateName)
+//MustTempalteAsset generates textual output for a template file name.
+//The headerfile will be added to each file.
+//Usually it contains nested template definitions as described https://golang.org/pkg/text/template/#hdr-Nested_template_definitions
+//This allows to add functions which can be use in each file.
+//The values object will be used to render the template
+func MustTempalteAsset(name, headerFile string, reader asset.ScenarioReader, values interface{}) ([]byte, error) {
+	tmpl := getTemplate(name)
+	h := []byte{}
+	var err error
+	if headerFile != "" {
+		h, err = reader.Asset(headerFile)
+		if err != nil {
+			return nil, err
+		}
+	}
 	b, err := reader.Asset(name)
 	if err != nil {
 		return nil, err
@@ -170,17 +193,37 @@ func MustTempalteAsset(name, templateName string, reader ScenarioReader, values 
 	if err != nil {
 		return nil, err
 	}
+	tmplParsed, err = tmplParsed.Parse(string(h))
+	if err != nil {
+		return nil, err
+	}
 
 	err = tmplParsed.Execute(&buf, values)
 	if err != nil {
 		return nil, err
 	}
 
-	// recorder.Eventf("templated:\n%s\n---", buf.String())
-	trim := strings.TrimSuffix(buf.String(), "\n")
-	trim = strings.TrimSpace(trim)
-	if len(trim) == 0 {
-		return nil, nil
+	//If the content is empty after rendering then returns an ErrorEmptyAssetAfterTemplating error.
+	if isEmpty(buf.Bytes()) {
+		return nil, fmt.Errorf("asset %s becomes %s", name, ErrorEmptyAssetAfterTemplating)
 	}
+
 	return buf.Bytes(), nil
+}
+
+//isEmpty check if a content is empty after removing comments and blank lines.
+func isEmpty(body []byte) bool {
+	//Remove comments
+	re := regexp.MustCompile("#.*")
+	bodyNoComment := re.ReplaceAll(body, nil)
+	//Remove blank lines
+	trim := strings.TrimSuffix(string(bodyNoComment), "\n")
+	trim = strings.TrimSpace(trim)
+
+	return len(trim) == 0
+}
+
+//IsEmptyAsset returns true if the error is ErrorEmptyAssetAfterTemplating
+func IsEmptyAsset(err error) bool {
+	return strings.Contains(err.Error(), ErrorEmptyAssetAfterTemplating)
 }

@@ -3,15 +3,18 @@ package init
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
+	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 
 	"github.com/spf13/cobra"
 
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/util/retry"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -45,8 +48,13 @@ func (o *Options) run() error {
 		return err
 	}
 
+	apiExtensionsClient, err := apiextensionsclient.NewForConfig(restConfig)
+	if err != nil {
+		return err
+	}
+
 	clientHolder := resourceapply.NewClientHolder().
-		WithAPIExtensionsClient(apiextensionsclient.NewForConfigOrDie(restConfig)).
+		WithAPIExtensionsClient(apiExtensionsClient).
 		WithKubernetes(kubeClient).
 		WithDynamicClient(dynamicClient)
 
@@ -61,17 +69,25 @@ func (o *Options) run() error {
 		"init/service_account.yaml",
 	}
 
-	err = helpers.ApplyDirectly(clientHolder, reader, scenarioDirectory, o.values, files...)
+	err = apply.ApplyDirectly(clientHolder, reader, o.values, "", files...)
 	if err != nil {
 		return err
 	}
 
-	err = helpers.ApplyDeployment(kubeClient, reader, scenarioDirectory, o.values, "init/operator.yaml")
+	err = apply.ApplyDeployment(kubeClient, reader, o.values, "", "init/operator.yaml")
 	if err != nil {
 		return err
 	}
+
+	b := retry.DefaultBackoff
+	b.Duration = 100 * time.Millisecond
+	err = helpers.WaitCRDToBeReady(*apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", b)
+	if err != nil {
+		return err
+	}
+
 	discoveryClient := discovery.NewDiscoveryClientForConfigOrDie(restConfig)
-	err = helpers.ApplyCustomResouces(dynamicClient, discoveryClient, reader, scenarioDirectory, o.values, "init/clustermanagers.cr.yaml")
+	err = apply.ApplyCustomResouces(dynamicClient, discoveryClient, reader, o.values, "", "init/clustermanagers.cr.yaml")
 	if err != nil {
 		return err
 	}

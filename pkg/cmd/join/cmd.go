@@ -16,10 +16,6 @@ var example = `
 %[1]s join --hub-token <tokenID.tokenSecret> --hub-apiserver <hub_apiserveR_url> --name <cluster_name>
 `
 
-const (
-	scenarioDirectory = "join"
-)
-
 // NewCmd ...
 func NewCmd(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
 	o := newOptions(f, streams)

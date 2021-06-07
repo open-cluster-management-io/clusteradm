@@ -1,6 +1,6 @@
 // Copyright Contributors to the Open Cluster Management project
 
-package helpers
+package apply
 
 import (
 	"bytes"
@@ -46,7 +46,7 @@ func encodeBase64(s string) string {
 
 //TemplateFuncMap generates function map for "include"
 func TemplateFuncMap(tmpl *template.Template) (funcMap template.FuncMap) {
-	funcMap = make(template.FuncMap, 0)
+	funcMap = make(template.FuncMap)
 	funcMap["include"] = func(name string, data interface{}) (string, error) {
 		buf := bytes.NewBuffer(nil)
 		if err := tmpl.ExecuteTemplate(buf, name, data); err != nil {

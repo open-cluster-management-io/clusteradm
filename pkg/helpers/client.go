@@ -6,12 +6,15 @@ import (
 	"context"
 	"fmt"
 
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/ghodss/yaml"
 	"k8s.io/client-go/kubernetes"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
+	"k8s.io/client-go/util/retry"
 )
 
 func GetAPIServer(kubeClient kubernetes.Interface) (string, error) {
@@ -58,4 +61,21 @@ func getClusterInfoKubeConfig(kubeClient kubernetes.Interface) (*clientcmdapiv1.
 		return nil, err
 	}
 	return config, nil
+}
+
+func WaitCRDToBeReady(apiExtensionsClient apiextensionsclient.Clientset, name string, b wait.Backoff) error {
+	errGet := retry.OnError(b, func(err error) bool {
+		if err != nil {
+			fmt.Printf("Wait  for %s crd to be ready\n", name)
+			return true
+		}
+		return false
+	}, func() error {
+		_, err := apiExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().
+			Get(context.TODO(),
+				name,
+				metav1.GetOptions{})
+		return err
+	})
+	return errGet
 }

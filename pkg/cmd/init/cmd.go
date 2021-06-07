@@ -16,10 +16,6 @@ var example = `
 %[1]s init
 `
 
-const (
-	scenarioDirectory = "init"
-)
-
 // NewCmd ...
 func NewCmd(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
 	o := newOptions(f, streams)

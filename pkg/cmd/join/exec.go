@@ -3,17 +3,22 @@ package join
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/ghodss/yaml"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
+
+	// "k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
+	"k8s.io/client-go/util/retry"
 	"open-cluster-management.io/clusteradm/pkg/cmd/join/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
+	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 
 	"github.com/spf13/cobra"
 )
@@ -75,8 +80,13 @@ func (o *Options) run() error {
 		return err
 	}
 
+	apiExtensionsClient, err := apiextensionsclient.NewForConfig(restConfig)
+	if err != nil {
+		return err
+	}
+
 	clientHolder := resourceapply.NewClientHolder().
-		WithAPIExtensionsClient(apiextensionsclient.NewForConfigOrDie(restConfig)).
+		WithAPIExtensionsClient(apiExtensionsClient).
 		WithKubernetes(kubeClient).
 		WithDynamicClient(dynamicClient)
 
@@ -90,18 +100,26 @@ func (o *Options) run() error {
 		"join/service_account.yaml",
 	}
 
-	err = helpers.ApplyDirectly(clientHolder, reader, scenarioDirectory, o.values, files...)
+	err = apply.ApplyDirectly(clientHolder, reader, o.values, "", files...)
 	if err != nil {
 		return err
 	}
 
-	err = helpers.ApplyDeployment(kubeClient, reader, scenarioDirectory, o.values, "join/operator.yaml")
+	err = apply.ApplyDeployment(kubeClient, reader, o.values, "", "join/operator.yaml")
+	if err != nil {
+		return err
+	}
+
+	b := retry.DefaultBackoff
+	b.Duration = 100 * time.Millisecond
+
+	err = helpers.WaitCRDToBeReady(*apiExtensionsClient, "klusterlets.operator.open-cluster-management.io", b)
 	if err != nil {
 		return err
 	}
 
 	discoveryClient := discovery.NewDiscoveryClientForConfigOrDie(restConfig)
-	err = helpers.ApplyCustomResouces(dynamicClient, discoveryClient, reader, scenarioDirectory, o.values, "join/klusterlets.cr.yaml")
+	err = apply.ApplyCustomResouces(dynamicClient, discoveryClient, reader, o.values, "", "join/klusterlets.cr.yaml")
 	if err != nil {
 		return err
 	}

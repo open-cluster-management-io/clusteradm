@@ -14,6 +14,7 @@ import (
 
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/util/retry"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -47,8 +48,13 @@ func (o *Options) run() error {
 		return err
 	}
 
+	apiExtensionsClient, err := apiextensionsclient.NewForConfig(restConfig)
+	if err != nil {
+		return err
+	}
+
 	clientHolder := resourceapply.NewClientHolder().
-		WithAPIExtensionsClient(apiextensionsclient.NewForConfigOrDie(restConfig)).
+		WithAPIExtensionsClient(apiExtensionsClient).
 		WithKubernetes(kubeClient).
 		WithDynamicClient(dynamicClient)
 
@@ -72,9 +78,13 @@ func (o *Options) run() error {
 	if err != nil {
 		return err
 	}
-	//quick fix for https://github.com/open-cluster-management-io/clusteradm/issues/12
-	fmt.Printf("Wait 10 sec... for the crd to be effective\n")
-	time.Sleep(10 * time.Second)
+
+	b := retry.DefaultBackoff
+	b.Duration = 100 * time.Millisecond
+	err = helpers.WaitCRDToBeReady(*apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", b)
+	if err != nil {
+		return err
+	}
 
 	discoveryClient := discovery.NewDiscoveryClientForConfigOrDie(restConfig)
 	err = apply.ApplyCustomResouces(dynamicClient, discoveryClient, reader, o.values, "", "init/clustermanagers.cr.yaml")

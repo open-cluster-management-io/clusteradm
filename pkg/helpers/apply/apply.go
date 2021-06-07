@@ -40,6 +40,7 @@ var (
 	genericCodec  = genericCodecs.UniversalDeserializer()
 )
 
+//ApplyDeployment applies a appsv1.Deployment template
 func ApplyDeployment(
 	client kubernetes.Interface,
 	reader asset.ScenarioReader,
@@ -48,6 +49,7 @@ func ApplyDeployment(
 	files ...string) error {
 	genericScheme.AddKnownTypes(appsv1.SchemeGroupVersion, &appsv1.Deployment{})
 	recorder := events.NewInMemoryRecorder(helpers.GetExampleHeader())
+	//Render each file
 	for _, name := range files {
 		deploymentBytes, err := MustTempalteAsset(name, headerFile, reader, values)
 		if err != nil {
@@ -71,15 +73,18 @@ func ApplyDeployment(
 	return nil
 }
 
+//ApplyDirectly applies standard kubernetes resources.
 func ApplyDirectly(clients *resourceapply.ClientHolder,
 	reader asset.ScenarioReader,
 	values interface{},
 	headerFile string,
 	files ...string) error {
 	recorder := events.NewInMemoryRecorder(helpers.GetExampleHeader())
+	//Apply resources
 	resourceResults := resourceapply.ApplyDirectly(clients, recorder, func(name string) ([]byte, error) {
 		return MustTempalteAsset(name, headerFile, reader, values)
 	}, files...)
+	//Check errors
 	for _, result := range resourceResults {
 		if result.Error != nil && !IsEmptyAsset(result.Error) {
 			return fmt.Errorf("%q (%T): %v", result.File, result.Type, result.Error)
@@ -88,6 +93,7 @@ func ApplyDirectly(clients *resourceapply.ClientHolder,
 	return nil
 }
 
+//ApplyCustomResouces applies custom resources
 func ApplyCustomResouces(client dynamic.Interface,
 	discoveryClient discovery.DiscoveryInterface,
 	reader asset.ScenarioReader,
@@ -135,6 +141,7 @@ func ApplyCustomResouces(client dynamic.Interface,
 	return nil
 }
 
+//bytesToUnstructured converts an asset to unstructured.
 func bytesToUnstructured(reader asset.ScenarioReader, asset []byte) (*unstructured.Unstructured, error) {
 	j, err := reader.ToJSON(asset)
 	if err != nil {
@@ -152,6 +159,7 @@ func bytesToUnstructured(reader asset.ScenarioReader, asset []byte) (*unstructur
 	return u, nil
 }
 
+//getTemplate generate the template for rendering.
 func getTemplate(templateName string) *template.Template {
 	tmpl := template.New(templateName).
 		Option("missingkey=zero").
@@ -161,8 +169,11 @@ func getTemplate(templateName string) *template.Template {
 	return tmpl
 }
 
-//MustTempalteAsset generates textual output for an file name.
-//If a headerFile is specified it will be added as a header of the file.
+//MustTempalteAsset generates textual output for a template file name.
+//The headerfile will be added to each file.
+//Usually it contains nested template definitions as described https://golang.org/pkg/text/template/#hdr-Nested_template_definitions
+//This allows to add functions which can be use in each file.
+//The values object will be used to render the template
 func MustTempalteAsset(name, headerFile string, reader asset.ScenarioReader, values interface{}) ([]byte, error) {
 	tmpl := getTemplate(name)
 	h := []byte{}
@@ -192,6 +203,7 @@ func MustTempalteAsset(name, headerFile string, reader asset.ScenarioReader, val
 		return nil, err
 	}
 
+	//If the content is empty after rendering then returns an ErrorEmptyAssetAfterTemplating error.
 	if isEmpty(buf.Bytes()) {
 		return nil, fmt.Errorf("asset %s becomes %s", name, ErrorEmptyAssetAfterTemplating)
 	}
@@ -199,6 +211,7 @@ func MustTempalteAsset(name, headerFile string, reader asset.ScenarioReader, val
 	return buf.Bytes(), nil
 }
 
+//isEmpty check if a content is empty after removing comments and blank lines.
 func isEmpty(body []byte) bool {
 	//Remove comments
 	re := regexp.MustCompile("#.*")
@@ -210,6 +223,7 @@ func isEmpty(body []byte) bool {
 	return len(trim) == 0
 }
 
+//IsEmptyAsset returns true if the error is ErrorEmptyAssetAfterTemplating
 func IsEmptyAsset(err error) bool {
 	return strings.Contains(err.Error(), ErrorEmptyAssetAfterTemplating)
 }

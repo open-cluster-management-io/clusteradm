@@ -66,7 +66,7 @@ func getClusterInfoKubeConfig(kubeClient kubernetes.Interface) (*clientcmdapiv1.
 func WaitCRDToBeReady(apiExtensionsClient apiextensionsclient.Clientset, name string, b wait.Backoff) error {
 	errGet := retry.OnError(b, func(err error) bool {
 		if err != nil {
-			fmt.Println("Wait  for %s crd to be ready", name)
+			fmt.Printf("Wait  for %s crd to be ready\n", name)
 			return true
 		}
 		return false

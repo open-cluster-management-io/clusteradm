@@ -13,10 +13,10 @@ The binary will be installed in `$GOPATH/bin`
 ### CLI
 
 ```bash
-git clone https://open-cluster-management-io/clusteradm.git
-cd clusteradmin
+git clone https://github.com/open-cluster-management-io/clusteradm.git
+cd clusteradm
 make build
-cm
+clusteradm
 ```
 ## Contributing
 

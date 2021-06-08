@@ -258,14 +258,14 @@ func IsEmptyAsset(err error) bool {
 }
 
 func WriteOutput(fileName string, output []string) (err error) {
-	f := os.Stdout
-	if fileName != "" {
-		f, err = os.OpenFile(filepath.Clean(fileName), os.O_WRONLY|os.O_CREATE, 0600)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
+	if fileName == "" {
+		return nil
 	}
+	f, err := os.OpenFile(filepath.Clean(fileName), os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
 	for _, s := range output {
 		_, err := f.WriteString(fmt.Sprintf("%s\n---\n", s))
 		if err != nil {

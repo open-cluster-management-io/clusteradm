@@ -32,6 +32,7 @@ func (o *Options) validate() error {
 }
 
 func (o *Options) run() error {
+	output := make([]string, 0)
 	reader := scenario.GetScenarioResourcesReader()
 
 	kubeClient, err := o.factory.KubernetesClientSet()
@@ -69,28 +70,33 @@ func (o *Options) run() error {
 		"init/service_account.yaml",
 	}
 
-	err = apply.ApplyDirectly(clientHolder, reader, o.values, "", files...)
+	out, err := apply.ApplyDirectly(clientHolder, reader, o.values, o.dryRun, "", files...)
 	if err != nil {
 		return err
 	}
+	output = append(output, out...)
 
-	err = apply.ApplyDeployment(kubeClient, reader, o.values, "", "init/operator.yaml")
+	out, err = apply.ApplyDeployment(kubeClient, reader, o.values, o.dryRun, "", "init/operator.yaml")
 	if err != nil {
 		return err
 	}
+	output = append(output, out...)
 
-	b := retry.DefaultBackoff
-	b.Duration = 100 * time.Millisecond
-	err = helpers.WaitCRDToBeReady(*apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", b)
-	if err != nil {
-		return err
+	if !o.dryRun {
+		b := retry.DefaultBackoff
+		b.Duration = 100 * time.Millisecond
+		err = helpers.WaitCRDToBeReady(*apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", b)
+		if err != nil {
+			return err
+		}
 	}
 
 	discoveryClient := discovery.NewDiscoveryClientForConfigOrDie(restConfig)
-	err = apply.ApplyCustomResouces(dynamicClient, discoveryClient, reader, o.values, "", "init/clustermanagers.cr.yaml")
+	out, err = apply.ApplyCustomResouces(dynamicClient, discoveryClient, reader, o.values, o.dryRun, "", "init/clustermanagers.cr.yaml")
 	if err != nil {
 		return err
 	}
+	output = append(output, out...)
 
 	fmt.Printf("login into the cluster and run: %s join --hub-token %s.%s --hub-apiserver %s --cluster-name <cluster_name>\n",
 		helpers.GetExampleHeader(),
@@ -99,5 +105,5 @@ func (o *Options) run() error {
 		restConfig.Host,
 	)
 
-	return nil
+	return apply.WriteOutput(o.outputFile, output)
 }

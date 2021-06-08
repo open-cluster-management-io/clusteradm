@@ -12,6 +12,10 @@ type Options struct {
 	ConfigFlags *genericclioptions.ConfigFlags
 	factory     cmdutil.Factory
 	values      Values
+	//if set the resources will be sent to stdout instead of being applied
+	dryRun bool
+	//The file to output the resources will be sent to the file.
+	outputFile string
 }
 
 //Valus: The values used in the template

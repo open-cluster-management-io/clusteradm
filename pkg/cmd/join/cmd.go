@@ -43,5 +43,7 @@ func NewCmd(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Comma
 	cmd.Flags().StringVar(&o.token, "hub-token", "", "The token to access the hub")
 	cmd.Flags().StringVar(&o.hubAPIServer, "hub-apiserver", "", "The api server url to the hub")
 	cmd.Flags().StringVar(&o.clusterName, "cluster-name", "", "The name of the joining cluster")
+	cmd.Flags().BoolVar(&o.dryRun, "dry-run", false, "If set the generated resources will be displayed but not applied")
+	cmd.Flags().StringVar(&o.outputFile, "output-file", "", "The generated resources will be copied in the specified file")
 	return cmd
 }

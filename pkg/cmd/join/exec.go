@@ -49,6 +49,7 @@ func (o *Options) validate() error {
 }
 
 func (o *Options) run() error {
+	output := make([]string, 0)
 	reader := scenario.GetScenarioResourcesReader()
 
 	//Create an unsecure bootstrap
@@ -100,32 +101,37 @@ func (o *Options) run() error {
 		"join/service_account.yaml",
 	}
 
-	err = apply.ApplyDirectly(clientHolder, reader, o.values, "", files...)
+	out, err := apply.ApplyDirectly(clientHolder, reader, o.values, o.dryRun, "", files...)
 	if err != nil {
 		return err
 	}
+	output = append(output, out...)
 
-	err = apply.ApplyDeployment(kubeClient, reader, o.values, "", "join/operator.yaml")
+	out, err = apply.ApplyDeployment(kubeClient, reader, o.values, o.dryRun, "", "join/operator.yaml")
 	if err != nil {
 		return err
 	}
+	output = append(output, out...)
 
-	b := retry.DefaultBackoff
-	b.Duration = 100 * time.Millisecond
+	if !o.dryRun {
+		b := retry.DefaultBackoff
+		b.Duration = 100 * time.Millisecond
 
-	err = helpers.WaitCRDToBeReady(*apiExtensionsClient, "klusterlets.operator.open-cluster-management.io", b)
-	if err != nil {
-		return err
+		err = helpers.WaitCRDToBeReady(*apiExtensionsClient, "klusterlets.operator.open-cluster-management.io", b)
+		if err != nil {
+			return err
+		}
 	}
 
 	discoveryClient := discovery.NewDiscoveryClientForConfigOrDie(restConfig)
-	err = apply.ApplyCustomResouces(dynamicClient, discoveryClient, reader, o.values, "", "join/klusterlets.cr.yaml")
+	out, err = apply.ApplyCustomResouces(dynamicClient, discoveryClient, reader, o.values, o.dryRun, "", "join/klusterlets.cr.yaml")
 	if err != nil {
 		return err
 	}
+	output = append(output, out...)
 	fmt.Printf("login back onto the hub and run: %s accept --clusters %s\n", helpers.GetExampleHeader(), o.values.ClusterName)
 
-	return nil
+	return apply.WriteOutput(o.outputFile, output)
 
 }
 

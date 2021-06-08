@@ -39,6 +39,8 @@ func NewCmd(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Comma
 			return nil
 		},
 	}
+	cmd.Flags().BoolVar(&o.dryRun, "dry-run", false, "If set the generated resources will be displayed but not applied")
+	cmd.Flags().StringVar(&o.outputFile, "output-file", "", "The generated resources will be copied in the specified file")
 
 	return cmd
 }

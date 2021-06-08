@@ -5,6 +5,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"text/template"
@@ -45,10 +47,12 @@ func ApplyDeployment(
 	client kubernetes.Interface,
 	reader asset.ScenarioReader,
 	values interface{},
+	dryRun bool,
 	headerFile string,
-	files ...string) error {
+	files ...string) ([]string, error) {
 	genericScheme.AddKnownTypes(appsv1.SchemeGroupVersion, &appsv1.Deployment{})
 	recorder := events.NewInMemoryRecorder(helpers.GetExampleHeader())
+	output := make([]string, 0)
 	//Render each file
 	for _, name := range files {
 		deploymentBytes, err := MustTempalteAsset(name, headerFile, reader, values)
@@ -56,30 +60,49 @@ func ApplyDeployment(
 			if IsEmptyAsset(err) {
 				continue
 			}
-			return err
+			return output, err
+		}
+		output = append(output, string(deploymentBytes))
+		if dryRun {
+			continue
 		}
 		deployment, sch, err := genericCodec.Decode(deploymentBytes, nil, nil)
 		if err != nil {
-			return fmt.Errorf("%q: %v %v", name, sch, err)
+			return output, fmt.Errorf("%q: %v %v", name, sch, err)
 		}
 		_, _, err = resourceapply.ApplyDeployment(
 			client.AppsV1(),
 			recorder,
 			deployment.(*appsv1.Deployment), 0)
 		if err != nil {
-			return fmt.Errorf("%q (%T): %v", name, deployment, err)
+			return output, fmt.Errorf("%q (%T): %v", name, deployment, err)
 		}
 	}
-	return nil
+	return output, nil
 }
 
 //ApplyDirectly applies standard kubernetes resources.
 func ApplyDirectly(clients *resourceapply.ClientHolder,
 	reader asset.ScenarioReader,
 	values interface{},
+	dryRun bool,
 	headerFile string,
-	files ...string) error {
+	files ...string) ([]string, error) {
 	recorder := events.NewInMemoryRecorder(helpers.GetExampleHeader())
+	output := make([]string, 0)
+	for _, name := range files {
+		deploymentBytes, err := MustTempalteAsset(name, headerFile, reader, values)
+		if err != nil {
+			if IsEmptyAsset(err) {
+				continue
+			}
+			return output, err
+		}
+		output = append(output, string(deploymentBytes))
+	}
+	if dryRun {
+		return output, nil
+	}
 	//Apply resources
 	resourceResults := resourceapply.ApplyDirectly(clients, recorder, func(name string) ([]byte, error) {
 		return MustTempalteAsset(name, headerFile, reader, values)
@@ -87,10 +110,10 @@ func ApplyDirectly(clients *resourceapply.ClientHolder,
 	//Check errors
 	for _, result := range resourceResults {
 		if result.Error != nil && !IsEmptyAsset(result.Error) {
-			return fmt.Errorf("%q (%T): %v", result.File, result.Type, result.Error)
+			return output, fmt.Errorf("%q (%T): %v", result.File, result.Type, result.Error)
 		}
 	}
-	return nil
+	return output, nil
 }
 
 //ApplyCustomResouces applies custom resources
@@ -98,29 +121,35 @@ func ApplyCustomResouces(client dynamic.Interface,
 	discoveryClient discovery.DiscoveryInterface,
 	reader asset.ScenarioReader,
 	values interface{},
+	dryRun bool,
 	headerFile string,
-	files ...string) error {
+	files ...string) ([]string, error) {
+	output := make([]string, 0)
 	for _, name := range files {
 		asset, err := MustTempalteAsset(name, headerFile, reader, values)
 		if err != nil {
 			if IsEmptyAsset(err) {
 				continue
 			}
-			return err
+			return output, err
+		}
+		output = append(output, string(asset))
+		if dryRun {
+			continue
 		}
 		u, err := bytesToUnstructured(reader, asset)
 		if err != nil {
-			return err
+			return output, err
 		}
 		gvks, _, err := genericScheme.ObjectKinds(u)
 		if err != nil {
-			return err
+			return output, err
 		}
 		gvk := gvks[0]
 		mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(discoveryClient))
 		mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 		if err != nil {
-			return err
+			return output, err
 		}
 		dr := client.Resource(mapping.Resource)
 		ug, err := dr.Namespace(u.GetNamespace()).Get(context.TODO(), u.GetName(), metav1.GetOptions{})
@@ -135,10 +164,10 @@ func ApplyCustomResouces(client dynamic.Interface,
 				Update(context.TODO(), u, metav1.UpdateOptions{})
 		}
 		if err != nil {
-			return err
+			return output, err
 		}
 	}
-	return nil
+	return output, nil
 }
 
 //bytesToUnstructured converts an asset to unstructured.
@@ -226,4 +255,22 @@ func isEmpty(body []byte) bool {
 //IsEmptyAsset returns true if the error is ErrorEmptyAssetAfterTemplating
 func IsEmptyAsset(err error) bool {
 	return strings.Contains(err.Error(), ErrorEmptyAssetAfterTemplating)
+}
+
+func WriteOutput(fileName string, output []string) (err error) {
+	f := os.Stdout
+	if fileName != "" {
+		f, err = os.OpenFile(filepath.Clean(fileName), os.O_WRONLY|os.O_CREATE, 0600)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+	}
+	for _, s := range output {
+		_, err := f.WriteString(fmt.Sprintf("%s\n---\n", s))
+		if err != nil {
+			return err
+		}
+	}
+	return err
 }

@@ -14,6 +14,8 @@ type Options struct {
 	//A list of comma separated cluster names
 	clusters string
 	values   Values
+	//if set the resources will be sent to stdout instead of being applied
+	dryRun bool
 }
 
 //Values: The values used in the template

@@ -17,8 +17,8 @@ var example = `
 `
 
 // NewCmd ...
-func NewCmd(clusteradmFlages *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *cobra.Command {
-	o := newOptions(clusteradmFlages, streams)
+func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *cobra.Command {
+	o := newOptions(clusteradmFlags, streams)
 
 	cmd := &cobra.Command{
 		Use:          "accept",

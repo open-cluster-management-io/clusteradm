@@ -43,8 +43,8 @@ func main() {
 	// From this point and forward we get warnings on flags that contain "_" separators
 	root.SetGlobalNormalizationFunc(cliflag.WarnWordSepNormalizeFunc)
 
-	configFlags.AddFlags(root.PersistentFlags())
-	clusteradmFlags.AddFlags(root.PersistentFlags())
+	configFlags.AddFlags(flags)
+	clusteradmFlags.AddFlags(flags)
 	flags.AddGoFlagSet(flag.CommandLine)
 
 	root.AddCommand(cmdconfig.NewCmdConfig(f, clientcmd.NewDefaultPathOptions(), streams))

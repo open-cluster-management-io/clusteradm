@@ -6,10 +6,6 @@ import (
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 )
 
-type ClusteradmFlagsGetter interface {
-	GetClusteradmFlag() *ClusteradmFlags
-}
-
 type ClusteradmFlags struct {
 	KubectlFactory cmdutil.Factory
 	//if set the resources will be sent to stdout instead of being applied

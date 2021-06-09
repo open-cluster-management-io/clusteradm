@@ -98,7 +98,7 @@ func (o *Options) run() error {
 	}
 	output = append(output, out...)
 
-	fmt.Printf("login into the cluster and run: %s join --hub-token %s.%s --hub-apiserver %s --cluster-name <cluster_name>\n",
+	fmt.Printf("please log on spoke and run:\n%s join --hub-token %s.%s --hub-apiserver %s --cluster-name <cluster_name>\n",
 		helpers.GetExampleHeader(),
 		o.values.Hub.TokenID,
 		o.values.Hub.TokenSecret,

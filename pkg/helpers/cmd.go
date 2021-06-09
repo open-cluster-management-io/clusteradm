@@ -32,6 +32,6 @@ func UsageTempate(cmd *cobra.Command, reader asset.ScenarioReader, valuesTemplat
 
 func DryRunMessage(dryRun bool) {
 	if dryRun {
-		fmt.Printf("%s is running in dry-run mode", GetExampleHeader())
+		fmt.Printf("%s is running in dry-run mode\n", GetExampleHeader())
 	}
 }

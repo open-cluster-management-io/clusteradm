@@ -129,7 +129,7 @@ func (o *Options) run() error {
 		return err
 	}
 	output = append(output, out...)
-	fmt.Printf("login back onto the hub and run: %s accept --clusters %s\n", helpers.GetExampleHeader(), o.values.ClusterName)
+	fmt.Printf("please wait a few minutes then log on to hub and accept by running:\n%s accept --clusters %s\n", helpers.GetExampleHeader(), o.values.ClusterName)
 
 	return apply.WriteOutput(o.outputFile, output)
 

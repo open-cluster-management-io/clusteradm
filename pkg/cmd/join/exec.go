@@ -67,16 +67,16 @@ func (o *Options) run() error {
 		return err
 	}
 
-	kubeClient, err := o.factory.KubernetesClientSet()
+	kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
 	if err != nil {
 		return err
 	}
-	dynamicClient, err := o.factory.DynamicClient()
+	dynamicClient, err := o.ClusteradmFlags.KubectlFactory.DynamicClient()
 	if err != nil {
 		return err
 	}
 
-	restConfig, err := o.factory.ToRESTConfig()
+	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
 	}
@@ -101,19 +101,19 @@ func (o *Options) run() error {
 		"join/service_account.yaml",
 	}
 
-	out, err := apply.ApplyDirectly(clientHolder, reader, o.values, o.dryRun, "", files...)
+	out, err := apply.ApplyDirectly(clientHolder, reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
 	if err != nil {
 		return err
 	}
 	output = append(output, out...)
 
-	out, err = apply.ApplyDeployment(kubeClient, reader, o.values, o.dryRun, "", "join/operator.yaml")
+	out, err = apply.ApplyDeployments(kubeClient, reader, o.values, o.ClusteradmFlags.DryRun, "", "join/operator.yaml")
 	if err != nil {
 		return err
 	}
 	output = append(output, out...)
 
-	if !o.dryRun {
+	if !o.ClusteradmFlags.DryRun {
 		b := retry.DefaultBackoff
 		b.Duration = 100 * time.Millisecond
 
@@ -124,7 +124,7 @@ func (o *Options) run() error {
 	}
 
 	discoveryClient := discovery.NewDiscoveryClientForConfigOrDie(restConfig)
-	out, err = apply.ApplyCustomResouces(dynamicClient, discoveryClient, reader, o.values, o.dryRun, "", "join/klusterlets.cr.yaml")
+	out, err = apply.ApplyCustomResouces(dynamicClient, discoveryClient, reader, o.values, o.ClusteradmFlags.DryRun, "", "join/klusterlets.cr.yaml")
 	if err != nil {
 		return err
 	}

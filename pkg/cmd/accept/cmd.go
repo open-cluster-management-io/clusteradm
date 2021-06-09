@@ -4,11 +4,11 @@ package accept
 import (
 	"fmt"
 
+	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 )
 
 var example = `
@@ -17,14 +17,17 @@ var example = `
 `
 
 // NewCmd ...
-func NewCmd(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
-	o := newOptions(f, streams)
+func NewCmd(clusteradmFlages *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *cobra.Command {
+	o := newOptions(clusteradmFlages, streams)
 
 	cmd := &cobra.Command{
 		Use:          "accept",
 		Short:        "accept a list of clusters",
 		Example:      fmt.Sprintf(example, helpers.GetExampleHeader()),
 		SilenceUsage: true,
+		PreRun: func(c *cobra.Command, args []string) {
+			helpers.DryRunMessage(o.ClusteradmFlags.DryRun)
+		},
 		RunE: func(c *cobra.Command, args []string) error {
 			if err := o.complete(c, args); err != nil {
 				return err
@@ -41,7 +44,6 @@ func NewCmd(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Comma
 	}
 
 	cmd.Flags().StringVar(&o.clusters, "clusters", "", "Names of the cluster to accept (comma separated)")
-	cmd.Flags().BoolVar(&o.dryRun, "dry-run", false, "If set the generated resources will be displayed but not applied")
 
 	return cmd
 }

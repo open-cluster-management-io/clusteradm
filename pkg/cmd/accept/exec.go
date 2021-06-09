@@ -46,11 +46,11 @@ func (o *Options) validate() error {
 }
 
 func (o *Options) run() error {
-	kubeClient, err := o.factory.KubernetesClientSet()
+	kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
 	if err != nil {
 		return err
 	}
-	restConfig, err := o.factory.ToRESTConfig()
+	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient 
 		}
 
 		if csr != nil {
-			if !o.dryRun {
+			if !o.ClusteradmFlags.DryRun {
 				if csr.Status.Conditions == nil {
 					csr.Status.Conditions = make([]certificatesv1.CertificateSigningRequestCondition, 0)
 				}
@@ -118,7 +118,7 @@ func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient 
 					LastUpdateTime: metav1.Now(),
 				})
 
-				kubeClient, err := o.factory.KubernetesClientSet()
+				kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
 				if err != nil {
 					return err
 				}
@@ -139,7 +139,7 @@ func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient 
 			return err
 		}
 		if !mc.Spec.HubAcceptsClient {
-			if !o.dryRun {
+			if !o.ClusteradmFlags.DryRun {
 				mc.Spec.HubAcceptsClient = true
 				_, err = clusterClient.ClusterV1().ManagedClusters().Update(context.TODO(), mc, metav1.UpdateOptions{})
 				if err != nil {

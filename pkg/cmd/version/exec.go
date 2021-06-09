@@ -15,9 +15,10 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 func (o *Options) validate() error {
 	return nil
 }
+
 func (o *Options) run() (err error) {
 	fmt.Printf("client\t\tversion\t:%s\n", clusteradm.GetVersion())
-	discoveryClient, err := o.factory.ToDiscoveryClient()
+	discoveryClient, err := o.ClusteradmFlags.KubectlFactory.ToDiscoveryClient()
 	if err != nil {
 		return err
 	}

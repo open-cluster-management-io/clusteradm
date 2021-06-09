@@ -21,6 +21,7 @@ require (
 	github.com/onsi/gomega v1.10.2 // indirect
 	github.com/openshift/library-go v0.0.0-20210521084623-7392ea9b02ca
 	github.com/spf13/cobra v1.1.3
+	github.com/spf13/pflag v1.0.5
 	google.golang.org/appengine v1.6.6 // indirect
 	k8s.io/api v0.21.1
 	k8s.io/apiextensions-apiserver v0.21.1

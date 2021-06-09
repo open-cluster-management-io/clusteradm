@@ -3,6 +3,7 @@
 package main
 
 import (
+	"flag"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -19,6 +20,7 @@ import (
 	acceptclusters "open-cluster-management.io/clusteradm/pkg/cmd/accept"
 	inithub "open-cluster-management.io/clusteradm/pkg/cmd/init"
 	joinhub "open-cluster-management.io/clusteradm/pkg/cmd/join"
+	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
 func main() {
@@ -26,6 +28,7 @@ func main() {
 	configFlags := genericclioptions.NewConfigFlags(true).WithDeprecatedPasswordFlag()
 	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
 	f := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+	clusteradmFlags := genericclioptionsclusteradm.NewClusteradmFlags(f)
 
 	root :=
 		&cobra.Command{
@@ -40,7 +43,10 @@ func main() {
 	// From this point and forward we get warnings on flags that contain "_" separators
 	root.SetGlobalNormalizationFunc(cliflag.WarnWordSepNormalizeFunc)
 
-	configFlags.AddFlags(flags)
+	configFlags.AddFlags(root.PersistentFlags())
+	clusteradmFlags.AddFlags(root.PersistentFlags())
+	flags.AddGoFlagSet(flag.CommandLine)
+
 	root.AddCommand(cmdconfig.NewCmdConfig(f, clientcmd.NewDefaultPathOptions(), streams))
 	root.AddCommand(options.NewCmdOptions(streams.Out))
 	//enable plugin functionality: all `os.Args[0]-<binary>` in the $PATH will be available for plugin
@@ -51,15 +57,15 @@ func main() {
 		{
 			Message: "General commands:",
 			Commands: []*cobra.Command{
-				version.NewCmd(f, streams),
+				version.NewCmd(clusteradmFlags, streams),
 			},
 		},
 		{
 			Message: "Registration commands:",
 			Commands: []*cobra.Command{
-				inithub.NewCmd(f, streams),
-				joinhub.NewCmd(f, streams),
-				acceptclusters.NewCmd(f, streams),
+				inithub.NewCmd(clusteradmFlags, streams),
+				joinhub.NewCmd(clusteradmFlags, streams),
+				acceptclusters.NewCmd(clusteradmFlags, streams),
 			},
 		},
 	}

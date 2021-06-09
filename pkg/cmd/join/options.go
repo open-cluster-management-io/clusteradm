@@ -3,13 +3,13 @@ package join
 
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
 //Options: The structure holding all the command-line options
 type Options struct {
-	//ConfigFlags: The generic options from the kubernetes cli-runtime.
-	ConfigFlags *genericclioptions.ConfigFlags
+	//ClusteradmFlags: The generic optiosn from the clusteradm cli-runtime.
+	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 	//The token generated on the hub to access it from the cluster
 	token string
 	//The external hub apiserver url (https://<host>:<port>)
@@ -17,10 +17,7 @@ type Options struct {
 	//the name under the cluster must be imported
 	clusterName string
 
-	factory cmdutil.Factory
-	values  Values
-	//if set the resources will be sent to stdout instead of being applied
-	dryRun bool
+	values Values
 	//The file to output the resources will be sent to the file.
 	outputFile string
 }
@@ -42,9 +39,8 @@ type Hub struct {
 	KubeConfig string
 }
 
-func newOptions(f cmdutil.Factory, streams genericclioptions.IOStreams) *Options {
+func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
-		ConfigFlags: genericclioptions.NewConfigFlags(true),
-		factory:     f,
+		ClusteradmFlags: clusteradmFlags,
 	}
 }

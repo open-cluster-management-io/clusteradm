@@ -49,10 +49,10 @@ else
    echo "join command result: " $CMDJOINRESULT
 fi
 
-echo "Sleep 2 min to stabilize"
+echo "Sleep 4 min to stabilize"
 # we need to wait 2 min but once we will have watch status monitor
 # we will not need to sleep anymore
-sleep 120
+sleep 240
 
 CMDACCEPT=`echo $CMDJOINRESULT | cut -d ':' -f2`
 CMDACCEPT="$CMDACCEPT c1"

@@ -4,11 +4,11 @@ package version
 import (
 	"fmt"
 
+	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 )
 
 var example = `
@@ -16,9 +16,9 @@ var example = `
 %[1]s version
 `
 
-// NewCmd provides a cobra command wrapping NewCmdImportCluster
-func NewCmd(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
-	o := newOptions(f, streams)
+// NewCmd...
+func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *cobra.Command {
+	o := newOptions(clusteradmFlags, streams)
 	cmd := &cobra.Command{
 		Use:          "version",
 		Short:        "get the versions of the different components",

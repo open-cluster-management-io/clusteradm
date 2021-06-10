@@ -3,15 +3,17 @@ package init
 
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
 //Options: The structure holding all the command-line options
 type Options struct {
-	//ConfigFlags: The generic options from the kubernetes cli-runtime.
-	ConfigFlags *genericclioptions.ConfigFlags
-	factory     cmdutil.Factory
-	values      Values
+	//ClusteradmFlags: The generic optiosn from the clusteradm cli-runtime.
+	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
+	// factory         cmdutil.Factory
+	values Values
+	//The file to output the resources will be sent to the file.
+	outputFile string
 }
 
 //Valus: The values used in the template
@@ -28,9 +30,8 @@ type Hub struct {
 	TokenSecret string `json:"tokenSecret"`
 }
 
-func newOptions(f cmdutil.Factory, streams genericclioptions.IOStreams) *Options {
+func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
-		ConfigFlags: genericclioptions.NewConfigFlags(true),
-		factory:     f,
+		ClusteradmFlags: clusteradmFlags,
 	}
 }

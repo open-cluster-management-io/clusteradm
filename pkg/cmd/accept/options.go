@@ -2,15 +2,13 @@
 package accept
 
 import (
-	cmdutil "k8s.io/kubectl/pkg/cmd/util"
-
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
 type Options struct {
-	//ConfigFlags: The generic options from the kubernetes cli-runtime.
-	ConfigFlags *genericclioptions.ConfigFlags
-	factory     cmdutil.Factory
+	//ClusteradmFlags: The generic optiosn from the clusteradm cli-runtime.
+	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 	//A list of comma separated cluster names
 	clusters string
 	values   Values
@@ -21,9 +19,8 @@ type Values struct {
 	clusters []string
 }
 
-func newOptions(f cmdutil.Factory, streams genericclioptions.IOStreams) *Options {
+func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
-		ConfigFlags: genericclioptions.NewConfigFlags(true),
-		factory:     f,
+		ClusteradmFlags: clusteradmFlags,
 	}
 }

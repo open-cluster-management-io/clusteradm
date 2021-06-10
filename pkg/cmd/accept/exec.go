@@ -46,11 +46,11 @@ func (o *Options) validate() error {
 }
 
 func (o *Options) run() error {
-	kubeClient, err := o.factory.KubernetesClientSet()
+	kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
 	if err != nil {
 		return err
 	}
-	restConfig, err := o.factory.ToRESTConfig()
+	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
 	}
@@ -105,27 +105,28 @@ func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient 
 		}
 
 		if csr != nil {
-			if csr.Status.Conditions == nil {
-				csr.Status.Conditions = make([]certificatesv1.CertificateSigningRequestCondition, 0)
-			}
+			if !o.ClusteradmFlags.DryRun {
+				if csr.Status.Conditions == nil {
+					csr.Status.Conditions = make([]certificatesv1.CertificateSigningRequestCondition, 0)
+				}
 
-			csr.Status.Conditions = append(csr.Status.Conditions, certificatesv1.CertificateSigningRequestCondition{
-				Status:         corev1.ConditionTrue,
-				Type:           certificatesv1.CertificateApproved,
-				Reason:         fmt.Sprintf("%sApprove", helpers.GetExampleHeader()),
-				Message:        fmt.Sprintf("This CSR was approved by %s certificate approve.", helpers.GetExampleHeader()),
-				LastUpdateTime: metav1.Now(),
-			})
+				csr.Status.Conditions = append(csr.Status.Conditions, certificatesv1.CertificateSigningRequestCondition{
+					Status:         corev1.ConditionTrue,
+					Type:           certificatesv1.CertificateApproved,
+					Reason:         fmt.Sprintf("%sApprove", helpers.GetExampleHeader()),
+					Message:        fmt.Sprintf("This CSR was approved by %s certificate approve.", helpers.GetExampleHeader()),
+					LastUpdateTime: metav1.Now(),
+				})
 
-			kubeClient, err := o.factory.KubernetesClientSet()
-			if err != nil {
-				return err
+				kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
+				if err != nil {
+					return err
+				}
+				signingRequest := kubeClient.CertificatesV1().CertificateSigningRequests()
+				if _, err := signingRequest.UpdateApproval(context.TODO(), csr.Name, csr, metav1.UpdateOptions{}); err != nil {
+					return err
+				}
 			}
-			signingRequest := kubeClient.CertificatesV1().CertificateSigningRequests()
-			if _, err := signingRequest.UpdateApproval(context.TODO(), csr.Name, csr, metav1.UpdateOptions{}); err != nil {
-				return err
-			}
-
 			fmt.Printf("CSR %s approved\n", csr.Name)
 		} else {
 			fmt.Printf("no CSR to approve for cluster %s\n", clusterName)
@@ -138,10 +139,12 @@ func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient 
 			return err
 		}
 		if !mc.Spec.HubAcceptsClient {
-			mc.Spec.HubAcceptsClient = true
-			_, err = clusterClient.ClusterV1().ManagedClusters().Update(context.TODO(), mc, metav1.UpdateOptions{})
-			if err != nil {
-				return err
+			if !o.ClusteradmFlags.DryRun {
+				mc.Spec.HubAcceptsClient = true
+				_, err = clusterClient.ClusterV1().ManagedClusters().Update(context.TODO(), mc, metav1.UpdateOptions{})
+				if err != nil {
+					return err
+				}
 			}
 			fmt.Printf("set httpAcceptsClient to true for cluster %s\n", clusterName)
 		} else {
@@ -149,5 +152,4 @@ func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient 
 		}
 	}
 	return nil
-
 }

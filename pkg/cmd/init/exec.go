@@ -32,18 +32,19 @@ func (o *Options) validate() error {
 }
 
 func (o *Options) run() error {
+	output := make([]string, 0)
 	reader := scenario.GetScenarioResourcesReader()
 
-	kubeClient, err := o.factory.KubernetesClientSet()
+	kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
 	if err != nil {
 		return err
 	}
-	dynamicClient, err := o.factory.DynamicClient()
+	dynamicClient, err := o.ClusteradmFlags.KubectlFactory.DynamicClient()
 	if err != nil {
 		return err
 	}
 
-	restConfig, err := o.factory.ToRESTConfig()
+	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
 	}
@@ -69,35 +70,40 @@ func (o *Options) run() error {
 		"init/service_account.yaml",
 	}
 
-	err = apply.ApplyDirectly(clientHolder, reader, o.values, "", files...)
+	out, err := apply.ApplyDirectly(clientHolder, reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
 	if err != nil {
 		return err
 	}
+	output = append(output, out...)
 
-	err = apply.ApplyDeployment(kubeClient, reader, o.values, "", "init/operator.yaml")
+	out, err = apply.ApplyDeployments(kubeClient, reader, o.values, o.ClusteradmFlags.DryRun, "", "init/operator.yaml")
 	if err != nil {
 		return err
 	}
+	output = append(output, out...)
 
-	b := retry.DefaultBackoff
-	b.Duration = 100 * time.Millisecond
-	err = helpers.WaitCRDToBeReady(*apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", b)
-	if err != nil {
-		return err
+	if !o.ClusteradmFlags.DryRun {
+		b := retry.DefaultBackoff
+		b.Duration = 100 * time.Millisecond
+		err = helpers.WaitCRDToBeReady(*apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", b)
+		if err != nil {
+			return err
+		}
 	}
 
 	discoveryClient := discovery.NewDiscoveryClientForConfigOrDie(restConfig)
-	err = apply.ApplyCustomResouces(dynamicClient, discoveryClient, reader, o.values, "", "init/clustermanagers.cr.yaml")
+	out, err = apply.ApplyCustomResouces(dynamicClient, discoveryClient, reader, o.values, o.ClusteradmFlags.DryRun, "", "init/clustermanagers.cr.yaml")
 	if err != nil {
 		return err
 	}
+	output = append(output, out...)
 
-	fmt.Printf("login into the cluster and run: %s join --hub-token %s.%s --hub-apiserver %s --cluster-name <cluster_name>\n",
+	fmt.Printf("please log on spoke and run:\n%s join --hub-token %s.%s --hub-apiserver %s --cluster-name <cluster_name>\n",
 		helpers.GetExampleHeader(),
 		o.values.Hub.TokenID,
 		o.values.Hub.TokenSecret,
 		restConfig.Host,
 	)
 
-	return nil
+	return apply.WriteOutput(o.outputFile, output)
 }

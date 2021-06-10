@@ -29,3 +29,9 @@ func UsageTempate(cmd *cobra.Command, reader asset.ScenarioReader, valuesTemplat
 	}
 	return fmt.Sprintf("%s\n\n Values template:\n%s", baseUsage, string(b))
 }
+
+func DryRunMessage(dryRun bool) {
+	if dryRun {
+		fmt.Printf("%s is running in dry-run mode\n", GetExampleHeader())
+	}
+}

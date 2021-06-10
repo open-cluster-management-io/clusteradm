@@ -49,6 +49,7 @@ func (o *Options) validate() error {
 }
 
 func (o *Options) run() error {
+	output := make([]string, 0)
 	reader := scenario.GetScenarioResourcesReader()
 
 	//Create an unsecure bootstrap
@@ -66,16 +67,16 @@ func (o *Options) run() error {
 		return err
 	}
 
-	kubeClient, err := o.factory.KubernetesClientSet()
+	kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
 	if err != nil {
 		return err
 	}
-	dynamicClient, err := o.factory.DynamicClient()
+	dynamicClient, err := o.ClusteradmFlags.KubectlFactory.DynamicClient()
 	if err != nil {
 		return err
 	}
 
-	restConfig, err := o.factory.ToRESTConfig()
+	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
 	}
@@ -100,32 +101,37 @@ func (o *Options) run() error {
 		"join/service_account.yaml",
 	}
 
-	err = apply.ApplyDirectly(clientHolder, reader, o.values, "", files...)
+	out, err := apply.ApplyDirectly(clientHolder, reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
 	if err != nil {
 		return err
 	}
+	output = append(output, out...)
 
-	err = apply.ApplyDeployment(kubeClient, reader, o.values, "", "join/operator.yaml")
+	out, err = apply.ApplyDeployments(kubeClient, reader, o.values, o.ClusteradmFlags.DryRun, "", "join/operator.yaml")
 	if err != nil {
 		return err
 	}
+	output = append(output, out...)
 
-	b := retry.DefaultBackoff
-	b.Duration = 100 * time.Millisecond
+	if !o.ClusteradmFlags.DryRun {
+		b := retry.DefaultBackoff
+		b.Duration = 100 * time.Millisecond
 
-	err = helpers.WaitCRDToBeReady(*apiExtensionsClient, "klusterlets.operator.open-cluster-management.io", b)
-	if err != nil {
-		return err
+		err = helpers.WaitCRDToBeReady(*apiExtensionsClient, "klusterlets.operator.open-cluster-management.io", b)
+		if err != nil {
+			return err
+		}
 	}
 
 	discoveryClient := discovery.NewDiscoveryClientForConfigOrDie(restConfig)
-	err = apply.ApplyCustomResouces(dynamicClient, discoveryClient, reader, o.values, "", "join/klusterlets.cr.yaml")
+	out, err = apply.ApplyCustomResouces(dynamicClient, discoveryClient, reader, o.values, o.ClusteradmFlags.DryRun, "", "join/klusterlets.cr.yaml")
 	if err != nil {
 		return err
 	}
-	fmt.Printf("login back onto the hub and run: %s accept --clusters %s\n", helpers.GetExampleHeader(), o.values.ClusterName)
+	output = append(output, out...)
+	fmt.Printf("please wait a few minutes then log on to hub and accept by running:\n%s accept --clusters %s\n", helpers.GetExampleHeader(), o.values.ClusterName)
 
-	return nil
+	return apply.WriteOutput(o.outputFile, output)
 
 }
 

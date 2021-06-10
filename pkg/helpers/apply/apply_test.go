@@ -77,7 +77,7 @@ func TestMustTempalteAsset(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := MustTempalteAsset(tt.args.name, tt.args.headerFile, tt.args.reader, tt.args.values)
+			got, err := MustTempalteAsset(tt.args.reader, tt.args.values, tt.args.headerFile, tt.args.name)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MustTempalteAsset() error = %v, wantErr %v", err, tt.wantErr)
 				return

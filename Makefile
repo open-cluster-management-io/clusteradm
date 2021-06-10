@@ -27,6 +27,16 @@ deps:
 build: 
 	go install ./cmd/clusteradm.go
 
+.PHONY: 
+build-bin:
+	@mkdir -p bin
+	GOOS=darwin GOARCH=amd64 go build -o bin/clusteradm_darwin_amd64 ./cmd/clusteradm.go 
+	GOOS=linux GOARCH=amd64 go build -o bin/clusteradm_linux_amd64 ./cmd/clusteradm.go 
+	GOOS=linux GOARCH=arm64 go build -o bin/clusteradm_linux_arm64 ./cmd/clusteradm.go 
+	GOOS=linux GOARCH=ppc64le go build -o bin/clusteradm_linux_ppc64le ./cmd/clusteradm.go 
+	GOOS=linux GOARCH=s390x go build -o bin/clusteradm_linux_s390x ./cmd/clusteradm.go 
+	GOOS=windows GOARCH=amd64 go build -o bin/clusteradm_windows_amd64.exe ./cmd/clusteradm.go 
+
 .PHONY: install
 install: build
 

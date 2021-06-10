@@ -3,17 +3,16 @@ package version
 
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
 type Options struct {
-	ConfigFlags *genericclioptions.ConfigFlags
-	factory     cmdutil.Factory
+	//ClusteradmFlags: The generic optiosn from the clusteradm cli-runtime.
+	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 }
 
-func newOptions(f cmdutil.Factory, streams genericclioptions.IOStreams) *Options {
+func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
-		ConfigFlags: genericclioptions.NewConfigFlags(true),
-		factory:     f,
+		ClusteradmFlags: clusteradmFlags,
 	}
 }

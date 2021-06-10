@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
 var example = `
@@ -17,14 +17,17 @@ var example = `
 `
 
 // NewCmd ...
-func NewCmd(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
-	o := newOptions(f, streams)
+func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *cobra.Command {
+	o := newOptions(clusteradmFlags, streams)
 
 	cmd := &cobra.Command{
 		Use:          "init",
 		Short:        "init the hub",
 		Example:      fmt.Sprintf(example, helpers.GetExampleHeader()),
 		SilenceUsage: true,
+		PreRun: func(c *cobra.Command, args []string) {
+			helpers.DryRunMessage(o.ClusteradmFlags.DryRun)
+		},
 		RunE: func(c *cobra.Command, args []string) error {
 			if err := o.complete(c, args); err != nil {
 				return err
@@ -39,6 +42,8 @@ func NewCmd(f cmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Comma
 			return nil
 		},
 	}
+
+	cmd.Flags().StringVar(&o.outputFile, "output-file", "", "The generated resources will be copied in the specified file")
 
 	return cmd
 }

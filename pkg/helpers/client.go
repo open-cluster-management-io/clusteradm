@@ -5,16 +5,18 @@ package helpers
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"github.com/ghodss/yaml"
+	corev1 "k8s.io/api/core/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-
-	"github.com/ghodss/yaml"
 	"k8s.io/client-go/kubernetes"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/client-go/util/retry"
+	"open-cluster-management.io/clusteradm/pkg/config"
 )
 
 func GetAPIServer(kubeClient kubernetes.Interface) (string, error) {
@@ -30,7 +32,7 @@ func GetAPIServer(kubeClient kubernetes.Interface) (string, error) {
 	return cluster.Server, nil
 }
 
-func GetCACert(kubeClient kubernetes.Interface) ([]byte, error) {
+func GetCACert(kubeClient kubernetes.Interface, useBootstrapToken bool) ([]byte, error) {
 	config, err := getClusterInfoKubeConfig(kubeClient)
 	if err == nil {
 		clusters := config.Clusters
@@ -78,4 +80,43 @@ func WaitCRDToBeReady(apiExtensionsClient apiextensionsclient.Clientset, name st
 		return err
 	})
 	return errGet
+}
+
+func GetBootstrapSecret(
+	kubeClient kubernetes.Interface) (*corev1.Secret, error) {
+	sa, err := kubeClient.CoreV1().
+		ServiceAccounts(config.OpenClusterManagementNamespace).
+		Get(context.TODO(), config.BootstrapSAName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	var secret *corev1.Secret
+	for _, objectRef := range sa.Secrets {
+		if objectRef.Namespace != "" && objectRef.Namespace != config.OpenClusterManagementNamespace {
+			continue
+		}
+		prefix := config.BootstrapSAName
+		if len(prefix) > 63 {
+			prefix = prefix[:37]
+		}
+		if strings.HasPrefix(objectRef.Name, prefix) {
+			secret, err = kubeClient.CoreV1().
+				Secrets(config.OpenClusterManagementNamespace).
+				Get(context.TODO(), objectRef.Name, metav1.GetOptions{})
+			if err != nil {
+				continue
+			}
+			if secret.Type == corev1.SecretTypeServiceAccountToken {
+				break
+			}
+		}
+	}
+	if secret == nil {
+		return nil, fmt.Errorf("secret with prefix %s and type %s not found in service account %s/%s",
+			config.BootstrapSAName,
+			corev1.SecretTypeServiceAccountToken,
+			config.OpenClusterManagementNamespace,
+			config.BootstrapSAName)
+	}
+	return secret, nil
 }

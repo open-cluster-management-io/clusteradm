@@ -10,10 +10,11 @@ import (
 type Options struct {
 	//ClusteradmFlags: The generic optiosn from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
-	// factory         cmdutil.Factory
-	values Values
+	values          Values
 	//The file to output the resources will be sent to the file.
 	outputFile string
+	//If true the bootstrap token will be used instead of the service account token
+	useBootstrapToken bool
 }
 
 //Valus: The values used in the template

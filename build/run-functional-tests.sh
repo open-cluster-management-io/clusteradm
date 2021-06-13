@@ -26,7 +26,7 @@ then
 fi
 
 kubectl config use-context kind-${CLUSTER_NAME}-hub 
-CMDINITRESULT=`clusteradm init`
+CMDINITRESULT=`clusteradm init --use-bootstrap-token`
 if [ $? != 0 ]
 then
    echo "init command result: "$CMDINITRESULT

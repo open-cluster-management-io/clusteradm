@@ -3,14 +3,19 @@
 
 A CLI and kubernetes CLI plugin that allows you to interact with open-cluster-management to manage your Hybrid Cloud presence from the command-line.
 
-## Requirements
+## Quick start
+
+### Install the clusteradm command-line:
+#### From binaries:
+
+The binaries for several platforms are available [here](https://github.com/open-cluster-management-io/clusteradm/releases).
+- Download the compressed file from [here](https://github.com/open-cluster-management-io/clusteradm/releases) 
+- Uncompress the file and place the output in a directory of your $PATH
+
+#### From source:
 
 Go 1.16 is required in order to build or contribute on this project as it leverage the `go:embed` tip.
-
-## Installation
-
 The binary will be installed in `$GOPATH/bin`
-### CLI
 
 ```bash
 git clone https://github.com/open-cluster-management-io/clusteradm.git
@@ -18,6 +23,24 @@ cd clusteradm
 make build
 clusteradm
 ```
+### Initialize a hub and join a cluster
+
+```bash
+# Initialize the hub
+kubectl config use-context <hub cluster context> # kubectl config use-context kind-hub 
+clusteradm init
+
+# Request a managed cluster to join the hub
+kubectl config use-context <managed cluster context> # kubectl config use-context kind-managed-cluster
+clusteradm join --hub-token <token> --hub-apiserver <api server url> --cluster-name <cluster name> 
+
+# Accept the managed cluster request on the hub
+kubectl config use-context <hub cluster context> # kubectl config use-context kind-hub 
+clusteradm accept --clusters <list of clusters> # clusteradm accept --clusters c1,c2,...
+```
+
+After each above clusteradm command, the clusteradm will print out the next clusteradm command to execute which can be copy/paste.
+
 ## Contributing
 
 See our [Contributing Document](CONTRIBUTING.md) for more information.  

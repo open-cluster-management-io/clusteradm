@@ -6,18 +6,16 @@ A CLI and kubernetes CLI plugin that allows you to interact with open-cluster-ma
 ## Quick start
 
 ### Install the clusteradm command-line:
+#### From binaries:
 
-    From binaries:
+The binaries for several platforms are available [here](https://github.com/open-cluster-management-io/clusteradm/releases).
+- Download the compressed file from [here](https://github.com/open-cluster-management-io/clusteradm/releases) 
+- Uncompress the file and place the output in a directory of your $PATH
 
-        The binaries for several platforms are available [here](https://github.com/open-cluster-management-io/clusteradm/releases).
+#### From source:
 
-        - Download the compressed file from [here](https://github.com/open-cluster-management-io/clusteradm/releases) 
-        - Uncompress the file and place the output in a directory of your $PATH
-
-    From source:
-
-        Go 1.16 is required in order to build or contribute on this project as it leverage the `go:embed` tip.
-        The binary will be installed in `$GOPATH/bin`
+Go 1.16 is required in order to build or contribute on this project as it leverage the `go:embed` tip.
+The binary will be installed in `$GOPATH/bin`
 
 ```bash
 git clone https://github.com/open-cluster-management-io/clusteradm.git

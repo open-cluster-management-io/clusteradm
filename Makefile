@@ -29,13 +29,14 @@ build:
 
 .PHONY: 
 build-bin:
+	@rm -rf bin
 	@mkdir -p bin
-	GOOS=darwin GOARCH=amd64 go build -o bin/clusteradm_darwin_amd64 ./cmd/clusteradm.go 
-	GOOS=linux GOARCH=amd64 go build -o bin/clusteradm_linux_amd64 ./cmd/clusteradm.go 
-	GOOS=linux GOARCH=arm64 go build -o bin/clusteradm_linux_arm64 ./cmd/clusteradm.go 
-	GOOS=linux GOARCH=ppc64le go build -o bin/clusteradm_linux_ppc64le ./cmd/clusteradm.go 
-	GOOS=linux GOARCH=s390x go build -o bin/clusteradm_linux_s390x ./cmd/clusteradm.go 
-	GOOS=windows GOARCH=amd64 go build -o bin/clusteradm_windows_amd64.exe ./cmd/clusteradm.go 
+	GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm_darwin_amd64 ./cmd/clusteradm.go && tar -czf bin/clusteradm_darwin_amd64.tar.gz -C bin/ clusteradm_darwin_amd64 
+	GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm_linux_amd64 ./cmd/clusteradm.go && tar -czf bin/clusteradm_linux_amd64.tar.gz -C bin/ clusteradm_linux_amd64 
+	GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm_linux_arm64 ./cmd/clusteradm.go && tar -czf bin/clusteradm_linux_arm64.tar.gz -C bin/ clusteradm_linux_arm64 
+	GOOS=linux GOARCH=ppc64le go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm_linux_ppc64le ./cmd/clusteradm.go && tar -czf bin/clusteradm_linux_ppc64le.tar.gz -C bin/ clusteradm_linux_ppc64le 
+	GOOS=linux GOARCH=s390x go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm_linux_s390x ./cmd/clusteradm.go && tar -czf bin/clusteradm_linux_s390x.tar.gz -C bin/ clusteradm_linux_s390x 
+	GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm_windows_amd64.exe ./cmd/clusteradm.go && zip -q bin/clusteradm_windows_amd64.zip -j bin/clusteradm_windows_amd64.exe
 
 .PHONY: install
 install: build

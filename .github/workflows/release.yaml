@@ -1,0 +1,35 @@
+# Copyright Contributors to the Open Cluster Management project
+
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    tags:
+      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+
+name: Create Release
+
+jobs:
+  build:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Build project
+        run: |
+          make build-bin
+      - name: Release
+        uses: softprops/action-gh-release@v0.1.5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          body_path: CHANGELOG.md
+          files: |
+            bin/clusteradm_darwin_amd64.tar.gz
+            bin/clusteradm_linux_amd64.tar.gz
+            bin/clusteradm_linux_arm64.tar.gz
+            bin/clusteradm_linux_ppc64le.tar.gz
+            bin/clusteradm_linux_s390x.tar.gz
+            bin/clusteradm_windows_amd64.zip
+          draft: true
+          prerelease: true

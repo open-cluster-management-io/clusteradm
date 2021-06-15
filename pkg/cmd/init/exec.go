@@ -5,8 +5,12 @@ import (
 	"fmt"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
+	"open-cluster-management.io/clusteradm/pkg/config"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 
@@ -14,6 +18,7 @@ import (
 
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
 )
 
@@ -32,6 +37,7 @@ func (o *Options) validate() error {
 }
 
 func (o *Options) run() error {
+	token := fmt.Sprintf("%s.%s", o.values.Hub.TokenID, o.values.Hub.TokenSecret)
 	output := make([]string, 0)
 	reader := scenario.GetScenarioResourcesReader()
 
@@ -60,15 +66,28 @@ func (o *Options) run() error {
 		WithDynamicClient(dynamicClient)
 
 	files := []string{
-		"init/bootstrap-token-secret.yaml",
-		"init/cluster_role_bootstrap.yaml",
-		"init/cluster_role_binding_bootstrap.yaml",
-		"init/cluster_role.yaml",
-		"init/cluster_role_binding.yaml",
-		"init/clustermanagers.crd.yaml",
 		"init/namespace.yaml",
-		"init/service_account.yaml",
 	}
+	if o.useBootstrapToken {
+		files = append(files,
+			"init/bootstrap-token-secret.yaml",
+			"init/bootstrap_cluster_role.yaml",
+			"init/bootstrap_cluster_role_binding.yaml",
+		)
+	} else {
+		files = append(files,
+			"init/bootstrap_sa.yaml",
+			"init/bootstrap_cluster_role.yaml",
+			"init/bootstrap_sa_cluster_role_binding.yaml",
+		)
+	}
+
+	files = append(files,
+		"init/clustermanager_cluster_role.yaml",
+		"init/clustermanager_cluster_role_binding.yaml",
+		"init/clustermanagers.crd.yaml",
+		"init/clustermanager_sa.yaml",
+	)
 
 	out, err := apply.ApplyDirectly(clientHolder, reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
 	if err != nil {
@@ -76,6 +95,15 @@ func (o *Options) run() error {
 	}
 	output = append(output, out...)
 
+	if !o.useBootstrapToken {
+		b := retry.DefaultBackoff
+		b.Duration = 100 * time.Millisecond
+		secret, err := waitForBootstrapSecret(kubeClient, b)
+		if err != nil {
+			return err
+		}
+		token = string(secret.Data["token"])
+	}
 	out, err = apply.ApplyDeployments(kubeClient, reader, o.values, o.ClusteradmFlags.DryRun, "", "init/operator.yaml")
 	if err != nil {
 		return err
@@ -92,18 +120,31 @@ func (o *Options) run() error {
 	}
 
 	discoveryClient := discovery.NewDiscoveryClientForConfigOrDie(restConfig)
-	out, err = apply.ApplyCustomResouces(dynamicClient, discoveryClient, reader, o.values, o.ClusteradmFlags.DryRun, "", "init/clustermanagers.cr.yaml")
+	out, err = apply.ApplyCustomResouces(dynamicClient, discoveryClient, reader, o.values, o.ClusteradmFlags.DryRun, "", "init/clustermanager.cr.yaml")
 	if err != nil {
 		return err
 	}
 	output = append(output, out...)
 
-	fmt.Printf("please log on spoke and run:\n%s join --hub-token %s.%s --hub-apiserver %s --cluster-name <cluster_name>\n",
+	fmt.Printf("please log on spoke and run:\n%s join --hub-token %s --hub-apiserver %s --cluster-name <cluster_name>\n",
 		helpers.GetExampleHeader(),
-		o.values.Hub.TokenID,
-		o.values.Hub.TokenSecret,
+		token,
 		restConfig.Host,
 	)
 
 	return apply.WriteOutput(o.outputFile, output)
+}
+
+func waitForBootstrapSecret(kubeClient kubernetes.Interface, b wait.Backoff) (secret *corev1.Secret, err error) {
+	err = retry.OnError(b, func(err error) bool {
+		if err != nil {
+			fmt.Printf("Wait for sa %s secret to be ready\n", config.BootstrapSAName)
+			return true
+		}
+		return false
+	}, func() error {
+		secret, err = helpers.GetBootstrapSecret(kubeClient)
+		return err
+	})
+	return
 }

@@ -59,7 +59,7 @@ Display the clusteradm version and the kubeversion
 
 Initialize the hub by deploying the hub side resources to manage clusters.
 
-`clusteradm init`
+`clusteradm init [--use-bootstrap-token]`
 
 it returns the command line to launch on the spoke to join the hub.
 

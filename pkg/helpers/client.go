@@ -32,7 +32,7 @@ func GetAPIServer(kubeClient kubernetes.Interface) (string, error) {
 	return cluster.Server, nil
 }
 
-func GetCACert(kubeClient kubernetes.Interface, useBootstrapToken bool) ([]byte, error) {
+func GetCACert(kubeClient kubernetes.Interface) ([]byte, error) {
 	config, err := getClusterInfoKubeConfig(kubeClient)
 	if err == nil {
 		clusters := config.Clusters

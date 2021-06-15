@@ -3,7 +3,6 @@ package join
 
 import (
 	"fmt"
-	"regexp"
 	"time"
 
 	"github.com/ghodss/yaml"
@@ -197,9 +196,7 @@ func createExternalClientFromBootstrap(bootstrapExternalConfigUnSecure clientcmd
 
 func (o *Options) createKubeConfig(externalClientUnSecure *kubernetes.Clientset,
 	bootstrapExternalConfigUnSecure clientcmdapiv1.Config) (string, error) {
-	r := regexp.MustCompile(`^.{6}\..{16}$`)
-	useBootstrapToken := r.Match([]byte(o.token))
-	ca, err := helpers.GetCACert(externalClientUnSecure, useBootstrapToken)
+	ca, err := helpers.GetCACert(externalClientUnSecure)
 	if err != nil {
 		return "", err
 	}

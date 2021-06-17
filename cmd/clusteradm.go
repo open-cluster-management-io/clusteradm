@@ -18,6 +18,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/cmd/version"
 
 	acceptclusters "open-cluster-management.io/clusteradm/pkg/cmd/accept"
+	"open-cluster-management.io/clusteradm/pkg/cmd/get"
 	inithub "open-cluster-management.io/clusteradm/pkg/cmd/init"
 	joinhub "open-cluster-management.io/clusteradm/pkg/cmd/join"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
@@ -63,6 +64,7 @@ func main() {
 		{
 			Message: "Registration commands:",
 			Commands: []*cobra.Command{
+				get.NewCmd(clusteradmFlags, streams),
 				inithub.NewCmd(clusteradmFlags, streams),
 				joinhub.NewCmd(clusteradmFlags, streams),
 				acceptclusters.NewCmd(clusteradmFlags, streams),

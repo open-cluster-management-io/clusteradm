@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package init
+package token
 
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -11,12 +11,8 @@ type Options struct {
 	//ClusteradmFlags: The generic optiosn from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 	values          Values
-	//The file to output the resources will be sent to the file.
-	outputFile string
 	//If true the bootstrap token will be used instead of the service account token
 	useBootstrapToken bool
-	//if true the hub will be reinstalled
-	force bool
 }
 
 //Valus: The values used in the template

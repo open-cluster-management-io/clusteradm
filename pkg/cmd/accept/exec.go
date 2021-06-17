@@ -21,9 +21,11 @@ import (
 )
 
 const (
-	groupName               = "system:bootstrappers:managedcluster"
-	userNameSignaturePrefix = "system:bootstrap:"
-	clusterLabel            = "open-cluster-management.io/cluster-name"
+	groupNameBootstrap               = "system:bootstrappers:managedcluster"
+	userNameSignatureBootstrapPrefix = "system:bootstrap:"
+	userNameSignatureSA              = "system:serviceaccount:open-cluster-management:cluster-bootstrap"
+	groupNameSA                      = "system:serviceaccounts:open-cluster-management"
+	clusterLabel                     = "open-cluster-management.io/cluster-name"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -110,12 +112,14 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 	var csr *certificatesv1.CertificateSigningRequest
 	for _, item := range csrs.Items {
 		//Does not have the correct name prefix
-		if !strings.HasPrefix(item.Spec.Username, userNameSignaturePrefix) {
+		if !strings.HasPrefix(item.Spec.Username, userNameSignatureBootstrapPrefix) &&
+			!strings.HasPrefix(item.Spec.Username, userNameSignatureSA) {
 			continue
 		}
 		//Check groups
 		groups := sets.NewString(item.Spec.Groups...)
-		if !groups.Has(groupName) {
+		if !groups.Has(groupNameBootstrap) &&
+			!groups.Has(groupNameSA) {
 			continue
 		}
 		//Check if already approved or denied

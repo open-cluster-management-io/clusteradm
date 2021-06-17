@@ -25,6 +25,7 @@ deps:
 
 .PHONY: build
 build: 
+	rm -f ${GOPATH}/bin/clusteradm
 	go install ./cmd/clusteradm.go
 
 .PHONY: 

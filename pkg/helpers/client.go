@@ -120,3 +120,18 @@ func GetBootstrapSecret(
 	}
 	return secret, nil
 }
+
+func IsClusterManagerInstalled(apiExtensionsClient apiextensionsclient.Interface) (bool, error) {
+	_, err := apiExtensionsClient.ApiextensionsV1().
+		CustomResourceDefinitions().
+		Get(context.TODO(), "clustermanagers.operator.open-cluster-management.io", metav1.GetOptions{})
+	if err == nil {
+		return true, nil
+	}
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return false, nil
+		}
+	}
+	return false, err
+}

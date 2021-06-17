@@ -36,18 +36,20 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 }
 
 func (o *Options) validate() error {
-	kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
+	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
 	}
-	//Search accross all ns as the cluster-manager is not always installed in the same ns
-	l, err := kubeClient.CoreV1().
-		Pods("").
-		List(context.TODO(), metav1.ListOptions{LabelSelector: fmt.Sprintf("%v = %v", config.LabelApp, config.LabelAppClusterApp)})
+
+	apiExtensionsClient, err := apiextensionsclient.NewForConfig(restConfig)
 	if err != nil {
 		return err
 	}
-	if len(l.Items) == 0 {
+	installed, err := helpers.IsClusterManagerInstalled(apiExtensionsClient)
+	if err != nil {
+		return err
+	}
+	if !installed {
 		return fmt.Errorf("this is not a hub")
 	}
 	return err
@@ -91,7 +93,6 @@ func (o *Options) run() error {
 		}
 		if o.useBootstrapToken {
 			files = append(files,
-				"init/namespace.yaml",
 				"init/bootstrap-token-secret.yaml",
 				"init/bootstrap_cluster_role.yaml",
 				"init/bootstrap_cluster_role_binding.yaml",
@@ -108,19 +109,31 @@ func (o *Options) run() error {
 			return err
 		}
 		output = append(output, out...)
-		//Make sure that the sa token is ready
-		if !o.useBootstrapToken {
-			b := retry.DefaultBackoff
-			b.Duration = 100 * time.Millisecond
-			_, err = waitForBootstrapSecret(kubeClient, b)
+		if !o.ClusteradmFlags.DryRun {
+			//Make sure that the sa token is ready
+			if !o.useBootstrapToken {
+				b := retry.DefaultBackoff
+				b.Duration = 100 * time.Millisecond
+				_, err = waitForBootstrapSecret(kubeClient, b)
+				if err != nil {
+					return err
+				}
+			}
+			token, err = getToken(kubeClient)
 			if err != nil {
 				return err
 			}
 		}
-		token, err = getToken(kubeClient)
+	} else {
+		//Update the cluster role
+		files := []string{
+			"init/bootstrap_cluster_role.yaml",
+		}
+		out, err := apply.ApplyDirectly(clientHolder, reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
 		if err != nil {
 			return err
 		}
+		output = append(output, out...)
 	}
 	fmt.Printf("token=%s\n", token)
 
@@ -130,7 +143,7 @@ func (o *Options) run() error {
 		restConfig.Host,
 	)
 
-	return apply.WriteOutput("", output)
+	return apply.WriteOutput(o.outputFile, output)
 }
 
 func waitForBootstrapSecret(kubeClient kubernetes.Interface, b wait.Backoff) (secret *corev1.Secret, err error) {

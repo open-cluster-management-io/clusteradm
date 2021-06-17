@@ -108,7 +108,12 @@ func ApplyDirectly(clients *resourceapply.ClientHolder,
 	output := make([]string, 0)
 	//Apply resources
 	resourceResults := resourceapply.ApplyDirectly(clients, recorder, func(name string) ([]byte, error) {
-		return MustTempalteAsset(reader, values, headerFile, name)
+		out, err := MustTempalteAsset(reader, values, headerFile, name)
+		if err != nil {
+			return nil, err
+		}
+		output = append(output, string(out))
+		return out, nil
 	}, files...)
 	//Check errors
 	for _, result := range resourceResults {

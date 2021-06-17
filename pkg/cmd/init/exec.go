@@ -2,12 +2,10 @@
 package init
 
 import (
-	"context"
 	"fmt"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
@@ -35,21 +33,22 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 }
 
 func (o *Options) validate() error {
-	kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
-	if err != nil {
-		return err
-	}
 	if o.force {
 		return nil
 	}
-	//Search accross all ns as the cluster-manager is not always installed in the same ns
-	l, err := kubeClient.CoreV1().
-		Pods("").
-		List(context.TODO(), metav1.ListOptions{LabelSelector: fmt.Sprintf("%v = %v", config.LabelApp, config.LabelAppClusterApp)})
+	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
 	}
-	if len(l.Items) != 0 {
+	apiExtensionsClient, err := apiextensionsclient.NewForConfig(restConfig)
+	if err != nil {
+		return err
+	}
+	installed, err := helpers.IsClusterManagerInstalled(apiExtensionsClient)
+	if err != nil {
+		return err
+	}
+	if installed {
 		return fmt.Errorf("hub already initialized")
 	}
 	return nil

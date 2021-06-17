@@ -84,5 +84,16 @@ else
     exit 1
 fi
 
+kubectl config use-context kind-${CLUSTER_NAME}-hub 
+CMDINITRESULT=`clusteradm get token`
+if [ $? != 0 ]
+then
+   echo "get token command result: "$CMDINITRESULT
+   ERROR_REPORT=$ERROR_REPORT+"clusteradm get token failed\n"
+else
+   echo "get token command result: "$CMDINITRESULT
+   echo $CMDINITRESULT
+fi
+
 kind delete cluster --name $CLUSTER_NAME-hub
 kind delete cluster --name $CLUSTER_NAME-spoke

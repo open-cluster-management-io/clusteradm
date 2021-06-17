@@ -17,9 +17,11 @@ import (
 )
 
 const (
-	groupName               = "system:bootstrappers:managedcluster"
-	userNameSignaturePrefix = "system:bootstrap:"
-	clusterLabel            = "open-cluster-management.io/cluster-name"
+	groupNameBootstrap               = "system:bootstrappers:managedcluster"
+	userNameSignatureBootstrapPrefix = "system:bootstrap:"
+	userNameSignatureSA              = "system:serviceaccount:open-cluster-management:cluster-bootstrap"
+	groupNameSA                      = "system:serviceaccounts:open-cluster-management"
+	clusterLabel                     = "open-cluster-management.io/cluster-name"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -74,13 +76,14 @@ func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient 
 		var csr *certificatesv1.CertificateSigningRequest
 		for _, item := range csrs.Items {
 			//Does not have the correct name prefix
-			if !strings.HasPrefix(item.Spec.Username, userNameSignaturePrefix) {
+			if !strings.HasPrefix(item.Spec.Username, userNameSignatureBootstrapPrefix) &&
+				item.Spec.Username != userNameSignatureSA {
 				continue
 			}
 			//Check groups
 			var group string
 			for _, g := range item.Spec.Groups {
-				if g == groupName {
+				if g == groupNameBootstrap || g == groupNameSA {
 					group = g
 					break
 				}

@@ -1,12 +1,14 @@
 // Copyright Contributors to the Open Cluster Management project
-package init
+package token
 
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -19,7 +21,6 @@ import (
 	"github.com/spf13/cobra"
 
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
 )
@@ -39,9 +40,6 @@ func (o *Options) validate() error {
 	if err != nil {
 		return err
 	}
-	if o.force {
-		return nil
-	}
 	//Search accross all ns as the cluster-manager is not always installed in the same ns
 	l, err := kubeClient.CoreV1().
 		Pods("").
@@ -49,14 +47,13 @@ func (o *Options) validate() error {
 	if err != nil {
 		return err
 	}
-	if len(l.Items) != 0 {
-		return fmt.Errorf("hub already initialized")
+	if len(l.Items) == 0 {
+		return fmt.Errorf("this is not a hub")
 	}
-	return nil
+	return err
 }
 
 func (o *Options) run() error {
-	token := fmt.Sprintf("%s.%s", o.values.Hub.TokenID, o.values.Hub.TokenSecret)
 	output := make([]string, 0)
 	reader := scenario.GetScenarioResourcesReader()
 
@@ -84,66 +81,48 @@ func (o *Options) run() error {
 		WithKubernetes(kubeClient).
 		WithDynamicClient(dynamicClient)
 
-	files := []string{
-		"init/namespace.yaml",
-	}
-	if o.useBootstrapToken {
-		files = append(files,
-			"init/bootstrap-token-secret.yaml",
-			"init/bootstrap_cluster_role.yaml",
-			"init/bootstrap_cluster_role_binding.yaml",
-		)
-	} else {
-		files = append(files,
-			"init/bootstrap_sa.yaml",
-			"init/bootstrap_cluster_role.yaml",
-			"init/bootstrap_sa_cluster_role_binding.yaml",
-		)
-	}
-
-	files = append(files,
-		"init/clustermanager_cluster_role.yaml",
-		"init/clustermanager_cluster_role_binding.yaml",
-		"init/clustermanagers.crd.yaml",
-		"init/clustermanager_sa.yaml",
-	)
-
-	out, err := apply.ApplyDirectly(clientHolder, reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
+	token, err := getToken(kubeClient)
 	if err != nil {
-		return err
-	}
-	output = append(output, out...)
-
-	if !o.useBootstrapToken {
-		b := retry.DefaultBackoff
-		b.Duration = 100 * time.Millisecond
-		secret, err := waitForBootstrapSecret(kubeClient, b)
+		if !errors.IsNotFound(err) {
+			return err
+		}
+		files := []string{
+			"init/namespace.yaml",
+		}
+		if o.useBootstrapToken {
+			files = append(files,
+				"init/namespace.yaml",
+				"init/bootstrap-token-secret.yaml",
+				"init/bootstrap_cluster_role.yaml",
+				"init/bootstrap_cluster_role_binding.yaml",
+			)
+		} else {
+			files = append(files,
+				"init/bootstrap_sa.yaml",
+				"init/bootstrap_cluster_role.yaml",
+				"init/bootstrap_sa_cluster_role_binding.yaml",
+			)
+		}
+		out, err := apply.ApplyDirectly(clientHolder, reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
 		if err != nil {
 			return err
 		}
-		token = string(secret.Data["token"])
-	}
-	out, err = apply.ApplyDeployments(kubeClient, reader, o.values, o.ClusteradmFlags.DryRun, "", "init/operator.yaml")
-	if err != nil {
-		return err
-	}
-	output = append(output, out...)
-
-	if !o.ClusteradmFlags.DryRun {
-		b := retry.DefaultBackoff
-		b.Duration = 100 * time.Millisecond
-		err = helpers.WaitCRDToBeReady(*apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", b)
+		output = append(output, out...)
+		//Make sure that the sa token is ready
+		if !o.useBootstrapToken {
+			b := retry.DefaultBackoff
+			b.Duration = 100 * time.Millisecond
+			_, err = waitForBootstrapSecret(kubeClient, b)
+			if err != nil {
+				return err
+			}
+		}
+		token, err = getToken(kubeClient)
 		if err != nil {
 			return err
 		}
 	}
-
-	discoveryClient := discovery.NewDiscoveryClientForConfigOrDie(restConfig)
-	out, err = apply.ApplyCustomResouces(dynamicClient, discoveryClient, reader, o.values, o.ClusteradmFlags.DryRun, "", "init/clustermanager.cr.yaml")
-	if err != nil {
-		return err
-	}
-	output = append(output, out...)
+	fmt.Printf("token=%s\n", token)
 
 	fmt.Printf("please log on spoke and run:\n%s join --hub-token %s --hub-apiserver %s --cluster-name <cluster_name>\n",
 		helpers.GetExampleHeader(),
@@ -151,19 +130,42 @@ func (o *Options) run() error {
 		restConfig.Host,
 	)
 
-	return apply.WriteOutput(o.outputFile, output)
+	return apply.WriteOutput("", output)
 }
 
 func waitForBootstrapSecret(kubeClient kubernetes.Interface, b wait.Backoff) (secret *corev1.Secret, err error) {
 	err = retry.OnError(b, func(err error) bool {
-		if err != nil {
-			fmt.Printf("Wait for sa %s secret to be ready\n", config.BootstrapSAName)
-			return true
-		}
-		return false
+		return err != nil
 	}, func() error {
 		secret, err = helpers.GetBootstrapSecret(kubeClient)
 		return err
 	})
 	return
+}
+
+func getToken(kubeClient kubernetes.Interface) (string, error) {
+	var bootstrapSecret *corev1.Secret
+	saSecret, err := helpers.GetBootstrapSecret(kubeClient)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			//As no SA search for bootstrap token
+			l, err := kubeClient.CoreV1().
+				Secrets("kube-system").
+				List(context.TODO(), metav1.ListOptions{LabelSelector: fmt.Sprintf("%v = %v", config.LabelApp, config.LabelAppClusterApp)})
+			if err != nil {
+				return "", err
+			}
+			for _, s := range l.Items {
+				if strings.HasPrefix(s.Name, config.BootstrapSecretPrefix) {
+					bootstrapSecret = &s
+				}
+			}
+			if bootstrapSecret != nil {
+				return fmt.Sprintf("%s.%s", string(bootstrapSecret.Data["token-id"]), string(bootstrapSecret.Data["token-secret"])), nil
+			}
+		}
+		return "", err
+	} else {
+		return string(saSecret.Data["token"]), nil
+	}
 }

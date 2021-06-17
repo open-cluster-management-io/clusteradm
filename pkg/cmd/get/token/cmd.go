@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package init
+package token
 
 import (
 	"fmt"
@@ -12,8 +12,8 @@ import (
 )
 
 var example = `
-# Init the hub
-%[1]s init
+# Get the bootstrap token
+%[1]s get token
 `
 
 // NewCmd ...
@@ -21,8 +21,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	o := newOptions(clusteradmFlags, streams)
 
 	cmd := &cobra.Command{
-		Use:          "init",
-		Short:        "init the hub",
+		Use:          "token",
+		Short:        "get the bootsrap token",
 		Example:      fmt.Sprintf(example, helpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRun: func(c *cobra.Command, args []string) {
@@ -43,8 +43,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		},
 	}
 
-	cmd.Flags().StringVar(&o.outputFile, "output-file", "", "The generated resources will be copied in the specified file")
 	cmd.Flags().BoolVar(&o.useBootstrapToken, "use-bootstrap-token", false, "If set then the boostrap token will used instead of a service account token")
-	cmd.Flags().BoolVar(&o.force, "force", false, "If set then the hub will be reinitialized")
+
 	return cmd
 }

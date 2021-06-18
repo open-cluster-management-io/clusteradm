@@ -2,19 +2,14 @@
 package token
 
 import (
-	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
-	"open-cluster-management.io/clusteradm/pkg/config"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 	"open-cluster-management.io/clusteradm/pkg/helpers/asset"
@@ -85,8 +80,9 @@ func (o *Options) run() error {
 		WithKubernetes(kubeClient).
 		WithDynamicClient(dynamicClient)
 
-	//Retrieve token from bootstrap or service-account
-	token, err := getToken(kubeClient)
+	//Retrieve token from service-account and if not found
+	//from the bootstrap token
+	token, err := helpers.GetToken(kubeClient)
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			return err
@@ -106,7 +102,7 @@ func (o *Options) run() error {
 					return err
 				}
 			}
-			token, err = getToken(kubeClient)
+			token, err = helpers.GetToken(kubeClient)
 			if err != nil {
 				return err
 			}
@@ -141,44 +137,6 @@ func waitForBootstrapSecret(kubeClient kubernetes.Interface, b wait.Backoff) (se
 		return err
 	})
 	return
-}
-
-func getToken(kubeClient kubernetes.Interface) (string, error) {
-	saSecret, err := helpers.GetBootstrapSecretFromSA(kubeClient)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			//As no SA search for bootstrap token
-			var token string
-			token, err = getBootstrapToken(kubeClient)
-			if err == nil {
-				return token, nil
-			}
-		}
-		return "", err
-	}
-	return string(saSecret.Data["token"]), nil
-}
-
-func getBootstrapToken(kubeClient kubernetes.Interface) (string, error) {
-	var bootstrapSecret *corev1.Secret
-	l, err := kubeClient.CoreV1().
-		Secrets("kube-system").
-		List(context.TODO(), metav1.ListOptions{LabelSelector: fmt.Sprintf("%v = %v", config.LabelApp, config.LabelAppClusterApp)})
-	if err != nil {
-		return "", err
-	}
-	for _, s := range l.Items {
-		if strings.HasPrefix(s.Name, config.BootstrapSecretPrefix) {
-			bootstrapSecret = &s
-		}
-	}
-	if bootstrapSecret != nil {
-		return fmt.Sprintf("%s.%s", string(bootstrapSecret.Data["token-id"]), string(bootstrapSecret.Data["token-secret"])), nil
-	}
-	return "", errors.NewNotFound(schema.GroupResource{
-		Group:    corev1.GroupName,
-		Resource: "secrets"},
-		fmt.Sprintf("%s*", config.BootstrapSecretPrefix))
 }
 
 func (o *Options) applyToken(clientHolder *resourceapply.ClientHolder, reader *asset.ScenarioResourcesReader) ([]string, error) {

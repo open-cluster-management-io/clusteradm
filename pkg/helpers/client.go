@@ -12,6 +12,7 @@ import (
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
@@ -19,6 +20,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/config"
 )
 
+//GetAPIServer gets the api server url
 func GetAPIServer(kubeClient kubernetes.Interface) (string, error) {
 	config, err := getClusterInfoKubeConfig(kubeClient)
 	if err != nil {
@@ -32,6 +34,9 @@ func GetAPIServer(kubeClient kubernetes.Interface) (string, error) {
 	return cluster.Server, nil
 }
 
+//GetCACert returns the CA cert.
+//First by looking in the cluster-info configmap of the kube-public ns and if not found,
+//it searches in the kube-root-ca.crt configmap.
 func GetCACert(kubeClient kubernetes.Interface) ([]byte, error) {
 	config, err := getClusterInfoKubeConfig(kubeClient)
 	if err == nil {
@@ -65,6 +70,7 @@ func getClusterInfoKubeConfig(kubeClient kubernetes.Interface) (*clientcmdapiv1.
 	return config, nil
 }
 
+//WaitCRDToBeReady waits if a crd is ready
 func WaitCRDToBeReady(apiExtensionsClient apiextensionsclient.Clientset, name string, b wait.Backoff) error {
 	errGet := retry.OnError(b, func(err error) bool {
 		if err != nil {
@@ -82,6 +88,49 @@ func WaitCRDToBeReady(apiExtensionsClient apiextensionsclient.Clientset, name st
 	return errGet
 }
 
+//GetToken returns the bootstrap token.
+//It searchs first for the service-account token and then if it is not found
+//it looks for the bootstrap token in kube-system.
+func GetToken(kubeClient kubernetes.Interface) (string, error) {
+	saSecret, err := GetBootstrapSecretFromSA(kubeClient)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			//As no SA search for bootstrap token
+			var token string
+			token, err = GetBootstrapToken(kubeClient)
+			if err == nil {
+				return token, nil
+			}
+		}
+		return "", err
+	}
+	return string(saSecret.Data["token"]), nil
+}
+
+//GetBootstrapToken returns the service-account token in kube-system
+func GetBootstrapToken(kubeClient kubernetes.Interface) (string, error) {
+	var bootstrapSecret *corev1.Secret
+	l, err := kubeClient.CoreV1().
+		Secrets("kube-system").
+		List(context.TODO(), metav1.ListOptions{LabelSelector: fmt.Sprintf("%v = %v", config.LabelApp, config.ClusterManagerName)})
+	if err != nil {
+		return "", err
+	}
+	for _, s := range l.Items {
+		if strings.HasPrefix(s.Name, config.BootstrapSecretPrefix) {
+			bootstrapSecret = &s
+		}
+	}
+	if bootstrapSecret != nil {
+		return fmt.Sprintf("%s.%s", string(bootstrapSecret.Data["token-id"]), string(bootstrapSecret.Data["token-secret"])), nil
+	}
+	return "", errors.NewNotFound(schema.GroupResource{
+		Group:    corev1.GroupName,
+		Resource: "secrets"},
+		fmt.Sprintf("%s*", config.BootstrapSecretPrefix))
+}
+
+//GetBootstrapSecretFromSA retrieves the service-account token secret
 func GetBootstrapSecretFromSA(
 	kubeClient kubernetes.Interface) (*corev1.Secret, error) {
 	sa, err := kubeClient.CoreV1().

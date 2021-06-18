@@ -130,7 +130,7 @@ func (o *Options) run() error {
 
 	if !o.ClusteradmFlags.DryRun {
 		b := retry.DefaultBackoff
-		b.Duration = 100 * time.Millisecond
+		b.Duration = 200 * time.Millisecond
 		err = helpers.WaitCRDToBeReady(*apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", b)
 		if err != nil {
 			return err

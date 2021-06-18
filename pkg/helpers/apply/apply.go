@@ -65,6 +65,7 @@ func ApplyDeployments(
 	return output, nil
 }
 
+//ApplyDeployment apply a deployment
 func ApplyDeployment(kubeClient kubernetes.Interface,
 	reader asset.ScenarioReader,
 	values interface{},
@@ -221,6 +222,7 @@ func getTemplate(templateName string) *template.Template {
 	return tmpl
 }
 
+//MustTemplateAssets render list of files
 func MustTemplateAssets(reader asset.ScenarioReader, values interface{}, headerFile string, files ...string) ([]string, error) {
 	output := make([]string, 0)
 	for _, name := range files {

@@ -7,6 +7,5 @@ const (
 	BootstrapSAName                = "cluster-bootstrap"
 	ClusterManagerName             = "cluster-manager"
 	LabelApp                       = "app"
-	LabelAppClusterApp             = "cluster-manager"
 	BootstrapSecretPrefix          = "bootstrap-token-"
 )

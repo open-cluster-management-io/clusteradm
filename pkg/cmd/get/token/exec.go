@@ -10,14 +10,16 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	"open-cluster-management.io/clusteradm/pkg/config"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
+	"open-cluster-management.io/clusteradm/pkg/helpers/asset"
 
+	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/spf13/cobra"
 
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -83,28 +85,13 @@ func (o *Options) run() error {
 		WithKubernetes(kubeClient).
 		WithDynamicClient(dynamicClient)
 
+	//Retrieve token from bootstrap or service-account
 	token, err := getToken(kubeClient)
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			return err
 		}
-		files := []string{
-			"init/namespace.yaml",
-		}
-		if o.useBootstrapToken {
-			files = append(files,
-				"init/bootstrap-token-secret.yaml",
-				"init/bootstrap_cluster_role.yaml",
-				"init/bootstrap_cluster_role_binding.yaml",
-			)
-		} else {
-			files = append(files,
-				"init/bootstrap_sa.yaml",
-				"init/bootstrap_cluster_role.yaml",
-				"init/bootstrap_sa_cluster_role_binding.yaml",
-			)
-		}
-		out, err := apply.ApplyDirectly(clientHolder, reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
+		out, err := o.applyToken(clientHolder, reader)
 		if err != nil {
 			return err
 		}
@@ -150,35 +137,70 @@ func waitForBootstrapSecret(kubeClient kubernetes.Interface, b wait.Backoff) (se
 	err = retry.OnError(b, func(err error) bool {
 		return err != nil
 	}, func() error {
-		secret, err = helpers.GetBootstrapSecret(kubeClient)
+		secret, err = helpers.GetBootstrapSecretFromSA(kubeClient)
 		return err
 	})
 	return
 }
 
 func getToken(kubeClient kubernetes.Interface) (string, error) {
-	var bootstrapSecret *corev1.Secret
-	saSecret, err := helpers.GetBootstrapSecret(kubeClient)
+	saSecret, err := helpers.GetBootstrapSecretFromSA(kubeClient)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			//As no SA search for bootstrap token
-			l, err := kubeClient.CoreV1().
-				Secrets("kube-system").
-				List(context.TODO(), metav1.ListOptions{LabelSelector: fmt.Sprintf("%v = %v", config.LabelApp, config.LabelAppClusterApp)})
-			if err != nil {
-				return "", err
-			}
-			for _, s := range l.Items {
-				if strings.HasPrefix(s.Name, config.BootstrapSecretPrefix) {
-					bootstrapSecret = &s
-				}
-			}
-			if bootstrapSecret != nil {
-				return fmt.Sprintf("%s.%s", string(bootstrapSecret.Data["token-id"]), string(bootstrapSecret.Data["token-secret"])), nil
+			var token string
+			token, err = getBootstrapToken(kubeClient)
+			if err == nil {
+				return token, nil
 			}
 		}
 		return "", err
-	} else {
-		return string(saSecret.Data["token"]), nil
 	}
+	return string(saSecret.Data["token"]), nil
+}
+
+func getBootstrapToken(kubeClient kubernetes.Interface) (string, error) {
+	var bootstrapSecret *corev1.Secret
+	l, err := kubeClient.CoreV1().
+		Secrets("kube-system").
+		List(context.TODO(), metav1.ListOptions{LabelSelector: fmt.Sprintf("%v = %v", config.LabelApp, config.LabelAppClusterApp)})
+	if err != nil {
+		return "", err
+	}
+	for _, s := range l.Items {
+		if strings.HasPrefix(s.Name, config.BootstrapSecretPrefix) {
+			bootstrapSecret = &s
+		}
+	}
+	if bootstrapSecret != nil {
+		return fmt.Sprintf("%s.%s", string(bootstrapSecret.Data["token-id"]), string(bootstrapSecret.Data["token-secret"])), nil
+	}
+	return "", errors.NewNotFound(schema.GroupResource{
+		Group:    corev1.GroupName,
+		Resource: "secrets"},
+		fmt.Sprintf("%s*", config.BootstrapSecretPrefix))
+}
+
+func (o *Options) applyToken(clientHolder *resourceapply.ClientHolder, reader *asset.ScenarioResourcesReader) ([]string, error) {
+	files := []string{
+		"init/namespace.yaml",
+	}
+	if o.useBootstrapToken {
+		files = append(files,
+			"init/bootstrap-token-secret.yaml",
+			"init/bootstrap_cluster_role.yaml",
+			"init/bootstrap_cluster_role_binding.yaml",
+		)
+	} else {
+		files = append(files,
+			"init/bootstrap_sa.yaml",
+			"init/bootstrap_cluster_role.yaml",
+			"init/bootstrap_sa_cluster_role_binding.yaml",
+		)
+	}
+	out, err := apply.ApplyDirectly(clientHolder, reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
+	if err != nil {
+		return nil, err
+	}
+	return out, err
 }

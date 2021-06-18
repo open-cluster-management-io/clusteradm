@@ -161,7 +161,7 @@ func waitForBootstrapSecret(kubeClient kubernetes.Interface, b wait.Backoff) (se
 		}
 		return false
 	}, func() error {
-		secret, err = helpers.GetBootstrapSecret(kubeClient)
+		secret, err = helpers.GetBootstrapSecretFromSA(kubeClient)
 		return err
 	})
 	return

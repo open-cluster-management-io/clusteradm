@@ -34,3 +34,4 @@ rules:
   - "managedclustersets/join"
   verbs: 
   - "create"
+  

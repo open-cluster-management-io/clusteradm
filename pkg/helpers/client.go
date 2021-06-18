@@ -82,7 +82,7 @@ func WaitCRDToBeReady(apiExtensionsClient apiextensionsclient.Clientset, name st
 	return errGet
 }
 
-func GetBootstrapSecret(
+func GetBootstrapSecretFromSA(
 	kubeClient kubernetes.Interface) (*corev1.Secret, error) {
 	sa, err := kubeClient.CoreV1().
 		ServiceAccounts(config.OpenClusterManagementNamespace).
@@ -121,6 +121,8 @@ func GetBootstrapSecret(
 	return secret, nil
 }
 
+//IsClusterManagerInstalled checks if the hub is already initialized.
+//It checks if the crd is already present to find out that the hub is already initialized.
 func IsClusterManagerInstalled(apiExtensionsClient apiextensionsclient.Interface) (bool, error) {
 	_, err := apiExtensionsClient.ApiextensionsV1().
 		CustomResourceDefinitions().

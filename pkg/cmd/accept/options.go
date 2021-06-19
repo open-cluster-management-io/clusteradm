@@ -11,7 +11,9 @@ type Options struct {
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 	//A list of comma separated cluster names
 	clusters string
-	values   Values
+	//Timeout to wait in second for managedcluster and CSR
+	timeout int
+	values  Values
 }
 
 //Values: The values used in the template

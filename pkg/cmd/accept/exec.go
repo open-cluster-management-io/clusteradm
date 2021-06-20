@@ -64,27 +64,36 @@ func (o *Options) run() error {
 	return o.runWithClient(kubeClient, clusterClient)
 }
 
-func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient *clusterclientset.Clientset) error {
+func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient *clusterclientset.Clientset) (err error) {
 	for _, clusterName := range o.values.clusters {
-		err := wait.PollImmediate(1*time.Second, time.Duration(o.timeout)*time.Second, func() (bool, error) {
-			csrApproved, err := o.approveCSR(kubeClient, clusterName)
-			if err != nil {
-				return false, err
-			}
-			mcUpdated, err := o.updateManagedCluster(clusterClient, clusterName)
-			if err != nil {
-				return false, err
-			}
-			if csrApproved && mcUpdated {
-				return true, nil
-			}
-			return false, nil
-		})
+		if o.wait == 0 {
+			_, err = o.accept(kubeClient, clusterClient, clusterName)
+		} else {
+			err = wait.PollImmediate(1*time.Second, time.Duration(o.wait)*time.Second, func() (bool, error) {
+				return o.accept(kubeClient, clusterClient, clusterName)
+			})
+		}
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (o *Options) accept(kubeClient *kubernetes.Clientset, clusterClient *clusterclientset.Clientset, clusterName string) (bool, error) {
+	csrApproved, err := o.approveCSR(kubeClient, clusterName)
+	if err != nil {
+		return false, err
+	}
+	mcUpdated, err := o.updateManagedCluster(clusterClient, clusterName)
+	if err != nil {
+		return false, err
+	}
+	if csrApproved && mcUpdated {
+		return true, nil
+	}
+	return false, nil
+
 }
 
 func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName string) (bool, error) {

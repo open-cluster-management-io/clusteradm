@@ -12,8 +12,8 @@ type Options struct {
 	//A list of comma separated cluster names
 	clusters string
 	//Timeout to wait in second for managedcluster and CSR
-	timeout int
-	values  Values
+	wait   int
+	values Values
 }
 
 //Values: The values used in the template

@@ -44,6 +44,6 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	}
 
 	cmd.Flags().StringVar(&o.clusters, "clusters", "", "Names of the cluster to accept (comma separated)")
-	cmd.Flags().IntVar(&o.timeout, "time-out", 1, "the number of second to wait for the managedcluster and CSR")
+	cmd.Flags().IntVar(&o.wait, "wait", 0, "the number of second to wait for the managedcluster and CSR")
 	return cmd
 }

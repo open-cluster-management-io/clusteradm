@@ -10,6 +10,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
@@ -93,7 +94,6 @@ func (o *Options) accept(kubeClient *kubernetes.Clientset, clusterClient *cluste
 		return true, nil
 	}
 	return false, nil
-
 }
 
 func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName string) (bool, error) {
@@ -114,60 +114,58 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 			continue
 		}
 		//Check groups
-		var group string
-		for _, g := range item.Spec.Groups {
-			if g == groupName {
-				group = g
-				break
-			}
-		}
-		//Does not contain the correct group
-		if len(group) == 0 {
+		groups := sets.NewString(item.Spec.Groups...)
+		if !groups.Has(groupName) {
 			continue
 		}
 		//Check if already approved or denied
-		for _, c := range item.Status.Conditions {
-			if c.Type == certificatesv1.CertificateApproved {
-				fmt.Printf("CSR %s already approved\n", item.Name)
-				return true, nil
-			}
-			if c.Type == certificatesv1.CertificateDenied {
-				fmt.Printf("CSR %s already denied\n", item.Name)
-				return true, nil
-			}
+		approved, denied := GetCertApprovalCondition(&item.Status)
+		if approved {
+			fmt.Printf("CSR %s already approved\n", item.Name)
+		}
+		if denied {
+			fmt.Printf("CSR %s already denied\n", item.Name)
+		}
+		//if alreaady approved or denied, then nothing to do
+		if approved || denied {
+			return true, nil
 		}
 		csr = &item
 		break
 	}
 
-	if csr != nil {
-		if !o.ClusteradmFlags.DryRun {
-			if csr.Status.Conditions == nil {
-				csr.Status.Conditions = make([]certificatesv1.CertificateSigningRequestCondition, 0)
-			}
-
-			csr.Status.Conditions = append(csr.Status.Conditions, certificatesv1.CertificateSigningRequestCondition{
-				Status:         corev1.ConditionTrue,
-				Type:           certificatesv1.CertificateApproved,
-				Reason:         fmt.Sprintf("%sApprove", helpers.GetExampleHeader()),
-				Message:        fmt.Sprintf("This CSR was approved by %s certificate approve.", helpers.GetExampleHeader()),
-				LastUpdateTime: metav1.Now(),
-			})
-
-			kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
-			if err != nil {
-				return false, err
-			}
-			signingRequest := kubeClient.CertificatesV1().CertificateSigningRequests()
-			if _, err := signingRequest.UpdateApproval(context.TODO(), csr.Name, csr, metav1.UpdateOptions{}); err != nil {
-				return false, err
-			}
-		}
-		fmt.Printf("CSR %s approved\n", csr.Name)
+	//no csr found
+	if csr == nil {
+		fmt.Printf("no CSR to approve for cluster %s\n", clusterName)
+		return false, nil
+	}
+	//if dry-run don't approve
+	if o.ClusteradmFlags.DryRun {
 		return true, nil
 	}
-	fmt.Printf("no CSR to approve for cluster %s\n", clusterName)
-	return false, nil
+	if csr.Status.Conditions == nil {
+		csr.Status.Conditions = make([]certificatesv1.CertificateSigningRequestCondition, 0)
+	}
+
+	csr.Status.Conditions = append(csr.Status.Conditions, certificatesv1.CertificateSigningRequestCondition{
+		Status:         corev1.ConditionTrue,
+		Type:           certificatesv1.CertificateApproved,
+		Reason:         fmt.Sprintf("%sApprove", helpers.GetExampleHeader()),
+		Message:        fmt.Sprintf("This CSR was approved by %s certificate approve.", helpers.GetExampleHeader()),
+		LastUpdateTime: metav1.Now(),
+	})
+
+	kubeClient, err = o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
+	if err != nil {
+		return false, err
+	}
+	signingRequest := kubeClient.CertificatesV1().CertificateSigningRequests()
+	if _, err := signingRequest.UpdateApproval(context.TODO(), csr.Name, csr, metav1.UpdateOptions{}); err != nil {
+		return false, err
+	}
+
+	fmt.Printf("CSR %s approved\n", csr.Name)
+	return true, nil
 }
 
 func (o *Options) updateManagedCluster(clusterClient *clusterclientset.Clientset, clusterName string) (bool, error) {
@@ -187,10 +185,36 @@ func (o *Options) updateManagedCluster(clusterClient *clusterclientset.Clientset
 			if err != nil {
 				return false, err
 			}
+			fmt.Printf("set httpAcceptsClient to true for cluster %s\n", clusterName)
 		}
-		fmt.Printf("set httpAcceptsClient to true for cluster %s\n", clusterName)
 	} else {
 		fmt.Printf("httpAcceptsClient already set for cluster %s\n", clusterName)
 	}
 	return true, nil
+}
+
+// func isCSRApprovedOrDenied(csr certificatesv1.CertificateSigningRequest) bool {
+// 	for _, c := range csr.Status.Conditions {
+// 		if c.Type == certificatesv1.CertificateApproved {
+// 			fmt.Printf("CSR %s already approved\n", csr.Name)
+// 			return true
+// 		}
+// 		if c.Type == certificatesv1.CertificateDenied {
+// 			fmt.Printf("CSR %s already denied\n", csr.Name)
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }
+
+func GetCertApprovalCondition(status *certificatesv1.CertificateSigningRequestStatus) (approved bool, denied bool) {
+	for _, c := range status.Conditions {
+		if c.Type == certificatesv1.CertificateApproved {
+			approved = true
+		}
+		if c.Type == certificatesv1.CertificateDenied {
+			denied = true
+		}
+	}
+	return
 }

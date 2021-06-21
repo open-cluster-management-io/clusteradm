@@ -72,10 +72,10 @@ function joinscenario() {
    echo "Sleep 4 min to stabilize" >&2
    # we need to wait 2 min but once we will have watch status monitor
    # we will not need to sleep anymore
-   sleep 240
+   # sleep 240
 
    kubectl config use-context kind-${CLUSTER_NAME}-hub
-   CMDACCEPTRESULT=$(accept_cluster "${CMDJOINRESULT}")
+   CMDACCEPTRESULT=$(accept_cluster "${CMDJOINRESULT} --wait 240")
    echo $CMDACCEPTRESULT | grep approved
    if [ $? != 0 ]
    then

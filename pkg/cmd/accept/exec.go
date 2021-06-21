@@ -196,20 +196,6 @@ func (o *Options) updateManagedCluster(clusterClient *clusterclientset.Clientset
 	return true, nil
 }
 
-// func isCSRApprovedOrDenied(csr certificatesv1.CertificateSigningRequest) bool {
-// 	for _, c := range csr.Status.Conditions {
-// 		if c.Type == certificatesv1.CertificateApproved {
-// 			fmt.Printf("CSR %s already approved\n", csr.Name)
-// 			return true
-// 		}
-// 		if c.Type == certificatesv1.CertificateDenied {
-// 			fmt.Printf("CSR %s already denied\n", csr.Name)
-// 			return true
-// 		}
-// 	}
-// 	return false
-// }
-
 func GetCertApprovalCondition(status *certificatesv1.CertificateSigningRequestStatus) (approved bool, denied bool) {
 	for _, c := range status.Conditions {
 		if c.Type == certificatesv1.CertificateApproved {

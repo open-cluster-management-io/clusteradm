@@ -120,14 +120,14 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 		}
 		//Check if already approved or denied
 		approved, denied := GetCertApprovalCondition(&item.Status)
-		if approved {
-			fmt.Printf("CSR %s already approved\n", item.Name)
-		}
+		//if alreaady denied, then nothing to do
 		if denied {
 			fmt.Printf("CSR %s already denied\n", item.Name)
+			return true, nil
 		}
-		//if alreaady approved or denied, then nothing to do
-		if approved || denied {
+		//if alreaady approved, then nothing to do
+		if approved {
+			fmt.Printf("CSR %s already approved\n", item.Name)
 			return true, nil
 		}
 		csr = &item
@@ -178,17 +178,20 @@ func (o *Options) updateManagedCluster(clusterClient *clusterclientset.Clientset
 		}
 		return false, err
 	}
-	if !mc.Spec.HubAcceptsClient {
-		if !o.ClusteradmFlags.DryRun {
-			mc.Spec.HubAcceptsClient = true
-			_, err = clusterClient.ClusterV1().ManagedClusters().Update(context.TODO(), mc, metav1.UpdateOptions{})
-			if err != nil {
-				return false, err
-			}
-			fmt.Printf("set httpAcceptsClient to true for cluster %s\n", clusterName)
-		}
-	} else {
+	if mc.Spec.HubAcceptsClient {
 		fmt.Printf("httpAcceptsClient already set for cluster %s\n", clusterName)
+		return true, nil
+	}
+	if o.ClusteradmFlags.DryRun {
+		return true, nil
+	}
+	if !mc.Spec.HubAcceptsClient {
+		mc.Spec.HubAcceptsClient = true
+		_, err = clusterClient.ClusterV1().ManagedClusters().Update(context.TODO(), mc, metav1.UpdateOptions{})
+		if err != nil {
+			return false, err
+		}
+		fmt.Printf("set httpAcceptsClient to true for cluster %s\n", clusterName)
 	}
 	return true, nil
 }

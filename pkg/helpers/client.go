@@ -12,6 +12,7 @@ import (
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
@@ -19,6 +20,15 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/config"
 )
 
+type TokenType string
+
+const (
+	BootstrapToken      TokenType = "bootstrap-token"
+	ServiceAccountToken TokenType = "service-account-token"
+	UnknownToken        TokenType = "unknown-token"
+)
+
+//GetAPIServer gets the api server url
 func GetAPIServer(kubeClient kubernetes.Interface) (string, error) {
 	config, err := getClusterInfoKubeConfig(kubeClient)
 	if err != nil {
@@ -32,6 +42,9 @@ func GetAPIServer(kubeClient kubernetes.Interface) (string, error) {
 	return cluster.Server, nil
 }
 
+//GetCACert returns the CA cert.
+//First by looking in the cluster-info configmap of the kube-public ns and if not found,
+//it searches in the kube-root-ca.crt configmap.
 func GetCACert(kubeClient kubernetes.Interface) ([]byte, error) {
 	config, err := getClusterInfoKubeConfig(kubeClient)
 	if err == nil {
@@ -65,6 +78,7 @@ func getClusterInfoKubeConfig(kubeClient kubernetes.Interface) (*clientcmdapiv1.
 	return config, nil
 }
 
+//WaitCRDToBeReady waits if a crd is ready
 func WaitCRDToBeReady(apiExtensionsClient apiextensionsclient.Clientset, name string, b wait.Backoff) error {
 	errGet := retry.OnError(b, func(err error) bool {
 		if err != nil {
@@ -82,13 +96,56 @@ func WaitCRDToBeReady(apiExtensionsClient apiextensionsclient.Clientset, name st
 	return errGet
 }
 
-func GetBootstrapSecret(
-	kubeClient kubernetes.Interface) (*corev1.Secret, error) {
+//GetToken returns the bootstrap token.
+//It searchs first for the service-account token and then if it is not found
+//it looks for the bootstrap token in kube-system.
+func GetToken(kubeClient kubernetes.Interface) (string, TokenType, error) {
+	token, err := GetBootstrapTokenFromSA(kubeClient)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			//As no SA search for bootstrap token
+			var token string
+			token, err = GetBootstrapToken(kubeClient)
+			if err == nil {
+				return token, BootstrapToken, nil
+			}
+		}
+		return "", UnknownToken, err
+	}
+	return token, ServiceAccountToken, nil
+}
+
+//GetBootstrapToken returns the service-account token in kube-system
+func GetBootstrapToken(kubeClient kubernetes.Interface) (string, error) {
+	var bootstrapSecret *corev1.Secret
+	l, err := kubeClient.CoreV1().
+		Secrets("kube-system").
+		List(context.TODO(), metav1.ListOptions{LabelSelector: fmt.Sprintf("%v = %v", config.LabelApp, config.ClusterManagerName)})
+	if err != nil {
+		return "", err
+	}
+	for _, s := range l.Items {
+		if strings.HasPrefix(s.Name, config.BootstrapSecretPrefix) {
+			bootstrapSecret = &s
+		}
+	}
+	if bootstrapSecret != nil {
+		return fmt.Sprintf("%s.%s", string(bootstrapSecret.Data["token-id"]), string(bootstrapSecret.Data["token-secret"])), nil
+	}
+	return "", errors.NewNotFound(schema.GroupResource{
+		Group:    corev1.GroupName,
+		Resource: "secrets"},
+		fmt.Sprintf("%s*", config.BootstrapSecretPrefix))
+}
+
+//GetBootstrapSecretFromSA retrieves the service-account token secret
+func GetBootstrapTokenFromSA(
+	kubeClient kubernetes.Interface) (string, error) {
 	sa, err := kubeClient.CoreV1().
 		ServiceAccounts(config.OpenClusterManagementNamespace).
 		Get(context.TODO(), config.BootstrapSAName, metav1.GetOptions{})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	var secret *corev1.Secret
 	for _, objectRef := range sa.Secrets {
@@ -112,11 +169,28 @@ func GetBootstrapSecret(
 		}
 	}
 	if secret == nil {
-		return nil, fmt.Errorf("secret with prefix %s and type %s not found in service account %s/%s",
+		return "", fmt.Errorf("secret with prefix %s and type %s not found in service account %s/%s",
 			config.BootstrapSAName,
 			corev1.SecretTypeServiceAccountToken,
 			config.OpenClusterManagementNamespace,
 			config.BootstrapSAName)
 	}
-	return secret, nil
+	return string(secret.Data["token"]), nil
+}
+
+//IsClusterManagerInstalled checks if the hub is already initialized.
+//It checks if the crd is already present to find out that the hub is already initialized.
+func IsClusterManagerInstalled(apiExtensionsClient apiextensionsclient.Interface) (bool, error) {
+	_, err := apiExtensionsClient.ApiextensionsV1().
+		CustomResourceDefinitions().
+		Get(context.TODO(), "clustermanagers.operator.open-cluster-management.io", metav1.GetOptions{})
+	if err == nil {
+		return true, nil
+	}
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return false, nil
+		}
+	}
+	return false, err
 }

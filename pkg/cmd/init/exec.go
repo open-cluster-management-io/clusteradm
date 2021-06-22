@@ -5,18 +5,16 @@ import (
 	"fmt"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
-
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
-	"open-cluster-management.io/clusteradm/pkg/config"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 
 	"github.com/spf13/cobra"
 
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
@@ -33,6 +31,24 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 }
 
 func (o *Options) validate() error {
+	if o.force {
+		return nil
+	}
+	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
+	if err != nil {
+		return err
+	}
+	apiExtensionsClient, err := apiextensionsclient.NewForConfig(restConfig)
+	if err != nil {
+		return err
+	}
+	installed, err := helpers.IsClusterManagerInstalled(apiExtensionsClient)
+	if err != nil {
+		return err
+	}
+	if installed {
+		return fmt.Errorf("hub already initialized")
+	}
 	return nil
 }
 
@@ -95,15 +111,20 @@ func (o *Options) run() error {
 	}
 	output = append(output, out...)
 
-	if !o.useBootstrapToken {
-		b := retry.DefaultBackoff
-		b.Duration = 100 * time.Millisecond
-		secret, err := waitForBootstrapSecret(kubeClient, b)
+	//if service-account wait for the sa secret
+	if !o.useBootstrapToken && !o.ClusteradmFlags.DryRun {
+		err = wait.PollImmediate(1*time.Second, 10*time.Second, func() (bool, error) {
+			return waitForBootstrapToken(kubeClient)
+		})
 		if err != nil {
 			return err
 		}
-		token = string(secret.Data["token"])
+		token, err = helpers.GetBootstrapTokenFromSA(kubeClient)
+		if err != nil {
+			return err
+		}
 	}
+
 	out, err = apply.ApplyDeployments(kubeClient, reader, o.values, o.ClusteradmFlags.DryRun, "", "init/operator.yaml")
 	if err != nil {
 		return err
@@ -112,7 +133,7 @@ func (o *Options) run() error {
 
 	if !o.ClusteradmFlags.DryRun {
 		b := retry.DefaultBackoff
-		b.Duration = 100 * time.Millisecond
+		b.Duration = 200 * time.Millisecond
 		err = helpers.WaitCRDToBeReady(*apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", b)
 		if err != nil {
 			return err
@@ -135,16 +156,13 @@ func (o *Options) run() error {
 	return apply.WriteOutput(o.outputFile, output)
 }
 
-func waitForBootstrapSecret(kubeClient kubernetes.Interface, b wait.Backoff) (secret *corev1.Secret, err error) {
-	err = retry.OnError(b, func(err error) bool {
-		if err != nil {
-			fmt.Printf("Wait for sa %s secret to be ready\n", config.BootstrapSAName)
-			return true
-		}
-		return false
-	}, func() error {
-		secret, err = helpers.GetBootstrapSecret(kubeClient)
-		return err
-	})
-	return
+func waitForBootstrapToken(kubeClient kubernetes.Interface) (bool, error) {
+	_, err := helpers.GetBootstrapTokenFromSA(kubeClient)
+	switch {
+	case errors.IsNotFound(err):
+		return false, err
+	case err != nil:
+		return false, err
+	}
+	return true, nil
 }

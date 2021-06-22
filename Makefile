@@ -17,7 +17,8 @@ export GOPACKAGES   = $(shell go list ./... | grep -v /vendor | grep -v /build |
 .PHONY: clean
 clean: clean-test
 	kind delete cluster --name ${PROJECT_NAME}-functional-test-hub
-	kind delete cluster --name ${PROJECT_NAME}-functional-test-spoke
+	kind delete cluster --name ${PROJECT_NAME}-functional-test-c1
+	kind delete cluster --name ${PROJECT_NAME}-functional-test-c2
 	
 .PHONY: deps
 deps:
@@ -25,6 +26,7 @@ deps:
 
 .PHONY: build
 build: 
+	rm -f ${GOPATH}/bin/clusteradm
 	go install ./cmd/clusteradm.go
 
 .PHONY: 

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -19,7 +18,6 @@ import (
 
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/util/retry"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -80,63 +78,75 @@ func (o *Options) run() error {
 		WithKubernetes(kubeClient).
 		WithDynamicClient(dynamicClient)
 
-	//Retrieve token from service-account and if not found
-	//from the bootstrap token
-	token, err := helpers.GetToken(kubeClient)
-	if err != nil {
-		if !errors.IsNotFound(err) {
-			return err
-		}
-		out, err := o.applyToken(clientHolder, reader)
-		if err != nil {
-			return err
-		}
-		output = append(output, out...)
-		if !o.ClusteradmFlags.DryRun {
-			//Make sure that the sa token is ready
-			if !o.useBootstrapToken {
-				b := retry.DefaultBackoff
-				b.Duration = 100 * time.Millisecond
-				_, err = waitForBootstrapSecret(kubeClient, b)
-				if err != nil {
-					return err
-				}
-			}
-			token, err = helpers.GetToken(kubeClient)
-			if err != nil {
-				return err
-			}
-		}
+	//Retrieve token from service-account/bootstrap-token
+	// and if not found create it
+	var token string
+	if o.useBootstrapToken {
+		token, err = helpers.GetBootstrapToken(kubeClient)
 	} else {
-		//Update the cluster role
-		files := []string{
-			"init/bootstrap_cluster_role.yaml",
-		}
-		out, err := apply.ApplyDirectly(clientHolder, reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
+		token, err = helpers.GetBootstrapTokenFromSA(kubeClient)
+	}
+	switch {
+	case errors.IsNotFound(err):
+		out, err := o.applyToken(clientHolder, reader)
+		output = append(output, out...)
 		if err != nil {
 			return err
 		}
-		output = append(output, out...)
+	case err != nil:
+		return err
 	}
-	fmt.Printf("token: %s\n", token)
 
-	fmt.Printf("please log on spoke and run:\n%s join --hub-token %s --hub-apiserver %s --cluster-name <cluster_name>\n",
-		helpers.GetExampleHeader(),
-		token,
-		restConfig.Host,
-	)
+	//Update the cluster role as it could change over-time
+	files := []string{
+		"init/bootstrap_cluster_role.yaml",
+	}
+	out, err := apply.ApplyDirectly(clientHolder, reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
+	if err != nil {
+		return err
+	}
+	output = append(output, out...)
 
-	return apply.WriteOutput(o.outputFile, output)
+	// if dry-run then there is nothing else to do
+	if o.ClusteradmFlags.DryRun {
+		return o.writeResult(token, restConfig.Host, output)
+	}
+
+	//if bootstrap token then read the token
+	if o.useBootstrapToken {
+		token, err = helpers.GetBootstrapToken(kubeClient)
+		if err != nil {
+			return err
+		}
+		return o.writeResult(token, restConfig.Host, output)
+	}
+
+	//if service-account wait for the sa secret
+	err = wait.PollImmediate(1*time.Second, 10*time.Second, func() (bool, error) {
+		return waitForBootstrapToken(kubeClient)
+	})
+	if err != nil {
+		return err
+	}
+
+	//read the token
+	token, err = helpers.GetBootstrapTokenFromSA(kubeClient)
+	if err != nil {
+		return err
+	}
+
+	return o.writeResult(token, restConfig.Host, output)
 }
 
-func waitForBootstrapSecret(kubeClient kubernetes.Interface, b wait.Backoff) (secret *corev1.Secret, err error) {
-	err = retry.OnError(b, func(err error) bool {
-		return err != nil
-	}, func() error {
-		secret, err = helpers.GetBootstrapSecretFromSA(kubeClient)
-		return err
-	})
-	return
+func waitForBootstrapToken(kubeClient kubernetes.Interface) (bool, error) {
+	_, err := helpers.GetBootstrapTokenFromSA(kubeClient)
+	switch {
+	case errors.IsNotFound(err):
+		return false, err
+	case err != nil:
+		return false, err
+	}
+	return true, nil
 }
 
 func (o *Options) applyToken(clientHolder *resourceapply.ClientHolder, reader *asset.ScenarioResourcesReader) ([]string, error) {
@@ -161,4 +171,14 @@ func (o *Options) applyToken(clientHolder *resourceapply.ClientHolder, reader *a
 		return nil, err
 	}
 	return out, err
+}
+
+func (o *Options) writeResult(token, host string, output []string) error {
+	if len(token) == 0 {
+		fmt.Println("token doesn't exist")
+		return apply.WriteOutput(o.outputFile, output)
+	}
+	fmt.Printf("token=%s\n", token)
+	fmt.Printf("please log on spoke and run:\n%s join --hub-token %s --hub-apiserver %s --cluster-name <cluster_name>\n", helpers.GetExampleHeader(), token, host)
+	return apply.WriteOutput(o.outputFile, output)
 }

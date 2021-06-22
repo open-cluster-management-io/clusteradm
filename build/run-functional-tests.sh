@@ -25,7 +25,7 @@ function init_hub() {
 function join_hub() {
    echo "join_hub 1st parameter: "$1 >&2
    echo "join_hub 2nd parameter: "$2 >&2
-   local _CMDJOIN=`echo "$1" | cut -d ':' -f2,3,4 | cut -d '<' -f1`
+   local _CMDJOIN=`echo "$1" | cut -d ':' -f2-4 | cut -d '<' -f1`
    _CMDJOIN="$_CMDJOIN $2"
    local _CMDJOINRESULT=`$_CMDJOIN`
    if [ $? != 0 ]
@@ -39,7 +39,7 @@ function accept_cluster() {
    echo "accept_cluster 1st parameter: "$1 >&2
    local _CMDACCEPT=`echo "$1" | cut -d ':' -f2`
    _CMDACCEPT="$_CMDACCEPT"
-   local _CMDACCEPTRESULT=`$_CMDACCEPT`
+   local _CMDACCEPTRESULT=`$_CMDACCEPT --wait 240`
    if [ $? != 0 ]
    then
       ERROR_REPORT=$ERROR_REPORT+"clusteradm accept failed\n"
@@ -69,13 +69,10 @@ function joinscenario() {
    CMDJOINRESULT=$(join_hub "${CMDINITRESULT}" $1)
    echo "join command result: "$CMDJOINRESULT >&2
 
-   echo "Sleep 4 min to stabilize" >&2
-   # we need to wait 2 min but once we will have watch status monitor
-   # we will not need to sleep anymore
-   # sleep 240
-
+   echo "Wait 4 min to stabilize" >&2
+ 
    kubectl config use-context kind-${CLUSTER_NAME}-hub
-   CMDACCEPTRESULT=$(accept_cluster "${CMDJOINRESULT} --wait 240")
+   CMDACCEPTRESULT=$(accept_cluster "${CMDJOINRESULT}")
    echo $CMDACCEPTRESULT | grep approved
    if [ $? != 0 ]
    then
@@ -98,11 +95,8 @@ function gettokenscenario() {
    CMDJOINRESULT=$(join_hub "${CMGETTOKENRESULT}" $1)
    echo "join command result: "$CMDJOINRESULT >&1
 
-   echo "Sleep 4 min to stabilize" >&2
-   # we need to wait 2 min but once we will have watch status monitor
-   # we will not need to sleep anymore
-   sleep 240
-
+   echo "Wait 4 min to stabilize" >&2
+ 
    kubectl config use-context kind-${CLUSTER_NAME}-hub
    CMDACCEPTRESULT=$(accept_cluster "${CMDJOINRESULT}")
    echo $CMDACCEPTRESULT | grep approved
@@ -149,6 +143,7 @@ export KUBECONFIG=$TEST_DIR/tmp/config.yaml
 kind create cluster --name ${CLUSTER_NAME}-hub --config $TEST_DIR/kind-config/kind119-hub.yaml
 kind create cluster --name ${CLUSTER_NAME}-c1
 #Wait for cluster to setup
+echo "Sleep 10 sec"
 sleep 10
 
 echo "Joining with init and service account"

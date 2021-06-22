@@ -20,6 +20,14 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/config"
 )
 
+type TokenType string
+
+const (
+	BootstrapToken      TokenType = "bootstrap-token"
+	ServiceAccountToken TokenType = "service-account-token"
+	UnknownToken        TokenType = "unknown-token"
+)
+
 //GetAPIServer gets the api server url
 func GetAPIServer(kubeClient kubernetes.Interface) (string, error) {
 	config, err := getClusterInfoKubeConfig(kubeClient)
@@ -91,20 +99,20 @@ func WaitCRDToBeReady(apiExtensionsClient apiextensionsclient.Clientset, name st
 //GetToken returns the bootstrap token.
 //It searchs first for the service-account token and then if it is not found
 //it looks for the bootstrap token in kube-system.
-func GetToken(kubeClient kubernetes.Interface) (string, error) {
-	saSecret, err := GetBootstrapSecretFromSA(kubeClient)
+func GetToken(kubeClient kubernetes.Interface) (string, TokenType, error) {
+	token, err := GetBootstrapTokenFromSA(kubeClient)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			//As no SA search for bootstrap token
 			var token string
 			token, err = GetBootstrapToken(kubeClient)
 			if err == nil {
-				return token, nil
+				return token, BootstrapToken, nil
 			}
 		}
-		return "", err
+		return "", UnknownToken, err
 	}
-	return string(saSecret.Data["token"]), nil
+	return token, ServiceAccountToken, nil
 }
 
 //GetBootstrapToken returns the service-account token in kube-system
@@ -131,13 +139,13 @@ func GetBootstrapToken(kubeClient kubernetes.Interface) (string, error) {
 }
 
 //GetBootstrapSecretFromSA retrieves the service-account token secret
-func GetBootstrapSecretFromSA(
-	kubeClient kubernetes.Interface) (*corev1.Secret, error) {
+func GetBootstrapTokenFromSA(
+	kubeClient kubernetes.Interface) (string, error) {
 	sa, err := kubeClient.CoreV1().
 		ServiceAccounts(config.OpenClusterManagementNamespace).
 		Get(context.TODO(), config.BootstrapSAName, metav1.GetOptions{})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	var secret *corev1.Secret
 	for _, objectRef := range sa.Secrets {
@@ -161,13 +169,13 @@ func GetBootstrapSecretFromSA(
 		}
 	}
 	if secret == nil {
-		return nil, fmt.Errorf("secret with prefix %s and type %s not found in service account %s/%s",
+		return "", fmt.Errorf("secret with prefix %s and type %s not found in service account %s/%s",
 			config.BootstrapSAName,
 			corev1.SecretTypeServiceAccountToken,
 			config.OpenClusterManagementNamespace,
 			config.BootstrapSAName)
 	}
-	return secret, nil
+	return string(secret.Data["token"]), nil
 }
 
 //IsClusterManagerInstalled checks if the hub is already initialized.

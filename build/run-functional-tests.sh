@@ -69,7 +69,7 @@ function joinscenario() {
    CMDJOINRESULT=$(join_hub "${CMDINITRESULT}" $1)
    echo "join command result: "$CMDJOINRESULT >&2
 
-   echo "Wait 4 min to stabilize" >&2
+   echo "Wait 4 min maximum to stabilize" >&2
  
    kubectl config use-context kind-${CLUSTER_NAME}-hub
    CMDACCEPTRESULT=$(accept_cluster "${CMDJOINRESULT}")
@@ -85,9 +85,10 @@ function joinscenario() {
 
 function gettokenscenario() {
    echo "gettokenscenario 1st parameter: "$1 >&2
+   echo "gettokenscenario 2nd parameter: "$2 >&2
    echo "get token from hub" >&2
    kubectl config use-context kind-${CLUSTER_NAME}-hub 
-   CMGETTOKENRESULT=$(gettoken)
+   CMGETTOKENRESULT=$(gettoken $2)
    echo "get token command result: "$CMGETTOKENRESULT >&2
 
    echo "join hub" >&2
@@ -95,7 +96,7 @@ function gettokenscenario() {
    CMDJOINRESULT=$(join_hub "${CMGETTOKENRESULT}" $1)
    echo "join command result: "$CMDJOINRESULT >&1
 
-   echo "Wait 4 min to stabilize" >&2
+   echo "Wait 4 min maximum to stabilize" >&2
  
    kubectl config use-context kind-${CLUSTER_NAME}-hub
    CMDACCEPTRESULT=$(accept_cluster "${CMDJOINRESULT}")
@@ -106,6 +107,22 @@ function gettokenscenario() {
       ERROR_REPORT=$ERROR_REPORT+"no CSR get approved\n"
    else
       echo "accept command result: "$CMDACCEPTRESULT >&2
+   fi
+
+   echo "delete token" >&2
+   clusteradm delete token
+      if [ $? != 0 ]
+   then
+      echo "accept command result: "$CMDACCEPTRESULT >&2
+      ERROR_REPORT=$ERROR_REPORT+"no CSR get approved\n"
+   fi
+
+   echo "get token from hub" >&2
+   kubectl config use-context kind-${CLUSTER_NAME}-hub 
+   CMGETTOKENRESULT2=$(gettoken $2)
+   if [ "$CMGETTOKENRESULT" == "$CMGETTOKENRESULT2" ]
+   then
+     ERROR_REPORT=$ERROR_REPORT+"new token identical as previous token after delete"
    fi
 }
 
@@ -132,7 +149,7 @@ kind delete cluster --name ${CLUSTER_NAME}-c1
 kind create cluster --name ${CLUSTER_NAME}-c2
 echo "Joining with get token and bootstrap token"
 echo "------------------------------------------"
-gettokenscenario c2
+gettokenscenario c2 --use-bootstrap-token 
 
 kind delete cluster --name ${CLUSTER_NAME}-hub
 kind delete cluster --name ${CLUSTER_NAME}-c2

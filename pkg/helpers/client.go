@@ -157,11 +157,12 @@ func GetBootstrapSecretFromSA(
 		return nil, err
 	}
 	var secret *corev1.Secret
+	var prefix string
 	for _, objectRef := range sa.Secrets {
 		if objectRef.Namespace != "" && objectRef.Namespace != config.OpenClusterManagementNamespace {
 			continue
 		}
-		prefix := config.BootstrapSAName
+		prefix = config.BootstrapSAName
 		if len(prefix) > 63 {
 			prefix = prefix[:37]
 		}
@@ -178,11 +179,14 @@ func GetBootstrapSecretFromSA(
 		}
 	}
 	if secret == nil {
-		return nil, fmt.Errorf("secret with prefix %s and type %s not found in service account %s/%s",
-			config.BootstrapSAName,
-			corev1.SecretTypeServiceAccountToken,
-			config.OpenClusterManagementNamespace,
-			config.BootstrapSAName)
+		return nil, errors.NewNotFound(schema.GroupResource{
+			Group:    corev1.GroupName,
+			Resource: "secrets"},
+			fmt.Sprintf("secret with prefix %s and type %s not found in service account %s/%s",
+				prefix,
+				corev1.SecretTypeServiceAccountToken,
+				config.OpenClusterManagementNamespace,
+				config.BootstrapSAName))
 	}
 	return secret, nil
 }

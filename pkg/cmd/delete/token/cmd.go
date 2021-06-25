@@ -12,8 +12,8 @@ import (
 )
 
 var example = `
-# Get the bootstrap token
-%[1]s get token
+# Delete the bootstrap token
+%[1]s delete token
 `
 
 // NewCmd ...
@@ -22,7 +22,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 
 	cmd := &cobra.Command{
 		Use:          "token",
-		Short:        "get the bootsrap token",
+		Short:        "delete the bootsrap token",
 		Example:      fmt.Sprintf(example, helpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRun: func(c *cobra.Command, args []string) {

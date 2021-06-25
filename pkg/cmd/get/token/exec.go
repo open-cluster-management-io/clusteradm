@@ -142,7 +142,7 @@ func waitForBootstrapToken(kubeClient kubernetes.Interface) (bool, error) {
 	_, err := helpers.GetBootstrapTokenFromSA(kubeClient)
 	switch {
 	case errors.IsNotFound(err):
-		return false, err
+		return false, nil
 	case err != nil:
 		return false, err
 	}

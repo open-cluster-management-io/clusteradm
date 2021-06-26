@@ -45,6 +45,7 @@ var (
 func ApplyDeployments(
 	kubeClient kubernetes.Interface,
 	reader asset.ScenarioReader,
+	customFuncMap template.FuncMap,
 	values interface{},
 	dryRun bool,
 	headerFile string,
@@ -53,7 +54,7 @@ func ApplyDeployments(
 	output := make([]string, 0)
 	//Render each file
 	for _, name := range files {
-		deployment, err := ApplyDeployment(kubeClient, reader, values, dryRun, headerFile, name)
+		deployment, err := ApplyDeployment(kubeClient, reader, customFuncMap, values, dryRun, headerFile, name)
 		if err != nil {
 			if IsEmptyAsset(err) {
 				continue
@@ -68,12 +69,13 @@ func ApplyDeployments(
 //ApplyDeployment apply a deployment
 func ApplyDeployment(kubeClient kubernetes.Interface,
 	reader asset.ScenarioReader,
+	customFuncMap template.FuncMap,
 	values interface{},
 	dryRun bool,
 	headerFile string,
 	name string) (string, error) {
 	recorder := events.NewInMemoryRecorder(helpers.GetExampleHeader())
-	deploymentBytes, err := MustTempalteAsset(reader, values, headerFile, name)
+	deploymentBytes, err := MustTempalteAsset(reader, customFuncMap, values, headerFile, name)
 	if err != nil {
 		return string(deploymentBytes), err
 	}
@@ -98,18 +100,19 @@ func ApplyDeployment(kubeClient kubernetes.Interface,
 //ApplyDirectly applies standard kubernetes resources.
 func ApplyDirectly(clients *resourceapply.ClientHolder,
 	reader asset.ScenarioReader,
+	customFuncMap template.FuncMap,
 	values interface{},
 	dryRun bool,
 	headerFile string,
 	files ...string) ([]string, error) {
 	if dryRun {
-		return MustTemplateAssets(reader, values, headerFile, files...)
+		return MustTemplateAssets(reader, customFuncMap, values, headerFile, files...)
 	}
 	recorder := events.NewInMemoryRecorder(helpers.GetExampleHeader())
 	output := make([]string, 0)
 	//Apply resources
 	resourceResults := resourceapply.ApplyDirectly(clients, recorder, func(name string) ([]byte, error) {
-		out, err := MustTempalteAsset(reader, values, headerFile, name)
+		out, err := MustTempalteAsset(reader, customFuncMap, values, headerFile, name)
 		if err != nil {
 			return nil, err
 		}
@@ -129,13 +132,14 @@ func ApplyDirectly(clients *resourceapply.ClientHolder,
 func ApplyCustomResouces(dynamicClient dynamic.Interface,
 	discoveryClient discovery.DiscoveryInterface,
 	reader asset.ScenarioReader,
+	customFuncMap template.FuncMap,
 	values interface{},
 	dryRun bool,
 	headerFile string,
 	files ...string) ([]string, error) {
 	output := make([]string, 0)
 	for _, name := range files {
-		asset, err := ApplyCustomResouce(dynamicClient, discoveryClient, reader, values, dryRun, headerFile, name)
+		asset, err := ApplyCustomResouce(dynamicClient, discoveryClient, reader, customFuncMap, values, dryRun, headerFile, name)
 		if err != nil {
 			if IsEmptyAsset(err) {
 				continue
@@ -151,11 +155,12 @@ func ApplyCustomResouces(dynamicClient dynamic.Interface,
 func ApplyCustomResouce(dynamicClient dynamic.Interface,
 	discoveryClient discovery.DiscoveryInterface,
 	reader asset.ScenarioReader,
+	customFuncMap template.FuncMap,
 	values interface{},
 	dryRun bool,
 	headerFile string,
 	name string) (string, error) {
-	asset, err := MustTempalteAsset(reader, values, headerFile, name)
+	asset, err := MustTempalteAsset(reader, customFuncMap, values, headerFile, name)
 	output := string(asset)
 	if err != nil {
 		return output, err
@@ -213,20 +218,23 @@ func bytesToUnstructured(reader asset.ScenarioReader, asset []byte) (*unstructur
 }
 
 //getTemplate generate the template for rendering.
-func getTemplate(templateName string) *template.Template {
+func getTemplate(templateName string, customFuncMap template.FuncMap) *template.Template {
 	tmpl := template.New(templateName).
 		Option("missingkey=zero").
 		Funcs(FuncMap())
 	tmpl = tmpl.Funcs(TemplateFuncMap(tmpl)).
 		Funcs(sprig.TxtFuncMap())
+	if customFuncMap != nil {
+		tmpl = tmpl.Funcs(customFuncMap)
+	}
 	return tmpl
 }
 
 //MustTemplateAssets render list of files
-func MustTemplateAssets(reader asset.ScenarioReader, values interface{}, headerFile string, files ...string) ([]string, error) {
+func MustTemplateAssets(reader asset.ScenarioReader, customFuncMap template.FuncMap, values interface{}, headerFile string, files ...string) ([]string, error) {
 	output := make([]string, 0)
 	for _, name := range files {
-		deploymentBytes, err := MustTempalteAsset(reader, values, headerFile, name)
+		deploymentBytes, err := MustTempalteAsset(reader, customFuncMap, values, headerFile, name)
 		if err != nil {
 			if IsEmptyAsset(err) {
 				continue
@@ -243,8 +251,8 @@ func MustTemplateAssets(reader asset.ScenarioReader, values interface{}, headerF
 //Usually it contains nested template definitions as described https://golang.org/pkg/text/template/#hdr-Nested_template_definitions
 //This allows to add functions which can be use in each file.
 //The values object will be used to render the template
-func MustTempalteAsset(reader asset.ScenarioReader, values interface{}, headerFile, name string) ([]byte, error) {
-	tmpl := getTemplate(name)
+func MustTempalteAsset(reader asset.ScenarioReader, customFuncMap template.FuncMap, values interface{}, headerFile, name string) ([]byte, error) {
+	tmpl := getTemplate(name, customFuncMap)
 	h := []byte{}
 	var err error
 	if headerFile != "" {

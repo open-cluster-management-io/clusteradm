@@ -101,7 +101,7 @@ func (o *Options) run() error {
 	files := []string{
 		"init/bootstrap_cluster_role.yaml",
 	}
-	out, err := apply.ApplyDirectly(clientHolder, reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
+	out, err := apply.ApplyDirectly(clientHolder, reader, nil, o.values, o.ClusteradmFlags.DryRun, "", files...)
 	if err != nil {
 		return err
 	}
@@ -166,7 +166,7 @@ func (o *Options) applyToken(clientHolder *resourceapply.ClientHolder, reader *a
 			"init/bootstrap_sa_cluster_role_binding.yaml",
 		)
 	}
-	out, err := apply.ApplyDirectly(clientHolder, reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
+	out, err := apply.ApplyDirectly(clientHolder, reader, nil, o.values, o.ClusteradmFlags.DryRun, "", files...)
 	if err != nil {
 		return nil, err
 	}

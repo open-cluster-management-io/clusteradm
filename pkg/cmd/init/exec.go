@@ -105,7 +105,7 @@ func (o *Options) run() error {
 		"init/clustermanager_sa.yaml",
 	)
 
-	out, err := apply.ApplyDirectly(clientHolder, reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
+	out, err := apply.ApplyDirectly(clientHolder, reader, nil, o.values, o.ClusteradmFlags.DryRun, "", files...)
 	if err != nil {
 		return err
 	}
@@ -125,7 +125,7 @@ func (o *Options) run() error {
 		}
 	}
 
-	out, err = apply.ApplyDeployments(kubeClient, reader, o.values, o.ClusteradmFlags.DryRun, "", "init/operator.yaml")
+	out, err = apply.ApplyDeployments(kubeClient, reader, nil, o.values, o.ClusteradmFlags.DryRun, "", "init/operator.yaml")
 	if err != nil {
 		return err
 	}
@@ -141,7 +141,7 @@ func (o *Options) run() error {
 	}
 
 	discoveryClient := discovery.NewDiscoveryClientForConfigOrDie(restConfig)
-	out, err = apply.ApplyCustomResouces(dynamicClient, discoveryClient, reader, o.values, o.ClusteradmFlags.DryRun, "", "init/clustermanager.cr.yaml")
+	out, err = apply.ApplyCustomResouces(dynamicClient, discoveryClient, reader, nil, o.values, o.ClusteradmFlags.DryRun, "", "init/clustermanager.cr.yaml")
 	if err != nil {
 		return err
 	}

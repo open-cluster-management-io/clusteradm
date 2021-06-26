@@ -101,13 +101,13 @@ func (o *Options) run() error {
 		"join/service_account.yaml",
 	}
 
-	out, err := apply.ApplyDirectly(clientHolder, reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
+	out, err := apply.ApplyDirectly(clientHolder, reader, nil, o.values, o.ClusteradmFlags.DryRun, "", files...)
 	if err != nil {
 		return err
 	}
 	output = append(output, out...)
 
-	out, err = apply.ApplyDeployments(kubeClient, reader, o.values, o.ClusteradmFlags.DryRun, "", "join/operator.yaml")
+	out, err = apply.ApplyDeployments(kubeClient, reader, nil, o.values, o.ClusteradmFlags.DryRun, "", "join/operator.yaml")
 	if err != nil {
 		return err
 	}
@@ -124,7 +124,7 @@ func (o *Options) run() error {
 	}
 
 	discoveryClient := discovery.NewDiscoveryClientForConfigOrDie(restConfig)
-	out, err = apply.ApplyCustomResouces(dynamicClient, discoveryClient, reader, o.values, o.ClusteradmFlags.DryRun, "", "join/klusterlets.cr.yaml")
+	out, err = apply.ApplyCustomResouces(dynamicClient, discoveryClient, reader, nil, o.values, o.ClusteradmFlags.DryRun, "", "join/klusterlets.cr.yaml")
 	if err != nil {
 		return err
 	}

@@ -14,9 +14,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/client-go/util/retry"
+	"k8s.io/kubectl/pkg/cmd/util"
 	"open-cluster-management.io/clusteradm/pkg/config"
 )
 
@@ -27,6 +30,33 @@ const (
 	ServiceAccountToken TokenType = "service-account-token"
 	UnknownToken        TokenType = "unknown-token"
 )
+
+func GetClients(f util.Factory) (
+	kubeClient kubernetes.Interface,
+	apiExtensionsClient apiextensionsclient.Interface,
+	dynamicClient dynamic.Interface,
+	err error) {
+	kubeClient, err = f.KubernetesClientSet()
+	if err != nil {
+		return
+	}
+	dynamicClient, err = f.DynamicClient()
+	if err != nil {
+		return
+	}
+
+	var restConfig *rest.Config
+	restConfig, err = f.ToRESTConfig()
+	if err != nil {
+		return
+	}
+
+	apiExtensionsClient, err = apiextensionsclient.NewForConfig(restConfig)
+	if err != nil {
+		return
+	}
+	return
+}
 
 //GetAPIServer gets the api server url
 func GetAPIServer(kubeClient kubernetes.Interface) (string, error) {
@@ -79,7 +109,7 @@ func getClusterInfoKubeConfig(kubeClient kubernetes.Interface) (*clientcmdapiv1.
 }
 
 //WaitCRDToBeReady waits if a crd is ready
-func WaitCRDToBeReady(apiExtensionsClient apiextensionsclient.Clientset, name string, b wait.Backoff) error {
+func WaitCRDToBeReady(apiExtensionsClient apiextensionsclient.Interface, name string, b wait.Backoff) error {
 	errGet := retry.OnError(b, func(err error) bool {
 		if err != nil {
 			fmt.Printf("Wait  for %s crd to be ready\n", name)

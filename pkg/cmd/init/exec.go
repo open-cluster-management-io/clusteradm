@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
@@ -15,7 +14,6 @@ import (
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
 )
@@ -57,29 +55,13 @@ func (o *Options) run() error {
 	output := make([]string, 0)
 	reader := scenario.GetScenarioResourcesReader()
 
-	kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
-	if err != nil {
-		return err
-	}
-	dynamicClient, err := o.ClusteradmFlags.KubectlFactory.DynamicClient()
+	kubeClient, apiExtensionsClient, dynamicClient, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
 	if err != nil {
 		return err
 	}
 
-	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
-	if err != nil {
-		return err
-	}
-
-	apiExtensionsClient, err := apiextensionsclient.NewForConfig(restConfig)
-	if err != nil {
-		return err
-	}
-
-	clientHolder := resourceapply.NewClientHolder().
-		WithAPIExtensionsClient(apiExtensionsClient).
-		WithKubernetes(kubeClient).
-		WithDynamicClient(dynamicClient)
+	applierBuilder := &apply.ApplierBuilder{}
+	applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
 
 	files := []string{
 		"init/namespace.yaml",
@@ -105,7 +87,7 @@ func (o *Options) run() error {
 		"init/clustermanager_sa.yaml",
 	)
 
-	out, err := apply.ApplyDirectly(clientHolder, reader, nil, o.values, o.ClusteradmFlags.DryRun, "", files...)
+	out, err := applier.ApplyDirectly(reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
 	if err != nil {
 		return err
 	}
@@ -125,7 +107,7 @@ func (o *Options) run() error {
 		}
 	}
 
-	out, err = apply.ApplyDeployments(kubeClient, reader, nil, o.values, o.ClusteradmFlags.DryRun, "", "init/operator.yaml")
+	out, err = applier.ApplyDeployments(reader, o.values, o.ClusteradmFlags.DryRun, "", "init/operator.yaml")
 	if err != nil {
 		return err
 	}
@@ -134,18 +116,22 @@ func (o *Options) run() error {
 	if !o.ClusteradmFlags.DryRun {
 		b := retry.DefaultBackoff
 		b.Duration = 200 * time.Millisecond
-		err = helpers.WaitCRDToBeReady(*apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", b)
+		err = helpers.WaitCRDToBeReady(apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", b)
 		if err != nil {
 			return err
 		}
 	}
 
-	discoveryClient := discovery.NewDiscoveryClientForConfigOrDie(restConfig)
-	out, err = apply.ApplyCustomResouces(dynamicClient, discoveryClient, reader, nil, o.values, o.ClusteradmFlags.DryRun, "", "init/clustermanager.cr.yaml")
+	out, err = applier.ApplyCustomResouces(reader, o.values, o.ClusteradmFlags.DryRun, "", "init/clustermanager.cr.yaml")
 	if err != nil {
 		return err
 	}
 	output = append(output, out...)
+
+	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
+	if err != nil {
+		return nil
+	}
 
 	fmt.Printf("please log on spoke and run:\n%s join --hub-token %s --hub-apiserver %s --cluster-name <cluster_name>\n",
 		helpers.GetExampleHeader(),

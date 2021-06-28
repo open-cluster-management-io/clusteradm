@@ -75,9 +75,11 @@ func TestMustTempalteAsset(t *testing.T) {
 			wantErr: true,
 		},
 	}
+	ab := &ApplierBuilder{}
+	a := ab.Build()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := MustTempalteAsset(tt.args.reader, nil, tt.args.values, tt.args.headerFile, tt.args.name)
+			got, err := a.MustTempalteAsset(tt.args.reader, tt.args.values, tt.args.headerFile, tt.args.name)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MustTempalteAsset() error = %v, wantErr %v", err, tt.wantErr)
 				return

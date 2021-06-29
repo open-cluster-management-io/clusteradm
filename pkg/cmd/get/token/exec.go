@@ -13,7 +13,6 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 	"open-cluster-management.io/clusteradm/pkg/helpers/asset"
 
-	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/spf13/cobra"
 
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -54,29 +53,13 @@ func (o *Options) run() error {
 	output := make([]string, 0)
 	reader := scenario.GetScenarioResourcesReader()
 
-	kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
-	if err != nil {
-		return err
-	}
-	dynamicClient, err := o.ClusteradmFlags.KubectlFactory.DynamicClient()
+	kubeClient, apiExtensionsClient, dynamicClient, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
 	if err != nil {
 		return err
 	}
 
-	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
-	if err != nil {
-		return err
-	}
-
-	apiExtensionsClient, err := apiextensionsclient.NewForConfig(restConfig)
-	if err != nil {
-		return err
-	}
-
-	clientHolder := resourceapply.NewClientHolder().
-		WithAPIExtensionsClient(apiExtensionsClient).
-		WithKubernetes(kubeClient).
-		WithDynamicClient(dynamicClient)
+	applierBuilder := &apply.ApplierBuilder{}
+	applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
 
 	//Retrieve token from service-account/bootstrap-token
 	// and if not found create it
@@ -88,7 +71,7 @@ func (o *Options) run() error {
 	}
 	switch {
 	case errors.IsNotFound(err):
-		out, err := o.applyToken(clientHolder, reader)
+		out, err := o.applyToken(applier, reader)
 		output = append(output, out...)
 		if err != nil {
 			return err
@@ -101,12 +84,16 @@ func (o *Options) run() error {
 	files := []string{
 		"init/bootstrap_cluster_role.yaml",
 	}
-	out, err := apply.ApplyDirectly(clientHolder, reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
+	out, err := applier.ApplyDirectly(reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
 	if err != nil {
 		return err
 	}
 	output = append(output, out...)
 
+	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
+	if err != nil {
+		return err
+	}
 	// if dry-run then there is nothing else to do
 	if o.ClusteradmFlags.DryRun {
 		return o.writeResult(token, restConfig.Host, output)
@@ -149,7 +136,7 @@ func waitForBootstrapToken(kubeClient kubernetes.Interface) (bool, error) {
 	return true, nil
 }
 
-func (o *Options) applyToken(clientHolder *resourceapply.ClientHolder, reader *asset.ScenarioResourcesReader) ([]string, error) {
+func (o *Options) applyToken(applier apply.Applier, reader *asset.ScenarioResourcesReader) ([]string, error) {
 	files := []string{
 		"init/namespace.yaml",
 	}
@@ -166,7 +153,7 @@ func (o *Options) applyToken(clientHolder *resourceapply.ClientHolder, reader *a
 			"init/bootstrap_sa_cluster_role_binding.yaml",
 		)
 	}
-	out, err := apply.ApplyDirectly(clientHolder, reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
+	out, err := applier.ApplyDirectly(reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
 	if err != nil {
 		return nil, err
 	}

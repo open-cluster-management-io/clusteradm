@@ -6,12 +6,10 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
-	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 
 	// "k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/discovery"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
@@ -67,29 +65,12 @@ func (o *Options) run() error {
 		return err
 	}
 
-	kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
+	kubeClient, apiExtensionsClient, dynamicClient, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
 	if err != nil {
 		return err
 	}
-	dynamicClient, err := o.ClusteradmFlags.KubectlFactory.DynamicClient()
-	if err != nil {
-		return err
-	}
-
-	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
-	if err != nil {
-		return err
-	}
-
-	apiExtensionsClient, err := apiextensionsclient.NewForConfig(restConfig)
-	if err != nil {
-		return err
-	}
-
-	clientHolder := resourceapply.NewClientHolder().
-		WithAPIExtensionsClient(apiExtensionsClient).
-		WithKubernetes(kubeClient).
-		WithDynamicClient(dynamicClient)
+	applierBuilder := &apply.ApplierBuilder{}
+	applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
 
 	files := []string{
 		"join/namespace_agent.yaml",
@@ -101,13 +82,13 @@ func (o *Options) run() error {
 		"join/service_account.yaml",
 	}
 
-	out, err := apply.ApplyDirectly(clientHolder, reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
+	out, err := applier.ApplyDirectly(reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
 	if err != nil {
 		return err
 	}
 	output = append(output, out...)
 
-	out, err = apply.ApplyDeployments(kubeClient, reader, o.values, o.ClusteradmFlags.DryRun, "", "join/operator.yaml")
+	out, err = applier.ApplyDeployments(reader, o.values, o.ClusteradmFlags.DryRun, "", "join/operator.yaml")
 	if err != nil {
 		return err
 	}
@@ -117,14 +98,14 @@ func (o *Options) run() error {
 		b := retry.DefaultBackoff
 		b.Duration = 200 * time.Millisecond
 
-		err = helpers.WaitCRDToBeReady(*apiExtensionsClient, "klusterlets.operator.open-cluster-management.io", b)
+		err = helpers.WaitCRDToBeReady(
+			apiExtensionsClient, "klusterlets.operator.open-cluster-management.io", b)
 		if err != nil {
 			return err
 		}
 	}
 
-	discoveryClient := discovery.NewDiscoveryClientForConfigOrDie(restConfig)
-	out, err = apply.ApplyCustomResouces(dynamicClient, discoveryClient, reader, o.values, o.ClusteradmFlags.DryRun, "", "join/klusterlets.cr.yaml")
+	out, err = applier.ApplyCustomResouces(reader, o.values, o.ClusteradmFlags.DryRun, "", "join/klusterlets.cr.yaml")
 	if err != nil {
 		return err
 	}

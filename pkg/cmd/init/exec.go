@@ -133,7 +133,10 @@ func (o *Options) run() error {
 		return nil
 	}
 
-	fmt.Printf("please log on spoke and run:\n%s join --hub-token %s --hub-apiserver %s --cluster-name <cluster_name>\n",
+	fmt.Printf("The multicluster hub control plane has been initialized successfully!\n\n"+
+		"You can now register cluster(s) to the hub control plane. Log onto those cluster(s) and run the following command:\n\n"+
+		"    %s join --hub-token %s --hub-apiserver %s --cluster-name <cluster_name>\n\n"+
+		"Replace <cluster_name> with a cluster name of your choice. For example, cluster1.\n\n",
 		helpers.GetExampleHeader(),
 		token,
 		restConfig.Host,

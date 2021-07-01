@@ -11,6 +11,8 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 	"k8s.io/client-go/tools/clientcmd"
 	cliflag "k8s.io/component-base/cli/flag"
+	"k8s.io/klog/v2"
+
 	cmdconfig "k8s.io/kubectl/pkg/cmd/config"
 	"k8s.io/kubectl/pkg/cmd/options"
 	"k8s.io/kubectl/pkg/cmd/plugin"
@@ -27,28 +29,31 @@ import (
 )
 
 func main() {
-	streams := genericclioptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr}
-	configFlags := genericclioptions.NewConfigFlags(true).WithDeprecatedPasswordFlag()
-	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
-	f := cmdutil.NewFactory(matchVersionKubeConfigFlags)
-	clusteradmFlags := genericclioptionsclusteradm.NewClusteradmFlags(f)
-
 	root :=
 		&cobra.Command{
 			Use: "clusteradm",
 		}
 
 	flags := root.PersistentFlags()
-	matchVersionKubeConfigFlags.AddFlags(flags)
 	flags.SetNormalizeFunc(cliflag.WarnWordSepNormalizeFunc) // Warn for "_" flags
-
 	flags.SetNormalizeFunc(cliflag.WordSepNormalizeFunc)
-	// From this point and forward we get warnings on flags that contain "_" separators
-	root.SetGlobalNormalizationFunc(cliflag.WarnWordSepNormalizeFunc)
 
-	configFlags.AddFlags(flags)
+	kubeConfigFlags := genericclioptions.NewConfigFlags(true).WithDeprecatedPasswordFlag()
+	kubeConfigFlags.AddFlags(flags)
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(kubeConfigFlags)
+	matchVersionKubeConfigFlags.AddFlags(flags)
+
+	klog.InitFlags(nil)
+	root.PersistentFlags().AddGoFlagSet(flag.CommandLine)
+
+	f := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+	root.SetGlobalNormalizationFunc(cliflag.WarnWordSepNormalizeFunc)
+	streams := genericclioptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr}
+
+	clusteradmFlags := genericclioptionsclusteradm.NewClusteradmFlags(f)
 	clusteradmFlags.AddFlags(flags)
-	flags.AddGoFlagSet(flag.CommandLine)
+
+	// From this point and forward we get warnings on flags that contain "_" separators
 
 	root.AddCommand(cmdconfig.NewCmdConfig(f, clientcmd.NewDefaultPathOptions(), streams))
 	root.AddCommand(options.NewCmdOptions(streams.Out))
@@ -75,7 +80,9 @@ func main() {
 		},
 	}
 	groups.Add(root)
-	if err := root.Execute(); err != nil {
+	err := root.Execute()
+	klog.Flush()
+	if err != nil {
 		os.Exit(1)
 	}
 }

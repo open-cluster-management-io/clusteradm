@@ -8,7 +8,7 @@ import (
 	"text/template"
 
 	"github.com/ghodss/yaml"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 //ApplierFuncMap adds the function map

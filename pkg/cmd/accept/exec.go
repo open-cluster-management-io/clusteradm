@@ -183,7 +183,7 @@ func (o *Options) updateManagedCluster(clusterClient *clusterclientset.Clientset
 		return false, err
 	}
 	if mc.Spec.HubAcceptsClient {
-		fmt.Printf("httpAcceptsClient already set for cluster %s\n", clusterName)
+		fmt.Printf("hubAcceptsClient already set for managed cluster %s\n", clusterName)
 		return true, nil
 	}
 	if o.ClusteradmFlags.DryRun {
@@ -195,7 +195,7 @@ func (o *Options) updateManagedCluster(clusterClient *clusterclientset.Clientset
 		if err != nil {
 			return false, err
 		}
-		fmt.Printf("set httpAcceptsClient to true for cluster %s\n", clusterName)
+		fmt.Printf("set hubAcceptsClient to true for managed cluster %s\n", clusterName)
 	}
 	return true, nil
 }

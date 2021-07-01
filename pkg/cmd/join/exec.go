@@ -110,7 +110,8 @@ func (o *Options) run() error {
 		return err
 	}
 	output = append(output, out...)
-	fmt.Printf("please wait a few minutes then log on to hub and accept by running:\n%s accept --clusters %s\n", helpers.GetExampleHeader(), o.values.ClusterName)
+	fmt.Printf("Deploying klusterlet agent. Please wait a few minutes then log onto the hub cluster and run the following command:\n\n"+
+		"    %s accept --clusters %s\n\n", helpers.GetExampleHeader(), o.values.ClusterName)
 
 	return apply.WriteOutput(o.outputFile, output)
 

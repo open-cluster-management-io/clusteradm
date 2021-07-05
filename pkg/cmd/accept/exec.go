@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 
 	"github.com/spf13/cobra"
@@ -29,6 +30,7 @@ const (
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+	klog.V(1).InfoS("accept options:", "dry-run", o.ClusteradmFlags.DryRun, "clusters", o.clusters, "wait", o.wait)
 	alreadyProvidedCluster := make(map[string]bool)
 	clusters := make([]string, 0)
 	if o.clusters != "" {
@@ -43,7 +45,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	} else {
 		return fmt.Errorf("values or name are missing")
 	}
-
+	klog.V(3).InfoS("values:", "clusters", o.values.clusters)
 	return nil
 }
 
@@ -70,10 +72,14 @@ func (o *Options) run() error {
 func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient *clusterclientset.Clientset) (err error) {
 	for _, clusterName := range o.values.clusters {
 		if o.wait == 0 {
-			_, err = o.accept(kubeClient, clusterClient, clusterName)
+			var csrApproved bool
+			csrApproved, err = o.accept(kubeClient, clusterClient, clusterName, false)
+			if err == nil && !csrApproved {
+				err = fmt.Errorf("no CSR to approve for cluster %s", clusterName)
+			}
 		} else {
 			err = wait.PollImmediate(1*time.Second, time.Duration(o.wait)*time.Second, func() (bool, error) {
-				return o.accept(kubeClient, clusterClient, clusterName)
+				return o.accept(kubeClient, clusterClient, clusterName, true)
 			})
 		}
 		if err != nil {
@@ -83,8 +89,8 @@ func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient 
 	return nil
 }
 
-func (o *Options) accept(kubeClient *kubernetes.Clientset, clusterClient *clusterclientset.Clientset, clusterName string) (bool, error) {
-	csrApproved, err := o.approveCSR(kubeClient, clusterName)
+func (o *Options) accept(kubeClient *kubernetes.Clientset, clusterClient *clusterclientset.Clientset, clusterName string, waitMode bool) (bool, error) {
+	csrApproved, err := o.approveCSR(kubeClient, clusterName, waitMode)
 	if err != nil {
 		return false, err
 	}
@@ -98,7 +104,7 @@ func (o *Options) accept(kubeClient *kubernetes.Clientset, clusterClient *cluste
 	return false, nil
 }
 
-func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName string) (bool, error) {
+func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName string, waitMode bool) (bool, error) {
 	csrs, err := kubeClient.CertificatesV1().CertificateSigningRequests().List(context.TODO(),
 		metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("%v = %v", clusterLabel, clusterName),
@@ -140,7 +146,9 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 
 	//no csr found
 	if csr == nil {
-		fmt.Printf("no CSR to approve for cluster %s\n", clusterName)
+		if waitMode {
+			fmt.Printf("no CSR to approve for cluster %s\n", clusterName)
+		}
 		return false, nil
 	}
 	//if dry-run don't approve

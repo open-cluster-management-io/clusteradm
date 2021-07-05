@@ -7,6 +7,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/klog/v2"
 
 	// "k8s.io/apimachinery/pkg/util/wait"
 
@@ -22,6 +23,7 @@ import (
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+	klog.V(1).InfoS("join options:", "dry-run", o.ClusteradmFlags.DryRun, "cluster", o.clusterName, "api-server", o.hubAPIServer, o.outputFile)
 
 	o.values = Values{
 		ClusterName: o.clusterName,
@@ -29,6 +31,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 			APIServer: o.hubAPIServer,
 		},
 	}
+	klog.V(3).InfoS("values:", "clusterName", o.values.ClusterName, "hubAPIServer", o.values.Hub.APIServer)
 	return nil
 }
 

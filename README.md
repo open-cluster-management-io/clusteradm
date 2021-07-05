@@ -47,7 +47,16 @@ See our [Contributing Document](CONTRIBUTING.md) for more information.
 
 ## Commands
 
-The commands are composed of a verb and a noun and then a number of parameters.
+The commands are composed of a verb and a noun and then a number of parameters. 
+Logs can be gather by setting the klog flag `-v`.
+To get the logs in a separate file:
+```
+clusteradm <subcommand> -v <level> 2><your_logfile>
+```
+or
+```
+clusteradm <subcommand> -v 99 --logtostderr=false --log-file=<your_log_file>
+```
 
 ### version
 

@@ -16,9 +16,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
+	"k8s.io/klog/v2"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun, "force", o.force, "output-file", o.outputFile)
 	o.values = Values{
 		Hub: Hub{
 			TokenID:     helpers.RandStringRunes_az09(6),

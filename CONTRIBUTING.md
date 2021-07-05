@@ -40,6 +40,8 @@ clusteradm <cmd> [subcmd] [flags]
 ```
 
 - Each cmd/subcmd are in a package, the code is split in 3 files: The [cmd.go](pkg/cmd/version/cmd.go) which creates the cobra command, the [options.go](pkg/cmd/version/options.go) which defines the different option parameters for the command and the the [exec.go](pkg/cmd/version/exec.go) which contains the code to execute the command.
+- Each command must support the flag `--dry-run`.
+- The command uses [klog V2](https://github.com/kubernetes/klog) as logging package. All messages must be using `klog.V(x)`, in rare exception `klog.Error` and `klog.Warning` can be used.
 
 
 ## Resources

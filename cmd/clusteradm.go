@@ -44,7 +44,7 @@ func main() {
 	matchVersionKubeConfigFlags.AddFlags(flags)
 
 	klog.InitFlags(nil)
-	root.PersistentFlags().AddGoFlagSet(flag.CommandLine)
+	flags.AddGoFlagSet(flag.CommandLine)
 
 	f := cmdutil.NewFactory(matchVersionKubeConfigFlags)
 	root.SetGlobalNormalizationFunc(cliflag.WarnWordSepNormalizeFunc)
@@ -81,6 +81,9 @@ func main() {
 	}
 	groups.Add(root)
 	err := root.Execute()
+	if err != nil {
+		klog.V(1).ErrorS(err, "Error:")
+	}
 	klog.Flush()
 	if err != nil {
 		os.Exit(1)

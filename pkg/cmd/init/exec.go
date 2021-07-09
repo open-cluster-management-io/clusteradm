@@ -124,7 +124,7 @@ func (o *Options) run() error {
 		}
 	}
 
-	out, err = applier.ApplyCustomResouces(reader, o.values, o.ClusteradmFlags.DryRun, "", "init/clustermanager.cr.yaml")
+	out, err = applier.ApplyCustomResources(reader, o.values, o.ClusteradmFlags.DryRun, "", "init/clustermanager.cr.yaml")
 	if err != nil {
 		return err
 	}

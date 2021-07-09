@@ -143,7 +143,7 @@ func (a *Applier) ApplyCustomResources(
 	return output, nil
 }
 
-//ApplyCustomResources applies custom resources
+//ApplyCustomResource applies a custom resource
 func (a *Applier) ApplyCustomResource(
 	reader asset.ScenarioReader,
 	values interface{},

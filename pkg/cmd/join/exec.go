@@ -108,7 +108,7 @@ func (o *Options) run() error {
 		}
 	}
 
-	out, err = applier.ApplyCustomResouces(reader, o.values, o.ClusteradmFlags.DryRun, "", "join/klusterlets.cr.yaml")
+	out, err = applier.ApplyCustomResources(reader, o.values, o.ClusteradmFlags.DryRun, "", "join/klusterlets.cr.yaml")
 	if err != nil {
 		return err
 	}

@@ -122,8 +122,8 @@ func (a *Applier) ApplyDirectly(
 	return output, nil
 }
 
-//ApplyCustomResouces applies custom resources
-func (a *Applier) ApplyCustomResouces(
+//ApplyCustomResources applies custom resources
+func (a *Applier) ApplyCustomResources(
 	reader asset.ScenarioReader,
 	values interface{},
 	dryRun bool,
@@ -131,7 +131,7 @@ func (a *Applier) ApplyCustomResouces(
 	files ...string) ([]string, error) {
 	output := make([]string, 0)
 	for _, name := range files {
-		asset, err := a.ApplyCustomResouce(reader, values, dryRun, headerFile, name)
+		asset, err := a.ApplyCustomResource(reader, values, dryRun, headerFile, name)
 		if err != nil {
 			if IsEmptyAsset(err) {
 				continue
@@ -143,8 +143,8 @@ func (a *Applier) ApplyCustomResouces(
 	return output, nil
 }
 
-//ApplyCustomResouces applies custom resources
-func (a *Applier) ApplyCustomResouce(
+//ApplyCustomResource applies a custom resource
+func (a *Applier) ApplyCustomResource(
 	reader asset.ScenarioReader,
 	values interface{},
 	dryRun bool,

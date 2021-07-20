@@ -70,3 +70,5 @@ clean-test:
 .PHONY: functional-test-full
 functional-test-full: deps install
 	@build/run-functional-tests.sh
+
+include ./test/integration-test.mk

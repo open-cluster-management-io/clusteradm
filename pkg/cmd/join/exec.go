@@ -77,6 +77,7 @@ func (o *Options) run() error {
 
 	files := []string{
 		"join/namespace_agent.yaml",
+		"join/namespace_addon.yaml",
 		"join/namespace.yaml",
 		"join/bootstrap_hub_kubeconfig.yaml",
 		"join/cluster_role.yaml",

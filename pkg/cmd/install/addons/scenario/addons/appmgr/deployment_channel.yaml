@@ -1,0 +1,41 @@
+# Copyright Contributors to the Open Cluster Management project
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: multicloud-operators-channel
+  namespace: open-cluster-management
+  labels:
+    name: multicloud-operators-channel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: multicloud-operators-channel
+  template:
+    metadata:
+      labels:
+        name: multicloud-operators-channel
+    spec:
+      serviceAccountName: multicloud-operators
+      containers:
+        - name: multicloud-operators-channel
+          image: quay.io/open-cluster-management/multicloud-operators-channel:latest
+          ports:
+          - containerPort: 9443
+          command:
+          - /usr/local/bin/multicloud-operators-channel
+          - --alsologtostderr
+          - --debug=true
+          imagePullPolicy: Always
+          env:
+            - name: WATCH_NAMESPACE
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: "multicloud-operators-channel"
+          resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi

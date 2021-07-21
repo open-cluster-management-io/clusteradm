@@ -1,0 +1,41 @@
+# Copyright Contributors to the Open Cluster Management project
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: multicloud-operators-subscription
+  namespace: open-cluster-management
+  labels:
+    name: multicloud-operators-subscription
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: multicloud-operators-subscription
+  template:
+    metadata:
+      labels:
+        name: multicloud-operators-subscription
+    spec:
+      serviceAccountName: multicloud-operators
+      containers:
+        - name: multicloud-operators-subscription
+          image: quay.io/open-cluster-management/multicloud-operators-subscription:latest
+          ports:
+          - containerPort: 8443
+          command:
+          - /usr/local/bin/multicloud-operators-subscription
+          - --sync-interval=60
+          - --deploy-agent
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: WATCH_NAMESPACE
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: "multicloud-operators-subscription"
+          resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi

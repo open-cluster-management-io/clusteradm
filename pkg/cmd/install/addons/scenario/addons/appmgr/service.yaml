@@ -1,0 +1,17 @@
+# Copyright Contributors to the Open Cluster Management project
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: multicloud-operators-subscription
+  name: multicloud-operators-subscription
+  namespace: open-cluster-management
+spec:
+  ports:
+  - port: 8443
+    protocol: TCP
+    targetPort: 8443
+  selector:
+    name: multicloud-operators-subscription
+  sessionAffinity: None
+  type: ClusterIP

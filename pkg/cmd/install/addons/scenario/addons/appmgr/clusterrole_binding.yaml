@@ -1,0 +1,13 @@
+# Copyright Contributors to the Open Cluster Management project
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: multicloud-operators
+subjects:
+- kind: ServiceAccount
+  name: multicloud-operators
+  namespace: open-cluster-management
+roleRef:
+  kind: ClusterRole
+  name: multicloud-operators
+  apiGroup: rbac.authorization.k8s.io

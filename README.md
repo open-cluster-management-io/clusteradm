@@ -84,4 +84,16 @@ it returns the command line to launch on the hub the accept the spoke onboarding
 
 Accept the CSRs on the hub to approve the spoke clusters to join the hub.
 
-`clustardm accept --clusters <cluster1>, <cluster2>,....`
+`clusteradm accept --clusters <cluster1>, <cluster2>,....`
+
+### install addons
+
+Install specific built-in add-on(s) to the hub cluster.
+
+`clusteradm install addons --names application-manager`
+
+### enable addons
+
+Enable specific add-on(s) agent deployment to the given managed clusters
+
+`clusteradm enable addons --names application-manager --clusters <cluster1>, <cluster2>,....`

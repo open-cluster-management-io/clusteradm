@@ -19,6 +19,6 @@ test/out
 *.out
 
 # Dependency directories (remove the comment below to include it)
-vendor
+#vendor
 
 .DS_Store

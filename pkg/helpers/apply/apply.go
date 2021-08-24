@@ -45,7 +45,6 @@ func (a *Applier) ApplyDeployments(
 	dryRun bool,
 	headerFile string,
 	files ...string) ([]string, error) {
-	genericScheme.AddKnownTypes(appsv1.SchemeGroupVersion, &appsv1.Deployment{})
 	output := make([]string, 0)
 	//Render each file
 	for _, name := range files {
@@ -68,6 +67,7 @@ func (a *Applier) ApplyDeployment(
 	dryRun bool,
 	headerFile string,
 	name string) (string, error) {
+	genericScheme.AddKnownTypes(appsv1.SchemeGroupVersion, &appsv1.Deployment{})
 	recorder := events.NewInMemoryRecorder(helpers.GetExampleHeader())
 	deploymentBytes, err := a.MustTempalteAsset(reader, values, headerFile, name)
 	if err != nil {

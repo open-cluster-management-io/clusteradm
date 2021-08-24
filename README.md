@@ -51,7 +51,7 @@ The commands are composed of a verb and a noun and then a number of parameters.
 Logs can be gather by setting the klog flag `-v`.
 To get the logs in a separate file:
 ```
-clusteradm <subcommand> -v <level> 2><your_logfile>
+clusteradm <subcommand> -v 2 > <your_logfile>
 ```
 or
 ```

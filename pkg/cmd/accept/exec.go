@@ -167,10 +167,6 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 		LastUpdateTime: metav1.Now(),
 	})
 
-	kubeClient, err = o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
-	if err != nil {
-		return false, err
-	}
 	signingRequest := kubeClient.CertificatesV1().CertificateSigningRequests()
 	if _, err := signingRequest.UpdateApproval(context.TODO(), csr.Name, csr, metav1.UpdateOptions{}); err != nil {
 		return false, err

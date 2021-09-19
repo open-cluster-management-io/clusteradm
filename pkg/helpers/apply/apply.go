@@ -13,6 +13,7 @@ import (
 
 	"github.com/Masterminds/sprig"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/asset"
@@ -26,6 +27,7 @@ import (
 
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
+	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
 )
 
 const (
@@ -36,6 +38,7 @@ var (
 	genericScheme = runtime.NewScheme()
 	genericCodecs = serializer.NewCodecFactory(genericScheme)
 	genericCodec  = genericCodecs.UniversalDeserializer()
+	newAccessor   = meta.NewAccessor()
 )
 
 //ApplyDeployments applies a appsv1.Deployment template
@@ -81,7 +84,12 @@ func (a *Applier) ApplyDeployment(
 	if err != nil {
 		return output, fmt.Errorf("%q: %v %v", name, sch, err)
 	}
-	_, _, err = resourceapply.ApplyDeployment(
+	//Add ownerReference
+	_, err = a.mergeOwnerRef(deployment)
+	if err != nil {
+		return output, err
+	}
+	_, _, err = resourceapply.ApplyDeployment(context.TODO(),
 		a.kubeClient.AppsV1(),
 		recorder,
 		deployment.(*appsv1.Deployment), 0)
@@ -105,7 +113,7 @@ func (a *Applier) ApplyDirectly(
 	output := make([]string, 0)
 	//Apply resources
 	clients := resourceapply.NewClientHolder().WithAPIExtensionsClient(a.apiExtensionsClient).WithDynamicClient(a.dynamicClient).WithKubernetes(a.kubeClient)
-	resourceResults := resourceapply.ApplyDirectly(clients, recorder, func(name string) ([]byte, error) {
+	resourceResults := resourceapply.ApplyDirectly(context.TODO(), clients, recorder, func(name string) ([]byte, error) {
 		out, err := a.MustTempalteAsset(reader, values, headerFile, name)
 		if err != nil {
 			return nil, err
@@ -117,6 +125,12 @@ func (a *Applier) ApplyDirectly(
 	for _, result := range resourceResults {
 		if result.Error != nil && !IsEmptyAsset(result.Error) {
 			return output, fmt.Errorf("%q (%T): %v", result.File, result.Type, result.Error)
+		}
+	}
+	//Add OwnerRefence
+	for _, result := range resourceResults {
+		if result.Changed {
+
 		}
 	}
 	return output, nil
@@ -196,6 +210,25 @@ func (a *Applier) ApplyCustomResource(
 		return output, err
 	}
 	return output, nil
+}
+
+//mergeOwnerRef add ownerref is not yet set
+func (a *Applier) mergeOwnerRef(obj runtime.Object) (bool, error) {
+	if a.owner == nil {
+		return false, nil
+	}
+	var modified *bool
+	objAccessor, err := meta.Accessor(obj)
+	if err != nil {
+		return false, err
+	}
+	ownerAccessor, err := meta.Accessor(a.owner)
+	if err != nil {
+		return false, err
+	}
+	objOwnerRef := objAccessor.GetOwnerReferences()
+	resourcemerge.MergeOwnerRefs(modified, &objOwnerRef, ownerAccessor.GetOwnerReferences())
+	return *modified, nil
 }
 
 //bytesToUnstructured converts an asset to unstructured.

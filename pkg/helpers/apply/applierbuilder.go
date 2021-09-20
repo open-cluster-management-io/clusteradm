@@ -38,7 +38,7 @@ type iApplierBuilder interface {
 	//WithTemplateFuncMap add template.FuncMap to the applier.
 	WithTemplateFuncMap(fm template.FuncMap) *ApplierBuilder
 	//WithOwner add an ownerref to the object
-	WithOwner(owner runtime.Object, blockOwnerDeletion, controler bool, scheme *runtime.Scheme) *ApplierBuilder
+	WithOwner(owner runtime.Object, blockOwnerDeletion, controller bool, scheme *runtime.Scheme) *ApplierBuilder
 }
 
 var _ iApplierBuilder = &ApplierBuilder{}

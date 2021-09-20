@@ -479,12 +479,12 @@ k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/third_party/forked/golang/json
 k8s.io/apimachinery/third_party/forked/golang/netutil
 k8s.io/apimachinery/third_party/forked/golang/reflect
-# k8s.io/cli-runtime v0.21.0
+# k8s.io/cli-runtime v0.22.1
 ## explicit
 k8s.io/cli-runtime/pkg/genericclioptions
 k8s.io/cli-runtime/pkg/printers
 k8s.io/cli-runtime/pkg/resource
-# k8s.io/client-go v0.22.1 => k8s.io/client-go v0.21.0
+# k8s.io/client-go v0.22.1
 ## explicit
 k8s.io/client-go/applyconfigurations/admissionregistration/v1
 k8s.io/client-go/applyconfigurations/admissionregistration/v1beta1
@@ -676,6 +676,8 @@ k8s.io/client-go/listers/storage/v1alpha1
 k8s.io/client-go/listers/storage/v1beta1
 k8s.io/client-go/metadata
 k8s.io/client-go/pkg/apis/clientauthentication
+k8s.io/client-go/pkg/apis/clientauthentication/install
+k8s.io/client-go/pkg/apis/clientauthentication/v1
 k8s.io/client-go/pkg/apis/clientauthentication/v1alpha1
 k8s.io/client-go/pkg/apis/clientauthentication/v1beta1
 k8s.io/client-go/pkg/version
@@ -734,6 +736,7 @@ k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/typed/apiregistr
 # k8s.io/kube-openapi v0.0.0-20210421082810-95288971da7e
 k8s.io/kube-openapi/pkg/util/proto
 k8s.io/kube-openapi/pkg/util/proto/validation
+k8s.io/kube-openapi/pkg/validation/spec
 # k8s.io/kubectl v0.21.0
 ## explicit
 k8s.io/kubectl/pkg/cmd/config
@@ -783,13 +786,13 @@ sigs.k8s.io/kube-storage-version-migrator/pkg/apis/migration/v1alpha1
 sigs.k8s.io/kube-storage-version-migrator/pkg/clients/clientset
 sigs.k8s.io/kube-storage-version-migrator/pkg/clients/clientset/scheme
 sigs.k8s.io/kube-storage-version-migrator/pkg/clients/clientset/typed/migration/v1alpha1
-# sigs.k8s.io/kustomize/api v0.8.5
+# sigs.k8s.io/kustomize/api v0.8.11
 sigs.k8s.io/kustomize/api/builtins
-sigs.k8s.io/kustomize/api/filesys
 sigs.k8s.io/kustomize/api/filters/annotations
 sigs.k8s.io/kustomize/api/filters/fieldspec
 sigs.k8s.io/kustomize/api/filters/filtersutil
 sigs.k8s.io/kustomize/api/filters/fsslice
+sigs.k8s.io/kustomize/api/filters/iampolicygenerator
 sigs.k8s.io/kustomize/api/filters/imagetag
 sigs.k8s.io/kustomize/api/filters/labels
 sigs.k8s.io/kustomize/api/filters/nameref
@@ -798,13 +801,13 @@ sigs.k8s.io/kustomize/api/filters/patchjson6902
 sigs.k8s.io/kustomize/api/filters/patchstrategicmerge
 sigs.k8s.io/kustomize/api/filters/prefixsuffix
 sigs.k8s.io/kustomize/api/filters/refvar
+sigs.k8s.io/kustomize/api/filters/replacement
 sigs.k8s.io/kustomize/api/filters/replicacount
 sigs.k8s.io/kustomize/api/filters/valueadd
 sigs.k8s.io/kustomize/api/hasher
 sigs.k8s.io/kustomize/api/ifc
 sigs.k8s.io/kustomize/api/image
 sigs.k8s.io/kustomize/api/internal/accumulator
-sigs.k8s.io/kustomize/api/internal/conflict
 sigs.k8s.io/kustomize/api/internal/generators
 sigs.k8s.io/kustomize/api/internal/git
 sigs.k8s.io/kustomize/api/internal/kusterr
@@ -817,7 +820,6 @@ sigs.k8s.io/kustomize/api/internal/plugins/utils
 sigs.k8s.io/kustomize/api/internal/target
 sigs.k8s.io/kustomize/api/internal/utils
 sigs.k8s.io/kustomize/api/internal/validate
-sigs.k8s.io/kustomize/api/internal/wrappy
 sigs.k8s.io/kustomize/api/konfig
 sigs.k8s.io/kustomize/api/konfig/builtinpluginconsts
 sigs.k8s.io/kustomize/api/krusty
@@ -825,20 +827,20 @@ sigs.k8s.io/kustomize/api/kv
 sigs.k8s.io/kustomize/api/loader
 sigs.k8s.io/kustomize/api/provenance
 sigs.k8s.io/kustomize/api/provider
-sigs.k8s.io/kustomize/api/resid
 sigs.k8s.io/kustomize/api/resmap
 sigs.k8s.io/kustomize/api/resource
 sigs.k8s.io/kustomize/api/types
-# sigs.k8s.io/kustomize/kyaml v0.10.15
+# sigs.k8s.io/kustomize/kyaml v0.11.0
 sigs.k8s.io/kustomize/kyaml/comments
 sigs.k8s.io/kustomize/kyaml/errors
 sigs.k8s.io/kustomize/kyaml/ext
 sigs.k8s.io/kustomize/kyaml/fieldmeta
-sigs.k8s.io/kustomize/kyaml/filtersutil
+sigs.k8s.io/kustomize/kyaml/filesys
 sigs.k8s.io/kustomize/kyaml/fn/runtime/container
 sigs.k8s.io/kustomize/kyaml/fn/runtime/exec
 sigs.k8s.io/kustomize/kyaml/fn/runtime/runtimeutil
 sigs.k8s.io/kustomize/kyaml/fn/runtime/starlark
+sigs.k8s.io/kustomize/kyaml/internal/forked/github.com/go-yaml/yaml
 sigs.k8s.io/kustomize/kyaml/internal/forked/github.com/qri-io/starlib/util
 sigs.k8s.io/kustomize/kyaml/kio
 sigs.k8s.io/kustomize/kyaml/kio/filters
@@ -847,6 +849,7 @@ sigs.k8s.io/kustomize/kyaml/openapi
 sigs.k8s.io/kustomize/kyaml/openapi/kubernetesapi
 sigs.k8s.io/kustomize/kyaml/openapi/kubernetesapi/v1204
 sigs.k8s.io/kustomize/kyaml/openapi/kustomizationapi
+sigs.k8s.io/kustomize/kyaml/resid
 sigs.k8s.io/kustomize/kyaml/runfn
 sigs.k8s.io/kustomize/kyaml/sets
 sigs.k8s.io/kustomize/kyaml/yaml
@@ -868,4 +871,3 @@ sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.2.0
 sigs.k8s.io/yaml
 # github.com/go-logr/logr => github.com/go-logr/logr v0.4.0
-# k8s.io/client-go => k8s.io/client-go v0.21.0

@@ -7,7 +7,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers/asset"
 )
 
-//go:embed musttemplateasset
+//go:embed musttemplateasset ownerref
 var files embed.FS
 
 func GetScenarioResourcesReader() *asset.ScenarioResourcesReader {

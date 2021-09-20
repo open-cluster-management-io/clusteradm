@@ -2,10 +2,7 @@ module open-cluster-management.io/clusteradm
 
 go 1.16
 
-replace (
-	github.com/go-logr/logr => github.com/go-logr/logr v0.4.0
-	k8s.io/client-go => k8s.io/client-go v0.21.0
-)
+replace github.com/go-logr/logr => github.com/go-logr/logr v0.4.0
 
 require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
@@ -22,7 +19,7 @@ require (
 	k8s.io/api v0.22.1
 	k8s.io/apiextensions-apiserver v0.22.1
 	k8s.io/apimachinery v0.22.1
-	k8s.io/cli-runtime v0.21.0
+	k8s.io/cli-runtime v0.22.1
 	k8s.io/client-go v0.22.1
 	k8s.io/component-base v0.22.1
 	k8s.io/klog/v2 v2.9.0

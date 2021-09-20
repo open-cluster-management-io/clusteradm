@@ -1,0 +1,50 @@
+# Copyright Contributors to the Open Cluster Management project
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Name }}
+  namespace: "my-ns"
+  labels:
+    control-plane: my-deployment
+spec:
+  selector:
+    matchLabels:
+      control-plane: my-deployment
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        control-plane: my-deployment
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+      - args:
+        - --leader-elect
+        image: my-image
+        imagePullPolicy: Always
+        name: manager
+        securityContext:
+          allowPrivilegeEscalation: false
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 300m
+            memory: 500Mi
+          requests:
+            cpu: 300m
+            memory: 500Mi
+      serviceAccountName: my-deployment-manager
+      terminationGracePeriodSeconds: 10

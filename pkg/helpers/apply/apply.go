@@ -12,7 +12,9 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig"
+	"github.com/ghodss/yaml"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/asset"
@@ -26,6 +28,7 @@ import (
 
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
+	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
 )
 
 const (
@@ -36,6 +39,7 @@ var (
 	genericScheme = runtime.NewScheme()
 	genericCodecs = serializer.NewCodecFactory(genericScheme)
 	genericCodec  = genericCodecs.UniversalDeserializer()
+	newAccessor   = meta.NewAccessor()
 )
 
 //ApplyDeployments applies a appsv1.Deployment template
@@ -81,7 +85,7 @@ func (a *Applier) ApplyDeployment(
 	if err != nil {
 		return output, fmt.Errorf("%q: %v %v", name, sch, err)
 	}
-	_, _, err = resourceapply.ApplyDeployment(
+	_, _, err = resourceapply.ApplyDeployment(context.TODO(),
 		a.kubeClient.AppsV1(),
 		recorder,
 		deployment.(*appsv1.Deployment), 0)
@@ -105,7 +109,7 @@ func (a *Applier) ApplyDirectly(
 	output := make([]string, 0)
 	//Apply resources
 	clients := resourceapply.NewClientHolder().WithAPIExtensionsClient(a.apiExtensionsClient).WithDynamicClient(a.dynamicClient).WithKubernetes(a.kubeClient)
-	resourceResults := resourceapply.ApplyDirectly(clients, recorder, func(name string) ([]byte, error) {
+	resourceResults := resourceapply.ApplyDirectly(context.TODO(), clients, recorder, func(name string) ([]byte, error) {
 		out, err := a.MustTempalteAsset(reader, values, headerFile, name)
 		if err != nil {
 			return nil, err
@@ -283,7 +287,90 @@ func (a *Applier) MustTempalteAsset(reader asset.ScenarioReader, values interfac
 		return nil, fmt.Errorf("asset %s becomes %s", name, ErrorEmptyAssetAfterTemplating)
 	}
 
+	if a.owner != nil {
+		unstructuredObj := &unstructured.Unstructured{}
+		j, err := yaml.YAMLToJSON(buf.Bytes())
+		if err != nil {
+			return nil, err
+		}
+
+		err = unstructuredObj.UnmarshalJSON(j)
+		if err != nil {
+			return nil, err
+		}
+
+		unstructuredObjOwnerRef := unstructuredObj.GetOwnerReferences()
+		ownerRef, err := a.generateOwnerRef()
+		if err != nil {
+			return nil, err
+		}
+
+		var modified bool
+		resourcemerge.MergeOwnerRefs(&modified,
+			&unstructuredObjOwnerRef,
+			[]metav1.OwnerReference{ownerRef})
+
+		if modified {
+			unstructuredObj.SetOwnerReferences(unstructuredObjOwnerRef)
+			j, err := unstructuredObj.MarshalJSON()
+			if err != nil {
+				return nil, err
+			}
+			y, err := yaml.JSONToYAML(j)
+			if err != nil {
+				return nil, err
+			}
+			buf = *bytes.NewBuffer(y)
+		}
+	}
 	return buf.Bytes(), nil
+}
+
+func (a *Applier) generateOwnerRef() (ownerRef metav1.OwnerReference, err error) {
+	err = addTypeInformationToObject(a.owner, a.scheme)
+	if err != nil {
+		return ownerRef, err
+	}
+	objectKind := a.owner.GetObjectKind()
+	apiVersion, kind := objectKind.GroupVersionKind().ToAPIVersionAndKind()
+	metaAccessor := meta.NewAccessor()
+	ownerRef.APIVersion = apiVersion
+	ownerRef.Kind = kind
+	ownerRef.Name, err = metaAccessor.Name(a.owner)
+	if err != nil {
+		return ownerRef, err
+	}
+	ownerRef.UID, err = metaAccessor.UID(a.owner)
+	if err != nil {
+		return ownerRef, err
+	}
+	if *a.controller {
+		ownerRef.Controller = a.controller
+	}
+	if *a.blockOwnerDeletion {
+		ownerRef.BlockOwnerDeletion = a.blockOwnerDeletion
+	}
+	return ownerRef, err
+}
+
+func addTypeInformationToObject(obj runtime.Object, scheme *runtime.Scheme) error {
+	gvks, _, err := scheme.ObjectKinds(obj)
+	if err != nil {
+		return fmt.Errorf("missing apiVersion or kind and cannot assign it; %w", err)
+	}
+
+	for _, gvk := range gvks {
+		if len(gvk.Kind) == 0 {
+			continue
+		}
+		if len(gvk.Version) == 0 || gvk.Version == runtime.APIVersionInternal {
+			continue
+		}
+		obj.GetObjectKind().SetGroupVersionKind(gvk)
+		break
+	}
+
+	return nil
 }
 
 //isEmpty check if a content is empty after removing comments and blank lines.

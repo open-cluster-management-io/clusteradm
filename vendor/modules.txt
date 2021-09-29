@@ -758,7 +758,7 @@ k8s.io/utils/exec
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# open-cluster-management.io/api v0.0.0-20210823013037-9667ae902e4b
+# open-cluster-management.io/api v0.0.0-20210927063308-2c6896161c48
 ## explicit
 open-cluster-management.io/api/addon/v1alpha1
 open-cluster-management.io/api/client/addon/clientset/versioned
@@ -768,8 +768,14 @@ open-cluster-management.io/api/client/cluster/clientset/versioned
 open-cluster-management.io/api/client/cluster/clientset/versioned/scheme
 open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1
 open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1alpha1
+open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1beta1
+open-cluster-management.io/api/client/operator/clientset/versioned
+open-cluster-management.io/api/client/operator/clientset/versioned/scheme
+open-cluster-management.io/api/client/operator/clientset/versioned/typed/operator/v1
 open-cluster-management.io/api/cluster/v1
 open-cluster-management.io/api/cluster/v1alpha1
+open-cluster-management.io/api/cluster/v1beta1
+open-cluster-management.io/api/operator/v1
 # sigs.k8s.io/controller-runtime v0.8.3
 ## explicit
 sigs.k8s.io/controller-runtime/pkg/client

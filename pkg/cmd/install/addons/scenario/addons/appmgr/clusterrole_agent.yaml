@@ -4,12 +4,9 @@ kind: ClusterRole
 metadata:
   name: application-manager-agent
 rules:
-- apiGroups: ["apps.open-cluster-management.io"]
-  resources: ["deployables"]
-  verbs: ["get", "list", "watch"]
 - apiGroups: [""]
   resources: ["secrets"]
   verbs: ["get", "list", "watch"]
 - apiGroups: ["apps.open-cluster-management.io"]
-  resources: ["deployables/status"]
-  verbs: ["update", "patch"]
+  resources: ["subscriptionstatuses", "subscriptionreports"]
+  verbs: ["get", "list", "watch", "create", "patch", "update", "delete"]

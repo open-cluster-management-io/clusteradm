@@ -772,10 +772,14 @@ open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/
 open-cluster-management.io/api/client/operator/clientset/versioned
 open-cluster-management.io/api/client/operator/clientset/versioned/scheme
 open-cluster-management.io/api/client/operator/clientset/versioned/typed/operator/v1
+open-cluster-management.io/api/client/work/clientset/versioned
+open-cluster-management.io/api/client/work/clientset/versioned/scheme
+open-cluster-management.io/api/client/work/clientset/versioned/typed/work/v1
 open-cluster-management.io/api/cluster/v1
 open-cluster-management.io/api/cluster/v1alpha1
 open-cluster-management.io/api/cluster/v1beta1
 open-cluster-management.io/api/operator/v1
+open-cluster-management.io/api/work/v1
 # sigs.k8s.io/controller-runtime v0.8.3
 ## explicit
 sigs.k8s.io/controller-runtime/pkg/client

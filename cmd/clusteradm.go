@@ -27,6 +27,7 @@ import (
 	inithub "open-cluster-management.io/clusteradm/pkg/cmd/init"
 	install "open-cluster-management.io/clusteradm/pkg/cmd/install"
 	joinhub "open-cluster-management.io/clusteradm/pkg/cmd/join"
+	unjoin "open-cluster-management.io/clusteradm/pkg/cmd/unjoin"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
@@ -77,6 +78,7 @@ func main() {
 				deletecmd.NewCmd(clusteradmFlags, streams),
 				inithub.NewCmd(clusteradmFlags, streams),
 				joinhub.NewCmd(clusteradmFlags, streams),
+				unjoin.NewCmd(clusteradmFlags, streams),
 				enable.NewCmd(clusteradmFlags, streams),
 				install.NewCmd(clusteradmFlags, streams),
 				acceptclusters.NewCmd(clusteradmFlags, streams),

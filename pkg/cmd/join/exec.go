@@ -2,19 +2,26 @@
 package join
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/ghodss/yaml"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
+	"k8s.io/kubectl/pkg/cmd/util"
 
 	// "k8s.io/apimachinery/pkg/util/wait"
 
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/client-go/util/retry"
+	operatorclientv1 "open-cluster-management.io/api/client/operator/clientset/versioned/typed/operator/v1"
+	operatorv1 "open-cluster-management.io/api/operator/v1"
 	"open-cluster-management.io/clusteradm/pkg/cmd/join/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
@@ -114,11 +121,57 @@ func (o *Options) run() error {
 		return err
 	}
 	output = append(output, out...)
-	fmt.Printf("Deploying klusterlet agent. Please wait a few minutes then log onto the hub cluster and run the following command:\n\n"+
+
+	err = waitUntilConditionIsTrue(o.ClusteradmFlags.KubectlFactory, 300)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Please log onto the hub cluster and run the following command:\n\n"+
 		"    %s accept --clusters %s\n\n", helpers.GetExampleHeader(), o.values.ClusterName)
 
 	return apply.WriteOutput(o.outputFile, output)
 
+}
+
+//Wait until the klusterlet condition available=true, or timeout in $timeout seconds
+func waitUntilConditionIsTrue(f util.Factory, timeout int64) error {
+	var restConfig *rest.Config
+	restConfig, err := f.ToRESTConfig()
+	if err != nil {
+		return err
+	}
+
+	var client *operatorclientv1.OperatorV1Client
+	client, err = operatorclientv1.NewForConfig(restConfig)
+	if err != nil {
+		return err
+	}
+
+	watch, err := client.Klusterlets().Watch(context.TODO(), metav1.ListOptions{TimeoutSeconds: &timeout, FieldSelector: "metadata.name=klusterlet"})
+	if err != nil {
+		return err
+	}
+	defer watch.Stop()
+
+	fmt.Printf("Waiting for the management components ready...\n")
+
+	for {
+		event, ok := <-watch.ResultChan()
+		if !ok { //The channel is closed by Kubernetes, thus, user should check the pod status manually
+			return fmt.Errorf("the registration agent is not ready yet, please check it manually")
+		}
+
+		klusterlet, ok := event.Object.(*operatorv1.Klusterlet)
+		if !ok {
+			continue
+		}
+
+		if meta.IsStatusConditionTrue(klusterlet.Status.Conditions, "Available") {
+			break
+		}
+	}
+	return nil
 }
 
 //Create bootstrap with token but without CA

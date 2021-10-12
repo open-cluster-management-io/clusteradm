@@ -394,7 +394,7 @@ func WriteOutput(fileName string, output []string) (err error) {
 	if fileName == "" {
 		return nil
 	}
-	f, err := os.OpenFile(filepath.Clean(fileName), os.O_WRONLY|os.O_CREATE, 0600)
+	f, err := os.Create(filepath.Clean(fileName))
 	if err != nil {
 		return err
 	}

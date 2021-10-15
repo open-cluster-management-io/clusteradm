@@ -8,6 +8,8 @@ SCRIPTS_PATH ?= build
 INSTALL_DEPENDENCIES ?= ${SCRIPTS_PATH}/install-dependencies.sh
 
 GOPATH := ${shell go env GOPATH}
+GOOS := ${shell go env GOOS}
+GOARCH := ${shell go env GOARCH}
 
 export PROJECT_DIR            = $(shell 'pwd')
 export PROJECT_NAME			  = $(shell basename ${PROJECT_DIR})
@@ -33,12 +35,39 @@ build:
 build-bin:
 	@rm -rf bin
 	@mkdir -p bin
-	GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm_darwin_amd64 ./cmd/clusteradm.go && tar -czf bin/clusteradm_darwin_amd64.tar.gz -C bin/ clusteradm_darwin_amd64 
-	GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm_linux_amd64 ./cmd/clusteradm.go && tar -czf bin/clusteradm_linux_amd64.tar.gz -C bin/ clusteradm_linux_amd64 
-	GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm_linux_arm64 ./cmd/clusteradm.go && tar -czf bin/clusteradm_linux_arm64.tar.gz -C bin/ clusteradm_linux_arm64 
-	GOOS=linux GOARCH=ppc64le go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm_linux_ppc64le ./cmd/clusteradm.go && tar -czf bin/clusteradm_linux_ppc64le.tar.gz -C bin/ clusteradm_linux_ppc64le 
-	GOOS=linux GOARCH=s390x go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm_linux_s390x ./cmd/clusteradm.go && tar -czf bin/clusteradm_linux_s390x.tar.gz -C bin/ clusteradm_linux_s390x 
-	GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm_windows_amd64.exe ./cmd/clusteradm.go && zip -q bin/clusteradm_windows_amd64.zip -j bin/clusteradm_windows_amd64.exe
+	GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm.go && tar -czf bin/clusteradm_darwin_amd64.tar.gz LICENSE -C bin/ clusteradm 
+	GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm.go && tar -czf bin/clusteradm_linux_amd64.tar.gz LICENSE -C bin/ clusteradm
+	GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm.go && tar -czf bin/clusteradm_linux_arm64.tar.gz LICENSE -C bin/ clusteradm
+	GOOS=linux GOARCH=ppc64le go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm.go && tar -czf bin/clusteradm_linux_ppc64le.tar.gz LICENSE -C bin/ clusteradm
+	GOOS=linux GOARCH=s390x go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm.go && tar -czf bin/clusteradm_linux_s390x.tar.gz LICENSE -C bin/ clusteradm
+	GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm.exe ./cmd/clusteradm.go && zip -q bin/clusteradm_windows_amd64.zip LICENSE -j bin/clusteradm.exe
+
+.PHONY: release
+release: 
+	@if [[ -z "${VERSION}" ]]; then VERSION=`cat VERSION.txt`; echo $$VERSION; fi; \
+	git tag v$$VERSION && git push upstream --tags
+
+.PHONY: build-krew
+build-krew: krew-tools
+	@if [[ -z "${VERSION}" ]]; then VERSION=`cat VERSION.txt`; echo $$VERSION; fi; \
+	docker run -v ${PROJECT_DIR}/.krew.yaml:/tmp/template-file.yaml rajatjindal/krew-release-bot:v0.0.40 \
+	krew-release-bot template --tag v$$VERSION --template-file /tmp/template-file.yaml > krew-manifest.yaml; 
+	KREW=/tmp/krew-${GOOS}\_$(GOARCH) && \
+	KREW_ROOT=`mktemp -d` KREW_OS=darwin KREW_ARCH=amd64 $$KREW install --manifest=krew-manifest.yaml && \
+	KREW_ROOT=`mktemp -d` KREW_OS=linux KREW_ARCH=amd64 $$KREW install --manifest=krew-manifest.yaml && \
+	KREW_ROOT=`mktemp -d` KREW_OS=linux KREW_ARCH=arm64 $$KREW install --manifest=krew-manifest.yaml && \
+	KREW_ROOT=`mktemp -d` KREW_OS=windows KREW_ARCH=amd64 $$KREW install --manifest=krew-manifest.yaml;
+
+.PHONY: krew-tools
+krew-tools:
+ifeq (, $(shell which /tmp/krew-$(GOOS)\_$(GOARCH)))
+	@( \
+		set -x; cd /tmp && \
+		KREW=krew-$(GOOS)\_$(GOARCH); \
+		curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/$$KREW.tar.gz" && \
+		tar zxvf $$KREW.tar.gz \
+	) 
+endif
 
 .PHONY: install
 install: build

@@ -1,0 +1,37 @@
+# Copyright Contributors to the Open Cluster Management project
+
+apiVersion: krew.googlecontainertools.github.com/v1alpha2
+kind: Plugin
+metadata:
+  name: clusteradm
+spec:
+  version: {{ .TagName }}
+  homepage: https://github.com/open-cluster-management-io/clusteradm
+  shortDescription: Provides commands for OCM.
+  description: |
+    This plugin allows you to manage clusters on the open-cluster-management platform.
+  platforms:
+  - selector:
+      matchLabels:
+        os: darwin
+        arch: amd64
+    {{addURIAndSha "https://github.com/open-cluster-management-io/clusteradm/releases/download/{{ .TagName }}/clusteradm_darwin_amd64.tar.gz" .TagName }}
+    bin: clusteradm
+  - selector:
+      matchLabels:
+        os: linux
+        arch: amd64
+    {{addURIAndSha "https://github.com/open-cluster-management-io/clusteradm/releases/download/{{ .TagName }}/clusteradm_linux_amd64.tar.gz" .TagName }}
+    bin: clusteradm
+  - selector:
+      matchLabels:
+        os: linux
+        arch: arm64
+    {{addURIAndSha "https://github.com/open-cluster-management-io/clusteradm/releases/download/{{ .TagName }}/clusteradm_linux_arm64.tar.gz" .TagName }}
+    bin: clusteradm
+  - selector:
+      matchLabels:
+        os: windows
+        arch: amd64
+    {{addURIAndSha "https://github.com/open-cluster-management-io/clusteradm/releases/download/{{ .TagName }}/clusteradm_windows_amd64.zip" .TagName }}
+    bin: clusteradm.exe

@@ -36,4 +36,4 @@ jobs:
             bin/clusteradm_linux_s390x.tar.gz
             bin/clusteradm_windows_amd64.zip
           draft: true
-          prerelease: true
+          prerelease: false

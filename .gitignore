@@ -14,6 +14,7 @@ test/unit/tmp
 test/functional/tmp
 test/out
 /bin
+/krew-manifest.yaml
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out

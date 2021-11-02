@@ -79,10 +79,12 @@ func (o *Options) runWithClient(kubeClient kubernetes.Interface,
 				"addons/appmgr/clusterrole_binding.yaml",
 				"addons/appmgr/clusterrole.yaml",
 				"addons/appmgr/crd_channel.yaml",
-				"addons/appmgr/crd_deployable.yaml",
 				"addons/appmgr/crd_helmrelease.yaml",
 				"addons/appmgr/crd_placementrule.yaml",
 				"addons/appmgr/crd_subscription.yaml",
+				"addons/appmgr/crd_subscriptionstatuses.yaml",
+				"addons/appmgr/crd_report.yaml",
+				"addons/appmgr/crd_clusterreport.yaml",
 				"addons/appmgr/service_account.yaml",
 				"addons/appmgr/service.yaml",
 			}
@@ -96,6 +98,8 @@ func (o *Options) runWithClient(kubeClient kubernetes.Interface,
 			deployments := []string{
 				"addons/appmgr/deployment_channel.yaml",
 				"addons/appmgr/deployment_subscription.yaml",
+				"addons/appmgr/deployment_placementrule.yaml",
+				"addons/appmgr/deployment_appsubsummary.yaml",
 			}
 
 			out, err = applier.ApplyDeployments(reader, o.values, dryRun, "", deployments...)

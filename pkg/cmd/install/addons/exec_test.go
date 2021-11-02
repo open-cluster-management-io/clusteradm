@@ -12,8 +12,8 @@ import (
 
 const (
 	ocmNamespace           = "open-cluster-management"
-	channelDeployment      = "multicloud-operators-channel"
-	subscriptionDeployment = "multicloud-operators-subscription"
+	channelDeployment      = "multicluster-operators-channel"
+	subscriptionDeployment = "multicluster-operators-subscription"
 )
 
 var _ = ginkgo.Describe("install addons", func() {

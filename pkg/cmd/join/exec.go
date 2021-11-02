@@ -154,7 +154,7 @@ func waitUntilConditionIsTrue(f util.Factory, timeout int64) error {
 	}
 	defer watch.Stop()
 
-	fmt.Printf("Waiting for the management components ready...\n")
+	fmt.Printf("Waiting for the management components to become ready...\n")
 
 	for {
 		event, ok := <-watch.ResultChan()

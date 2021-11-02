@@ -2,30 +2,28 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: multicluster-operators-channel
+  name: multicluster-operators-placementrule
   namespace: open-cluster-management
   labels:
-    name: multicluster-operators-channel
+    name: multicluster-operators-placementrule
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: multicluster-operators-channel
+      name: multicluster-operators-placementrule
   template:
     metadata:
       labels:
-        name: multicluster-operators-channel
+        name: multicluster-operators-placementrule
     spec:
       serviceAccountName: multicluster-operators-subscription
       containers:
-        - name: multicluster-operators-channel
-          image: quay.io/open-cluster-management/multicloud-operators-channel:latest
+        - name: multicluster-operators-placementrule
+          image: quay.io/open-cluster-management/multicloud-operators-subscription:latest
           ports:
-          - containerPort: 7443
+          - containerPort: 6443
           command:
-          - /usr/local/bin/multicluster-operators-channel
-          - --alsologtostderr
-          - --debug=true
+          - /usr/local/bin/multicluster-operators-placementrule
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE
@@ -34,7 +32,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
-              value: "multicluster-operators-channel"
+              value: "multicluster-operators-placementrule"
           resources:
               requests:
                 cpu: 100m

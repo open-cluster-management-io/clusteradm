@@ -1,13 +1,12 @@
 [comment]: # ( Copyright Contributors to the Open Cluster Management project )
 # Release Content
 ## Additions
-- [Add a watch to monitor the deployment of the join on the spoke cluster #9](https://github.com/open-cluster-management-io/clusteradm/issues/9)
-- [Add unjoin feature #49](https://github.com/open-cluster-management-io/clusteradm/issues/49)
+- [Add make target for krew.](https://github.com/open-cluster-management-io/clusteradm/pull/70)
 
 ## Breaking Changes
 
 ## Changes
-
-- Add a check to verify the readyness of the CRD
+- [Install and enable the new application lifecycle images.](https://github.com/open-cluster-management-io/clusteradm/pull/72)
 
 ## Bug Fixes
+- [Use Create instead of OpenFile for writing to output file to handle overwriting of existing file better.](https://github.com/open-cluster-management-io/clusteradm/pull/69)

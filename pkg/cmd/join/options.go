@@ -20,6 +20,7 @@ type Options struct {
 	values Values
 	//The file to output the resources will be sent to the file.
 	outputFile string
+
 }
 
 //Values: The values used in the template

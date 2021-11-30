@@ -25,8 +25,10 @@ function init_hub() {
 function join_hub() {
    echo "join_hub 1st parameter: "$1 >&2
    echo "join_hub 2nd parameter: "$2 >&2
+   echo "join_hub 3nd parameter: "$3 >&2
+   echo "join_hub 4nd parameter: "$4 >&2
    local _CMDJOIN=`echo "$1" | cut -d ':' -f2-4 | cut -d '<' -f1`
-   _CMDJOIN="$_CMDJOIN $2"
+   _CMDJOIN="$_CMDJOIN $2 $3 $4"
    local _CMDJOINRESULT=`$_CMDJOIN`
    if [ $? != 0 ]
    then
@@ -82,6 +84,35 @@ function joinscenario() {
       echo "accept command result: "$CMDACCEPTRESULT >&2
    fi
 }
+
+function joinscenario_with_timeout() {
+   echo "joinscenario 1st parameter: "$1 >&2
+   echo "joinscenario 2nd parameter: "$2 >&2
+   echo "joinscenario 3nd parameter: "$3 >&2
+   echo "init cluster" >&2
+   kubectl config use-context kind-${CLUSTER_NAME}-hub 
+   CMDINITRESULT=$(init_hub)
+   echo "init command result: "$CMDINITRESULT >&2
+
+   echo "join hub" >&2
+   kubectl config use-context kind-${CLUSTER_NAME}-c1
+   CMDJOINRESULT=$(join_hub "${CMDINITRESULT}" $1 $2 $3)
+   echo "join command result: "$CMDJOINRESULT >&2
+
+   echo "Wait 4 min maximum to stabilize" >&2
+ 
+   kubectl config use-context kind-${CLUSTER_NAME}-hub
+   CMDACCEPTRESULT=$(accept_cluster "${CMDJOINRESULT}")
+   echo $CMDACCEPTRESULT | grep approved
+   if [ $? != 0 ]
+   then
+      echo "accept command result: "$CMDACCEPTRESULT >&2
+      ERROR_REPORT=$ERROR_REPORT+"no CSR get approved\n"
+   else
+      echo "accept command result: "$CMDACCEPTRESULT >&2
+   fi
+}
+
 
 function gettokenscenario() {
    echo "gettokenscenario 1st parameter: "$1 >&2
@@ -174,6 +205,23 @@ gettokenscenario c2
 
 kind delete cluster --name ${CLUSTER_NAME}-hub
 kind delete cluster --name ${CLUSTER_NAME}-c2
+
+echo "with timeout"
+echo "-------------------------------------" 
+
+export KUBECONFIG=$TEST_DIR/tmp/config.yaml
+kind create cluster --name ${CLUSTER_NAME}-hub --config $TEST_DIR/kind-config/kind119-hub.yaml
+kind create cluster --name ${CLUSTER_NAME}-c1
+#Wait for cluster to setup
+echo "Sleep 10 sec"
+sleep 10
+
+echo "Joining with timeout"
+echo "-------------------------------------"
+joinscenario_with_timeout c1 --timeout 400 
+kind delete cluster --name ${CLUSTER_NAME}-hub
+kind delete cluster --name ${CLUSTER_NAME}-c1
+
 
 if [ -z "$ERROR_REPORT" ]
 then

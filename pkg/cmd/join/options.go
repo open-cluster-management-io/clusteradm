@@ -21,6 +21,11 @@ type Options struct {
 	//The file to output the resources will be sent to the file.
 	outputFile string
 
+    //Installing release version of OCM
+	version string
+	//Pulling image registry of OCM
+	registry string
+
 }
 
 //Values: The values used in the template
@@ -29,6 +34,7 @@ type Values struct {
 	ClusterName string
 	//Hub: Hub information
 	Hub Hub
+	ImageRegistry ImageRegistry
 }
 
 //Hub: The hub values for the template
@@ -39,6 +45,14 @@ type Hub struct {
 	//KubeConfig: The kubeconfig of the boostrap secret to connect to the hub
 	KubeConfig string
 }
+
+type ImageRegistry struct {
+	// image registry name  
+	Registry string
+	// image version
+	Version string
+}
+
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{

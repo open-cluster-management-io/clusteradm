@@ -42,7 +42,7 @@ spec:
       serviceAccountName: klusterlet
       containers:
       - name: klusterlet
-        image: quay.io/open-cluster-management/registration-operator:latest
+        image: {{ .ImageRegistry.Registry }}/registration-operator:{{ .ImageRegistry.Version }}
         args:
           - "/registration-operator"
           - "klusterlet"

@@ -47,5 +47,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().StringVar(&o.hubAPIServer, "hub-apiserver", "", "The api server url to the hub")
 	cmd.Flags().StringVar(&o.clusterName, "cluster-name", "", "The name of the joining cluster")
 	cmd.Flags().StringVar(&o.outputFile, "output-file", "", "The generated resources will be copied in the specified file")
+	cmd.Flags().StringVar(&o.registry, "image-registry", "quay.io/open-cluster-management", "The name of the image registry serving OCM images.")
+	cmd.Flags().StringVar(&o.version, "version", "latest",
+		"The installing version of OCM components.")
 	return cmd
 }

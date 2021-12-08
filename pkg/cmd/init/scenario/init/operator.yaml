@@ -41,7 +41,7 @@ spec:
       - args:
         - /registration-operator
         - hub
-        image: quay.io/open-cluster-management/registration-operator:latest
+        image: {{ .Hub.ImageRegistryName }}/registration-operator:{{ .Hub.ReleaseVersion }}
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:

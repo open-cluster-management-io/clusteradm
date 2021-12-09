@@ -17,6 +17,10 @@ type Options struct {
 	useBootstrapToken bool
 	//if true the hub will be reinstalled
 	force bool
+	//Installing release tag of OCM
+	tag string
+	//Pulling image registry of OCM
+	registry string
 }
 
 //Valus: The values used in the template
@@ -31,6 +35,15 @@ type Hub struct {
 	TokenID string `json:"tokenID"`
 	//TokenSecret: A token secret allowing the cluster to connect back to the hub
 	TokenSecret string `json:"tokenSecret"`
+	// Image is the required configuration for workload images.
+	Image Image `json:"image"`
+}
+
+type Image struct {
+	// Registry is the name of the image registry to pull.
+	Registry string `json:"registry"`
+	// Tag is the image tag.
+	Tag string `json:"tag"`
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {

@@ -9,9 +9,9 @@ import (
 
 	"github.com/ghodss/yaml"
 	corev1 "k8s.io/api/core/v1"
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apiextensionshelpers "k8s.io/apiextensions-apiserver/pkg/apihelpers"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -126,7 +126,7 @@ func WaitCRDToBeReady(apiExtensionsClient apiextensionsclient.Interface, name st
 				metav1.GetOptions{})
 		if established := apiextensionshelpers.IsCRDConditionTrue(crd, apiextensionsv1.Established); !established {
 			fmt.Printf("Wait  for %s crd to be established\n", name)
-			return fmt.Errorf("Wait  for %s crd to be established",name)
+			return fmt.Errorf("Wait  for %s crd to be established", name)
 		}
 
 		return err

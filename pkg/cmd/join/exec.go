@@ -67,7 +67,7 @@ func (o *Options) validate() error {
 	return nil
 }
 
-func (o *Options,) run() error {
+func (o *Options) run() error {
 	output := make([]string, 0)
 	reader := scenario.GetScenarioResourcesReader()
 
@@ -131,9 +131,9 @@ func (o *Options,) run() error {
 	if err != nil {
 		return err
 	}
-	output = append(output, out...)	
+	output = append(output, out...)
 
-	err = waitUntilConditionIsTrue(o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout) )
+	err = waitUntilConditionIsTrue(o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout))
 	if err != nil {
 		return err
 	}

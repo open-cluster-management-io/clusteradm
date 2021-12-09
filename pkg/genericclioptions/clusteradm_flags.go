@@ -9,7 +9,7 @@ import (
 type ClusteradmFlags struct {
 	KubectlFactory cmdutil.Factory
 	//if set the resources will be sent to stdout instead of being applied
-	DryRun bool;
+	DryRun  bool
 	Timeout int
 }
 

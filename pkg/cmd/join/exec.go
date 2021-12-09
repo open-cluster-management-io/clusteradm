@@ -37,9 +37,14 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		Hub: Hub{
 			APIServer: o.hubAPIServer,
 		},
+		ImageRegistry: ImageRegistry{
+				Registry: o.registry,
+				Version: o.version,
+		},
 	}
 	klog.V(3).InfoS("values:", "clusterName", o.values.ClusterName, "hubAPIServer", o.values.Hub.APIServer)
 	return nil
+
 }
 
 func (o *Options) validate() error {
@@ -51,6 +56,12 @@ func (o *Options) validate() error {
 	}
 	if o.values.ClusterName == "" {
 		return fmt.Errorf("name is missing")
+	}
+	if len(o.registry) == 0 {
+		return fmt.Errorf("registry should not be empty")
+	}
+	if len(o.version) == 0 {
+		return fmt.Errorf("version should not be empty")
 	}
 
 	return nil

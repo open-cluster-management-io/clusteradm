@@ -41,7 +41,7 @@ spec:
       - args:
         - /registration-operator
         - hub
-        image: {{ .Hub.ImageRegistryName }}/registration-operator:{{ .Hub.ReleaseVersion }}
+        image: {{ .Hub.Image.Registry }}/registration-operator:{{ .Hub.Image.Tag }}
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:

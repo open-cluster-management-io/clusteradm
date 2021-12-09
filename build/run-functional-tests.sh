@@ -14,7 +14,7 @@ mkdir -p $TEST_RESULT_DIR
 
 function init_hub() {
    echo "init_hub 1st parameter: "$1 >&2
-   local _CMDINITRESULT=`clusteradm init $1`
+   local _CMDINITRESULT=`clusteradm init $1 --image-registry=quay.io/open-cluster-management --tag=v0.5.0`
    if [ $? != 0 ]
    then
       ERROR_REPORT=$ERROR_REPORT+"clusteradm init failed\n"

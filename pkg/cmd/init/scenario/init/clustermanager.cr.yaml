@@ -4,5 +4,5 @@ kind: ClusterManager
 metadata:
   name: cluster-manager
 spec:
-  registrationImagePullSpec: {{ .Hub.ImageRegistryName }}/registration:{{ .Hub.ReleaseVersion }}
-  workImagePullSpec: {{ .Hub.ImageRegistryName }}/work:{{ .Hub.ReleaseVersion }}
+  registrationImagePullSpec: {{ .Hub.Image.Registry }}/registration:{{ .Hub.Image.Tag }}
+  workImagePullSpec: {{ .Hub.Image.Registry }}/work:{{ .Hub.Image.Tag }}

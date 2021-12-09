@@ -23,10 +23,12 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun, "force", o.force, "output-file", o.outputFile)
 	o.values = Values{
 		Hub: Hub{
-			TokenID:           helpers.RandStringRunes_az09(6),
-			TokenSecret:       helpers.RandStringRunes_az09(16),
-			ReleaseVersion:    o.version,
-			ImageRegistryName: o.registry,
+			TokenID:     helpers.RandStringRunes_az09(6),
+			TokenSecret: helpers.RandStringRunes_az09(16),
+			Image: Image{
+				Registry: o.registry,
+				Tag:      o.tag,
+			},
 		},
 	}
 	return nil
@@ -54,8 +56,8 @@ func (o *Options) validate() error {
 	if len(o.registry) == 0 {
 		return fmt.Errorf("registry should not be empty")
 	}
-	if len(o.version) == 0 {
-		return fmt.Errorf("version should not be empty")
+	if len(o.tag) == 0 {
+		return fmt.Errorf("tag should not be empty")
 	}
 	return nil
 }

@@ -1,10 +1,10 @@
 name: FOSSA License Scan
 
 on:
-  workflow_dispatch: {}
-  pull_request:
+  push:
     branches:
       - main
+  workflow_dispatch: {}
 
 jobs:
   fossa-scan:

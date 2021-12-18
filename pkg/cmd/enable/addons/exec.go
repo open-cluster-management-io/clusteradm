@@ -24,6 +24,7 @@ const appMgrAddonName = "application-manager"
 //ClusterName: The cluster name used in the template
 type ClusterName struct {
 	ClusterName string
+	NameSpace   string
 }
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -117,7 +118,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 	for _, addon := range o.values.addons {
 		if addon == appMgrAddonName {
 			for _, clusterName := range o.values.clusters {
-				cn := &ClusterName{ClusterName: clusterName}
+				cn := &ClusterName{ClusterName: clusterName, NameSpace: o.namespace}
 
 				out, err := applier.ApplyCustomResources(reader, cn, dryRun, "", "addons/appmgr/addon.yaml")
 				if err != nil {
@@ -125,7 +126,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 				}
 				output = append(output, out...)
 
-				fmt.Printf("Deploying %s add-on to managed cluster: %s.\n", appMgrAddonName, clusterName)
+				fmt.Printf("Deploying %s add-on to namespaces %s of managed cluster: %s.\n", appMgrAddonName, o.namespace, clusterName)
 			}
 		}
 	}

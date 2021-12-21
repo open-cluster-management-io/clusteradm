@@ -11,6 +11,8 @@ type Options struct {
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 	//A list of comma separated addon names
 	names string
+	//The sepcified namespace for addon to install
+	namespace string
 	//A list of comma separated cluster names
 	clusters string
 	//The file to output the resources will be sent to the file.

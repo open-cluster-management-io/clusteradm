@@ -12,8 +12,8 @@ import (
 )
 
 var example = `
-# Enable addons on a cluster
-%[1]s enable addons --names application-manager --clusters cluster1,cluster2
+# Enable addons on a cluster in speccified a namespace
+%[1]s enable addons --names application-manager --ns namespace --clusters cluster1,cluster2
 `
 
 // NewCmd...
@@ -46,6 +46,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	}
 
 	cmd.Flags().StringVar(&o.names, "names", "", "Names of the add-on to deploy (comma separated)")
+	cmd.Flags().StringVarP(&o.namespace, "namespace", "n", "open-cluster-management-agent-addon", "Specified namespace to enable addon")
 	cmd.Flags().StringVar(&o.clusters, "clusters", "", "Names of the managed cluster to deploy the add-on to (comma separated)")
 	cmd.Flags().StringVar(&o.outputFile, "output-file", "", "The generated resources will be copied in the specified file")
 

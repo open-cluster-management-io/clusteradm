@@ -56,6 +56,7 @@ var _ = ginkgo.Describe("enable addons", func() {
 					clusters: []string{cluster1Name},
 					addons:   []string{appMgrAddonName},
 				},
+				namespace: "open-cluster-management-agent-addon",
 			}
 
 			err := o.runWithClient(clusterClient, kubeClient, apiExtensionsClient, dynamicClient, false)
@@ -79,6 +80,7 @@ var _ = ginkgo.Describe("enable addons", func() {
 					clusters: []string{cluster1Name, cluster2Name},
 					addons:   []string{appMgrAddonName},
 				},
+				namespace: "open-cluster-management-agent-addon",
 			}
 
 			err := o.runWithClient(clusterClient, kubeClient, apiExtensionsClient, dynamicClient, false)

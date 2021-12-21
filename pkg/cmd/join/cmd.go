@@ -22,7 +22,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 
 	cmd := &cobra.Command{
 		Use:          "join",
-		Short:        "join a hub",
+		Short:        "join a hub cluster",
 		Example:      fmt.Sprintf(example, helpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRun: func(c *cobra.Command, args []string) {
@@ -50,5 +50,9 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().StringVar(&o.registry, "image-registry", "quay.io/open-cluster-management", "The name of the image registry serving OCM images.")
 	cmd.Flags().StringVar(&o.version, "version", "latest",
 		"The installing version of OCM components.")
+	cmd.Flags().BoolVar(&o.skipHubInClusterEndpointLookup, "skip-internal-endpoint-lookup", false,
+		"If true, the installed klusterlet agent will be starting registration using the external endpoint "+
+			"from --hub-apiserver instead of looking for the internal endpoint from the public cluster-info in the hub "+
+			"cluster.")
 	return cmd
 }

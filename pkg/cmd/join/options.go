@@ -21,10 +21,15 @@ type Options struct {
 	//The file to output the resources will be sent to the file.
 	outputFile string
 
-    //Installing release version of OCM
+	//Installing release version of OCM
 	version string
 	//Pulling image registry of OCM
 	registry string
+
+	// The installing registration agent will be starting registration using
+	// the external endpoint from --hub-apiserver instead of looking for the
+	// internal endpoint from the public cluster-info.
+	skipHubInClusterEndpointLookup bool
 }
 
 //Values: The values used in the template
@@ -55,12 +60,11 @@ type Klusterlet struct {
 }
 
 type ImageRegistry struct {
-	// image registry name  
+	// image registry name
 	Registry string
 	// image version
 	Version string
 }
-
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{

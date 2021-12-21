@@ -38,11 +38,26 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 			APIServer: o.hubAPIServer,
 		},
 		ImageRegistry: ImageRegistry{
-				Registry: o.registry,
-				Version: o.version,
+			Registry: o.registry,
+			Version:  o.version,
 		},
 	}
-	klog.V(3).InfoS("values:", "clusterName", o.values.ClusterName, "hubAPIServer", o.values.Hub.APIServer)
+	kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
+	if err != nil {
+		klog.Errorf("Failed building kube client: %v", err)
+		return err
+	}
+	klusterletApiserver, err := helpers.GetAPIServer(kubeClient)
+	if err != nil {
+		klog.Errorf("Failed looking for cluster endpoint for the registering klusterlet: %v", err)
+		klusterletApiserver = ""
+	}
+	o.values.Klusterlet.APIServer = klusterletApiserver
+
+	klog.V(3).InfoS("values:",
+		"clusterName", o.values.ClusterName,
+		"hubAPIServer", o.values.Hub.APIServer,
+		"klusterletAPIServer", o.values.Klusterlet.APIServer)
 	return nil
 
 }

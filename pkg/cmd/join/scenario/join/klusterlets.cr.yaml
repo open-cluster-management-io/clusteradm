@@ -9,4 +9,6 @@ spec:
   clusterName: {{ .ClusterName }}
   namespace: open-cluster-management-agent
   externalServerURLs:
-  - url: {{ .Hub.APIServer }}
+  {{ if .Klusterlet.APIServer }}
+  - url: {{ .Klusterlet.APIServer }}
+  {{ end }}

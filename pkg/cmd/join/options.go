@@ -25,7 +25,6 @@ type Options struct {
 	version string
 	//Pulling image registry of OCM
 	registry string
-
 }
 
 //Values: The values used in the template
@@ -34,7 +33,10 @@ type Values struct {
 	ClusterName string
 	//Hub: Hub information
 	Hub Hub
+	//ImageRegistry is the registry related configuration
 	ImageRegistry ImageRegistry
+	//ImageRegistry is the klusterlet related configuration
+	Klusterlet Klusterlet
 }
 
 //Hub: The hub values for the template
@@ -44,6 +46,12 @@ type Hub struct {
 	APIServer string
 	//KubeConfig: The kubeconfig of the boostrap secret to connect to the hub
 	KubeConfig string
+}
+
+// Klusterlet is for templating klusterlet configuration
+type Klusterlet struct {
+	//APIServer: The API Server external URL
+	APIServer string
 }
 
 type ImageRegistry struct {

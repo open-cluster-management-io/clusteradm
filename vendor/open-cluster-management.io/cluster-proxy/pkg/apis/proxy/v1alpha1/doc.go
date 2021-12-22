@@ -20,4 +20,4 @@ limitations under the License.
 // +k8s:deepcopy-gen=package,register
 // +k8s:defaulter-gen=TypeMeta
 // +groupName=proxy.open-cluster-management.io
-package v1alpha1 // import "open-cluster-management.io/cluster-proxy/apis/proxy/v1alpha1"
+package v1alpha1

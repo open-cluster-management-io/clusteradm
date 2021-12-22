@@ -838,7 +838,7 @@ open-cluster-management.io/api/cluster/v1alpha1
 open-cluster-management.io/api/cluster/v1beta1
 open-cluster-management.io/api/operator/v1
 open-cluster-management.io/api/work/v1
-# open-cluster-management.io/cluster-proxy v0.1.1-0.20211220103828-5913fb322ad5
+# open-cluster-management.io/cluster-proxy v0.1.1-0.20211222094756-297e092ffcb1
 ## explicit
 open-cluster-management.io/cluster-proxy/pkg/apis/proxy/v1alpha1
 open-cluster-management.io/cluster-proxy/pkg/common

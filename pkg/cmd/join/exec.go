@@ -7,28 +7,26 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
+	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/klog/v2"
-	"k8s.io/kubectl/pkg/cmd/util"
-
-	// "k8s.io/apimachinery/pkg/util/wait"
-
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/client-go/util/retry"
+	"k8s.io/klog/v2"
+	"k8s.io/kubectl/pkg/cmd/util"
+
 	operatorclientv1 "open-cluster-management.io/api/client/operator/clientset/versioned/typed/operator/v1"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 	"open-cluster-management.io/clusteradm/pkg/cmd/join/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
-
-	"github.com/spf13/cobra"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -134,18 +132,9 @@ func (o *Options) run() error {
 	output = append(output, out...)
 
 	if !o.ClusteradmFlags.DryRun {
-		b := retry.DefaultBackoff
-		b.Duration = 200 * time.Millisecond
-
-		crdSpinner := helpers.NewSpinner("Waiting for CRD to be ready...", time.Second)
-		crdSpinner.FinalMSG = "CRD successfully registered.\n"
-		crdSpinner.Start()
-		err = helpers.WaitCRDToBeReady(
-			apiExtensionsClient, "klusterlets.operator.open-cluster-management.io", b)
-		if err != nil {
+		if err := waitUntilCRDReady(apiExtensionsClient); err != nil {
 			return err
 		}
-		crdSpinner.Stop()
 	}
 
 	out, err = applier.ApplyCustomResources(reader, o.values, o.ClusteradmFlags.DryRun, "", "join/klusterlets.cr.yaml")
@@ -169,6 +158,18 @@ func (o *Options) run() error {
 
 	return apply.WriteOutput(o.outputFile, output)
 
+}
+
+func waitUntilCRDReady(apiExtensionsClient clientset.Interface) error {
+	b := retry.DefaultBackoff
+	b.Duration = 200 * time.Millisecond
+
+	crdSpinner := helpers.NewSpinner("Waiting for CRD to be ready...", time.Second)
+	crdSpinner.FinalMSG = "CRD successfully registered.\n"
+	crdSpinner.Start()
+	defer crdSpinner.Stop()
+	return helpers.WaitCRDToBeReady(
+		apiExtensionsClient, "klusterlets.operator.open-cluster-management.io", b)
 }
 
 func waitUntilRegistrationOperatorConditionIsTrue(f util.Factory, timeout int64) error {

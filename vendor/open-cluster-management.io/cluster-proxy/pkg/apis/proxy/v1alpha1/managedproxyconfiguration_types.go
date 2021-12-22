@@ -244,6 +244,25 @@ type EntryPointLoadBalancerService struct {
 	// +optional
 	// +kubebuilder:default=proxy-agent-entrypoint
 	Name string `json:"name"`
+
+	// Annotations is the annoations of the load-balancer service.
+	// This is for allowing customizing service using vendor-specific extended annotations such as:
+	// - service.beta.kubernetes.io/alibaba-cloud-loadbalancer-address-type: "intranet"
+	// - service.beta.kubernetes.io/azure-load-balancer-internal: true
+	// +optional
+	Annotations []AnnotationVar `json:"annotations,omitempty"`
+}
+
+// AnnotationVar list of annotation variables to set in the LB Service.
+type AnnotationVar struct {
+	// Key is the key of annotation
+	// +kubebuilder:validation:Required
+	// +required
+	Key string `json:"key"`
+
+	// Value is the value of annotation
+	// +optional
+	Value string `json:"value,omitempty"`
 }
 
 // EntryPointHostname references a fixed hostname.

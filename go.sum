@@ -1167,6 +1167,8 @@ open-cluster-management.io/api v0.0.0-20210927063308-2c6896161c48 h1:Kkfl2LtG41l
 open-cluster-management.io/api v0.0.0-20210927063308-2c6896161c48/go.mod h1:9qiA5h/8kvPQnJEOlAPHVjRO9a1jCmDhGzvgMBvXEaE=
 open-cluster-management.io/cluster-proxy v0.1.1-0.20211220103828-5913fb322ad5 h1:Q7cZs66TvGZKSzpiwZH9Q7pxtwPcO55gSwwXc+zGY9c=
 open-cluster-management.io/cluster-proxy v0.1.1-0.20211220103828-5913fb322ad5/go.mod h1:kOghb1hOPcFMExSMqsetNYFtKrSioJun2wliqTcXNMU=
+open-cluster-management.io/cluster-proxy v0.1.1-0.20211222094756-297e092ffcb1 h1:I4Y3ezH6OMEFINo7+i1CDNyy2hLGKqMOjH7c4bAyPnw=
+open-cluster-management.io/cluster-proxy v0.1.1-0.20211222094756-297e092ffcb1/go.mod h1:kOghb1hOPcFMExSMqsetNYFtKrSioJun2wliqTcXNMU=
 rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=
 rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=
 rsc.io/sampler v1.3.0/go.mod h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA=

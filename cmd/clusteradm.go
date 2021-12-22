@@ -18,8 +18,10 @@ import (
 	"k8s.io/kubectl/pkg/cmd/plugin"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
-	"open-cluster-management.io/clusteradm/pkg/cmd/version"
 
+	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
+
+	// commands
 	acceptclusters "open-cluster-management.io/clusteradm/pkg/cmd/accept"
 	clean "open-cluster-management.io/clusteradm/pkg/cmd/clean"
 	deletecmd "open-cluster-management.io/clusteradm/pkg/cmd/delete"
@@ -28,8 +30,9 @@ import (
 	inithub "open-cluster-management.io/clusteradm/pkg/cmd/init"
 	install "open-cluster-management.io/clusteradm/pkg/cmd/install"
 	joinhub "open-cluster-management.io/clusteradm/pkg/cmd/join"
+	"open-cluster-management.io/clusteradm/pkg/cmd/proxy"
 	unjoin "open-cluster-management.io/clusteradm/pkg/cmd/unjoin"
-	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
+	"open-cluster-management.io/clusteradm/pkg/cmd/version"
 )
 
 func main() {
@@ -84,6 +87,7 @@ func main() {
 				enable.NewCmd(clusteradmFlags, streams),
 				install.NewCmd(clusteradmFlags, streams),
 				acceptclusters.NewCmd(clusteradmFlags, streams),
+				proxy.NewCmd(clusteradmFlags, streams),
 			},
 		},
 	}

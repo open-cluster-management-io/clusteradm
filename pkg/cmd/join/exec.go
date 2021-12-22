@@ -7,26 +7,26 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
+	"github.com/spf13/cobra"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog/v2"
-	"k8s.io/kubectl/pkg/cmd/util"
-
-	// "k8s.io/apimachinery/pkg/util/wait"
-
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/client-go/util/retry"
+	"k8s.io/klog/v2"
+	"k8s.io/kubectl/pkg/cmd/util"
+
 	operatorclientv1 "open-cluster-management.io/api/client/operator/clientset/versioned/typed/operator/v1"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 	"open-cluster-management.io/clusteradm/pkg/cmd/join/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
-
-	"github.com/spf13/cobra"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -38,11 +38,26 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 			APIServer: o.hubAPIServer,
 		},
 		ImageRegistry: ImageRegistry{
-				Registry: o.registry,
-				Version: o.version,
+			Registry: o.registry,
+			Version:  o.version,
 		},
 	}
-	klog.V(3).InfoS("values:", "clusterName", o.values.ClusterName, "hubAPIServer", o.values.Hub.APIServer)
+	kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
+	if err != nil {
+		klog.Errorf("Failed building kube client: %v", err)
+		return err
+	}
+	klusterletApiserver, err := helpers.GetAPIServer(kubeClient)
+	if err != nil {
+		klog.Errorf("Failed looking for cluster endpoint for the registering klusterlet: %v", err)
+		klusterletApiserver = ""
+	}
+	o.values.Klusterlet.APIServer = klusterletApiserver
+
+	klog.V(3).InfoS("values:",
+		"clusterName", o.values.ClusterName,
+		"hubAPIServer", o.values.Hub.APIServer,
+		"klusterletAPIServer", o.values.Klusterlet.APIServer)
 	return nil
 
 }
@@ -117,12 +132,7 @@ func (o *Options) run() error {
 	output = append(output, out...)
 
 	if !o.ClusteradmFlags.DryRun {
-		b := retry.DefaultBackoff
-		b.Duration = 200 * time.Millisecond
-
-		err = helpers.WaitCRDToBeReady(
-			apiExtensionsClient, "klusterlets.operator.open-cluster-management.io", b)
-		if err != nil {
+		if err := waitUntilCRDReady(apiExtensionsClient); err != nil {
 			return err
 		}
 	}
@@ -133,7 +143,12 @@ func (o *Options) run() error {
 	}
 	output = append(output, out...)
 
-	err = waitUntilConditionIsTrue(o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout))
+	err = waitUntilRegistrationOperatorConditionIsTrue(o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout))
+	if err != nil {
+		return err
+	}
+
+	err = waitUntilKlusterletConditionIsTrue(o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout))
 	if err != nil {
 		return err
 	}
@@ -145,8 +160,61 @@ func (o *Options) run() error {
 
 }
 
+func waitUntilCRDReady(apiExtensionsClient clientset.Interface) error {
+	b := retry.DefaultBackoff
+	b.Duration = 200 * time.Millisecond
+
+	crdSpinner := helpers.NewSpinner("Waiting for CRD to be ready...", time.Second)
+	crdSpinner.FinalMSG = "CRD successfully registered.\n"
+	crdSpinner.Start()
+	defer crdSpinner.Stop()
+	return helpers.WaitCRDToBeReady(
+		apiExtensionsClient, "klusterlets.operator.open-cluster-management.io", b)
+}
+
+func waitUntilRegistrationOperatorConditionIsTrue(f util.Factory, timeout int64) error {
+	var restConfig *rest.Config
+	restConfig, err := f.ToRESTConfig()
+	if err != nil {
+		return err
+	}
+	client, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return err
+	}
+	operatorSpinner := helpers.NewSpinner("Waiting for registration operator to become ready...", time.Millisecond*500)
+	operatorSpinner.FinalMSG = "Registration operator is now available.\n"
+	operatorSpinner.Start()
+	defer operatorSpinner.Stop()
+
+	return waitUntilConditionIsTrue(
+		func() (watch.Interface, error) {
+			return client.CoreV1().Pods("open-cluster-management").
+				Watch(context.TODO(), metav1.ListOptions{
+					TimeoutSeconds: &timeout,
+					LabelSelector:  "app=klusterlet",
+				})
+		},
+		func(event watch.Event) bool {
+			pod, ok := event.Object.(*corev1.Pod)
+			if !ok {
+				return false
+			}
+			conds := make([]metav1.Condition, len(pod.Status.Conditions))
+			for i := range pod.Status.Conditions {
+				conds[i] = metav1.Condition{
+					Type:    string(pod.Status.Conditions[i].Type),
+					Status:  metav1.ConditionStatus(pod.Status.Conditions[i].Status),
+					Reason:  pod.Status.Conditions[i].Reason,
+					Message: pod.Status.Conditions[i].Message,
+				}
+			}
+			return meta.IsStatusConditionTrue(conds, "Ready")
+		})
+}
+
 //Wait until the klusterlet condition available=true, or timeout in $timeout seconds
-func waitUntilConditionIsTrue(f util.Factory, timeout int64) error {
+func waitUntilKlusterletConditionIsTrue(f util.Factory, timeout int64) error {
 	var restConfig *rest.Config
 	restConfig, err := f.ToRESTConfig()
 	if err != nil {
@@ -159,26 +227,46 @@ func waitUntilConditionIsTrue(f util.Factory, timeout int64) error {
 		return err
 	}
 
-	watch, err := client.Klusterlets().Watch(context.TODO(), metav1.ListOptions{TimeoutSeconds: &timeout, FieldSelector: "metadata.name=klusterlet"})
+	klusterletSpinner := helpers.NewSpinner("Waiting for klusterlet agent to become ready...", time.Millisecond*500)
+	klusterletSpinner.FinalMSG = "Klusterlet is now available.\n"
+	klusterletSpinner.Start()
+	defer klusterletSpinner.Stop()
+
+	return waitUntilConditionIsTrue(
+		func() (watch.Interface, error) {
+			return client.Klusterlets().
+				Watch(
+					context.TODO(),
+					metav1.ListOptions{
+						TimeoutSeconds: &timeout,
+						FieldSelector:  "metadata.name=klusterlet",
+					})
+		},
+		func(event watch.Event) bool {
+			klusterlet, ok := event.Object.(*operatorv1.Klusterlet)
+			if !ok {
+				return false
+			}
+			return meta.IsStatusConditionTrue(klusterlet.Status.Conditions, "Available")
+		},
+	)
+}
+
+func waitUntilConditionIsTrue(
+	watchFunc func() (watch.Interface, error),
+	assertEvent func(event watch.Event) bool) error {
+	w, err := watchFunc()
 	if err != nil {
 		return err
 	}
-	defer watch.Stop()
-
-	fmt.Printf("Waiting for the management components to become ready...\n")
-
+	defer w.Stop()
 	for {
-		event, ok := <-watch.ResultChan()
+		event, ok := <-w.ResultChan()
 		if !ok { //The channel is closed by Kubernetes, thus, user should check the pod status manually
-			return fmt.Errorf("the registration agent is not ready yet, please check it manually")
+			return fmt.Errorf("unexpected watch event received")
 		}
 
-		klusterlet, ok := event.Object.(*operatorv1.Klusterlet)
-		if !ok {
-			continue
-		}
-
-		if meta.IsStatusConditionTrue(klusterlet.Status.Conditions, "Available") {
+		if assertEvent(event) {
 			break
 		}
 	}
@@ -260,10 +348,12 @@ func (o *Options) createKubeConfig(externalClientUnSecure *kubernetes.Clientset,
 		}
 	}
 
-	bootstrapConfig := bootstrapExternalConfigUnSecure
+	bootstrapConfig := bootstrapExternalConfigUnSecure.DeepCopy()
 	bootstrapConfig.Clusters[0].Cluster.InsecureSkipTLSVerify = false
 	bootstrapConfig.Clusters[0].Cluster.CertificateAuthorityData = ca
-	bootstrapConfig.Clusters[0].Cluster.Server = hubAPIServerInternal
+	if !o.skipHubInClusterEndpointLookup {
+		bootstrapConfig.Clusters[0].Cluster.Server = hubAPIServerInternal
+	}
 	bootstrapConfigBytes, err := yaml.Marshal(bootstrapConfig)
 	if err != nil {
 		return "", err

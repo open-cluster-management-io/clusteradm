@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package addons
+package enable
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
-	"open-cluster-management.io/clusteradm/pkg/cmd/enable/addons/scenario"
+	"open-cluster-management.io/clusteradm/pkg/cmd/addon/enable/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 )
@@ -75,7 +75,7 @@ func (o *Options) run() error {
 	}
 	o.values.clusters = clusters
 
-	klog.V(3).InfoS("values:", "addons", o.values.addons, "clusters", o.values.clusters)
+	klog.V(3).InfoS("values:", "addon", o.values.addons, "clusters", o.values.clusters)
 
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
@@ -120,7 +120,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 			for _, clusterName := range o.values.clusters {
 				cn := &ClusterName{ClusterName: clusterName, NameSpace: o.namespace}
 
-				out, err := applier.ApplyCustomResources(reader, cn, dryRun, "", "addons/appmgr/addon.yaml")
+				out, err := applier.ApplyCustomResources(reader, cn, dryRun, "", "addon/appmgr/addon.yaml")
 				if err != nil {
 					return err
 				}

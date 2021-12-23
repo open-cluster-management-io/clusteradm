@@ -13,7 +13,7 @@ import (
 
 var example = `
 # Install built-in add-ons to the hub cluster
-%[1]s install addons --names application-manager
+%[1]s install addon --names application-manager
 `
 
 // NewCmd...
@@ -21,8 +21,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	o := newOptions(clusteradmFlags, streams)
 
 	cmd := &cobra.Command{
-		Use:          "addons",
-		Short:        "install addons",
+		Use:          "addon",
+		Short:        "install addon",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRunE: func(c *cobra.Command, args []string) error {

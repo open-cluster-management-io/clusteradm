@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package addons
+package enable
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
 )
 
-var _ = ginkgo.Describe("enable addons", func() {
+var _ = ginkgo.Describe("addon enable", func() {
 	var cluster1Name string
 	var cluster2Name string
 	var suffix string

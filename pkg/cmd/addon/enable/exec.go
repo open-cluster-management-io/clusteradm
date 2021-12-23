@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package addons
+package enable
 
 import (
 	"context"
@@ -14,21 +14,29 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
-	"open-cluster-management.io/clusteradm/pkg/cmd/enable/addons/scenario"
+	"open-cluster-management.io/clusteradm/pkg/cmd/addon/enable/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 )
 
-const appMgrAddonName = "application-manager"
+// const appMgrAddonName = "application-manager"
 
-//ClusterName: The cluster name used in the template
-type ClusterName struct {
+type ClusterAddonInfo struct {
 	ClusterName string
 	NameSpace   string
+	AddonName   string
+}
+
+func NewClusterAddonInfo(cn string, ns string, an string) ClusterAddonInfo {
+	return ClusterAddonInfo{
+		ClusterName: cn,
+		NameSpace:   ns,
+		AddonName:   an,
+	}
 }
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
-	klog.V(1).InfoS("addon options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.names, "clusters", o.clusters, "output-file", o.outputFile)
+	klog.V(1).InfoS("enable options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.names, "clusters", o.clusters, "output-file", o.outputFile)
 
 	return nil
 }
@@ -36,13 +44,6 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 func (o *Options) validate() error {
 	if o.names == "" {
 		return fmt.Errorf("names is missing")
-	}
-
-	names := strings.Split(o.names, ",")
-	for _, n := range names {
-		if n != appMgrAddonName {
-			return fmt.Errorf("invalid add-on name %s", n)
-		}
 	}
 
 	if o.clusters == "" {
@@ -62,7 +63,6 @@ func (o *Options) run() error {
 			addons = append(addons, strings.TrimSpace(n))
 		}
 	}
-	o.values.addons = addons
 
 	alreadyProvidedClusters := make(map[string]bool)
 	clusters := make([]string, 0)
@@ -73,9 +73,8 @@ func (o *Options) run() error {
 			clusters = append(clusters, strings.TrimSpace(c))
 		}
 	}
-	o.values.clusters = clusters
 
-	klog.V(3).InfoS("values:", "addons", o.values.addons, "clusters", o.values.clusters)
+	klog.V(3).InfoS("values:", "addon", addons, "clusters", clusters)
 
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
@@ -91,16 +90,18 @@ func (o *Options) run() error {
 		return err
 	}
 
-	return o.runWithClient(clusterClient, kubeClient, apiExtensionsClient, dynamicClient, o.ClusteradmFlags.DryRun)
+	return o.runWithClient(clusterClient, kubeClient, apiExtensionsClient, dynamicClient, o.ClusteradmFlags.DryRun, addons, clusters)
 }
 
 func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 	kubeClient kubernetes.Interface,
 	apiExtensionsClient apiextensionsclient.Interface,
 	dynamicClient dynamic.Interface,
-	dryRun bool) error {
+	dryRun bool,
+	addons []string,
+	clusters []string) error {
 
-	for _, clusterName := range o.values.clusters {
+	for _, clusterName := range clusters {
 		_, err := clusterClient.ClusterV1().ManagedClusters().Get(context.TODO(),
 			clusterName,
 			metav1.GetOptions{})
@@ -115,19 +116,16 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 	applierBuilder := &apply.ApplierBuilder{}
 	applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
 
-	for _, addon := range o.values.addons {
-		if addon == appMgrAddonName {
-			for _, clusterName := range o.values.clusters {
-				cn := &ClusterName{ClusterName: clusterName, NameSpace: o.namespace}
-
-				out, err := applier.ApplyCustomResources(reader, cn, dryRun, "", "addons/appmgr/addon.yaml")
-				if err != nil {
-					return err
-				}
-				output = append(output, out...)
-
-				fmt.Printf("Deploying %s add-on to namespaces %s of managed cluster: %s.\n", appMgrAddonName, o.namespace, clusterName)
+	for _, addon := range addons {
+		for _, clusterName := range clusters {
+			cai := NewClusterAddonInfo(clusterName, o.namespace, addon)
+			out, err := applier.ApplyCustomResources(reader, cai, dryRun, "", "addons/app/addon.yaml")
+			if err != nil {
+				return err
 			}
+			output = append(output, out...)
+
+			fmt.Fprintf(o.Streams.Out, "Deploying %s add-on to namespaces %s of managed cluster: %s.\n", addon, o.namespace, clusterName)
 		}
 	}
 

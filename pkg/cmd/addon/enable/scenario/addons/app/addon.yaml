@@ -2,7 +2,7 @@
 apiVersion: addon.open-cluster-management.io/v1alpha1
 kind: ManagedClusterAddOn
 metadata:
-  name: application-manager
+  name: {{ .AddonName }}
   namespace: {{ .ClusterName }}
 spec:
-  installNamespace: {{ .NameSpace }}
+  installNamespace: {{ .NameSpace }} 

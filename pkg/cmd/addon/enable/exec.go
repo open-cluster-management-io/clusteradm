@@ -21,10 +21,24 @@ import (
 
 const appMgrAddonName = "application-manager"
 
-//ClusterName: The cluster name used in the template
-type ClusterName struct {
+// //Cluster: The cluster name used in the template
+// type Cluster struct {
+// 	ClusterName string
+// 	NameSpace   string
+// }
+
+type ClusterAddonInfo struct {
 	ClusterName string
 	NameSpace   string
+	AddonName   string
+}
+
+func NewClusterAddonInfo(cn string, ns string) ClusterAddonInfo {
+	return ClusterAddonInfo{
+		ClusterName: cn,
+		NameSpace:   ns,
+		AddonName:   appMgrAddonName,
+	}
 }
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -38,12 +52,12 @@ func (o *Options) validate() error {
 		return fmt.Errorf("names is missing")
 	}
 
-	names := strings.Split(o.names, ",")
-	for _, n := range names {
-		if n != appMgrAddonName {
-			return fmt.Errorf("invalid add-on name %s", n)
-		}
-	}
+	// names := strings.Split(o.names, ",")
+	// for _, n := range names {
+	// 	if n != appMgrAddonName {
+	// 		return fmt.Errorf("invalid add-on name %s", n)
+	// 	}
+	// }
 
 	if o.clusters == "" {
 		return fmt.Errorf("clusters is misisng")
@@ -118,7 +132,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 	for _, addon := range o.values.addons {
 		if addon == appMgrAddonName {
 			for _, clusterName := range o.values.clusters {
-				cn := &ClusterName{ClusterName: clusterName, NameSpace: o.namespace}
+				cn := NewClusterAddonInfo(clusterName, o.namespace)
 
 				out, err := applier.ApplyCustomResources(reader, cn, dryRun, "", "addons/appmgr/addon.yaml")
 				if err != nil {
@@ -127,6 +141,18 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 				output = append(output, out...)
 
 				fmt.Printf("Deploying %s add-on to namespaces %s of managed cluster: %s.\n", appMgrAddonName, o.namespace, clusterName)
+			}
+		} else {
+			for _, clusterName := range o.values.clusters {
+				cai := &ClusterAddonInfo{AddonName: addon, ClusterName: clusterName, NameSpace: o.namespace}
+
+				out, err := applier.ApplyCustomResources(reader, cai, dryRun, "", "addons/app/addon.yaml")
+				if err != nil {
+					return err
+				}
+				output = append(output, out...)
+
+				fmt.Printf("Deploying %s add-on to namespaces %s of managed cluster: %s.\n", addon, o.namespace, clusterName)
 			}
 		}
 	}

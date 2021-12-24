@@ -120,7 +120,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 			for _, clusterName := range o.values.clusters {
 				cn := &ClusterName{ClusterName: clusterName, NameSpace: o.namespace}
 
-				out, err := applier.ApplyCustomResources(reader, cn, dryRun, "", "addon/appmgr/addon.yaml")
+				out, err := applier.ApplyCustomResources(reader, cn, dryRun, "", "addons/appmgr/addon.yaml")
 				if err != nil {
 					return err
 				}

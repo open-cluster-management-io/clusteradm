@@ -14,7 +14,7 @@ import (
 	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
 )
 
-var _ = ginkgo.Describe("addon addon", func() {
+var _ = ginkgo.Describe("addon enable", func() {
 	var cluster1Name string
 	var cluster2Name string
 	var suffix string

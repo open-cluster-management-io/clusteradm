@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package enable
+package disable
 
 import (
 	"fmt"
@@ -12,8 +12,8 @@ import (
 )
 
 var example = `
-# Enable addon on a cluster in speccified a namespace
-%[1]s addon enable --name application-manager --ns namespace --cluster cluster1,cluster2
+# Disanable addon on a cluster in speccified a namespace
+%[1]s addon disable --name application-manager --ns namespace --cluster cluster1,cluster2
 `
 
 // NewCmd...
@@ -21,8 +21,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	o := newOptions(clusteradmFlags, streams)
 
 	cmd := &cobra.Command{
-		Use:          "enable",
-		Short:        "enable addon on specified managed cluster",
+		Use:          "disable",
+		Short:        "disable specified addon on specified managed cluster",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRunE: func(c *cobra.Command, args []string) error {

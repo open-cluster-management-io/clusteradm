@@ -21,6 +21,8 @@ type Options struct {
 	tag string
 	//Pulling image registry of OCM
 	registry string
+	//If set, will be persisting the generated join command to a local file
+	outputJoinCommandFile string
 }
 
 //Valus: The values used in the template

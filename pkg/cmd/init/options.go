@@ -23,6 +23,8 @@ type Options struct {
 	registry string
 	//If set, will be persisting the generated join command to a local file
 	outputJoinCommandFile string
+	//If set, the command will hold until the OCM control plane initialized
+	wait bool
 }
 
 //Valus: The values used in the template

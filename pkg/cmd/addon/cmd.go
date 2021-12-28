@@ -7,6 +7,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/cmd/addon/disable"
 	"open-cluster-management.io/clusteradm/pkg/cmd/addon/enable"
 	"open-cluster-management.io/clusteradm/pkg/cmd/addon/list"
+	"open-cluster-management.io/clusteradm/pkg/cmd/addon/listall"
 
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
@@ -21,6 +22,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.AddCommand(enable.NewCmd(clusteradmFlags, streams))
 	cmd.AddCommand(disable.NewCmd(clusteradmFlags, streams))
 	cmd.AddCommand(list.NewCmd(clusteradmFlags, streams))
+	cmd.AddCommand(listall.NewCmd(clusteradmFlags, streams))
 
 	return cmd
 }

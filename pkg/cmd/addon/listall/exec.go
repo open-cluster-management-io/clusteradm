@@ -1,10 +1,9 @@
 // Copyright Contributors to the Open Cluster Management project
-package list
+package listall
 
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -19,31 +18,16 @@ import (
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 
-	klog.V(1).InfoS("list options:", "dry-run", o.ClusteradmFlags.DryRun, "clusters", o.clusters, "output-file", o.outputFile)
+	klog.V(1).InfoS("listall options:", "dry-run", o.ClusteradmFlags.DryRun, "output-file", o.outputFile)
 
 	return nil
 }
 
 func (o *Options) validate() (err error) {
-	if o.clusters == "" {
-		return fmt.Errorf("clusters is misisng")
-	}
 	return nil
 }
 
 func (o *Options) run() (err error) {
-	alreadyProvidedClusters := make(map[string]bool)
-	clusters := make([]string, 0)
-	cs := strings.Split(o.clusters, ",")
-	for _, c := range cs {
-		if _, ok := alreadyProvidedClusters[c]; !ok {
-			alreadyProvidedClusters[c] = true
-			clusters = append(clusters, strings.TrimSpace(c))
-		}
-	}
-	o.values.clusters = clusters
-
-	klog.V(3).InfoS("values:", "clusters", o.values.clusters)
 
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
@@ -74,19 +58,23 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 	dynamicClient dynamic.Interface,
 	dryRun bool) error {
 
-	for _, clusterName := range o.values.clusters {
-		_, err := clusterClient.ClusterV1().ManagedClusters().Get(context.TODO(),
-			clusterName,
-			metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
+	mcllist, err := clusterClient.ClusterV1().ManagedClusters().List(context.TODO(),
+		metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	mcls := make([]string, 0)
+
+	for _, item := range mcllist.Items {
+		mcls = append(mcls, item.ObjectMeta.Name)
 	}
 
 	output := make([]string, 0)
 	output = append(output, "CLUSTERNAME\tADDONNAME\tAVAILABLE\tDEGRADED\tPROGRESSING")
 
-	for _, clusterName := range o.values.clusters {
+	for _, clusterName := range mcls {
+
 		list, err := addonClient.AddonV1alpha1().ManagedClusterAddOns(clusterName).List(context.TODO(),
 			metav1.ListOptions{})
 		if err != nil {
@@ -97,7 +85,6 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 			temp := item.GetObjectMeta().GetNamespace() + "\t" + item.GetObjectMeta().GetName() + "\t"
 			output = append(output, temp)
 		}
-
 	}
 
 	for _, out := range output {

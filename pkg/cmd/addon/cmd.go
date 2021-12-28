@@ -5,6 +5,8 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"open-cluster-management.io/clusteradm/pkg/cmd/addon/enable"
+	"open-cluster-management.io/clusteradm/pkg/cmd/addon/listall"
+
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
@@ -16,6 +18,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	}
 
 	cmd.AddCommand(enable.NewCmd(clusteradmFlags, streams))
+	cmd.AddCommand(listall.NewCmd(clusteradmFlags, streams))
 
 	return cmd
 }

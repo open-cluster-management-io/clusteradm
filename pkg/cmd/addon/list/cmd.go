@@ -12,9 +12,6 @@ import (
 )
 
 var example = `
-# List all enabled addon
-%[1]s addon list
-
 # List enabled addon on a specified cluster
 %[1]s addon list --cluster cluster1
 `

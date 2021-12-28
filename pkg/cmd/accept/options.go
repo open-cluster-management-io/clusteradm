@@ -11,8 +11,9 @@ type Options struct {
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 	//A list of comma separated cluster names
 	clusters string
-	//Wait to wait in second for managedcluster and CSR
-	wait   int
+	//Wait to wait for managedcluster and CSR
+	wait bool
+
 	values Values
 }
 

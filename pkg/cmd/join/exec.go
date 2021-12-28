@@ -132,8 +132,10 @@ func (o *Options) run() error {
 	output = append(output, out...)
 
 	if !o.ClusteradmFlags.DryRun {
-		if err := waitUntilCRDReady(apiExtensionsClient); err != nil {
-			return err
+		if o.wait && !o.ClusteradmFlags.DryRun {
+			if err := waitUntilCRDReady(apiExtensionsClient); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -143,14 +145,18 @@ func (o *Options) run() error {
 	}
 	output = append(output, out...)
 
-	err = waitUntilRegistrationOperatorConditionIsTrue(o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout))
-	if err != nil {
-		return err
+	if o.wait && !o.ClusteradmFlags.DryRun {
+		err = waitUntilRegistrationOperatorConditionIsTrue(o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout))
+		if err != nil {
+			return err
+		}
 	}
 
-	err = waitUntilKlusterletConditionIsTrue(o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout))
-	if err != nil {
-		return err
+	if o.wait && !o.ClusteradmFlags.DryRun {
+		err = waitUntilKlusterletConditionIsTrue(o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout))
+		if err != nil {
+			return err
+		}
 	}
 
 	fmt.Printf("Please log onto the hub cluster and run the following command:\n\n"+

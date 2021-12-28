@@ -29,7 +29,7 @@ function join_hub() {
    echo "join_hub 4nd parameter: "$4 >&2
    local _CMDJOIN=`echo "$1" | cut -d ':' -f2-4 | cut -d '<' -f1`
    _CMDJOIN="$_CMDJOIN $2 $3 $4"
-   local _CMDJOINRESULT=`$_CMDJOIN`
+   local _CMDJOINRESULT=`$_CMDJOIN --wait`
    if [ $? != 0 ]
    then
       ERROR_REPORT=$ERROR_REPORT+"clusteradm join failed\n"

@@ -54,5 +54,6 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		"If true, the installed klusterlet agent will be starting registration using the external endpoint "+
 			"from --hub-apiserver instead of looking for the internal endpoint from the public cluster-info in the hub "+
 			"cluster.")
+	cmd.Flags().BoolVar(&o.wait, "wait", false, "If true, running the cluster registration in foreground.")
 	return cmd
 }

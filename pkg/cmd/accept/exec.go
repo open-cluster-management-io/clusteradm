@@ -71,14 +71,14 @@ func (o *Options) run() error {
 
 func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient *clusterclientset.Clientset) (err error) {
 	for _, clusterName := range o.values.clusters {
-		if o.wait == 0 {
+		if o.wait {
 			var csrApproved bool
 			csrApproved, err = o.accept(kubeClient, clusterClient, clusterName, false)
 			if err == nil && !csrApproved {
 				err = fmt.Errorf("no CSR to approve for cluster %s", clusterName)
 			}
 		} else {
-			err = wait.PollImmediate(1*time.Second, time.Duration(o.wait)*time.Second, func() (bool, error) {
+			err = wait.PollImmediate(1*time.Second, time.Duration(o.ClusteradmFlags.Timeout)*time.Second, func() (bool, error) {
 				return o.accept(kubeClient, clusterClient, clusterName, true)
 			})
 		}

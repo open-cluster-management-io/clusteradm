@@ -3,6 +3,7 @@ package init
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
@@ -145,13 +146,27 @@ func (o *Options) run() error {
 		return nil
 	}
 
-	fmt.Printf("The multicluster hub control plane has been initialized successfully!\n\n"+
-		"You can now register cluster(s) to the hub control plane. Log onto those cluster(s) and run the following command:\n\n"+
-		"    %s join --hub-token %s --hub-apiserver %s --cluster-name <cluster_name>\n\n"+
-		"Replace <cluster_name> with a cluster name of your choice. For example, cluster1.\n\n",
+	cmd := fmt.Sprintf("%s join --hub-token %s --hub-apiserver %s --cluster-name",
 		helpers.GetExampleHeader(),
 		token,
-		restConfig.Host,
+		restConfig.Host)
+
+	if len(o.outputJoinCommandFile) > 0 {
+		sh, err := os.OpenFile(o.outputJoinCommandFile, os.O_CREATE|os.O_WRONLY, 0755)
+		_, err = fmt.Fprintf(sh, "%s $1", cmd)
+		if err != nil {
+			return err
+		}
+		if err := sh.Close(); err != nil {
+			return err
+		}
+	}
+
+	fmt.Printf("The multicluster hub control plane has been initialized successfully!\n\n"+
+		"You can now register cluster(s) to the hub control plane. Log onto those cluster(s) and run the following command:\n\n"+
+		"    %s <cluster_name>\n\n"+
+		"Replace <cluster_name> with a cluster name of your choice. For example, cluster1.\n\n",
+		cmd,
 	)
 
 	return apply.WriteOutput(o.outputFile, output)

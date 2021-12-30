@@ -25,6 +25,8 @@ type Options struct {
 	version string
 	//Pulling image registry of OCM
 	registry string
+	//Runs the cluster joining in foreground
+	wait bool
 
 	// The installing registration agent will be starting registration using
 	// the external endpoint from --hub-apiserver instead of looking for the

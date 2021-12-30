@@ -14,6 +14,8 @@ import (
 var example = `
 # Accept clusters
 %[1]s accept --clusters <cluster_1>,<cluster_2>,...
+# Accept clusters in foreground
+%[1]s accept --clusters <cluster_1>,<cluster_2>,... --wait
 `
 
 // NewCmd ...
@@ -44,6 +46,6 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	}
 
 	cmd.Flags().StringVar(&o.clusters, "clusters", "", "Names of the cluster to accept (comma separated)")
-	cmd.Flags().IntVar(&o.wait, "wait", 0, "the number of second to wait for the managedcluster and CSR")
+	cmd.Flags().BoolVar(&o.wait, "wait", false, "If set, wait for the managedcluster and CSR in foreground.")
 	return cmd
 }

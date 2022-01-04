@@ -17,6 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -254,4 +255,26 @@ func IsClusterManagerInstalled(apiExtensionsClient apiextensionsclient.Interface
 		}
 	}
 	return false, err
+}
+
+// WatchUntil starts a watch stream and holds until the condition is satisfied.
+func WatchUntil(
+	watchFunc func() (watch.Interface, error),
+	assertEvent func(event watch.Event) bool) error {
+	w, err := watchFunc()
+	if err != nil {
+		return err
+	}
+	defer w.Stop()
+	for {
+		event, ok := <-w.ResultChan()
+		if !ok { //The channel is closed by Kubernetes, thus, user should check the pod status manually
+			return fmt.Errorf("unexpected watch event received")
+		}
+
+		if assertEvent(event) {
+			break
+		}
+	}
+	return nil
 }

@@ -193,7 +193,7 @@ func waitUntilRegistrationOperatorConditionIsTrue(f util.Factory, timeout int64)
 	operatorSpinner.Start()
 	defer operatorSpinner.Stop()
 
-	return waitUntilConditionIsTrue(
+	return helpers.WatchUntil(
 		func() (watch.Interface, error) {
 			return client.CoreV1().Pods("open-cluster-management").
 				Watch(context.TODO(), metav1.ListOptions{
@@ -238,7 +238,7 @@ func waitUntilKlusterletConditionIsTrue(f util.Factory, timeout int64) error {
 	klusterletSpinner.Start()
 	defer klusterletSpinner.Stop()
 
-	return waitUntilConditionIsTrue(
+	return helpers.WatchUntil(
 		func() (watch.Interface, error) {
 			return client.Klusterlets().
 				Watch(
@@ -256,27 +256,6 @@ func waitUntilKlusterletConditionIsTrue(f util.Factory, timeout int64) error {
 			return meta.IsStatusConditionTrue(klusterlet.Status.Conditions, "Available")
 		},
 	)
-}
-
-func waitUntilConditionIsTrue(
-	watchFunc func() (watch.Interface, error),
-	assertEvent func(event watch.Event) bool) error {
-	w, err := watchFunc()
-	if err != nil {
-		return err
-	}
-	defer w.Stop()
-	for {
-		event, ok := <-w.ResultChan()
-		if !ok { //The channel is closed by Kubernetes, thus, user should check the pod status manually
-			return fmt.Errorf("unexpected watch event received")
-		}
-
-		if assertEvent(event) {
-			break
-		}
-	}
-	return nil
 }
 
 //Create bootstrap with token but without CA

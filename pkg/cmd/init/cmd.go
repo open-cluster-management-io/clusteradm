@@ -52,5 +52,9 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		"The name of the image registry serving OCM images, which will be applied to all the deploying OCM components.")
 	cmd.Flags().StringVar(&o.tag, "tag", "latest",
 		"The installing image tag that applies to all the deploying OCM components.")
+	cmd.Flags().StringVar(&o.outputJoinCommandFile, "output-join-command-file", "",
+		"If set, the generated join command be saved to the prescribed file.")
+	cmd.Flags().BoolVar(&o.wait, "wait", false,
+		"If set, the command will initialize the OCM control plan in foreground.")
 	return cmd
 }

@@ -71,7 +71,7 @@ func (o *Options) run() error {
 
 func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient *clusterclientset.Clientset) (err error) {
 	for _, clusterName := range o.values.clusters {
-		if o.wait {
+		if !o.wait {
 			var csrApproved bool
 			csrApproved, err = o.accept(kubeClient, clusterClient, clusterName, false)
 			if err == nil && !csrApproved {

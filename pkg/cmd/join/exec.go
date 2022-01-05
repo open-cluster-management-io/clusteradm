@@ -4,6 +4,7 @@ package join
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	"github.com/ghodss/yaml"
@@ -22,8 +23,6 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/kubectl/pkg/cmd/util"
 
-	operatorclientv1 "open-cluster-management.io/api/client/operator/clientset/versioned/typed/operator/v1"
-	operatorv1 "open-cluster-management.io/api/operator/v1"
 	"open-cluster-management.io/clusteradm/pkg/cmd/join/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
@@ -188,8 +187,16 @@ func waitUntilRegistrationOperatorConditionIsTrue(f util.Factory, timeout int64)
 	if err != nil {
 		return err
 	}
-	operatorSpinner := helpers.NewSpinner("Waiting for registration operator to become ready...", time.Millisecond*500)
-	operatorSpinner.FinalMSG = "Registration operator is now available.\n"
+
+	phase := &atomic.Value{}
+	phase.Store("")
+	operatorSpinner := helpers.NewSpinnerWithStatus(
+		"Waiting for registration operator to become ready...",
+		time.Millisecond*500,
+		"Registration operator is now available.\n",
+		func() string {
+			return phase.Load().(string)
+		})
 	operatorSpinner.Start()
 	defer operatorSpinner.Stop()
 
@@ -206,6 +213,7 @@ func waitUntilRegistrationOperatorConditionIsTrue(f util.Factory, timeout int64)
 			if !ok {
 				return false
 			}
+			phase.Store(helpers.GetSpinnerPodStatus(pod))
 			conds := make([]metav1.Condition, len(pod.Status.Conditions))
 			for i := range pod.Status.Conditions {
 				conds[i] = metav1.Condition{
@@ -221,39 +229,47 @@ func waitUntilRegistrationOperatorConditionIsTrue(f util.Factory, timeout int64)
 
 //Wait until the klusterlet condition available=true, or timeout in $timeout seconds
 func waitUntilKlusterletConditionIsTrue(f util.Factory, timeout int64) error {
-	var restConfig *rest.Config
-	restConfig, err := f.ToRESTConfig()
+	client, err := f.KubernetesClientSet()
 	if err != nil {
 		return err
 	}
 
-	var client *operatorclientv1.OperatorV1Client
-	client, err = operatorclientv1.NewForConfig(restConfig)
-	if err != nil {
-		return err
-	}
-
-	klusterletSpinner := helpers.NewSpinner("Waiting for klusterlet agent to become ready...", time.Millisecond*500)
-	klusterletSpinner.FinalMSG = "Klusterlet is now available.\n"
+	phase := &atomic.Value{}
+	phase.Store("")
+	klusterletSpinner := helpers.NewSpinnerWithStatus(
+		"Waiting for klusterlet agent to become ready...",
+		time.Millisecond*500,
+		"Klusterlet is now available.\n",
+		func() string {
+			return phase.Load().(string)
+		})
 	klusterletSpinner.Start()
 	defer klusterletSpinner.Stop()
 
 	return helpers.WatchUntil(
 		func() (watch.Interface, error) {
-			return client.Klusterlets().
-				Watch(
-					context.TODO(),
-					metav1.ListOptions{
-						TimeoutSeconds: &timeout,
-						FieldSelector:  "metadata.name=klusterlet",
-					})
+			return client.CoreV1().Pods("open-cluster-management-agent").
+				Watch(context.TODO(), metav1.ListOptions{
+					TimeoutSeconds: &timeout,
+					LabelSelector:  "app=klusterlet-registration-agent",
+				})
 		},
 		func(event watch.Event) bool {
-			klusterlet, ok := event.Object.(*operatorv1.Klusterlet)
+			pod, ok := event.Object.(*corev1.Pod)
 			if !ok {
 				return false
 			}
-			return meta.IsStatusConditionTrue(klusterlet.Status.Conditions, "Available")
+			phase.Store(helpers.GetSpinnerPodStatus(pod))
+			conds := make([]metav1.Condition, len(pod.Status.Conditions))
+			for i := range pod.Status.Conditions {
+				conds[i] = metav1.Condition{
+					Type:    string(pod.Status.Conditions[i].Type),
+					Status:  metav1.ConditionStatus(pod.Status.Conditions[i].Status),
+					Reason:  pod.Status.Conditions[i].Reason,
+					Message: pod.Status.Conditions[i].Message,
+				}
+			}
+			return meta.IsStatusConditionTrue(conds, "Ready")
 		},
 	)
 }

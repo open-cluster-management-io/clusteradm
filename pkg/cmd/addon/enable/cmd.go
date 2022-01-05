@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package addons
+package enable
 
 import (
 	"fmt"
@@ -12,8 +12,8 @@ import (
 )
 
 var example = `
-# Enable addons on a cluster in speccified a namespace
-%[1]s enable addons --names application-manager --ns namespace --clusters cluster1,cluster2
+# Enable addon on a cluster in speccified a namespace
+%[1]s addon enable --name application-manager --ns namespace --cluster cluster1,cluster2
 `
 
 // NewCmd...
@@ -21,8 +21,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	o := newOptions(clusteradmFlags, streams)
 
 	cmd := &cobra.Command{
-		Use:          "addons",
-		Short:        "enable addons",
+		Use:          "enable",
+		Short:        "enable specified addon",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRunE: func(c *cobra.Command, args []string) error {
@@ -45,9 +45,9 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		},
 	}
 
-	cmd.Flags().StringVar(&o.names, "names", "", "Names of the add-on to deploy (comma separated)")
-	cmd.Flags().StringVarP(&o.namespace, "namespace", "n", "open-cluster-management-agent-addon", "Specified namespace to enable addon")
-	cmd.Flags().StringVar(&o.clusters, "clusters", "", "Names of the managed cluster to deploy the add-on to (comma separated)")
+	cmd.Flags().StringVar(&o.names, "name", "", "Names of the add-on to deploy (comma separated)")
+	cmd.Flags().StringVarP(&o.namespace, "namespace", "n", "open-cluster-management-agent-addon", "Specified namespace to addon addon")
+	cmd.Flags().StringVar(&o.clusters, "cluster", "", "Names of the managed cluster to deploy the add-on to (comma separated)")
 	cmd.Flags().StringVar(&o.outputFile, "output-file", "", "The generated resources will be copied in the specified file")
 
 	return cmd

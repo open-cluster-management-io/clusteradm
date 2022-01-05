@@ -51,7 +51,7 @@ func (o *Options) run() error {
 	}
 	o.values.addons = addons
 
-	klog.V(3).InfoS("values:", "addons", o.values.addons)
+	klog.V(3).InfoS("values:", "addon", o.values.addons)
 
 	kubeClient, apiExtensionsClient, dynamicClient, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
 	if err != nil {
@@ -75,18 +75,18 @@ func (o *Options) runWithClient(kubeClient kubernetes.Interface,
 	for _, addon := range o.values.addons {
 		if addon == appMgrAddonName {
 			files := []string{
-				"addons/appmgr/clusterrole_agent.yaml",
-				"addons/appmgr/clusterrole_binding.yaml",
-				"addons/appmgr/clusterrole.yaml",
-				"addons/appmgr/crd_channel.yaml",
-				"addons/appmgr/crd_helmrelease.yaml",
-				"addons/appmgr/crd_placementrule.yaml",
-				"addons/appmgr/crd_subscription.yaml",
-				"addons/appmgr/crd_subscriptionstatuses.yaml",
-				"addons/appmgr/crd_report.yaml",
-				"addons/appmgr/crd_clusterreport.yaml",
-				"addons/appmgr/service_account.yaml",
-				"addons/appmgr/service.yaml",
+				"addon/appmgr/clusterrole_agent.yaml",
+				"addon/appmgr/clusterrole_binding.yaml",
+				"addon/appmgr/clusterrole.yaml",
+				"addon/appmgr/crd_channel.yaml",
+				"addon/appmgr/crd_helmrelease.yaml",
+				"addon/appmgr/crd_placementrule.yaml",
+				"addon/appmgr/crd_subscription.yaml",
+				"addon/appmgr/crd_subscriptionstatuses.yaml",
+				"addon/appmgr/crd_report.yaml",
+				"addon/appmgr/crd_clusterreport.yaml",
+				"addon/appmgr/service_account.yaml",
+				"addon/appmgr/service.yaml",
 			}
 
 			out, err := applier.ApplyDirectly(reader, o.values, dryRun, "", files...)
@@ -96,10 +96,10 @@ func (o *Options) runWithClient(kubeClient kubernetes.Interface,
 			output = append(output, out...)
 
 			deployments := []string{
-				"addons/appmgr/deployment_channel.yaml",
-				"addons/appmgr/deployment_subscription.yaml",
-				"addons/appmgr/deployment_placementrule.yaml",
-				"addons/appmgr/deployment_appsubsummary.yaml",
+				"addon/appmgr/deployment_channel.yaml",
+				"addon/appmgr/deployment_subscription.yaml",
+				"addon/appmgr/deployment_placementrule.yaml",
+				"addon/appmgr/deployment_appsubsummary.yaml",
 			}
 
 			out, err = applier.ApplyDeployments(reader, o.values, dryRun, "", deployments...)

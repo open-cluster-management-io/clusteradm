@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package addons
+package enable
 
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -17,17 +17,13 @@ type Options struct {
 	clusters string
 	//The file to output the resources will be sent to the file.
 	outputFile string
-	values     Values
-}
-
-//Values: The values used in the template
-type Values struct {
-	addons   []string
-	clusters []string
+	//
+	Streams genericclioptions.IOStreams
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
+		Streams:         streams,
 	}
 }

@@ -23,9 +23,9 @@ import (
 
 	// commands
 	acceptclusters "open-cluster-management.io/clusteradm/pkg/cmd/accept"
+	addon "open-cluster-management.io/clusteradm/pkg/cmd/addon"
 	clean "open-cluster-management.io/clusteradm/pkg/cmd/clean"
 	deletecmd "open-cluster-management.io/clusteradm/pkg/cmd/delete"
-	enable "open-cluster-management.io/clusteradm/pkg/cmd/enable"
 	"open-cluster-management.io/clusteradm/pkg/cmd/get"
 	inithub "open-cluster-management.io/clusteradm/pkg/cmd/init"
 	install "open-cluster-management.io/clusteradm/pkg/cmd/install"
@@ -64,7 +64,7 @@ func main() {
 
 	root.AddCommand(cmdconfig.NewCmdConfig(f, clientcmd.NewDefaultPathOptions(), streams))
 	root.AddCommand(options.NewCmdOptions(streams.Out))
-	//enable plugin functionality: all `os.Args[0]-<binary>` in the $PATH will be available for plugin
+	//addon plugin functionality: all `os.Args[0]-<binary>` in the $PATH will be available for plugin
 	plugin.ValidPluginFilenamePrefixes = []string{os.Args[0]}
 	root.AddCommand(plugin.NewCmdPlugin(f, streams))
 
@@ -84,7 +84,7 @@ func main() {
 				inithub.NewCmd(clusteradmFlags, streams),
 				joinhub.NewCmd(clusteradmFlags, streams),
 				unjoin.NewCmd(clusteradmFlags, streams),
-				enable.NewCmd(clusteradmFlags, streams),
+				addon.NewCmd(clusteradmFlags, streams),
 				install.NewCmd(clusteradmFlags, streams),
 				acceptclusters.NewCmd(clusteradmFlags, streams),
 				proxy.NewCmd(clusteradmFlags, streams),

@@ -16,7 +16,7 @@ const (
 	subscriptionDeployment = "multicluster-operators-subscription"
 )
 
-var _ = ginkgo.Describe("install addons", func() {
+var _ = ginkgo.Describe("install addon", func() {
 
 	ginkgo.Context("runWithClient", func() {
 

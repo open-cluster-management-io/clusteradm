@@ -19,5 +19,5 @@ jobs:
       with:
         go-version: 1.16
 
-    - name: Functional Tests
-      run: make functional-test-full
+    - name: E2E Tests
+      run: make test-e2e

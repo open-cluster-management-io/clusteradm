@@ -17,10 +17,7 @@ export PROJECT_NAME			  = $(shell basename ${PROJECT_DIR})
 export GOPACKAGES   = $(shell go list ./... | grep -v /vendor | grep -v /build | grep -v /test )
 
 .PHONY: clean
-clean: clean-test
-	kind delete cluster --name ${PROJECT_NAME}-functional-test-hub
-	kind delete cluster --name ${PROJECT_NAME}-functional-test-c1
-	kind delete cluster --name ${PROJECT_NAME}-functional-test-c2
+clean: clean-test clean-e2e
 	
 .PHONY: deps
 deps:
@@ -93,11 +90,7 @@ test:
 clean-test: 
 	-rm -r ./test/unit/coverage
 	-rm -r ./test/unit/tmp
-	-rm -r ./test/functional/tmp
 	-rm -r ./test/out
 
-.PHONY: functional-test-full
-functional-test-full: deps install
-	@build/run-functional-tests.sh
-
 include ./test/integration-test.mk
+include ./test/e2e/e2e-test.mk

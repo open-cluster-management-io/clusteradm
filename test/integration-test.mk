@@ -30,5 +30,5 @@ clean-integration-test:
 clean: clean-integration-test
 
 test-integration: ensure-kubebuilder-tools
-	go test -v ./pkg/cmd/enable/addons ./pkg/cmd/install/addons 
+	go test -v ./pkg/cmd/addon/enable ./pkg/cmd/install/addons 
 .PHONY: test-integration

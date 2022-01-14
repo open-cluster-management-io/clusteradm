@@ -122,32 +122,5 @@ var _ = ginkgo.Describe("addon enable", func() {
 			gomega.Expect(err).To(gomega.HaveOccurred())
 		})
 
-		/**
-		 * ? How to determine whether a addon-name is valid or invalid?
-		 * ? Any naming rules?
-		 * */
-		// ginkgo.It("Should not create a ManagedClusterAddOn because it's not a valid add-on name", func() {
-		// 	assertCreatingClusters(cluster1Name)
-
-		// 	addonName := "no-such-addon"
-
-		// 	o := Options{
-		// 		Streams: streams,
-		// 	}
-
-		// 	addons := []string{addonName}
-		// 	clusters := []string{cluster1Name}
-
-		// 	err := o.runWithClient(clusterClient, kubeClient, apiExtensionsClient, dynamicClient, false, addons, clusters)
-		// 	gomega.Expect(err).ToNot(gomega.HaveOccurred())
-
-		// 	gomega.Consistently(func() error {
-		// 		_, err := addonClient.AddonV1alpha1().ManagedClusterAddOns(cluster1Name).Get(context.Background(), addonName, metav1.GetOptions{})
-		// 		if err != nil {
-		// 			return err
-		// 		}
-		// 		return nil
-		// 	}, consistentlyTimeout, consistentlyInterval).Should(gomega.HaveOccurred())
-		// })
 	})
 })

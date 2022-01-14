@@ -56,35 +56,31 @@ var _ = ginkgo.Describe("install addon", func() {
 			}, consistentlyTimeout, consistentlyInterval).Should(gomega.HaveOccurred())
 		})
 
-		/**
-		 * TODO:
-		 * 		repair this test
-		 */
-		// ginkgo.It("Should deploy the built in application-manager add-on deployments in open-cluster-management namespace successfully", func() {
-		// 	o := Options{
-		// 		values: Values{
-		// 			addons: []string{appMgrAddonName},
-		// 		},
-		// 	}
+		ginkgo.It("Should deploy the built in application-manager add-on deployments in open-cluster-management namespace successfully", func() {
+			o := Options{
+				values: Values{
+					addons: []string{appMgrAddonName},
+				},
+			}
 
-		// 	err := o.runWithClient(kubeClient, apiExtensionsClient, dynamicClient, false)
-		// 	gomega.Expect(err).ToNot(gomega.HaveOccurred())
+			err := o.runWithClient(kubeClient, apiExtensionsClient, dynamicClient, false)
+			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
-		// 	gomega.Eventually(func() error {
-		// 		_, err := kubeClient.AppsV1().Deployments(ocmNamespace).Get(context.Background(), channelDeployment, metav1.GetOptions{})
-		// 		if err != nil {
-		// 			return err
-		// 		}
-		// 		return nil
-		// 	}, eventuallyTimeout, eventuallyInterval).ShouldNot(gomega.HaveOccurred())
+			gomega.Eventually(func() error {
+				_, err := kubeClient.AppsV1().Deployments(ocmNamespace).Get(context.Background(), channelDeployment, metav1.GetOptions{})
+				if err != nil {
+					return err
+				}
+				return nil
+			}, eventuallyTimeout, eventuallyInterval).ShouldNot(gomega.HaveOccurred())
 
-		// 	gomega.Eventually(func() error {
-		// 		_, err := kubeClient.AppsV1().Deployments(ocmNamespace).Get(context.Background(), subscriptionDeployment, metav1.GetOptions{})
-		// 		if err != nil {
-		// 			return err
-		// 		}
-		// 		return nil
-		// 	}, eventuallyTimeout, eventuallyInterval).ShouldNot(gomega.HaveOccurred())
-		// })
+			gomega.Eventually(func() error {
+				_, err := kubeClient.AppsV1().Deployments(ocmNamespace).Get(context.Background(), subscriptionDeployment, metav1.GetOptions{})
+				if err != nil {
+					return err
+				}
+				return nil
+			}, eventuallyTimeout, eventuallyInterval).ShouldNot(gomega.HaveOccurred())
+		})
 	})
 })

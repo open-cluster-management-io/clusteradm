@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package list
+package addon
 
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"

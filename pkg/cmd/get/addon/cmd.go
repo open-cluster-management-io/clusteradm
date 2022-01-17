@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package list
+package addon
 
 import (
 	"fmt"
@@ -12,8 +12,10 @@ import (
 )
 
 var example = `
-# List enabled addon on a specified cluster
-%[1]s addon list --cluster cluster1
+# Get enabled addon on specified cluster.
+%[1]s get addon --cluster cluster1
+# Get all enabled addon.
+%[1]s get addon
 `
 
 // NewCmd...
@@ -21,8 +23,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	o := newOptions(clusteradmFlags, streams)
 
 	cmd := &cobra.Command{
-		Use:          "list",
-		Short:        "list enabled addon on specified managedcluster",
+		Use:          "addon",
+		Short:        "get enabled addon on specified managedcluster",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRunE: func(c *cobra.Command, args []string) error {

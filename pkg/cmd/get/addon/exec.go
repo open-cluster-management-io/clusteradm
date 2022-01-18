@@ -3,13 +3,14 @@ package addon
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
@@ -17,6 +18,8 @@ import (
 	addonclient "open-cluster-management.io/api/client/addon/clientset/versioned"
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
+
+	"k8s.io/cli-runtime/pkg/printers"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -36,11 +39,11 @@ func (o *Options) run() (err error) {
 	if len(o.clusters) == 0 {
 		klog.V(3).InfoS("values:", "all clusters")
 	} else {
-		alreadyProvidedClusters := make(map[string]bool)
+		alreadyProvidedClusters := sets.NewString()
 		cs := strings.Split(o.clusters, ",")
 		for _, c := range cs {
-			if _, ok := alreadyProvidedClusters[c]; !ok {
-				alreadyProvidedClusters[c] = true
+			if !alreadyProvidedClusters.Has(c) {
+				alreadyProvidedClusters.Insert(c)
 				clusters = append(clusters, strings.TrimSpace(c))
 			}
 		}
@@ -99,8 +102,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 		}
 	}
 
-	var addons []v1alpha1.ManagedClusterAddOn
-
+	var addonlist v1alpha1.ManagedClusterAddOnList
 	for _, clusterName := range clusters {
 
 		list, err := addonClient.AddonV1alpha1().ManagedClusterAddOns(clusterName).List(context.TODO(),
@@ -109,26 +111,28 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 			return err
 		}
 
-		addons = append(addons, list.Items...)
+		addonlist.Items = append(addonlist.Items, list.Items...)
 	}
 
-	fmt.Fprintf(o.Streams.Out, "ADDONNAME\tCLUSTERNAME\n")
-
-	// sort by addon name, then by cluster name
-	sort.Slice(addons, func(i, j int) bool {
-		if strings.Compare(addons[i].GetObjectMeta().GetName(), addons[j].GetObjectMeta().GetName()) == -1 {
-			return true
-		}
-		if strings.Compare(addons[i].GetObjectMeta().GetName(), addons[j].GetObjectMeta().GetName()) == 0 &&
-			strings.Compare(addons[i].GetObjectMeta().GetNamespace(), addons[j].GetObjectMeta().GetNamespace()) == -1 {
-			return true
-		}
-		return false
+	printer := printers.NewTablePrinter(printers.PrintOptions{
+		NoHeaders:     false,
+		WithNamespace: true,
+		WithKind:      false,
+		Wide:          false,
+		ShowLabels:    false,
+		Kind: schema.GroupKind{
+			Group: "addon.open-cluster-management.io",
+			Kind:  "ManagedClusterAddOn",
+		},
+		ColumnLabels:     []string{},
+		SortBy:           "",
+		AllowMissingKeys: true,
 	})
 
-	for _, item := range addons {
-		fmt.Fprintf(o.Streams.Out, "%s\t%s\n", item.GetObjectMeta().GetName(), item.GetObjectMeta().GetNamespace())
-	}
+	sort.Slice(addonlist.Items, func(i, j int) bool {
+		return addonlist.Items[i].Name < addonlist.Items[j].Name
+	})
 
+	printer.PrintObj(&addonlist, o.Streams.Out)
 	return nil
 }

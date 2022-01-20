@@ -28,10 +28,10 @@ type Options struct {
 	//Runs the cluster joining in foreground
 	wait bool
 
-	// The installing registration agent will be starting registration using
-	// the external endpoint from --hub-apiserver instead of looking for the
-	// internal endpoint from the public cluster-info.
-	skipHubInClusterEndpointLookup bool
+	// By default, The installing registration agent will be starting registration using
+	// the external endpoint from --hub-apiserver instead of looking for the internal
+	// endpoint from the public cluster-info.
+	forceHubInClusterEndpointLookup bool
 }
 
 //Values: The values used in the template

@@ -340,21 +340,20 @@ func (o *Options) createKubeConfig(externalClientUnSecure *kubernetes.Clientset,
 		return "", err
 	}
 
-	hubAPIServerInternal, err := helpers.GetAPIServer(externalClientUnSecure)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			hubAPIServerInternal = o.hubAPIServer
-		} else {
-			return "", err
+	hubApiserver := o.hubAPIServer
+	if o.forceHubInClusterEndpointLookup || len(hubApiserver) == 0 {
+		hubApiserver, err = helpers.GetAPIServer(externalClientUnSecure)
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				return "", err
+			}
 		}
 	}
 
 	bootstrapConfig := bootstrapExternalConfigUnSecure.DeepCopy()
 	bootstrapConfig.Clusters[0].Cluster.InsecureSkipTLSVerify = false
 	bootstrapConfig.Clusters[0].Cluster.CertificateAuthorityData = ca
-	if !o.skipHubInClusterEndpointLookup {
-		bootstrapConfig.Clusters[0].Cluster.Server = hubAPIServerInternal
-	}
+	bootstrapConfig.Clusters[0].Cluster.Server = hubApiserver
 	bootstrapConfigBytes, err := yaml.Marshal(bootstrapConfig)
 	if err != nil {
 		return "", err

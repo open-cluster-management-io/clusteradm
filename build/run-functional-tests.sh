@@ -14,7 +14,7 @@ mkdir -p $TEST_RESULT_DIR
 
 function init_hub() {
    echo "init_hub 1st parameter: "$1 >&2
-   local _CMDINITRESULT=`clusteradm init $1 --image-registry=quay.io/open-cluster-management --tag=v0.5.0`
+   local _CMDINITRESULT=`clusteradm init $1 --image-registry=quay.io/open-cluster-management --tag=latest`
    if [ $? != 0 ]
    then
       ERROR_REPORT=$ERROR_REPORT+"clusteradm init failed\n"
@@ -29,7 +29,7 @@ function join_hub() {
    echo "join_hub 4nd parameter: "$4 >&2
    local _CMDJOIN=`echo "$1" | cut -d ':' -f2-4 | cut -d '<' -f1`
    _CMDJOIN="$_CMDJOIN $2 $3 $4"
-   local _CMDJOINRESULT=`$_CMDJOIN --wait`
+   local _CMDJOINRESULT=`$_CMDJOIN --wait --force-internal-endpoint-lookup`
    if [ $? != 0 ]
    then
       ERROR_REPORT=$ERROR_REPORT+"clusteradm join failed\n"

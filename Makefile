@@ -45,7 +45,7 @@ build-bin:
 .PHONY: release
 release: 
 	@if [[ -z "${VERSION}" ]]; then VERSION=`cat VERSION.txt`; echo $$VERSION; fi; \
-	git tag v$$VERSION && git push upstream --tags
+	git tag $$VERSION && git push upstream --tags
 
 .PHONY: build-krew
 build-krew: krew-tools

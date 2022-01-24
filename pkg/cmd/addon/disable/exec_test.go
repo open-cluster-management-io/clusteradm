@@ -84,8 +84,7 @@ var _ = ginkgo.Describe("addon disable", func() {
 			assertEnableAddon([]string{appMgrAddonName}, []string{cluster1Name}, "default")
 
 			o := Options{
-				namespace: "open-cluster-management-agent-addon",
-				Streams:   streams,
+				Streams: streams,
 			}
 
 			err := o.runWithClient(clusterClient, addonClient, kubeClient, apiExtensionsClient, dynamicClient, false, addons, clusters)
@@ -101,8 +100,7 @@ var _ = ginkgo.Describe("addon disable", func() {
 			assertEnableAddon(addons, clusters, "default")
 
 			o := Options{
-				namespace: "open-cluster-management-agent-addon",
-				Streams:   streams,
+				Streams: streams,
 			}
 
 			err := o.runWithClient(clusterClient, addonClient, kubeClient, apiExtensionsClient, dynamicClient, false, addons, clusters)

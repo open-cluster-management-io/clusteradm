@@ -4,13 +4,13 @@ package disable
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/spf13/cobra"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
@@ -26,36 +26,19 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 }
 
 func (o *Options) validate() (err error) {
-	if o.names == "" {
+	if len(o.names) == 0 {
 		return fmt.Errorf("names is missing")
 	}
 
-	if o.clusters == "" {
+	if len(o.clusters) == 0 {
 		return fmt.Errorf("clusters is misisng")
 	}
 	return nil
 }
 
 func (o *Options) run() (err error) {
-	alreadyProvidedAddons := make(map[string]bool)
-	addons := make([]string, 0)
-	names := strings.Split(o.names, ",")
-	for _, n := range names {
-		if _, ok := alreadyProvidedAddons[n]; !ok {
-			alreadyProvidedAddons[n] = true
-			addons = append(addons, strings.TrimSpace(n))
-		}
-	}
-
-	alreadyProvidedClusters := make(map[string]bool)
-	clusters := make([]string, 0)
-	cs := strings.Split(o.clusters, ",")
-	for _, c := range cs {
-		if _, ok := alreadyProvidedClusters[c]; !ok {
-			alreadyProvidedClusters[c] = true
-			clusters = append(clusters, strings.TrimSpace(c))
-		}
-	}
+	addons := sets.NewString(o.names...)
+	clusters := sets.NewString(o.clusters...)
 
 	klog.V(3).InfoS("values:", "addon", addons, "clusters", clusters)
 
@@ -78,7 +61,7 @@ func (o *Options) run() (err error) {
 		return err
 	}
 
-	return o.runWithClient(clusterClient, addonClient, kubeClient, apiExtensionsClient, dynamicClient, o.ClusteradmFlags.DryRun, addons, clusters)
+	return o.runWithClient(clusterClient, addonClient, kubeClient, apiExtensionsClient, dynamicClient, o.ClusteradmFlags.DryRun, addons.List(), clusters.List())
 }
 
 func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
@@ -109,7 +92,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 					return err
 				}
 			}
-			fmt.Fprintf(o.Streams.Out, "Undeploying %s add-on from namespaces %s of managed cluster: %s.\n", addon, o.namespace, clusterName)
+			fmt.Fprintf(o.Streams.Out, "Undeploying %s add-on in managed cluster: %s.\n", addon, clusterName)
 		}
 	}
 

@@ -10,11 +10,9 @@ type Options struct {
 	//ClusteradmFlags: The generic optiosn from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 	//A list of comma separated addon names
-	names string
-	//The sepcified namespace for addon to install
-	namespace string
+	names []string
 	//A list of comma separated cluster names
-	clusters string
+	clusters []string
 
 	Streams genericclioptions.IOStreams
 }

@@ -19,6 +19,9 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.16
+      - name: Check version
+        run: |
+          cat VERSION.txt | grep ${{ github.ref_name }}
       - name: Build project
         run: |
           make build-bin

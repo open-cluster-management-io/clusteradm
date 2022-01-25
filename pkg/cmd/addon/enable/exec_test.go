@@ -63,7 +63,7 @@ var _ = ginkgo.Describe("addon enable", func() {
 			}
 
 			addons := []string{appMgrAddonName}
-			clusters := []string{cluster1Name}
+			clusters := []string{cluster1Name, cluster1Name, cluster1Name}
 
 			err := o.runWithClient(clusterClient, kubeClient, apiExtensionsClient, dynamicClient, false, addons, clusters)
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
@@ -87,7 +87,7 @@ var _ = ginkgo.Describe("addon enable", func() {
 			}
 
 			addons := []string{appMgrAddonName}
-			clusters := []string{cluster1Name, cluster2Name}
+			clusters := []string{cluster1Name, cluster2Name, cluster1Name}
 
 			err := o.runWithClient(clusterClient, kubeClient, apiExtensionsClient, dynamicClient, false, addons, clusters)
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())

@@ -13,6 +13,8 @@ type Options struct {
 	names []string
 	//A list of comma separated cluster names
 	clusters []string
+	//A bool value shows whether specified add-on will be disable in all managed clusters.
+	allclusters bool
 
 	Streams genericclioptions.IOStreams
 }

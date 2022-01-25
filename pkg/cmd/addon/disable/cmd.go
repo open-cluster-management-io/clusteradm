@@ -12,8 +12,10 @@ import (
 )
 
 var example = `
-# Disanable addon on a cluster in speccified a namespace
-%[1]s addon disable --name application-manager --ns namespace --cluster cluster1,cluster2
+# Disable application-manager addon on speccified clusters
+%[1]s addon disable --name application-manager --cluster cluster1,cluster2
+# Disable application-manager addon on all clusters
+%[1]s addon disable --name application-manager --all-clusters
 `
 
 // NewCmd...
@@ -22,7 +24,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 
 	cmd := &cobra.Command{
 		Use:          "disable",
-		Short:        "disable specified addon on specified managed cluster",
+		Short:        "disable specified addon on specified managed clusters",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRunE: func(c *cobra.Command, args []string) error {
@@ -47,6 +49,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 
 	cmd.Flags().StringSliceVar(&o.names, "name", []string{}, "Names of the add-on to deploy (comma separated)")
 	cmd.Flags().StringSliceVar(&o.clusters, "cluster", []string{}, "Names of the managed cluster to deploy the add-on to (comma separated)")
+	cmd.Flags().BoolVar(&o.allclusters, "all-clusters", false, "Make all managed clusters to disable the add-on")
 
 	return cmd
 }

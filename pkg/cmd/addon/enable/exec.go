@@ -4,13 +4,13 @@ package enable
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
@@ -42,11 +42,11 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 }
 
 func (o *Options) validate() error {
-	if o.names == "" {
+	if len(o.names) == 0 {
 		return fmt.Errorf("names is missing")
 	}
 
-	if o.clusters == "" {
+	if len(o.clusters) == 0 {
 		return fmt.Errorf("clusters is misisng")
 	}
 
@@ -54,25 +54,8 @@ func (o *Options) validate() error {
 }
 
 func (o *Options) run() error {
-	alreadyProvidedAddons := make(map[string]bool)
-	addons := make([]string, 0)
-	names := strings.Split(o.names, ",")
-	for _, n := range names {
-		if _, ok := alreadyProvidedAddons[n]; !ok {
-			alreadyProvidedAddons[n] = true
-			addons = append(addons, strings.TrimSpace(n))
-		}
-	}
-
-	alreadyProvidedClusters := make(map[string]bool)
-	clusters := make([]string, 0)
-	cs := strings.Split(o.clusters, ",")
-	for _, c := range cs {
-		if _, ok := alreadyProvidedClusters[c]; !ok {
-			alreadyProvidedClusters[c] = true
-			clusters = append(clusters, strings.TrimSpace(c))
-		}
-	}
+	addons := sets.NewString(o.names...)
+	clusters := sets.NewString(o.clusters...)
 
 	klog.V(3).InfoS("values:", "addon", addons, "clusters", clusters)
 
@@ -90,7 +73,7 @@ func (o *Options) run() error {
 		return err
 	}
 
-	return o.runWithClient(clusterClient, kubeClient, apiExtensionsClient, dynamicClient, o.ClusteradmFlags.DryRun, addons, clusters)
+	return o.runWithClient(clusterClient, kubeClient, apiExtensionsClient, dynamicClient, o.ClusteradmFlags.DryRun, addons.List(), clusters.List())
 }
 
 func (o *Options) runWithClient(clusterClient clusterclientset.Interface,

@@ -4,7 +4,6 @@ package addon
 import (
 	"context"
 	"sort"
-	"strings"
 
 	"github.com/spf13/cobra"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -34,23 +33,6 @@ func (o *Options) validate() (err error) {
 }
 
 func (o *Options) run() (err error) {
-	clusters := make([]string, 0)
-
-	if len(o.clusters) == 0 {
-		klog.V(3).InfoS("values:", "all clusters")
-	} else {
-		alreadyProvidedClusters := sets.NewString()
-		cs := strings.Split(o.clusters, ",")
-		for _, c := range cs {
-			if !alreadyProvidedClusters.Has(c) {
-				alreadyProvidedClusters.Insert(c)
-				clusters = append(clusters, strings.TrimSpace(c))
-			}
-		}
-
-		klog.V(3).InfoS("values:", "clusters", clusters)
-	}
-
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
@@ -70,7 +52,25 @@ func (o *Options) run() (err error) {
 		return err
 	}
 
-	return o.runWithClient(clusterClient, addonClient, kubeClient, apiExtensionsClient, dynamicClient, o.ClusteradmFlags.DryRun, clusters)
+	var clusters sets.String
+	if len(o.clusters) == 0 {
+		clusters = sets.NewString()
+		mcllist, err := clusterClient.ClusterV1().ManagedClusters().List(context.TODO(),
+			metav1.ListOptions{})
+		if err != nil {
+			return err
+		}
+
+		for _, item := range mcllist.Items {
+			clusters.Insert(item.ObjectMeta.Name)
+		}
+	} else {
+		clusters = sets.NewString(o.clusters...)
+	}
+
+	klog.V(3).InfoS("values:", "clusters", clusters)
+
+	return o.runWithClient(clusterClient, addonClient, kubeClient, apiExtensionsClient, dynamicClient, o.ClusteradmFlags.DryRun, clusters.List())
 }
 
 func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
@@ -81,24 +81,12 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 	dryRun bool,
 	clusters []string) error {
 
-	if len(clusters) == 0 {
-		mcllist, err := clusterClient.ClusterV1().ManagedClusters().List(context.TODO(),
-			metav1.ListOptions{})
+	for _, clusterName := range clusters {
+		_, err := clusterClient.ClusterV1().ManagedClusters().Get(context.TODO(),
+			clusterName,
+			metav1.GetOptions{})
 		if err != nil {
 			return err
-		}
-
-		for _, item := range mcllist.Items {
-			clusters = append(clusters, item.ObjectMeta.Name)
-		}
-	} else {
-		for _, clusterName := range clusters {
-			_, err := clusterClient.ClusterV1().ManagedClusters().Get(context.TODO(),
-				clusterName,
-				metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
 		}
 	}
 

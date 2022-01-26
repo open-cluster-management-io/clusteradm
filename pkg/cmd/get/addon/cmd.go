@@ -47,7 +47,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		},
 	}
 
-	cmd.Flags().StringVar(&o.clusters, "clusters", "", "Names of the managed cluster to deploy the add-on to (comma separated)")
+	cmd.Flags().StringSliceVar(&o.clusters, "clusters", []string{}, "Names of the managed cluster to deploy the add-on to (comma separated)")
 
 	return cmd
 }

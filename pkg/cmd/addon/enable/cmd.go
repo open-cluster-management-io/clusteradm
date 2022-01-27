@@ -13,7 +13,7 @@ import (
 
 var example = `
 # Enable addon on a cluster in speccified a namespace
-%[1]s addon enable --name application-manager --ns namespace --cluster cluster1,cluster2
+%[1]s addon enable --name application-manager --namespace namespace --cluster cluster1,cluster2
 `
 
 // NewCmd...

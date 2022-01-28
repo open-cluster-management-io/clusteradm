@@ -20,7 +20,7 @@ import (
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
-	klog.V(1).InfoS("disable options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.names, "clusters", o.clusters)
+	klog.V(1).InfoS("disable options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.names, "clusters", o.clusters, "all-clusters", o.allclusters)
 
 	return nil
 }
@@ -30,18 +30,17 @@ func (o *Options) validate() (err error) {
 		return fmt.Errorf("names is missing")
 	}
 
-	if len(o.clusters) == 0 {
-		return fmt.Errorf("clusters is misisng")
+	if !o.allclusters && len(o.clusters) == 0 {
+		return fmt.Errorf("clusters is missing")
+	}
+
+	if o.allclusters && len(o.clusters) != 0 {
+		return fmt.Errorf("flag --all-cluster and --cluster can not be set together")
 	}
 	return nil
 }
 
 func (o *Options) run() (err error) {
-	addons := sets.NewString(o.names...)
-	clusters := sets.NewString(o.clusters...)
-
-	klog.V(3).InfoS("values:", "addon", addons, "clusters", clusters)
-
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
@@ -60,6 +59,25 @@ func (o *Options) run() (err error) {
 	if err != nil {
 		return err
 	}
+
+	addons := sets.NewString(o.names...)
+
+	var clusters sets.String
+	if o.allclusters {
+		clusters = sets.NewString()
+		mcllist, err := clusterClient.ClusterV1().ManagedClusters().List(context.TODO(),
+			metav1.ListOptions{})
+		if err != nil {
+			return err
+		}
+		for _, item := range mcllist.Items {
+			clusters.Insert(item.ObjectMeta.Name)
+		}
+	} else {
+		clusters = sets.NewString(o.clusters...)
+	}
+
+	klog.V(3).InfoS("addon to be disabled with cluster values:", "addon", addons.List(), "clusters", clusters.List())
 
 	return o.runWithClient(clusterClient, addonClient, kubeClient, apiExtensionsClient, dynamicClient, o.ClusteradmFlags.DryRun, addons.List(), clusters.List())
 }

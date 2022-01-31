@@ -40,8 +40,8 @@ spec:
       containers:
       - args:
         - /registration-operator
-        - hub
-        image: {{ .Hub.Image.Registry }}/registration-operator:{{ .Hub.Image.Tag }}
+        - hub       
+        image: {{ .Hub.Registry }}/registration-operator:{{ .BundleVersion.RegistrationImageVersion }} 
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:

@@ -25,6 +25,7 @@ import (
 	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
 	"k8s.io/kubectl/pkg/cmd/util"
+	version "open-cluster-management.io/clusteradm/pkg/helpers/version"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -33,12 +34,27 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		Hub: Hub{
 			TokenID:     helpers.RandStringRunes_az09(6),
 			TokenSecret: helpers.RandStringRunes_az09(16),
-			Image: Image{
-				Registry: o.registry,
-				Tag:      o.tag,
-			},
+			Registry:    o.registry,		
+			
 		},
 	}
+
+	versionBundle := version.VersionBundle{}
+	versionBundle, err = version.GetVersionBundle(o.bundleVersion)	
+
+	if err != nil {
+		klog.Errorf("unable to retrive version ", err)
+		return err
+	}
+	
+	o.values.BundleVersion = BundleVersion{
+		RegistrationImageVersion:  versionBundle.Registration,
+		PlacementImageVersion: versionBundle.Placement,	
+		WorkImageVersion: versionBundle.Work,	
+		OperatorImageVersion: versionBundle.Operator,
+	}
+
+
 	return nil
 }
 
@@ -64,9 +80,7 @@ func (o *Options) validate() error {
 	if len(o.registry) == 0 {
 		return fmt.Errorf("registry should not be empty")
 	}
-	if len(o.tag) == 0 {
-		return fmt.Errorf("tag should not be empty")
-	}
+
 	return nil
 }
 

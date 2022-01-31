@@ -48,8 +48,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().StringVar(&o.clusterName, "cluster-name", "", "The name of the joining cluster")
 	cmd.Flags().StringVar(&o.outputFile, "output-file", "", "The generated resources will be copied in the specified file")
 	cmd.Flags().StringVar(&o.registry, "image-registry", "quay.io/open-cluster-management", "The name of the image registry serving OCM images.")
-	cmd.Flags().StringVar(&o.version, "version", "latest",
-		"The installing version of OCM components.")
+	cmd.Flags().StringVar(&o.bundleVersion, "bundle-version", "default",
+		"version of predefined compatible image versions")	
 	cmd.Flags().BoolVar(&o.forceHubInClusterEndpointLookup, "force-internal-endpoint-lookup", false,
 		"If true, the installed klusterlet agent will be starting the cluster registration process by "+
 			"looking for the internal endpoint from the public cluster-info in the hub cluster instead of from --hub-apiserver.")

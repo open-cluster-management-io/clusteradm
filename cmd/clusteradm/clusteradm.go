@@ -25,6 +25,7 @@ import (
 	acceptclusters "open-cluster-management.io/clusteradm/pkg/cmd/accept"
 	addon "open-cluster-management.io/clusteradm/pkg/cmd/addon"
 	clean "open-cluster-management.io/clusteradm/pkg/cmd/clean"
+	"open-cluster-management.io/clusteradm/pkg/cmd/create"
 	deletecmd "open-cluster-management.io/clusteradm/pkg/cmd/delete"
 	"open-cluster-management.io/clusteradm/pkg/cmd/get"
 	inithub "open-cluster-management.io/clusteradm/pkg/cmd/init"
@@ -88,6 +89,7 @@ func main() {
 				install.NewCmd(clusteradmFlags, streams),
 				acceptclusters.NewCmd(clusteradmFlags, streams),
 				proxy.NewCmd(clusteradmFlags, streams),
+				create.NewCmd(clusteradmFlags, streams),
 			},
 		},
 	}

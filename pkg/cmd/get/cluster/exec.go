@@ -59,10 +59,11 @@ func converToTable(clusters *clusterapiv1.ManagedClusterList) *metav1.Table {
 		ColumnDefinitions: []metav1.TableColumnDefinition{
 			{Name: "Name", Type: "string"},
 			{Name: "Accepted", Type: "boolean"},
-			{Name: "Available,", Type: "string"},
+			{Name: "Available", Type: "string"},
+			{Name: "ClusterSet", Type: "string"},
 			{Name: "CPU", Type: "string"},
 			{Name: "Memory", Type: "string"},
-			{Name: "Version", Type: "string"},
+			{Name: "Kuberenetes Version", Type: "string"},
 		},
 		Rows: []metav1.TableRow{},
 	}
@@ -76,7 +77,7 @@ func converToTable(clusters *clusterapiv1.ManagedClusterList) *metav1.Table {
 }
 
 func convertRow(cluster clusterapiv1.ManagedCluster) metav1.TableRow {
-	var available, cpu, memory string
+	var available, cpu, memory, clusterset string
 
 	availableCond := meta.FindStatusCondition(cluster.Status.Conditions, clusterapiv1.ManagedClusterConditionAvailable)
 	if availableCond != nil {
@@ -91,8 +92,12 @@ func convertRow(cluster clusterapiv1.ManagedCluster) metav1.TableRow {
 		memory = memResource.String()
 	}
 
+	if len(cluster.Labels) > 0 {
+		clusterset = cluster.Labels["cluster.open-cluster-management.io/clusterset"]
+	}
+
 	return metav1.TableRow{
-		Cells:  []interface{}{cluster.Name, cluster.Spec.HubAcceptsClient, available, cpu, memory, cluster.Status.Version.Kubernetes},
+		Cells:  []interface{}{cluster.Name, cluster.Spec.HubAcceptsClient, available, clusterset, cpu, memory, cluster.Status.Version.Kubernetes},
 		Object: runtime.RawExtension{Object: &cluster},
 	}
 }

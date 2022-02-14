@@ -99,6 +99,7 @@ func (o *Options) accept(kubeClient *kubernetes.Clientset, clusterClient *cluste
 		return false, err
 	}
 	if csrApproved && mcUpdated {
+		fmt.Printf("\n Your managed cluster %s has joined the Hub successfully. Visit https://open-cluster-management.io/scenarios or https://github.com/open-cluster-management-io/OCM/tree/main/solutions for next steps.\n", clusterName)
 		return true, nil
 	}
 	return false, nil

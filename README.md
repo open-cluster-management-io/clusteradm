@@ -90,10 +90,10 @@ Accept the CSRs on the hub to approve the spoke clusters to join the hub.
 
 Install specific built-in add-on(s) to the hub cluster.
 
-`clusteradm install addons --names application-manager`
+`clusteradm install addon --names application-manager`
 
 ### enable addons
 
 Enable specific add-on(s) agent deployment to the given managed clusters of the specify namespace
 
-`clusteradm enable addons --names application-manager --ns namespace --clusters <cluster1>, <cluster2>,....`
+`clusteradm addon enable --names application-manager --namespace <namespace> --cluster <cluster1>,<cluster2>,....`

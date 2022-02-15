@@ -83,6 +83,16 @@ getLatestRelease() {
     ret_val=$latest_release
 }
 
+runAsRoot() {
+    local CMD="$*"
+
+    if [ $EUID -ne 0 -a $USE_SUDO = "true" ]; then
+        CMD="sudo $CMD"
+    fi
+
+    $CMD
+}
+
 downloadFile() {
     LATEST_RELEASE_TAG=$1
 
@@ -139,7 +149,7 @@ installFile() {
     fi
 
     chmod o+x $tmp_root_cli
-    cp "$tmp_root_cli" "$INSTALL_DIR"
+    runAsRoot cp "$tmp_root_cli" "$INSTALL_DIR"
 
     if [ -f "$CLI_FILE" ]; then
         echo "$CLI_FILENAME installed into $INSTALL_DIR successfully."

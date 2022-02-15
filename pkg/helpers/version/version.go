@@ -29,6 +29,8 @@ func GetVersionBundle(version string ) (VersionBundle ,error){
 	versionBundleList["0.5.0"] = VersionBundle{
 		Registration: "0.5.0",
 		Placement: "0.2.0",
+		Work: "0.5.0",
+		Operator: "0.5.0",
 
 	}
 

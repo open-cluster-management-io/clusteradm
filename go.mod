@@ -9,6 +9,7 @@ require (
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/briandowns/spinner v1.11.1
+	github.com/disiqueira/gotree v1.0.0
 	github.com/fatih/color v1.7.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/huandu/xstrings v1.3.2 // indirect
@@ -28,7 +29,7 @@ require (
 	k8s.io/component-base v0.22.1
 	k8s.io/klog/v2 v2.9.0
 	k8s.io/kubectl v0.21.0
-	open-cluster-management.io/api v0.0.0-20210927063308-2c6896161c48
+	open-cluster-management.io/api v0.6.0
 	open-cluster-management.io/cluster-proxy v0.1.1-0.20211222094756-297e092ffcb1
 	sigs.k8s.io/apiserver-network-proxy v0.0.24
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.24

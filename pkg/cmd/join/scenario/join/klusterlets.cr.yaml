@@ -3,9 +3,9 @@ apiVersion: operator.open-cluster-management.io/v1
 kind: Klusterlet
 metadata:
   name: klusterlet
-spec:
-  registrationImagePullSpec: {{ .ImageRegistry.Registry }}/registration:{{ .ImageRegistry.Version }}
-  workImagePullSpec: {{ .ImageRegistry.Registry }}/work:{{ .ImageRegistry.Version }}
+spec: 
+  registrationImagePullSpec: {{ .Hub.Registry }}/registration:{{ .BundleVersion.RegistrationImageVersion }}
+  workImagePullSpec: {{ .Hub.Registry }}/work:{{ .BundleVersion.RegistrationImageVersion }}  
   clusterName: {{ .ClusterName }}
   namespace: open-cluster-management-agent
   externalServerURLs:

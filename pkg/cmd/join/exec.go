@@ -26,21 +26,37 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/cmd/join/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
+	"open-cluster-management.io/clusteradm/pkg/helpers/version"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	klog.V(1).InfoS("join options:", "dry-run", o.ClusteradmFlags.DryRun, "cluster", o.clusterName, "api-server", o.hubAPIServer, o.outputFile)
+	
+
 
 	o.values = Values{
 		ClusterName: o.clusterName,
 		Hub: Hub{
 			APIServer: o.hubAPIServer,
-		},
-		ImageRegistry: ImageRegistry{
 			Registry: o.registry,
-			Version:  o.version,
 		},
+		
 	}
+
+	versionBundle, err := version.GetVersionBundle(o.bundleVersion)	
+
+	if err != nil {
+		klog.Errorf("unable to retrive version ", err)
+		return err
+	}
+	
+	o.values.BundleVersion = BundleVersion{
+		RegistrationImageVersion:  versionBundle.Registration,
+		PlacementImageVersion: versionBundle.Placement,	
+		WorkImageVersion: versionBundle.Work,	
+		OperatorImageVersion: versionBundle.Operator,
+	}
+
 	kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
 	if err != nil {
 		klog.Errorf("Failed building kube client: %v", err)
@@ -74,9 +90,7 @@ func (o *Options) validate() error {
 	if len(o.registry) == 0 {
 		return fmt.Errorf("registry should not be empty")
 	}
-	if len(o.version) == 0 {
-		return fmt.Errorf("version should not be empty")
-	}
+
 
 	return nil
 }

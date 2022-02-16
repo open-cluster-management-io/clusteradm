@@ -41,8 +41,8 @@ spec:
                   - klusterlet
       serviceAccountName: klusterlet
       containers:
-      - name: klusterlet
-        image: {{ .ImageRegistry.Registry }}/registration-operator:{{ .ImageRegistry.Version }}
+      - name: klusterlet        
+        image: {{ .Hub.Registry }}/registration-operator:{{ .BundleVersion.RegistrationImageVersion }}
         args:
           - "/registration-operator"
           - "klusterlet"

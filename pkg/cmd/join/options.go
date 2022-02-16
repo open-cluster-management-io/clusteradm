@@ -20,9 +20,8 @@ type Options struct {
 	values Values
 	//The file to output the resources will be sent to the file.
 	outputFile string
-
-	//Installing release version of OCM
-	version string
+	//version of predefined compatible image versions 
+	bundleVersion string 
 	//Pulling image registry of OCM
 	registry string
 	//Runs the cluster joining in foreground
@@ -41,9 +40,11 @@ type Values struct {
 	//Hub: Hub information
 	Hub Hub
 	//ImageRegistry is the registry related configuration
-	ImageRegistry ImageRegistry
+	Registry string
 	//ImageRegistry is the klusterlet related configuration
 	Klusterlet Klusterlet
+	//bundle version 
+	BundleVersion BundleVersion
 }
 
 //Hub: The hub values for the template
@@ -53,6 +54,8 @@ type Hub struct {
 	APIServer string
 	//KubeConfig: The kubeconfig of the boostrap secret to connect to the hub
 	KubeConfig string
+	//image registry
+	Registry string
 }
 
 // Klusterlet is for templating klusterlet configuration
@@ -61,12 +64,18 @@ type Klusterlet struct {
 	APIServer string
 }
 
-type ImageRegistry struct {
-	// image registry name
-	Registry string
-	// image version
-	Version string
+type BundleVersion struct {
+	// registation image version 
+	RegistrationImageVersion string
+	// placment image version 
+	PlacementImageVersion string
+	// work image version 
+	WorkImageVersion string
+	// operator image version 
+	OperatorImageVersion string	
 }
+
+
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{

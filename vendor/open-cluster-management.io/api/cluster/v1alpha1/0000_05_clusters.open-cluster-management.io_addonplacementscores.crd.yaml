@@ -1,24 +1,21 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: managedclustersets.cluster.open-cluster-management.io
+  name: addonplacementscores.cluster.open-cluster-management.io
 spec:
   group: cluster.open-cluster-management.io
   names:
-    kind: ManagedClusterSet
-    listKind: ManagedClusterSetList
-    plural: managedclustersets
-    shortNames:
-      - mclset
-      - mclsets
-    singular: managedclusterset
-  scope: Cluster
+    kind: AddOnPlacementScore
+    listKind: AddOnPlacementScoreList
+    plural: addonplacementscores
+    singular: addonplacementscore
   preserveUnknownFields: false
+  scope: Namespaced
   versions:
     - name: v1alpha1
       schema:
         openAPIV3Schema:
-          description: "ManagedClusterSet defines a group of ManagedClusters that user's workload can run on. A workload can be defined to deployed on a ManagedClusterSet, which mean:   1. The workload can run on any ManagedCluster in the ManagedClusterSet   2. The workload cannot run on any ManagedCluster outside the ManagedClusterSet   3. The service exposed by the workload can be shared in any ManagedCluster in the ManagedClusterSet \n In order to assign a ManagedCluster to a certian ManagedClusterSet, add a label with name `cluster.open-cluster-management.io/clusterset` on the ManagedCluster to refers to the ManagedClusterSet. User is not allow to add/remove this label on a ManagedCluster unless they have a RBAC rule to CREATE on a virtual subresource of managedclustersets/join. In order to update this label, user must have the permission on both the old and new ManagedClusterSet."
+          description: AddOnPlacementScore represents a bundle of scores of one managed cluster, which could be used by placement. AddOnPlacementScore is a namespace scoped resource. The namespace of the resource is the cluster namespace.
           type: object
           properties:
             apiVersion:
@@ -29,15 +26,12 @@ spec:
               type: string
             metadata:
               type: object
-            spec:
-              description: Spec defines the attributes of the ManagedClusterSet
-              type: object
             status:
-              description: Status represents the current status of the ManagedClusterSet
+              description: Status represents the status of the AddOnPlacementScore.
               type: object
               properties:
                 conditions:
-                  description: Conditions contains the different condition statuses for this ManagedClusterSet.
+                  description: Conditions contain the different condition statuses for this AddOnPlacementScore.
                   type: array
                   items:
                     description: "Condition contains details for one aspect of the current state of this API Resource. --- This struct is intended for direct use as an array at the field path .status.conditions.  For example, type FooStatus struct{     // Represents the observations of a foo's current state.     // Known .status.conditions.type are: \"Available\", \"Progressing\", and \"Degraded\"     // +patchMergeKey=type     // +patchStrategy=merge     // +listType=map     // +listMapKey=type     Conditions []metav1.Condition `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"` \n     // other fields }"
@@ -80,6 +74,35 @@ spec:
                         type: string
                         maxLength: 316
                         pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                  x-kubernetes-list-map-keys:
+                    - type
+                  x-kubernetes-list-type: map
+                scores:
+                  description: Scores contain a list of score name and value of this managed cluster.
+                  type: array
+                  items:
+                    description: AddOnPlacementScoreItem represents the score name and value.
+                    type: object
+                    required:
+                      - name
+                      - value
+                    properties:
+                      name:
+                        description: Name is the name of the score
+                        type: string
+                      value:
+                        description: Value is the value of the score. The score range is from -100 to 100.
+                        type: integer
+                        format: int32
+                        maximum: 100
+                        minimum: -100
+                  x-kubernetes-list-map-keys:
+                    - name
+                  x-kubernetes-list-type: map
+                validUntil:
+                  description: ValidUntil defines the valid time of the scores. After this time, the scores are considered to be invalid by placement. nil means never expire. The controller owning this resource should keep the scores up-to-date.
+                  type: string
+                  format: date-time
       served: true
       storage: true
       subresources:

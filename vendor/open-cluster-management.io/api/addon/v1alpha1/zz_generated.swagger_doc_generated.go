@@ -60,13 +60,22 @@ func (ClusterManagementAddOnStatus) SwaggerDoc() map[string]string {
 }
 
 var map_ConfigCoordinates = map[string]string{
-	"":        "ConfigCoordinates represents the information for locating the CRD and CR that configures the add-on.",
-	"crdName": "crdName is the name of the CRD used to configure instances of the managed add-on. This field should be configured if the add-on have a CRD that controls the configuration of the add-on.",
-	"crName":  "crName is the name of the CR used to configure instances of the managed add-on. This field should be configured if add-on CR have a consistent name across the all of the ManagedCluster instaces.",
+	"":                       "ConfigCoordinates represents the information for locating the CRD and CR that configures the add-on.",
+	"crdName":                "crdName is the name of the CRD used to configure instances of the managed add-on. This field should be configured if the add-on have a CRD that controls the configuration of the add-on.",
+	"crName":                 "crName is the name of the CR used to configure instances of the managed add-on. This field should be configured if add-on CR have a consistent name across the all of the ManagedCluster instaces.",
+	"lastObservedGeneration": "lastObservedGeneration is the observed generation of the custom resource for the configuration of the addon.",
 }
 
 func (ConfigCoordinates) SwaggerDoc() map[string]string {
 	return map_ConfigCoordinates
+}
+
+var map_HealthCheck = map[string]string{
+	"mode": "mode indicates which mode will be used to check the healthiness status of the addon.",
+}
+
+func (HealthCheck) SwaggerDoc() map[string]string {
+	return map_HealthCheck
 }
 
 var map_ManagedClusterAddOn = map[string]string{
@@ -103,6 +112,7 @@ var map_ManagedClusterAddOnStatus = map[string]string{
 	"addOnMeta":          "addOnMeta is a reference to the metadata information for the add-on. This should be same as the addOnMeta for the corresponding ClusterManagementAddOn resource.",
 	"addOnConfiguration": "addOnConfiguration is a reference to configuration information for the add-on. This resource is use to locate the configuration resource for the add-on.",
 	"registrations":      "registrations is the conifigurations for the addon agent to register to hub. It should be set by each addon controller on hub to define how the addon agent on managedcluster is registered. With the registration defined, The addon agent can access to kube apiserver with kube style API or other endpoints on hub cluster with client certificate authentication. A csr will be created per registration configuration. If more than one registrationConfig is defined, a csr will be created for each registration configuration. It is not allowed that multiple registrationConfigs have the same signer name. After the csr is approved on the hub cluster, the klusterlet agent will create a secret in the installNamespace for the registrationConfig. If the signerName is \"kubernetes.io/kube-apiserver-client\", the secret name will be \"{addon name}-hub-kubeconfig\" whose contents includes key/cert and kubeconfig. Otherwise, the secret name will be \"{addon name}-{signer name}-client-cert\" whose contents includes key/cert.",
+	"healthCheck":        "healthCheck indicates how to check the healthiness status of the current addon. It should be set by each addon implementation, by default, the lease mode will be used.",
 }
 
 func (ManagedClusterAddOnStatus) SwaggerDoc() map[string]string {

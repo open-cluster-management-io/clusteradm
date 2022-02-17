@@ -26,35 +26,33 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/cmd/join/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
+	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 	"open-cluster-management.io/clusteradm/pkg/helpers/version"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	klog.V(1).InfoS("join options:", "dry-run", o.ClusteradmFlags.DryRun, "cluster", o.clusterName, "api-server", o.hubAPIServer, o.outputFile)
-	
-
 
 	o.values = Values{
 		ClusterName: o.clusterName,
 		Hub: Hub{
 			APIServer: o.hubAPIServer,
-			Registry: o.registry,
+			Registry:  o.registry,
 		},
-		
 	}
 
-	versionBundle, err := version.GetVersionBundle(o.bundleVersion)	
+	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
 
 	if err != nil {
 		klog.Errorf("unable to retrive version ", err)
 		return err
 	}
-	
+
 	o.values.BundleVersion = BundleVersion{
-		RegistrationImageVersion:  versionBundle.Registration,
-		PlacementImageVersion: versionBundle.Placement,	
-		WorkImageVersion: versionBundle.Work,	
-		OperatorImageVersion: versionBundle.Operator,
+		RegistrationImageVersion: versionBundle.Registration,
+		PlacementImageVersion:    versionBundle.Placement,
+		WorkImageVersion:         versionBundle.Work,
+		OperatorImageVersion:     versionBundle.Operator,
 	}
 
 	kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
@@ -90,7 +88,6 @@ func (o *Options) validate() error {
 	if len(o.registry) == 0 {
 		return fmt.Errorf("registry should not be empty")
 	}
-
 
 	return nil
 }
@@ -183,7 +180,7 @@ func waitUntilCRDReady(apiExtensionsClient clientset.Interface) error {
 	b := retry.DefaultBackoff
 	b.Duration = 200 * time.Millisecond
 
-	crdSpinner := helpers.NewSpinner("Waiting for CRD to be ready...", time.Second)
+	crdSpinner := printer.NewSpinner("Waiting for CRD to be ready...", time.Second)
 	crdSpinner.FinalMSG = "CRD successfully registered.\n"
 	crdSpinner.Start()
 	defer crdSpinner.Stop()
@@ -204,7 +201,7 @@ func waitUntilRegistrationOperatorConditionIsTrue(f util.Factory, timeout int64)
 
 	phase := &atomic.Value{}
 	phase.Store("")
-	operatorSpinner := helpers.NewSpinnerWithStatus(
+	operatorSpinner := printer.NewSpinnerWithStatus(
 		"Waiting for registration operator to become ready...",
 		time.Millisecond*500,
 		"Registration operator is now available.\n",
@@ -227,7 +224,7 @@ func waitUntilRegistrationOperatorConditionIsTrue(f util.Factory, timeout int64)
 			if !ok {
 				return false
 			}
-			phase.Store(helpers.GetSpinnerPodStatus(pod))
+			phase.Store(printer.GetSpinnerPodStatus(pod))
 			conds := make([]metav1.Condition, len(pod.Status.Conditions))
 			for i := range pod.Status.Conditions {
 				conds[i] = metav1.Condition{
@@ -250,7 +247,7 @@ func waitUntilKlusterletConditionIsTrue(f util.Factory, timeout int64) error {
 
 	phase := &atomic.Value{}
 	phase.Store("")
-	klusterletSpinner := helpers.NewSpinnerWithStatus(
+	klusterletSpinner := printer.NewSpinnerWithStatus(
 		"Waiting for klusterlet agent to become ready...",
 		time.Millisecond*500,
 		"Klusterlet is now available.\n",
@@ -273,7 +270,7 @@ func waitUntilKlusterletConditionIsTrue(f util.Factory, timeout int64) error {
 			if !ok {
 				return false
 			}
-			phase.Store(helpers.GetSpinnerPodStatus(pod))
+			phase.Store(printer.GetSpinnerPodStatus(pod))
 			conds := make([]metav1.Condition, len(pod.Status.Conditions))
 			for i := range pod.Status.Conditions {
 				conds[i] = metav1.Condition{

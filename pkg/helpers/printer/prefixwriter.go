@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package helpers
+package printer
 
 import (
 	"fmt"

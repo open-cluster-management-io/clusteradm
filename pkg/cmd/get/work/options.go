@@ -1,31 +1,43 @@
 // Copyright Contributors to the Open Cluster Management project
-package hubinfo
+package work
 
 import (
-	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/client-go/kubernetes"
-	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
+	"k8s.io/cli-runtime/pkg/printers"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
-	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 )
 
 type Options struct {
 	//ClusteradmFlags: The generic optiosn from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
+	//A list of comma separated cluster names
+	cluster string
+
+	workName string
 
 	Streams genericclioptions.IOStreams
 
-	printer        printer.PrefixWriter
-	operatorClient operatorclient.Interface
-	kubeClient     kubernetes.Interface
-	crdClient      clientset.Interface
+	printer printers.ResourcePrinter
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
 		Streams:         streams,
-		printer:         printer.NewPrefixWriter(streams.Out),
+		printer: printers.NewTablePrinter(printers.PrintOptions{
+			NoHeaders:     false,
+			WithNamespace: false,
+			WithKind:      false,
+			Wide:          false,
+			ShowLabels:    false,
+			Kind: schema.GroupKind{
+				Group: "work.open-cluster-management.io",
+				Kind:  "ManifestWork",
+			},
+			ColumnLabels:     []string{},
+			SortBy:           "",
+			AllowMissingKeys: true,
+		}),
 	}
 }

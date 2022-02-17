@@ -14,7 +14,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 	v1 "open-cluster-management.io/api/operator/v1"
-	"open-cluster-management.io/clusteradm/pkg/helpers"
+	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) error {
@@ -79,7 +79,7 @@ func (o *Options) printRegistrationOperator() error {
 		if !apierrors.IsNotFound(err) {
 			return err
 		}
-		o.printer.Write(helpers.LEVEL_0, "Registration Operator:\t<none>\n")
+		o.printer.Write(printer.LEVEL_0, "Registration Operator:\t<none>\n")
 		return nil
 	}
 	imageName := "<none>"
@@ -105,11 +105,11 @@ func (o *Options) printRegistrationOperator() error {
 		crdStatus["clustermanagers.operator.open-cluster-management.io"] = "absent"
 	}
 
-	o.printer.Write(helpers.LEVEL_0, "Registration Operator:\n")
-	o.printer.Write(helpers.LEVEL_1, "Controller:\t(%d/%d) %s\n", registrationOperatorAvailableRs, registrationOperatorExpectedRs, imageName)
-	o.printer.Write(helpers.LEVEL_1, "CustomResourceDefinition:\n")
+	o.printer.Write(printer.LEVEL_0, "Registration Operator:\n")
+	o.printer.Write(printer.LEVEL_1, "Controller:\t(%d/%d) %s\n", registrationOperatorAvailableRs, registrationOperatorExpectedRs, imageName)
+	o.printer.Write(printer.LEVEL_1, "CustomResourceDefinition:\n")
 	for name, st := range crdStatus {
-		o.printer.Write(helpers.LEVEL_2, "(%s) %s\n", st, name)
+		o.printer.Write(printer.LEVEL_2, "(%s) %s\n", st, name)
 	}
 	return nil
 }
@@ -122,11 +122,11 @@ func (o *Options) printComponents() error {
 		if !apierrors.IsNotFound(err) {
 			return err
 		}
-		o.printer.Write(helpers.LEVEL_0, "Components:\t<uninstalled>\n")
+		o.printer.Write(printer.LEVEL_0, "Components:\t<uninstalled>\n")
 		return nil
 	}
 
-	o.printer.Write(helpers.LEVEL_0, "Components:\n")
+	o.printer.Write(printer.LEVEL_0, "Components:\n")
 	if err := o.printRegistration(cmgr); err != nil {
 		return err
 	}
@@ -166,9 +166,9 @@ func (o *Options) printRegistration(cmgr *v1.ClusterManager) error {
 	controllerAvailableRs := registrationController.Status.AvailableReplicas
 	webhookExpectedRs := int(*registrationWebhook.Spec.Replicas)
 	webhookAvailableRs := registrationWebhook.Status.AvailableReplicas
-	o.printer.Write(helpers.LEVEL_1, "Registration:\n")
-	o.printer.Write(helpers.LEVEL_2, "Controller:\t(%d/%d) %s\n", controllerAvailableRs, controllerExpectedRs, getImageName(registrationController))
-	o.printer.Write(helpers.LEVEL_2, "Webhook:\t(%d/%d) %s\n", webhookAvailableRs, webhookExpectedRs, getImageName(registrationWebhook))
+	o.printer.Write(printer.LEVEL_1, "Registration:\n")
+	o.printer.Write(printer.LEVEL_2, "Controller:\t(%d/%d) %s\n", controllerAvailableRs, controllerExpectedRs, getImageName(registrationController))
+	o.printer.Write(printer.LEVEL_2, "Webhook:\t(%d/%d) %s\n", webhookAvailableRs, webhookExpectedRs, getImageName(registrationWebhook))
 	return nil
 }
 
@@ -185,8 +185,8 @@ func (o *Options) printWork(cmgr *v1.ClusterManager) error {
 
 	webhookExpectedRs := int(*workWebhook.Spec.Replicas)
 	webhookAvailableRs := workWebhook.Status.AvailableReplicas
-	o.printer.Write(helpers.LEVEL_1, "Work:\n")
-	o.printer.Write(helpers.LEVEL_2, "Webhook:\t(%d/%d) %s\n", webhookAvailableRs, webhookExpectedRs, getImageName(workWebhook))
+	o.printer.Write(printer.LEVEL_1, "Work:\n")
+	o.printer.Write(printer.LEVEL_2, "Webhook:\t(%d/%d) %s\n", webhookAvailableRs, webhookExpectedRs, getImageName(workWebhook))
 	return nil
 }
 
@@ -202,8 +202,8 @@ func (o *Options) printPlacement(cmgr *v1.ClusterManager) error {
 	}
 	controllerExpectedRs := int(*placementController.Spec.Replicas)
 	controllerAvailableRs := placementController.Status.AvailableReplicas
-	o.printer.Write(helpers.LEVEL_1, "Placement:\n")
-	o.printer.Write(helpers.LEVEL_2, "Controller:\t(%d/%d) %s\n", controllerAvailableRs, controllerExpectedRs, getImageName(placementController))
+	o.printer.Write(printer.LEVEL_1, "Placement:\n")
+	o.printer.Write(printer.LEVEL_2, "Controller:\t(%d/%d) %s\n", controllerAvailableRs, controllerExpectedRs, getImageName(placementController))
 	return nil
 }
 
@@ -232,9 +232,9 @@ func (o *Options) printComponentsCRD(cmgr *v1.ClusterManager) error {
 		}
 		statuses[name] = st
 	}
-	o.printer.Write(helpers.LEVEL_1, "CustomResourceDefinition:\n")
+	o.printer.Write(printer.LEVEL_1, "CustomResourceDefinition:\n")
 	for name, st := range statuses {
-		o.printer.Write(helpers.LEVEL_2, "(%s) %s\n", st, name)
+		o.printer.Write(printer.LEVEL_2, "(%s) %s\n", st, name)
 	}
 	return nil
 }

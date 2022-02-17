@@ -32,6 +32,9 @@ github.com/chai2010/gettext-go/gettext/plural
 github.com/chai2010/gettext-go/gettext/po
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
+# github.com/disiqueira/gotree v1.0.0
+## explicit
+github.com/disiqueira/gotree
 # github.com/evanphx/json-patch v4.11.0+incompatible
 github.com/evanphx/json-patch
 # github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d
@@ -816,7 +819,7 @@ k8s.io/utils/exec
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# open-cluster-management.io/api v0.0.0-20210927063308-2c6896161c48
+# open-cluster-management.io/api v0.6.0
 ## explicit
 open-cluster-management.io/api/addon/v1alpha1
 open-cluster-management.io/api/client/addon/clientset/versioned

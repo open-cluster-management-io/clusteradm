@@ -11,6 +11,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
+	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
@@ -34,25 +35,23 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		Hub: Hub{
 			TokenID:     helpers.RandStringRunes_az09(6),
 			TokenSecret: helpers.RandStringRunes_az09(16),
-			Registry:    o.registry,		
-			
+			Registry:    o.registry,
 		},
 	}
 
-	versionBundle, err := version.GetVersionBundle(o.bundleVersion)	
+	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
 
 	if err != nil {
 		klog.Errorf("unable to retrive version ", err)
 		return err
 	}
-	
-	o.values.BundleVersion = BundleVersion{
-		RegistrationImageVersion:  versionBundle.Registration,
-		PlacementImageVersion: versionBundle.Placement,	
-		WorkImageVersion: versionBundle.Work,	
-		OperatorImageVersion: versionBundle.Operator,
-	}
 
+	o.values.BundleVersion = BundleVersion{
+		RegistrationImageVersion: versionBundle.Registration,
+		PlacementImageVersion:    versionBundle.Placement,
+		WorkImageVersion:         versionBundle.Work,
+		OperatorImageVersion:     versionBundle.Operator,
+	}
 
 	return nil
 }
@@ -208,7 +207,7 @@ func (o *Options) run() error {
 }
 
 func waitForServiceAccountToken(kubeClient kubernetes.Interface) error {
-	tokenSpinner := helpers.NewSpinner("Waiting for service account token...", time.Second)
+	tokenSpinner := printer.NewSpinner("Waiting for service account token...", time.Second)
 	tokenSpinner.FinalMSG = "Service account token successfully signed.\n"
 	tokenSpinner.Start()
 	defer tokenSpinner.Stop()
@@ -221,7 +220,7 @@ func waitUntilCRDReady(apiExtensionsClient apiextensionsclient.Interface) error 
 	b := retry.DefaultBackoff
 	b.Duration = 200 * time.Millisecond
 
-	crdSpinner := helpers.NewSpinner("Waiting for CRD to be ready...", time.Second)
+	crdSpinner := printer.NewSpinner("Waiting for CRD to be ready...", time.Second)
 	crdSpinner.FinalMSG = "CRD successfully registered.\n"
 	crdSpinner.Start()
 	defer crdSpinner.Stop()
@@ -243,7 +242,7 @@ func waitUntilRegistrationOperatorReady(f util.Factory, timeout int64) error {
 	phase := &atomic.Value{}
 	phase.Store("")
 	text := "Waiting for registration operator to become ready..."
-	operatorSpinner := helpers.NewSpinnerWithStatus(
+	operatorSpinner := printer.NewSpinnerWithStatus(
 		text,
 		time.Second,
 		"Registration operator is now available.\n",
@@ -266,7 +265,7 @@ func waitUntilRegistrationOperatorReady(f util.Factory, timeout int64) error {
 			if !ok {
 				return false
 			}
-			phase.Store(helpers.GetSpinnerPodStatus(pod))
+			phase.Store(printer.GetSpinnerPodStatus(pod))
 			conds := make([]metav1.Condition, len(pod.Status.Conditions))
 			for i := range pod.Status.Conditions {
 				conds[i] = metav1.Condition{
@@ -294,7 +293,7 @@ func waitUntilClusterManagerRegistrationReady(f util.Factory, timeout int64) err
 	phase := &atomic.Value{}
 	phase.Store("")
 	text := "Waiting for cluster manager registration to become ready..."
-	clusterManagerSpinner := helpers.NewSpinnerWithStatus(
+	clusterManagerSpinner := printer.NewSpinnerWithStatus(
 		text,
 		time.Second,
 		"ClusterManager registration is now available.\n",
@@ -317,7 +316,7 @@ func waitUntilClusterManagerRegistrationReady(f util.Factory, timeout int64) err
 			if !ok {
 				return false
 			}
-			phase.Store(helpers.GetSpinnerPodStatus(pod))
+			phase.Store(printer.GetSpinnerPodStatus(pod))
 			conds := make([]metav1.Condition, len(pod.Status.Conditions))
 			for i := range pod.Status.Conditions {
 				conds[i] = metav1.Condition{

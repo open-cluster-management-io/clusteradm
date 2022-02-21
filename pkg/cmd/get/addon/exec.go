@@ -10,14 +10,13 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/klog/v2"
 	"open-cluster-management.io/api/addon/v1alpha1"
 	addonclient "open-cluster-management.io/api/client/addon/clientset/versioned"
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	workclient "open-cluster-management.io/api/client/work/clientset/versioned"
-	v1 "open-cluster-management.io/api/work/v1"
+	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -109,13 +108,13 @@ func (o *Options) printAddonTree(
 					addonNode := addonRoot.Add(color.New(color.Bold).Sprintf("%s", addon.Name))
 					statusNode := addonNode.Add("<Status>")
 					printAddonStatus(statusNode, addon)
-					workNode := addonNode.Add(fmt.Sprintf("%s", "<ManifestWork>"))
-					printWorkDetail(workNode, &work)
+					workNode := addonNode.Add("<ManifestWork>")
+					printer.PrintWorkDetail(workNode, &work)
 				}
 			}
 		}
 	}
-	fmt.Println(root.Print())
+	fmt.Fprint(o.Streams.Out, root.Print())
 	return nil
 }
 
@@ -138,34 +137,4 @@ func printAddonStatus(n gotree.Tree, addon *v1alpha1.ManagedClusterAddOn) {
 		cond := meta.FindStatusCondition(addon.Status.Conditions, condType)
 		n.Add(fmt.Sprintf("%s -> %s", condType, sanitize(cond)))
 	}
-}
-
-func printWorkDetail(n gotree.Tree, work *v1.ManifestWork) {
-	condByRs := make(map[string][]v1.ManifestCondition)
-	for _, cond := range work.Status.ResourceStatus.Manifests {
-		cond := cond
-		groupResource := schema.GroupResource{Group: cond.ResourceMeta.Group, Resource: cond.ResourceMeta.Resource}.String()
-		condByRs[groupResource] = append(condByRs[groupResource], cond)
-	}
-	for gr, rss := range condByRs {
-		rsNode := n.Add(gr)
-		for _, rs := range rss {
-			identifier := rs.ResourceMeta.Name
-			if len(rs.ResourceMeta.Namespace) > 0 {
-				identifier = rs.ResourceMeta.Namespace + "/" + identifier
-			}
-			rsNode.Add(fmt.Sprintf("%s (%s)", identifier, getManifestResourceStatus(&rs)))
-		}
-	}
-}
-
-func getManifestResourceStatus(manifestCond *v1.ManifestCondition) string {
-	appliedCond := meta.FindStatusCondition(manifestCond.Conditions, v1.WorkApplied)
-	if appliedCond == nil {
-		return "unknown"
-	}
-	if appliedCond.Status == metav1.ConditionTrue {
-		return "applied"
-	}
-	return color.RedString("not-applied")
 }

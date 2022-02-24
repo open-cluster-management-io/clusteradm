@@ -73,10 +73,10 @@ func (o *Options) run() error {
 		}
 		if !o.ClusteradmFlags.DryRun {
 			b := retry.DefaultBackoff
-			b.Duration = 1 * time.Minute
+			b.Duration = 1 * time.Second
 
 			err = WaitResourceToBeDelete(context.Background(), clusterManagerClient, o.clusterManageName, b)
-			if err != nil {
+			if !errors.IsNotFound(err) {
 				log.Fatal("Cluster Manager resource should be deleted firstly.")
 			}
 		}
@@ -110,7 +110,7 @@ func (o *Options) run() error {
 func WaitResourceToBeDelete(context context.Context, client clustermanagerclient.Interface, name string, b wait.Backoff) error {
 
 	errGet := retry.OnError(b, func(err error) bool {
-		if !errors.IsNotFound(err) {
+		if err != nil && !errors.IsNotFound(err) {
 			log.Printf("Wait to delete cluster manager resource: %s.\n", name)
 			return true
 		}

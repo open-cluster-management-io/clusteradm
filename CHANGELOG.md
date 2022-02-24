@@ -1,27 +1,24 @@
 [comment]: # ( Copyright Contributors to the Open Cluster Management project )
 # Release Content
 ## Additions
-- [Feat: Allows override OCM images upon initialization](https://github.com/open-cluster-management-io/clusteradm/pull/80) @yue9944882
-- [Clusteradm proxy health](https://github.com/open-cluster-management-io/clusteradm/pull/90) @yue9944882
-- [adding a '--wait' flag for optional foreground joining](https://github.com/open-cluster-management-io/clusteradm/pull/95) @yue9944882
-- [feat: clusteradm init supports saving commands to local file](https://github.com/open-cluster-management-io/clusteradm/pull/93) @yue9944882
-- [chore: reflecting detailed container status on cluster joining](https://github.com/open-cluster-management-io/clusteradm/pull/99) @yue9944882
-- [addon enable: allow certain addon to be deployed](https://github.com/open-cluster-management-io/clusteradm/pull/101) @ycyaoxdu
-- [Feat: clusteradm get addon command for list enabled addon](https://github.com/open-cluster-management-io/clusteradm/pull/103) @ycyaoxdu
+- [Feat: clusteradm addon disable command for disable specified addon](https://github.com/open-cluster-management-io/clusteradm/pull/102) @ycyaoxdu
+- [Feat: add --all-clusters flag for command addon disable ](https://github.com/open-cluster-management-io/clusteradm/pull/115) @ycyaoxdu
+- [Clusterset create cmd](https://github.com/open-cluster-management-io/clusteradm/pull/123) @qiujian16
+- [Cluster get cmd](https://github.com/open-cluster-management-io/clusteradm/pull/124) @qiujian16
+- [clusterset sub command](https://github.com/open-cluster-management-io/clusteradm/pull/126) @qiujian16
+- [feat: clusteradm get hub-info](https://github.com/open-cluster-management-io/clusteradm/pull/128) @yue9944882
+- [Bundle version](https://github.com/open-cluster-management-io/clusteradm/pull/119) @ilan-pinto
+- [Feat: Get addon in a tree view](https://github.com/open-cluster-management-io/clusteradm/pull/129) @yue9944882
+- [Add get work command](https://github.com/open-cluster-management-io/clusteradm/pull/131) @qiujian16
+- [create work command](https://github.com/open-cluster-management-io/clusteradm/pull/134) @qiujian16
 
 ## Breaking Changes
 N/A
 
 ## Changes
-- [Enhancement to clean up the control plane.](https://github.com/open-cluster-management-io/clusteradm/pull/75) @xauthulei
-- [Added timeout flag to fix issue](https://github.com/open-cluster-management-io/clusteradm/pull/77) @ilan-pinto
-- [Adding an install scripts for one line clusteradm installation](https://github.com/open-cluster-management-io/clusteradm/pull/81) @yue9944882
-- [Fix issue #52 - added image rending to the join command](https://github.com/open-cluster-management-io/clusteradm/pull/83) @ilan-pinto
-- [Specify install ns when enable an addon on a cluster](https://github.com/open-cluster-management-io/clusteradm/pull/89) @xauthulei
-- [use the endpoint from --hub-apiserver for joining cluster](https://github.com/open-cluster-management-io/clusteradm/pull/107) @yue9944882
+- [release: submit non-draft release](https://github.com/open-cluster-management-io/clusteradm/pull/114) @yue9944882
+- [Enhance output of accept subcommand to provide URLs for next steps](https://github.com/open-cluster-management-io/clusteradm/pull/118) @mikeshng
+- [install support sudo](https://github.com/open-cluster-management-io/clusteradm/pull/129) @yue9944882
 
 ## Bug Fixes
-- [Refactor/Bugfix: clusteradm join endpoint and spinner loading effect](https://github.com/open-cluster-management-io/clusteradm/pull/91) @yue9944882
-- [fixes go install due to replace directive](https://github.com/open-cluster-management-io/clusteradm/pull/92) @yue9944882
-- [modify integration test for command addon enable](https://github.com/open-cluster-management-io/clusteradm/pull/105) @ycyaoxdu
-
+- [bugfix: registration-operator CRD upgrade](https://github.com/open-cluster-management-io/clusteradm/pull/127) @yue9944882

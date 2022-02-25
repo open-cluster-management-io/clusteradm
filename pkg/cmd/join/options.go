@@ -20,8 +20,8 @@ type Options struct {
 	values Values
 	//The file to output the resources will be sent to the file.
 	outputFile string
-	//version of predefined compatible image versions 
-	bundleVersion string 
+	//version of predefined compatible image versions
+	bundleVersion string
 	//Pulling image registry of OCM
 	registry string
 	//Runs the cluster joining in foreground
@@ -43,7 +43,7 @@ type Values struct {
 	Registry string
 	//ImageRegistry is the klusterlet related configuration
 	Klusterlet Klusterlet
-	//bundle version 
+	//bundle version
 	BundleVersion BundleVersion
 }
 
@@ -65,17 +65,15 @@ type Klusterlet struct {
 }
 
 type BundleVersion struct {
-	// registation image version 
+	// registation image version
 	RegistrationImageVersion string
-	// placment image version 
+	// placment image version
 	PlacementImageVersion string
-	// work image version 
+	// work image version
 	WorkImageVersion string
-	// operator image version 
-	OperatorImageVersion string	
+	// operator image version
+	OperatorImageVersion string
 }
-
-
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{

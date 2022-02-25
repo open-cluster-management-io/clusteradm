@@ -19,7 +19,7 @@ type Options struct {
 	force bool
 	//Pulling image registry of OCM
 	registry string
-	//version of predefined compatible image versions 
+	//version of predefined compatible image versions
 	bundleVersion string
 	//If set, will be persisting the generated join command to a local file
 	outputJoinCommandFile string
@@ -28,22 +28,21 @@ type Options struct {
 }
 
 type BundleVersion struct {
-	// registation image version 
+	// registation image version
 	RegistrationImageVersion string
-	// placment image version 
+	// placment image version
 	PlacementImageVersion string
-	// work image version 
+	// work image version
 	WorkImageVersion string
-	// operator image version 
-	OperatorImageVersion string	
+	// operator image version
+	OperatorImageVersion string
 }
-
 
 //Valus: The values used in the template
 type Values struct {
 	//The values related to the hub
 	Hub Hub `json:"hub"`
-	//bundle version 
+	//bundle version
 	BundleVersion BundleVersion
 }
 
@@ -56,8 +55,6 @@ type Hub struct {
 	// Registry is the name of the image registry to pull.
 	Registry string `json:"registry"`
 }
-
-
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{

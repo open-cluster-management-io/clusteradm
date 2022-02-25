@@ -51,7 +51,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().StringVar(&o.registry, "image-registry", "quay.io/open-cluster-management",
 		"The name of the image registry serving OCM images, which will be applied to all the deploying OCM components.")
 	cmd.Flags().StringVar(&o.bundleVersion, "bundle-version", "default",
-		"the version of predefined compatible image versions")		
+		`the version of predefined compatible image versions. e.g. v0.6.0, defaulted to the latest release version. also, we can set "latest" to install latest develop version`)
 	cmd.Flags().StringVar(&o.outputJoinCommandFile, "output-join-command-file", "",
 		"If set, the generated join command be saved to the prescribed file.")
 	cmd.Flags().BoolVar(&o.wait, "wait", false,

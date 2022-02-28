@@ -4,6 +4,7 @@ package hubinfo
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 	appsv1 "k8s.io/api/apps/v1"
@@ -222,8 +223,21 @@ func (o *Options) printComponentsCRD(cmgr *v1.ClusterManager) error {
 	}
 	statuses := make(map[string]string)
 	existingCRDNames := sets.NewString()
+	crdVersions := make(map[string][]string)
+	crdStorageVersion := make(map[string]string)
 	for _, existingCRD := range crdList.Items {
 		existingCRDNames.Insert(existingCRD.Name)
+		crdVersions[existingCRD.Name] = existingCRD.Status.StoredVersions
+		servingVersions := sets.NewString()
+		for _, v := range existingCRD.Spec.Versions {
+			if v.Served {
+				servingVersions.Insert(v.Name)
+			}
+			if v.Storage {
+				crdStorageVersion[existingCRD.Name] = v.Name
+			}
+			crdVersions[existingCRD.Name] = servingVersions.List()
+		}
 	}
 	for _, name := range testingCRDNames.List() {
 		st := "absent"
@@ -234,7 +248,8 @@ func (o *Options) printComponentsCRD(cmgr *v1.ClusterManager) error {
 	}
 	o.printer.Write(printer.LEVEL_1, "CustomResourceDefinition:\n")
 	for name, st := range statuses {
-		o.printer.Write(printer.LEVEL_2, "(%s) %s\n", st, name)
+		versionStr := formatCRDVersion(crdVersions, crdStorageVersion, name)
+		o.printer.Write(printer.LEVEL_2, "(%s) %s [%s]\n", st, name, versionStr)
 	}
 	return nil
 }
@@ -245,4 +260,17 @@ func getImageName(deploy *appsv1.Deployment) string {
 		imageName = container.Image
 	}
 	return imageName
+}
+
+func formatCRDVersion(allServingVersions map[string][]string, storageVersion map[string]string, crdName string) string {
+	servings := allServingVersions[crdName]
+	storage := storageVersion[crdName]
+	outputVersions := sets.NewString()
+	for _, v := range servings {
+		if v == storage {
+			v = "*" + v
+		}
+		outputVersions.Insert(v)
+	}
+	return strings.Join(outputVersions.List(), "|")
 }

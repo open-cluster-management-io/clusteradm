@@ -40,3 +40,6 @@ rules:
 - apiGroups: ["operator.open-cluster-management.io"]
   resources: ["klusterlets/status"]
   verbs: ["update", "patch"]
+- apiGroups: ["work.open-cluster-management.io"]
+  resources: ["appliedmanifestworks"]
+  verbs: ["get", "list", "watch", "update", "patch", "delete"]

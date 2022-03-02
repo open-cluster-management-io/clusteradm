@@ -41,7 +41,7 @@ func (o *Options) validate() error {
 func (o *Options) run() error {
 
 	// Delete the applied resource in the Managed cluster
-	nameSpace := "default"
+	nameSpace := "open-cluster-management"
 	output := make([]string, 0)
 	fmt.Printf("Remove applied resources in the managed cluster %s ... \n", o.clusterName)
 
@@ -70,17 +70,16 @@ func (o *Options) run() error {
 			log.Fatal(err)
 		}
 		err = klusterletClient.OperatorV1().Klusterlets().Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
-		if err != nil {
+		if err != nil && !errors.IsNotFound(err) {
 			log.Fatal(err)
 		}
 		if !o.ClusteradmFlags.DryRun {
 			b := retry.DefaultBackoff
-			b.Duration = 1 * time.Minute
+			b.Duration = 1 * time.Second
 
 			err = WaitResourceToBeDelete(context.Background(), klusterletClient, "klusterlet", b)
-			if err != nil {
-				log.Println("Recource Klusterlet have been deleted firstly.")
-
+			if err != nil && !errors.IsNotFound(err) {
+				log.Fatal("Recource Klusterlet should been deleted firstly.")
 			}
 		}
 	}
@@ -104,7 +103,7 @@ func (o *Options) run() error {
 func WaitResourceToBeDelete(context context.Context, client klusterletclient.Interface, name string, b wait.Backoff) error {
 
 	errGet := retry.OnError(b, func(err error) bool {
-		if !errors.IsNotFound(err) {
+		if err != nil && !errors.IsNotFound(err) {
 			log.Println("Wait to deleted resource klusterlet.")
 			return true
 		}

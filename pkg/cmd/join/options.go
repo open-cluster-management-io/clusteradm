@@ -39,9 +39,9 @@ type Values struct {
 	ClusterName string
 	//Hub: Hub information
 	Hub Hub
-	//ImageRegistry is the registry related configuration
+	//Registry is the image registry related configuration
 	Registry string
-	//ImageRegistry is the klusterlet related configuration
+	//Klusterlet is the klusterlet related configuration
 	Klusterlet Klusterlet
 	//bundle version
 	BundleVersion BundleVersion

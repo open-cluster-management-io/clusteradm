@@ -2,7 +2,7 @@
 package clusteradme2e
 
 import (
-	"github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 )
 
@@ -17,26 +17,24 @@ var _ = ginkgo.Describe("test clusteradm with service account", func() {
 	})
 
 	ginkgo.Context("join hub scenario with service account", func() {
+		var originalToken string
+		var err error
 
-		ginkgo.It("should init hub and accept managed cluster successfully", func() {
-			ginkgo.By("clusteradm version check")
-			err := e2e.Clusteradm().Version().Run()
-			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm version check error")
-
-			ginkgo.By("init hub")
-			jn, err := e2e.Clusteradm().Init(
+		ginkgo.It("should managedclusters join and accepted successfully", func() {
+			ginkgo.By("init hub with service account")
+			err = e2e.Clusteradm().Init(
 				"--context", e2e.Cluster().Hub().Context(),
-			).Output()
+			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 
 			ginkgo.By("managedcluster1 join hub")
 			err = e2e.Clusteradm().Join(
 				"--context", e2e.Cluster().ManagedCluster1().Context(),
-				"--hub-token", jn.Token(), "--hub-apiserver", jn.Host(),
+				"--hub-token", e2e.CommandResult().Token(), "--hub-apiserver", e2e.CommandResult().Host(),
 				"--cluster-name", e2e.Cluster().ManagedCluster1().Name(),
 				"--wait",
 				"--force-internal-endpoint-lookup",
-			).Run()
+			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "managedcluster1 join error")
 
 			ginkgo.By("hub accept managedcluster1")
@@ -44,22 +42,23 @@ var _ = ginkgo.Describe("test clusteradm with service account", func() {
 				"--clusters", e2e.Cluster().ManagedCluster1().Name(),
 				"--wait", "30",
 				"--context", e2e.Cluster().Hub().Context(),
-			).Run()
+			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm accept error")
 
 			ginkgo.By("get token from hub")
-
-			tk, err := e2e.Clusteradm().Get("token").Output()
+			err = e2e.Clusteradm().Get("token")
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm get token error")
+
+			originalToken = e2e.CommandResult().RawCommand()
 
 			ginkgo.By("managedcluster2 join hub")
 			err = e2e.Clusteradm().Join(
 				"--context", e2e.Cluster().ManagedCluster2().Context(),
-				"--hub-token", tk.Token(), "--hub-apiserver", tk.Host(),
+				"--hub-token", e2e.CommandResult().Token(), "--hub-apiserver", e2e.CommandResult().Host(),
 				"--cluster-name", e2e.Cluster().ManagedCluster2().Name(),
 				"--wait",
 				"--force-internal-endpoint-lookup",
-			).Run()
+			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "managedcluster2 join error")
 
 			ginkgo.By("hub accept managedcluster2")
@@ -67,23 +66,22 @@ var _ = ginkgo.Describe("test clusteradm with service account", func() {
 				"--clusters", e2e.Cluster().ManagedCluster2().Name(),
 				"--wait", "30",
 				"--context", e2e.Cluster().Hub().Context(),
-			).Run()
+			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm accept error")
 
 			ginkgo.By("delete token")
-			e2e.Clusteradm().Delete(
+			err = e2e.Clusteradm().Delete(
 				"token",
-			).Run()
+			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm delete token error")
 
 			ginkgo.By("get token from hub")
-
-			newTk, err := e2e.Clusteradm().Get(
+			err = e2e.Clusteradm().Get(
 				"token",
-			).Output()
+			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm get token error")
-			gomega.Expect(newTk.RawCommand()).NotTo(gomega.Equal(tk.RawCommand()), "new token identical as previous token after delete")
 
+			gomega.Expect(e2e.CommandResult().RawCommand()).NotTo(gomega.Equal(originalToken), "new token identical as previous token after delete")
 		})
 
 	})

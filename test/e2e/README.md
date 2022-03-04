@@ -85,28 +85,17 @@ Now we will show you how to write tests for clusteradm command.
 
 2.  Second, if you want to test the command `clusteradm version`. 
     ```
-    err := e2e.Clusteradm().Version().Run()
+    err := e2e.Clusteradm().Version()
     ```
     The command will be executed, then you just need to focus on the err. 
 
     But if the output of a command such as `init` or `get token` needs to be reuse? 
+    Don't worry, the output has been automatically resolved and stored in e2e instance. while you want to use this, just call:
     ```
-    jn, err := e2e.Clusteradm().Init(
-				"--use-bootstrap-token",
-				"--context", e2e.Cluster().Hub().Context(),
-			).Output()
-    ```
-
-    You must noticed we called Output() rather than Run() for Init. 
-
-    We need the output of command `clusteradm init` because it includes the generated token and the hub-apiserver which are needed by `clusteradm join` command. 
-
-    So when we called Output(), the command will also be executed and the output will be captured, and the `token` and `hub-apiserver` are stored in the first result value. 
-
-    If we want to reuse the `token` or `hub-apiserver`, in this example, just call:
-    ```
-    jn.Token()
-    jn.Host()
+    e2e.CommandResult().Token()
+    e2e.CommandResult().Host()
     ```
 
-For more example, see other files in this directory.
+    But, only the latest one whill be stored in e2e instance. Do store the result using `tmp := e2e.CommandResult()` if you need.
+
+For more details, see other files in this directory.

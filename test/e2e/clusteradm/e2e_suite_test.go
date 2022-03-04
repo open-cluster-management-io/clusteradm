@@ -4,7 +4,7 @@ package clusteradme2e
 import (
 	"testing"
 
-	"github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"open-cluster-management.io/clusteradm/test/e2e/util"
 )

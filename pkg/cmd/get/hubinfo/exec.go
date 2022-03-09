@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package klusterletinfo
+package hubinfo
 
 import (
 	"context"
@@ -47,34 +47,17 @@ func (o *Options) validate(args []string) error {
 }
 
 const (
-	klusterletName                = "klusterlet"
+	clusterManagerName            = "cluster-manager"
 	registrationOperatorNamespace = "open-cluster-management"
-	klusterletCRD                 = "klusterlets.operator.open-cluster-management.io"
+	clusterManagerNameCRD         = "clustermanagers.operator.open-cluster-management.io"
 
-	componentNameRegistrationAgent = "klusterlet-registration-agent"
-	componentNameWorkAgent         = "klusterlet-work-agent"
+	componentNameRegistrationController = "cluster-manager-registration-controller"
+	componentNameRegistrationWebhook    = "cluster-manager-registration-webhook"
+	componentNameWorkWebhook            = "cluster-manager-work-webhook"
+	componentNamePlacementController    = "cluster-manager-placement-controller"
 )
 
 func (o *Options) run() error {
-	k, err := o.operatorClient.OperatorV1().Klusterlets().Get(context.TODO(), klusterletName, metav1.GetOptions{})
-	if err != nil {
-		if !apierrors.IsNotFound(err) {
-			return err
-		}
-		o.printer.Write(printer.LEVEL_0, "Registration Operator:\t<none>\n")
-		return nil
-	}
-
-	o.printer.Write(printer.LEVEL_0, "Klusterlet Conditions:\n")
-	for _, v := range k.Status.Conditions {
-		o.printer.Write(printer.LEVEL_1, "Type:\t\t\t%v\n", v.Type)
-		o.printer.Write(printer.LEVEL_1, "Status:\t\t%v\n", v.Status)
-		o.printer.Write(printer.LEVEL_1, "LastTransitionTime:\t%v\n", v.LastTransitionTime)
-		o.printer.Write(printer.LEVEL_1, "Reason:\t\t%v\n", v.Reason)
-		o.printer.Write(printer.LEVEL_1, "Message:\t\t%v\n", v.Message)
-		o.printer.Write(printer.LEVEL_0, "\n")
-	}
-
 	// printing registration-operator
 	if err := o.printRegistrationOperator(); err != nil {
 		return err
@@ -89,7 +72,7 @@ func (o *Options) run() error {
 func (o *Options) printRegistrationOperator() error {
 	deploy, err := o.kubeClient.AppsV1().
 		Deployments(registrationOperatorNamespace).
-		Get(context.TODO(), klusterletName, metav1.GetOptions{})
+		Get(context.TODO(), clusterManagerName, metav1.GetOptions{})
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			return err
@@ -108,16 +91,16 @@ func (o *Options) printRegistrationOperator() error {
 	crdStatus := make(map[string]string)
 	cmgrCrd, err := o.crdClient.ApiextensionsV1().
 		CustomResourceDefinitions().
-		Get(context.TODO(), klusterletCRD, metav1.GetOptions{})
+		Get(context.TODO(), clusterManagerNameCRD, metav1.GetOptions{})
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			return err
 		}
 	}
 	if cmgrCrd != nil {
-		crdStatus[klusterletCRD] = "installed"
+		crdStatus[clusterManagerNameCRD] = "installed"
 	} else {
-		crdStatus[klusterletCRD] = "absent"
+		crdStatus[clusterManagerNameCRD] = "absent"
 	}
 
 	o.printer.Write(printer.LEVEL_0, "Registration Operator:\n")
@@ -130,9 +113,9 @@ func (o *Options) printRegistrationOperator() error {
 }
 
 func (o *Options) printComponents() error {
-	klet, err := o.operatorClient.OperatorV1().
-		Klusterlets().
-		Get(context.TODO(), klusterletName, metav1.GetOptions{})
+	cmgr, err := o.operatorClient.OperatorV1().
+		ClusterManagers().
+		Get(context.TODO(), clusterManagerName, metav1.GetOptions{})
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			return err
@@ -142,30 +125,42 @@ func (o *Options) printComponents() error {
 	}
 
 	o.printer.Write(printer.LEVEL_0, "Components:\n")
-
-	if err := o.printRegistration(klet); err != nil {
+	if err := o.printRegistration(cmgr); err != nil {
 		return err
 	}
-	if err := o.printWork(klet); err != nil {
+	if err := o.printWork(cmgr); err != nil {
 		return err
 	}
-	if err := o.printComponentsCRD(klet); err != nil {
+	if err := o.printPlacement(cmgr); err != nil {
+		return err
+	}
+	if err := o.printComponentsCRD(cmgr); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (o *Options) printRegistration(klet *v1.Klusterlet) error {
+func (o *Options) printRegistration(cmgr *v1.ClusterManager) error {
 	o.printer.Write(printer.LEVEL_1, "Registration:\n")
-	return printer.PrintComponentsDeploy(o.printer, o.kubeClient, klet.Status.RelatedResources, componentNameRegistrationAgent)
+	err := printer.PrintComponentsDeploy(o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNameRegistrationController)
+	if err != nil {
+		return err
+	}
+
+	return printer.PrintComponentsDeploy(o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNameRegistrationWebhook)
 }
 
-func (o *Options) printWork(klet *v1.Klusterlet) error {
+func (o *Options) printWork(cmgr *v1.ClusterManager) error {
 	o.printer.Write(printer.LEVEL_1, "Work:\n")
-	return printer.PrintComponentsDeploy(o.printer, o.kubeClient, klet.Status.RelatedResources, componentNameWorkAgent)
+	return printer.PrintComponentsDeploy(o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNameWorkWebhook)
 }
 
-func (o *Options) printComponentsCRD(klet *v1.Klusterlet) error {
+func (o *Options) printPlacement(cmgr *v1.ClusterManager) error {
+	o.printer.Write(printer.LEVEL_1, "Placement:\n")
+	return printer.PrintComponentsDeploy(o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNamePlacementController)
+}
+
+func (o *Options) printComponentsCRD(cmgr *v1.ClusterManager) error {
 	o.printer.Write(printer.LEVEL_1, "CustomResourceDefinition:\n")
-	return printer.PrintComponentsCRD(o.printer, o.crdClient, klet.Status.RelatedResources)
+	return printer.PrintComponentsCRD(o.printer, o.crdClient, cmgr.Status.RelatedResources)
 }

@@ -6,6 +6,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"open-cluster-management.io/clusteradm/pkg/cmd/clusterset/add"
 	"open-cluster-management.io/clusteradm/pkg/cmd/clusterset/bind"
+	"open-cluster-management.io/clusteradm/pkg/cmd/clusterset/unbind"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
@@ -18,6 +19,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 
 	cmd.AddCommand(add.NewCmd(clusteradmFlags, streams))
 	cmd.AddCommand(bind.NewCmd(clusteradmFlags, streams))
+	cmd.AddCommand(unbind.NewCmd(clusteradmFlags, streams))
 
 	return cmd
 }

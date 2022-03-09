@@ -1,0 +1,9 @@
+# Copyright Contributors to the Open Cluster Management project
+apiVersion: operator.open-cluster-management.io/v1
+kind: ClusterManager
+metadata:
+  name: cluster-manager
+spec:
+  registrationImagePullSpec: {{ .Registry }}/registration:{{ .BundleVersion.RegistrationImageVersion }}
+  workImagePullSpec: {{ .Registry }}/work:{{ .BundleVersion.WorkImageVersion }}
+  placementImagePullSpec: {{ .Registry }}/placement:{{ .BundleVersion.PlacementImageVersion }}

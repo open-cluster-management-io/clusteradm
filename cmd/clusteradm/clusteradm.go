@@ -34,6 +34,7 @@ import (
 	joinhub "open-cluster-management.io/clusteradm/pkg/cmd/join"
 	"open-cluster-management.io/clusteradm/pkg/cmd/proxy"
 	unjoin "open-cluster-management.io/clusteradm/pkg/cmd/unjoin"
+	"open-cluster-management.io/clusteradm/pkg/cmd/upgrade"
 	"open-cluster-management.io/clusteradm/pkg/cmd/version"
 )
 
@@ -92,6 +93,7 @@ func main() {
 				proxy.NewCmd(clusteradmFlags, streams),
 				create.NewCmd(clusteradmFlags, streams),
 				clusterset.NewCmd(clusteradmFlags, streams),
+				upgrade.NewCmd(clusteradmFlags, streams),
 			},
 		},
 	}

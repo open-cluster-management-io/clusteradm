@@ -46,6 +46,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	}
 
 	cmd.Flags().StringSliceVar(&o.Clusters, "clusters", []string{}, "Names of the managed cluster to add to the clusterset (comma separated)")
+	cmd.Flags().BoolVar(&o.replace, "replace", false, "directly add cluster in clusterset1 to clusterset2 if --replace is set")
 
 	return cmd
 }

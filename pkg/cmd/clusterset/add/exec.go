@@ -51,8 +51,13 @@ func (o *Options) run() (err error) {
 			cluster.Labels = map[string]string{}
 		}
 
-		if clusterset := cluster.Labels["cluster.open-cluster-management.io/clusterset"]; clusterset == o.Clusterset {
+		clusterset := cluster.Labels["cluster.open-cluster-management.io/clusterset"]
+		if clusterset == o.Clusterset {
 			fmt.Fprintf(o.Streams.Out, "Cluster %s is already added into Clusterset %s\n", clusterName, o.Clusterset)
+			continue
+		}
+		if !o.replace {
+			fmt.Fprintf(o.Streams.Out, "Cluster %s is already added into Clusterset %s, you can't add it to %s\n", clusterName, clusterset, o.Clusterset)
 			continue
 		}
 

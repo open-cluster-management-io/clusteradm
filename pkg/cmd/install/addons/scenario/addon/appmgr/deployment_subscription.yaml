@@ -25,7 +25,6 @@ spec:
           command:
           - /usr/local/bin/multicluster-operators-subscription
           - --sync-interval=60
-          - --deploy-agent
           - --agent-image=quay.io/open-cluster-management/multicloud-operators-subscription:latest
           imagePullPolicy: IfNotPresent
           env:

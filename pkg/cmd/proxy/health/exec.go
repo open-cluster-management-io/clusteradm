@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"net"
 	"net/http"
 	"net/url"
@@ -148,10 +149,13 @@ func (o *Options) run(streams genericclioptions.IOStreams) error {
 		return errors.Wrapf(err, "failed starting konnectivity proxy")
 	}
 
+	probingClusters := sets.NewString(o.clusters...)
 	w := newWriter(streams)
 	for _, cluster := range managedClusterList.Items {
-		if err := o.visit(&w, hubRestConfig, addonClient, tunnel.DialContext, cluster.Name); err != nil {
-			klog.Errorf("An error occurred when requesting: %v", err)
+		if len(o.clusters) == 0 || probingClusters.Has(cluster.Name) {
+			if err := o.visit(&w, hubRestConfig, addonClient, tunnel.DialContext, cluster.Name); err != nil {
+				klog.Errorf("An error occurred when requesting: %v", err)
+			}
 		}
 	}
 
@@ -261,7 +265,7 @@ func (o *Options) visit(
 	resp, err := rt.RoundTrip(req)
 	if err != nil {
 		health = "Unknown"
-		klog.Errorf("Failed requesting /healthz endpoint for cluster %v", clusterName)
+		klog.Errorf("Failed requesting /healthz endpoint for cluster %v: %v", clusterName, err)
 		if strings.Contains(err.Error(), "dial timeout") {
 			latency = "<timeout>"
 		}

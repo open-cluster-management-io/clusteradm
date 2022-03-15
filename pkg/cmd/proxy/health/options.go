@@ -11,6 +11,7 @@ type Options struct {
 	//ClusteradmFlags: The generic optiosn from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 
+	clusters                 []string
 	inClusterProxyCertLookup bool
 	proxyClientCACertPath    string
 	proxyClientCertPath      string

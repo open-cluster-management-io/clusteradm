@@ -49,7 +49,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 
 	_, err := clusterClient.ClusterV1beta1().ManagedClusterSets().Get(context.TODO(), clusterset, metav1.GetOptions{})
 	if err == nil {
-		fmt.Fprintf(o.Streams.Out, "Clusterset %s is created already\n", clusterset)
+		fmt.Fprintf(o.Streams.Out, "Clusterset %s is already created\n", clusterset)
 		return nil
 	}
 

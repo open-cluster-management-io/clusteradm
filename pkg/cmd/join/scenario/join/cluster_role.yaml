@@ -8,6 +8,9 @@ rules:
 - apiGroups: [""]
   resources: ["secrets", "configmaps", "serviceaccounts"]
   verbs: ["create", "get", "list", "update", "watch", "patch", "delete"]
+- apiGroups: ["coordination.k8s.io"]
+  resources: ["leases"]
+  verbs: ["create", "get", "list", "update", "watch", "patch"]
 - apiGroups: ["authorization.k8s.io"]
   resources: ["subjectaccessreviews"]
   verbs: ["create"]
@@ -40,6 +43,7 @@ rules:
 - apiGroups: ["operator.open-cluster-management.io"]
   resources: ["klusterlets/status"]
   verbs: ["update", "patch"]
+# Allow the registration-operator to update the appliedmanifestworks finalizer.
 - apiGroups: ["work.open-cluster-management.io"]
   resources: ["appliedmanifestworks"]
-  verbs: ["get", "list", "watch", "update", "patch", "delete"]
+  verbs: ["list", "update"]

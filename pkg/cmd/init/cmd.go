@@ -24,7 +24,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		Use:   "init",
 		Short: "Initialize a Kubernetes cluster into an OCM hub cluster.",
 		Long: "Initialize the Kubernetes cluster in the context into an OCM hub cluster by applying a few" +
-			"fundamental resources including registration-operator, etc.",
+			" fundamental resources including registration-operator, etc.",
 		Example:      fmt.Sprintf(example, helpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRun: func(c *cobra.Command, args []string) {

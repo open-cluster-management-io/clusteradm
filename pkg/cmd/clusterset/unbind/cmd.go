@@ -12,7 +12,7 @@ import (
 )
 
 var example = `
-# unbind a clusterset from a namespace.
+# UnBind a clusterset from a namespace
 %[1]s clusterset unbind clusterset1 --namespace default
 `
 

@@ -12,9 +12,9 @@ import (
 )
 
 var example = `
-# Get manifestworks in a cluster.
+# Get all manifestworks in a cluster
 %[1]s get works --cluster cluster1
-# show a manifestwork in a cluster.
+# Get a specific manifestwork in a cluster
 %[1]s get works work1 --cluster cluster1
 `
 
@@ -24,7 +24,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 
 	cmd := &cobra.Command{
 		Use:          "works",
-		Short:        "get manifestwork on a specified managedcluster",
+		Short:        "get manifestwork on a specified managed cluster",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRunE: func(c *cobra.Command, args []string) error {

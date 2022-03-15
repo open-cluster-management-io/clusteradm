@@ -12,7 +12,7 @@ import (
 )
 
 var example = `
-# Probing healthiness of each managed clusters through the konnectivity tunnels installed by cluster-proxy addon.
+# Probing healthiness of each managed clusters through the konnectivity tunnels installed by cluster-proxy addon
 %[1]s proxy health
 `
 
@@ -26,7 +26,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 
 	cmd := &cobra.Command{
 		Use:          "health",
-		Short:        "Show the overall healthiness of cluster-proxy addon",
+		Short:        "show the overall healthiness of cluster-proxy addon",
+		Long:         "check the healthiness of a certain managed cluster that have cluster-proxy addon",
 		Example:      fmt.Sprintf(example, helpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRun: func(c *cobra.Command, args []string) {

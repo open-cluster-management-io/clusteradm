@@ -14,6 +14,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd := &cobra.Command{
 		Use:   "addon",
 		Short: "addon options",
+		Long:  "there are 2 addon options: enable and disable",
 	}
 
 	cmd.AddCommand(enable.NewCmd(clusteradmFlags, streams))

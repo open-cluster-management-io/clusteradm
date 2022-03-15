@@ -11,7 +11,7 @@ import (
 )
 
 var example = `
-# Get hub-info.
+# Get hub-info
 %[1]s get hub-info
 `
 
@@ -22,6 +22,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd := &cobra.Command{
 		Use:          "hub-info",
 		Short:        "get hub-info",
+		Long:         "get hub-info about Registration Operator and Components",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRunE: func(c *cobra.Command, args []string) error {

@@ -60,7 +60,7 @@ func (o *Options) run() (err error) {
 
 	_, err = clusterClient.ClusterV1beta1().ManagedClusterSetBindings(o.Namespace).Create(context.TODO(), binding, metav1.CreateOptions{})
 	if errors.IsAlreadyExists(err) {
-		fmt.Fprintf(o.Streams.Out, "Clusterset %s is already bound to Clusterset %s\n", o.Namespace, o.Clusterset)
+		fmt.Fprintf(o.Streams.Out, "Clusterset %s is already bound to Namespace %s\n", o.Clusterset, o.Namespace)
 		return nil
 	}
 
@@ -68,6 +68,6 @@ func (o *Options) run() (err error) {
 		return err
 	}
 
-	fmt.Fprintf(o.Streams.Out, "Clusterset %s is bound to Clusterset %s\n", o.Namespace, o.Clusterset)
+	fmt.Fprintf(o.Streams.Out, "Clusterset %s is bound to Namespace %s\n", o.Clusterset, o.Namespace)
 	return nil
 }

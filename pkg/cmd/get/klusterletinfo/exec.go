@@ -80,7 +80,7 @@ func (o *Options) run() error {
 		return err
 	}
 	// printing components
-	if err := o.printComponents(); err != nil {
+	if err := o.printComponents(k); err != nil {
 		return err
 	}
 	return nil
@@ -129,17 +129,7 @@ func (o *Options) printRegistrationOperator() error {
 	return nil
 }
 
-func (o *Options) printComponents() error {
-	klet, err := o.operatorClient.OperatorV1().
-		Klusterlets().
-		Get(context.TODO(), klusterletName, metav1.GetOptions{})
-	if err != nil {
-		if !apierrors.IsNotFound(err) {
-			return err
-		}
-		o.printer.Write(printer.LEVEL_0, "Components:\t<uninstalled>\n")
-		return nil
-	}
+func (o *Options) printComponents(klet *v1.Klusterlet) error {
 
 	o.printer.Write(printer.LEVEL_0, "Components:\n")
 

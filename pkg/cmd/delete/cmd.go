@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"open-cluster-management.io/clusteradm/pkg/cmd/delete/token"
+	"open-cluster-management.io/clusteradm/pkg/cmd/delete/work"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
@@ -16,6 +17,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	}
 
 	cmd.AddCommand(token.NewCmd(clusteradmFlags, streams))
+	cmd.AddCommand(work.NewCmd(clusteradmFlags, streams))
 
 	return cmd
 }

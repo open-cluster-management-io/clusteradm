@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package add
+package set
 
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -15,8 +15,6 @@ type Options struct {
 	Clusters []string
 
 	Clusterset string
-
-	replace bool
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {

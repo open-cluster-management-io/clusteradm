@@ -4,8 +4,8 @@ package clusterset
 import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"open-cluster-management.io/clusteradm/pkg/cmd/clusterset/add"
 	"open-cluster-management.io/clusteradm/pkg/cmd/clusterset/bind"
+	"open-cluster-management.io/clusteradm/pkg/cmd/clusterset/set"
 	"open-cluster-management.io/clusteradm/pkg/cmd/clusterset/unbind"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
@@ -17,7 +17,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		Short: "clusterset sub-command",
 	}
 
-	cmd.AddCommand(add.NewCmd(clusteradmFlags, streams))
+	cmd.AddCommand(set.NewCmd(clusteradmFlags, streams))
 	cmd.AddCommand(bind.NewCmd(clusteradmFlags, streams))
 	cmd.AddCommand(unbind.NewCmd(clusteradmFlags, streams))
 

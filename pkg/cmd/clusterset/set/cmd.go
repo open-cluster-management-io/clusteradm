@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package add
+package set
 
 import (
 	"fmt"
@@ -12,8 +12,8 @@ import (
 )
 
 var example = `
-# add clusters to a clusterset.
-%[1]s clusterset add clusterset1 --clusters cluster1,cluster2
+# set clusters to a clusterset.
+%[1]s clusterset set clusterset1 --clusters cluster1,cluster2
 `
 
 // NewCmd...
@@ -21,8 +21,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	o := newOptions(clusteradmFlags, streams)
 
 	cmd := &cobra.Command{
-		Use:          "add",
-		Short:        "add clusters to a clusterset",
+		Use:          "set",
+		Short:        "set clusters to a clusterset",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRunE: func(c *cobra.Command, args []string) error {
@@ -45,8 +45,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		},
 	}
 
-	cmd.Flags().StringSliceVar(&o.Clusters, "clusters", []string{}, "Names of the managed cluster to add to the clusterset (comma separated)")
-	cmd.Flags().BoolVar(&o.replace, "replace", false, "directly add cluster in clusterset1 to clusterset2 if --replace is set")
+	cmd.Flags().StringSliceVar(&o.Clusters, "clusters", []string{}, "Names of the managed cluster to set to the clusterset (comma separated)")
 
 	return cmd
 }

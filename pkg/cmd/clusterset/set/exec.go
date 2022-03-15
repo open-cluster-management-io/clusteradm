@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package add
+package set
 
 import (
 	"context"
@@ -53,11 +53,7 @@ func (o *Options) run() (err error) {
 
 		clusterset := cluster.Labels["cluster.open-cluster-management.io/clusterset"]
 		if clusterset == o.Clusterset {
-			fmt.Fprintf(o.Streams.Out, "Cluster %s is already added into Clusterset %s\n", clusterName, o.Clusterset)
-			continue
-		}
-		if !o.replace {
-			fmt.Fprintf(o.Streams.Out, "Cluster %s is already added into Clusterset %s, you can't add it to %s\n", clusterName, clusterset, o.Clusterset)
+			fmt.Fprintf(o.Streams.Out, "Cluster %s is already in Clusterset %s\n", clusterName, o.Clusterset)
 			continue
 		}
 
@@ -67,7 +63,7 @@ func (o *Options) run() (err error) {
 			return err
 		}
 
-		fmt.Fprintf(o.Streams.Out, "Cluster %s is added into Clusterset %s\n", clusterName, o.Clusterset)
+		fmt.Fprintf(o.Streams.Out, "Cluster %s is set, from ClusterSet %s to Clusterset %s\n", clusterName, clusterset, o.Clusterset)
 	}
 
 	return nil

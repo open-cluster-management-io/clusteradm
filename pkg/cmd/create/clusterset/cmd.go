@@ -12,7 +12,7 @@ import (
 )
 
 var example = `
-# create a clusterset.
+# Create a clusterset
 %[1]s create clusterset clusterset1
 `
 
@@ -23,6 +23,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd := &cobra.Command{
 		Use:          "clusterset",
 		Short:        "create a clusterset",
+		Long:         "create a clusterset, by default created cluster set will be empty",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRunE: func(c *cobra.Command, args []string) error {

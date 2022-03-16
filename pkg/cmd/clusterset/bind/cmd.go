@@ -12,7 +12,7 @@ import (
 )
 
 var example = `
-# bind a clusterset to a namespace.
+# Bind a clusterset to a namespace
 %[1]s clusterset bind clusterset1 --namespace default
 `
 
@@ -23,6 +23,9 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd := &cobra.Command{
 		Use:          "bind",
 		Short:        "bind a clusterset to a namespace",
+		Long:         "bind a clusterset to a namespace to make it a “workspace namespace”. " +
+			"Note that the namespace SHALL NOT be an existing “cluster namespace” " +
+			"(i.e. the namespace has the same name of a registered managed cluster).",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRunE: func(c *cobra.Command, args []string) error {

@@ -18,7 +18,7 @@ import (
 func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get",
-		Short: "read information from the cluster",
+		Short: "get information from the cluster",
 	}
 
 	cmd.AddCommand(token.NewCmd(clusteradmFlags, streams))

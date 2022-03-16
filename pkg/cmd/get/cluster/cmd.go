@@ -12,7 +12,7 @@ import (
 )
 
 var example = `
-# Get clusters.
+# Get clusters
 %[1]s get clusters
 # Get clusters in a clusterset
 %[1]s get clusters --clusterset clusterset1
@@ -25,6 +25,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd := &cobra.Command{
 		Use:          "clusters",
 		Short:        "get clusters",
+		Long:         "get list of clusters with info about CPU, MEMORY and more",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRunE: func(c *cobra.Command, args []string) error {

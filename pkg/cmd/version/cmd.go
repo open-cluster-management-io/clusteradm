@@ -21,7 +21,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	o := newOptions(clusteradmFlags, streams)
 	cmd := &cobra.Command{
 		Use:          "version",
-		Short:        "get the versions of the different components",
+		Short:        "get the versions of different components",
+		Long:         "display versions of different components like: 'client' and 'server release'",
 		Example:      fmt.Sprintf(example, helpers.GetExampleHeader()),
 		SilenceUsage: true,
 		RunE: func(c *cobra.Command, args []string) error {

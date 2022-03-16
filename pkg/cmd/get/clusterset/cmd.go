@@ -12,7 +12,7 @@ import (
 )
 
 var example = `
-# Get clustersets.
+# Get clustersets
 %[1]s get clustersets
 `
 

@@ -12,7 +12,7 @@ import (
 )
 
 var example = `
-# set clusters to a clusterset.
+# Set clusters to a clusterset
 %[1]s clusterset set clusterset1 --clusters cluster1,cluster2
 `
 
@@ -23,6 +23,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd := &cobra.Command{
 		Use:          "set",
 		Short:        "set clusters to a clusterset",
+		Long:         "after setting cluster to a clusterset, clusterset contains 1 valid cluster, and in order to " +
+			"operate that clusterset we are supposed to bind it to an existing namespace",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRunE: func(c *cobra.Command, args []string) error {

@@ -12,9 +12,9 @@ import (
 )
 
 var example = `
-# Get enabled addon on specified cluster.
+# Get enabled addon on specified cluster
 %[1]s get addon --clusters cluster1
-# Get all enabled addon.
+# Get all enabled addon
 %[1]s get addon
 `
 
@@ -24,7 +24,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 
 	cmd := &cobra.Command{
 		Use:          "addon",
-		Short:        "get enabled addon on specified managedcluster",
+		Short:        "get enabled addon on specified managed cluster",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRunE: func(c *cobra.Command, args []string) error {

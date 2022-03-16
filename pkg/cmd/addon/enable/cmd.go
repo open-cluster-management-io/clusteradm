@@ -12,8 +12,10 @@ import (
 )
 
 var example = `
-# Enable addon on a cluster in speccified a namespace
+# Enable addon on to the given managed clusters of the specify namespace
 %[1]s addon enable --name application-manager --namespace namespace --cluster cluster1,cluster2
+# Enable application-manager addon specified clusters
+%[1]s addon enable --name application-manager --cluster cluster1,cluster2
 `
 
 // NewCmd...
@@ -23,6 +25,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd := &cobra.Command{
 		Use:          "enable",
 		Short:        "enable specified addon",
+		Long:         "enable specific add-on(s) agent deployment to the given managed clusters",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRunE: func(c *cobra.Command, args []string) error {

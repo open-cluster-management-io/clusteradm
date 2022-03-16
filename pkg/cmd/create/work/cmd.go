@@ -12,7 +12,7 @@ import (
 )
 
 var example = `
-# create a work.
+# Create manifestwork on a specified managed cluster"
 %[1]s create work work-example -f xxx.yaml --cluster cluster1
 `
 
@@ -23,6 +23,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd := &cobra.Command{
 		Use:          "work",
 		Short:        "create a work",
+		Long:         "create manifestwork on a specified managedcluster",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRunE: func(c *cobra.Command, args []string) error {

@@ -12,7 +12,7 @@ import (
 )
 
 var example = `
-# UnJoin a cluster to the hub
+# UnJoin a cluster from a hub
 %[1]s unjoin --cluster-name <cluster_name>
 `
 
@@ -23,6 +23,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd := &cobra.Command{
 		Use:          "unjoin",
 		Short:        "unjoin from a hub",
+		Long:         "unjoin specific cluster from a hub cluster",
 		Example:      fmt.Sprintf(example, helpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRun: func(c *cobra.Command, args []string) {

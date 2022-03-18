@@ -41,6 +41,11 @@ func (o *Options) run() (err error) {
 		return err
 	}
 
+	_, err = clusterClient.ClusterV1beta1().ManagedClusterSets().Get(context.TODO(), o.Clusterset, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
 	for _, clusterName := range o.Clusters {
 		cluster, err := clusterClient.ClusterV1().ManagedClusters().Get(context.TODO(), clusterName, metav1.GetOptions{})
 		if err != nil {

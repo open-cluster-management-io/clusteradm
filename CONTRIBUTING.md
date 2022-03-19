@@ -51,7 +51,7 @@ clusteradm <cmd> [subcmd] [flags]
 
 ## Client
 
-- The [main](cmd/clusteradm.go) provides a cmdutil.Factory which can be laverage to get different clients and also the *rest.Config. The factory can be passed to the cobra.Command and then save in the Options.
+- The [main](cmd/clusteradm.go) provides a cmdutil.Factory which can be leveraged to get different clients and also the *rest.Config. The factory can be passed to the cobra.Command and then save in the Options.
 
 ```Go
 	kubeClient, err := o.factory.KubernetesClientSet()

@@ -73,7 +73,7 @@ func (a *Applier) ApplyDeployment(
 	name string) (string, error) {
 	genericScheme.AddKnownTypes(appsv1.SchemeGroupVersion, &appsv1.Deployment{})
 	recorder := events.NewInMemoryRecorder(helpers.GetExampleHeader())
-	deploymentBytes, err := a.MustTempalteAsset(reader, values, headerFile, name)
+	deploymentBytes, err := a.MustTemplateAsset(reader, values, headerFile, name)
 	if err != nil {
 		return string(deploymentBytes), err
 	}
@@ -110,7 +110,7 @@ func (a *Applier) ApplyDirectly(
 	//Apply resources
 	clients := resourceapply.NewClientHolder().WithAPIExtensionsClient(a.apiExtensionsClient).WithDynamicClient(a.dynamicClient).WithKubernetes(a.kubeClient)
 	resourceResults := resourceapply.ApplyDirectly(context.TODO(), clients, recorder, func(name string) ([]byte, error) {
-		out, err := a.MustTempalteAsset(reader, values, headerFile, name)
+		out, err := a.MustTemplateAsset(reader, values, headerFile, name)
 		if err != nil {
 			return nil, err
 		}
@@ -161,7 +161,7 @@ func (a *Applier) ApplyCustomResource(
 	if a.dynamicClient == nil {
 		return output, fmt.Errorf("missing dynamicClient")
 	}
-	asset, err := a.MustTempalteAsset(reader, values, headerFile, name)
+	asset, err := a.MustTemplateAsset(reader, values, headerFile, name)
 	output = string(asset)
 	if err != nil {
 		return output, err
@@ -236,7 +236,7 @@ func getTemplate(templateName string, customFuncMap template.FuncMap) *template.
 func (a *Applier) MustTemplateAssets(reader asset.ScenarioReader, values interface{}, headerFile string, files ...string) ([]string, error) {
 	output := make([]string, 0)
 	for _, name := range files {
-		deploymentBytes, err := a.MustTempalteAsset(reader, values, headerFile, name)
+		deploymentBytes, err := a.MustTemplateAsset(reader, values, headerFile, name)
 		if err != nil {
 			if IsEmptyAsset(err) {
 				continue
@@ -248,12 +248,12 @@ func (a *Applier) MustTemplateAssets(reader asset.ScenarioReader, values interfa
 	return output, nil
 }
 
-//MustTempalteAsset generates textual output for a template file name.
+//MustTemplateAsset generates textual output for a template file name.
 //The headerfile will be added to each file.
 //Usually it contains nested template definitions as described https://golang.org/pkg/text/template/#hdr-Nested_template_definitions
 //This allows to add functions which can be use in each file.
 //The values object will be used to render the template
-func (a *Applier) MustTempalteAsset(reader asset.ScenarioReader, values interface{}, headerFile, name string) ([]byte, error) {
+func (a *Applier) MustTemplateAsset(reader asset.ScenarioReader, values interface{}, headerFile, name string) ([]byte, error) {
 	tmpl := getTemplate(name, a.templateFuncMap)
 	h := []byte{}
 	var err error

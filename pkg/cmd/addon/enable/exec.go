@@ -19,8 +19,6 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 )
 
-// const appMgrAddonName = "application-manager"
-
 type ClusterAddonInfo struct {
 	ClusterName string
 	NameSpace   string

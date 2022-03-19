@@ -123,6 +123,11 @@ func (o *Options) runWithClient(kubeClient kubernetes.Interface,
 		// Install the Policy Framework Addon
 		case policyFrameworkAddonName:
 			files := []string{
+				"addon/policy/addon-controller_clusterrole.yaml",
+				"addon/policy/addon-controller_clusterrolebinding.yaml",
+				"addon/policy/addon-controller_role.yaml",
+				"addon/policy/addon-controller_rolebinding.yaml",
+				"addon/policy/addon-controller_serviceaccount.yaml",
 				"addon/policy/policy.open-cluster-management.io_placementbindings.yaml",
 				"addon/policy/policy.open-cluster-management.io_policies.yaml",
 				"addon/policy/policy.open-cluster-management.io_policyautomations.yaml",
@@ -142,6 +147,7 @@ func (o *Options) runWithClient(kubeClient kubernetes.Interface,
 			output = append(output, out...)
 
 			deployments := []string{
+				"addon/policy/addon-controller_deployment.yaml",
 				"addon/policy/propagator_deployment.yaml",
 			}
 

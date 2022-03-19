@@ -1,0 +1,40 @@
+# Copyright Contributors to the Open Cluster Management project
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: governance-policy-propagator
+  namespace: open-cluster-management
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: governance-policy-propagator
+  template:
+    metadata:
+      labels:
+        name: governance-policy-propagator
+    spec:
+      containers:
+      - args:
+        - --health-probe-bind-address=:8081
+        - --metrics-bind-address=:8383
+        - --leader-elect
+        command:
+        - governance-policy-propagator
+        env:
+        - name: WATCH_NAMESPACE
+          value: ""
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: OPERATOR_NAME
+          value: governance-policy-propagator
+        image: quay.io/open-cluster-management/governance-policy-propagator:latest
+        imagePullPolicy: Always
+        name: governance-policy-propagator
+        ports:
+        - containerPort: 8383
+          name: http
+          protocol: TCP
+      serviceAccountName: governance-policy-propagator

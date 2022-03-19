@@ -14,6 +14,7 @@ const (
 	ocmNamespace           = "open-cluster-management"
 	channelDeployment      = "multicluster-operators-channel"
 	subscriptionDeployment = "multicluster-operators-subscription"
+	propagatorDeployment   = "governance-policy-propagator"
 )
 
 var _ = ginkgo.Describe("install hub-addon", func() {
@@ -80,6 +81,26 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 				}
 				return nil
 			}, eventuallyTimeout, eventuallyInterval).ShouldNot(gomega.HaveOccurred())
+		})
+
+		ginkgo.It("Should deploy the built-in policy-framework add-on deployments in open-cluster-management namespace successfully", func() {
+			o := Options{
+				values: Values{
+					hubAddons: []string{policyFrameworkAddonName},
+				},
+			}
+
+			err := o.runWithClient(kubeClient, apiExtensionsClient, dynamicClient, false)
+			gomega.Expect(err).ToNot(gomega.HaveOccurred())
+
+			gomega.Eventually(func() error {
+				_, err := kubeClient.AppsV1().Deployments(ocmNamespace).Get(context.Background(), propagatorDeployment, metav1.GetOptions{})
+				if err != nil {
+					return err
+				}
+				return nil
+			}, eventuallyTimeout, eventuallyInterval).ShouldNot(gomega.HaveOccurred())
+
 		})
 	})
 })

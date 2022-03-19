@@ -14,6 +14,7 @@ import (
 var example = `
 # Install built-in add-ons to the hub cluster
 %[1]s install hub-addon --names application-manager
+%[1]s install hub-addon --names policy-framework
 `
 
 // NewCmd...
@@ -21,7 +22,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	o := newOptions(clusteradmFlags, streams)
 
 	cmd := &cobra.Command{
-		Use:          "addon",
+		Use:          "hub-addon",
 		Short:        "install hub-addon",
 		Long:         "Install specific built-in add-on(s) to the hub cluster",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
@@ -46,7 +47,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		},
 	}
 
-	cmd.Flags().StringVar(&o.names, "names", "", "Names of the built-in add-on to install (comma separated). The built-in add-ons are: application-manager")
+	cmd.Flags().StringVar(&o.names, "names", "", "Names of the built-in add-on to install (comma separated). The built-in add-ons are: application-manager, policy-framework")
 	cmd.Flags().StringVar(&o.outputFile, "output-file", "", "The generated resources will be copied in the specified file")
 
 	return cmd

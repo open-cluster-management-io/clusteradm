@@ -1,0 +1,100 @@
+# Copyright Contributors to the Open Cluster Management project
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.6.1
+  creationTimestamp: null
+  name: policyautomations.policy.open-cluster-management.io
+spec:
+  group: policy.open-cluster-management.io
+  names:
+    kind: PolicyAutomation
+    listKind: PolicyAutomationList
+    plural: policyautomations
+    shortNames:
+    - plca
+    singular: policyautomation
+  scope: Namespaced
+  versions:
+  - name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: PolicyAutomation is the Schema for the policyautomations API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: PolicyAutomationSpec defines the desired state of PolicyAutomation
+            properties:
+              automationDef:
+                description: AutomationDef defines the automation to invoke
+                properties:
+                  extra_vars:
+                    description: ExtraVars is passed to the Ansible job at execution
+                      time and is a known Ansible entity.
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  name:
+                    description: Name of the Ansible Template to run in Tower as a
+                      job
+                    minLength: 1
+                    type: string
+                  secret:
+                    minLength: 1
+                    type: string
+                  type:
+                    description: Type of the automation to invoke
+                    type: string
+                required:
+                - name
+                - secret
+                type: object
+              eventHook:
+                description: EventHook decides when automation is going to be triggered
+                enum:
+                - noncompliant
+                type: string
+              mode:
+                description: Mode decides how automation is going to be triggered
+                enum:
+                - once
+                - disabled
+                type: string
+              policyRef:
+                description: PolicyRef is the name of the policy automation is going
+                  to binding with.
+                type: string
+              rescanAfter:
+                type: string
+            required:
+            - automationDef
+            - mode
+            - policyRef
+            type: object
+          status:
+            description: PolicyAutomationStatus defines the observed state of PolicyAutomation
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

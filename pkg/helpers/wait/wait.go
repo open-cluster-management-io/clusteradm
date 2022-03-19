@@ -20,7 +20,7 @@ import (
 )
 
 
-func WaitUntilCRDReady(apiExtensionsClient apiextensionsclient.Interface) error {
+func WaitUntilCRDReady(apiExtensionsClient apiextensionsclient.Interface , crdName string) error {
 	b := retry.DefaultBackoff
 	b.Duration = 200 * time.Millisecond
 
@@ -29,7 +29,7 @@ func WaitUntilCRDReady(apiExtensionsClient apiextensionsclient.Interface) error 
 	crdSpinner.Start()
 	defer crdSpinner.Stop()
 	return helpers.WaitCRDToBeReady(
-		apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", b)
+		apiExtensionsClient, crdName , b)
 }
 
 func WaitUntilRegistrationOperatorReady(f util.Factory, timeout int64) error {

@@ -18,6 +18,8 @@ type Options struct {
 	bundleVersion string
 	//If set, the command will hold until the OCM control plane initialized
 	wait bool
+		//
+	Streams genericclioptions.IOStreams
 }
 
 type BundleVersion struct {
@@ -43,5 +45,6 @@ type Values struct {
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
+		Streams:         streams,
 	}
 }

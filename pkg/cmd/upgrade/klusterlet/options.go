@@ -18,6 +18,8 @@ type Options struct {
 	bundleVersion string
 	//If set, the command will hold until the OCM control plane initialized
 	wait bool
+
+	Streams genericclioptions.IOStreams
 }
 
 type BundleVersion struct {
@@ -33,15 +35,36 @@ type BundleVersion struct {
 
 //Values: The values used in the template
 type Values struct {
-	//The values related to the hub
-	Registry string `json:"registry"`
 	//bundle version
 	BundleVersion BundleVersion
+	//Hub: Hub information
+	Hub Hub
+	//ClusterName: the name of the joined cluster on the hub
+	ClusterName string
+	//Klusterlet is the klusterlet related configuration
+	Klusterlet Klusterlet
 }
+
+// Klusterlet is for templating klusterlet configuration
+type Klusterlet struct {
+	//APIServer: The API Server external URL
+	APIServer string
+}
+
+type Hub struct {
+	//APIServer: The API Server external URL
+	APIServer string
+	//KubeConfig: The kubeconfig of the boostrap secret to connect to the hub
+	KubeConfig string
+	//image registry
+	Registry string
+}
+
 
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
+		Streams:         streams,
 	}
 }

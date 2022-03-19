@@ -12,6 +12,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
+	helper_wait "open-cluster-management.io/clusteradm/pkg/helpers/wait"
 
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
@@ -23,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
 	"k8s.io/kubectl/pkg/cmd/util"
 	version "open-cluster-management.io/clusteradm/pkg/helpers/version"
@@ -143,12 +143,12 @@ func (o *Options) run() error {
 	output = append(output, out...)
 
 	if o.wait && !o.ClusteradmFlags.DryRun {
-		if err := waitUntilCRDReady(apiExtensionsClient); err != nil {
+		if err := helper_wait.WaitUntilCRDReady(apiExtensionsClient); err != nil {
 			return err
 		}
 	}
 	if o.wait && !o.ClusteradmFlags.DryRun {
-		if err := waitUntilRegistrationOperatorReady(
+		if err := helper_wait.WaitUntilRegistrationOperatorReady(
 			o.ClusteradmFlags.KubectlFactory,
 			int64(o.ClusteradmFlags.Timeout)); err != nil {
 			return err
@@ -162,7 +162,7 @@ func (o *Options) run() error {
 	output = append(output, out...)
 
 	if o.wait && !o.ClusteradmFlags.DryRun {
-		if err := waitUntilClusterManagerRegistrationReady(
+		if err := helper_wait.WaitUntilClusterManagerRegistrationReady(
 			o.ClusteradmFlags.KubectlFactory,
 			int64(o.ClusteradmFlags.Timeout)); err != nil {
 			return err
@@ -216,17 +216,6 @@ func waitForServiceAccountToken(kubeClient kubernetes.Interface) error {
 	})
 }
 
-func waitUntilCRDReady(apiExtensionsClient apiextensionsclient.Interface) error {
-	b := retry.DefaultBackoff
-	b.Duration = 200 * time.Millisecond
-
-	crdSpinner := printer.NewSpinner("Waiting for CRD to be ready...", time.Second)
-	crdSpinner.FinalMSG = "CRD successfully registered.\n"
-	crdSpinner.Start()
-	defer crdSpinner.Stop()
-	return helpers.WaitCRDToBeReady(
-		apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", b)
-}
 
 func waitUntilRegistrationOperatorReady(f util.Factory, timeout int64) error {
 	var restConfig *rest.Config
@@ -279,56 +268,7 @@ func waitUntilRegistrationOperatorReady(f util.Factory, timeout int64) error {
 		})
 }
 
-func waitUntilClusterManagerRegistrationReady(f util.Factory, timeout int64) error {
-	var restConfig *rest.Config
-	restConfig, err := f.ToRESTConfig()
-	if err != nil {
-		return err
-	}
-	client, err := kubernetes.NewForConfig(restConfig)
-	if err != nil {
-		return err
-	}
 
-	phase := &atomic.Value{}
-	phase.Store("")
-	text := "Waiting for cluster manager registration to become ready..."
-	clusterManagerSpinner := printer.NewSpinnerWithStatus(
-		text,
-		time.Second,
-		"ClusterManager registration is now available.\n",
-		func() string {
-			return phase.Load().(string)
-		})
-	clusterManagerSpinner.Start()
-	defer clusterManagerSpinner.Stop()
-
-	return helpers.WatchUntil(
-		func() (watch.Interface, error) {
-			return client.CoreV1().Pods("open-cluster-management-hub").
-				Watch(context.TODO(), metav1.ListOptions{
-					TimeoutSeconds: &timeout,
-					LabelSelector:  "app=clustermanager-registration-controller",
-				})
-		},
-		func(event watch.Event) bool {
-			pod, ok := event.Object.(*corev1.Pod)
-			if !ok {
-				return false
-			}
-			phase.Store(printer.GetSpinnerPodStatus(pod))
-			conds := make([]metav1.Condition, len(pod.Status.Conditions))
-			for i := range pod.Status.Conditions {
-				conds[i] = metav1.Condition{
-					Type:    string(pod.Status.Conditions[i].Type),
-					Status:  metav1.ConditionStatus(pod.Status.Conditions[i].Status),
-					Reason:  pod.Status.Conditions[i].Reason,
-					Message: pod.Status.Conditions[i].Message,
-				}
-			}
-			return meta.IsStatusConditionTrue(conds, "Ready")
-		})
-}
 
 func pollServiceAccountToken(kubeClient kubernetes.Interface) (bool, error) {
 	_, err := helpers.GetBootstrapTokenFromSA(kubeClient)

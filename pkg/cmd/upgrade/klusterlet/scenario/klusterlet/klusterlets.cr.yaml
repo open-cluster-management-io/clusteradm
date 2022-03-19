@@ -1,9 +1,0 @@
-# Copyright Contributors to the Open Cluster Management project
-apiVersion: operator.open-cluster-management.io/v1
-kind: Klusterlet
-metadata:
-  name: klusterlet
-spec: 
-  registrationImagePullSpec: {{ .Registry }}/registration:{{ .BundleVersion.RegistrationImageVersion }}
-  workImagePullSpec: {{ .Registry }}/work:{{ .BundleVersion.RegistrationImageVersion }}    
-  namespace: open-cluster-management-agent

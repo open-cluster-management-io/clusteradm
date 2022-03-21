@@ -14,7 +14,7 @@ The binaries for several platforms are available [here](https://github.com/open-
 
 #### From source:
 
-Go 1.16 is required in order to build or contribute on this project as it leverage the `go:embed` tip.
+Go 1.17 is required in order to build or contribute on this project as it leverage the `go:embed` tip.
 The binary will be installed in `$GOPATH/bin`
 
 ```bash

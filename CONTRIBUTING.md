@@ -29,7 +29,7 @@ By contributing to this project, you agree to the Developer Certificate of Origi
 Anyone can comment on issues and submit reviews for pull requests. In order to be assigned an issue or pull request, you can leave a `/assign <your Github ID>` comment on the issue or pull request.
 # Requirements
 
-- Go 1.16
+- Go 1.17
 
 # Develop new commands
 
@@ -46,7 +46,7 @@ clusteradm <cmd> [subcmd] [flags]
 
 ## Resources
 
-- Some commands needs resources files, in the project uses the `Go 1.16` `go:embed` functionality to store the resources files.
+- Some commands needs resources files, in the project uses the `Go 1.17` `go:embed` functionality to store the resources files.
 - Each command package contains its own resources in the scenario package. The scenario package contains one go file which provides the `go:embed` `embed.FS` files. 
 
 ## Client

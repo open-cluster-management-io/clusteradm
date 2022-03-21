@@ -13,6 +13,8 @@ type Options struct {
 	clusters string
 	//Wait to wait for managedcluster and CSR
 	wait bool
+	//If true the csr will approve directly and check of requester will skip.
+	skipApproveCheck bool
 
 	values Values
 }

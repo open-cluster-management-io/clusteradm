@@ -117,31 +117,39 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 		return false, err
 	}
 	var csr *certificatesv1.CertificateSigningRequest
-	for _, item := range csrs.Items {
-		//Does not have the correct name prefix
-		if !strings.HasPrefix(item.Spec.Username, userNameSignatureBootstrapPrefix) &&
-			!strings.HasPrefix(item.Spec.Username, userNameSignatureSA) {
-			continue
+	var passedCSRs []certificatesv1.CertificateSigningRequest
+	if o.skipApproveCheck {
+		passedCSRs = csrs.Items
+	} else {
+		for _, item := range csrs.Items {
+			//Does not have the correct name prefix
+			if !strings.HasPrefix(item.Spec.Username, userNameSignatureBootstrapPrefix) &&
+				!strings.HasPrefix(item.Spec.Username, userNameSignatureSA) {
+				continue
+			}
+			//Check groups
+			groups := sets.NewString(item.Spec.Groups...)
+			if !groups.Has(groupNameBootstrap) &&
+				!groups.Has(groupNameSA) {
+				continue
+			}
+			passedCSRs = append(passedCSRs, item)
 		}
-		//Check groups
-		groups := sets.NewString(item.Spec.Groups...)
-		if !groups.Has(groupNameBootstrap) &&
-			!groups.Has(groupNameSA) {
-			continue
-		}
+	}
+	for _, passedCSR := range passedCSRs {
 		//Check if already approved or denied
-		approved, denied := GetCertApprovalCondition(&item.Status)
-		//if alreaady denied, then nothing to do
+		approved, denied := GetCertApprovalCondition(&passedCSR.Status)
+		//if already denied, then nothing to do
 		if denied {
-			fmt.Printf("CSR %s already denied\n", item.Name)
+			fmt.Printf("CSR %s already denied\n", passedCSR.Name)
 			return true, nil
 		}
-		//if alreaady approved, then nothing to do
+		//if already approved, then nothing to do
 		if approved {
-			fmt.Printf("CSR %s already approved\n", item.Name)
+			fmt.Printf("CSR %s already approved\n", passedCSR.Name)
 			return true, nil
 		}
-		csr = &item
+		csr = &passedCSR
 		break
 	}
 
@@ -163,7 +171,7 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 	csr.Status.Conditions = append(csr.Status.Conditions, certificatesv1.CertificateSigningRequestCondition{
 		Status:         corev1.ConditionTrue,
 		Type:           certificatesv1.CertificateApproved,
-		Reason:         fmt.Sprintf("%sApprove", helpers.GetExampleHeader()),
+		Reason:         fmt.Sprintf("%s Approve", helpers.GetExampleHeader()),
 		Message:        fmt.Sprintf("This CSR was approved by %s certificate approve.", helpers.GetExampleHeader()),
 		LastUpdateTime: metav1.Now(),
 	})

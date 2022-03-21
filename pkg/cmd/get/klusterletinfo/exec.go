@@ -61,7 +61,7 @@ func (o *Options) run() error {
 		if !apierrors.IsNotFound(err) {
 			return err
 		}
-		o.printer.Write(printer.LEVEL_0, "Registration Operator:\t<none>\n")
+		o.printer.Write(printer.LEVEL_0, "No klusterlet detected! Please make sure you're using the correct context!\n")
 		return nil
 	}
 

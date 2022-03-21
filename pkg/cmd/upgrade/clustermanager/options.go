@@ -39,6 +39,17 @@ type Values struct {
 	Registry string `json:"registry"`
 	//bundle version
 	BundleVersion BundleVersion
+	//Hub: Hub information
+	Hub Hub
+}
+
+type Hub struct {
+	//APIServer: The API Server external URL
+	APIServer string
+	//KubeConfig: The kubeconfig of the boostrap secret to connect to the hub
+	KubeConfig string
+	//image registry
+	Registry string
 }
 
 

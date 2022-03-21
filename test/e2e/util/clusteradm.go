@@ -22,9 +22,6 @@ type clusteradmInterface interface {
 	Proxy(args ...string) error
 	Unjoin(args ...string) error
 	Upgrade(args ...string) error
-
-
-
 }
 
 type clusteradm struct {
@@ -90,8 +87,6 @@ func (adm *clusteradm) Upgrade(args ...string) error {
 	fmt.Fprintln(os.Stdout, "clusteradm upgrade", args)
 	return newClusteradmCmd(false, &adm.h, "upgrade", args...)
 }
-
-
 
 func newClusteradmCmd(flag bool, handled *HandledOutput, subcommand string, args ...string) error {
 	cmdargs := []string{subcommand}

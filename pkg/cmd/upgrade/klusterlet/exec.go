@@ -45,8 +45,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 
 	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun, )
 	o.values = Values{	
-		ClusterName: k.ClusterName ,
-			
+		ClusterName: k.ClusterName ,			
 		Hub: Hub{			
 			Registry:  o.registry,
 		},
@@ -110,7 +109,6 @@ func (o *Options) run() error {
 		"join/namespace_agent.yaml",
 		"join/namespace_addon.yaml",
 		"join/namespace.yaml",
-		// "join/bootstrap_hub_kubeconfig.yaml",
 		"join/cluster_role.yaml",
 		"join/cluster_role_binding.yaml",
 		"join/klusterlets.crd.yaml",

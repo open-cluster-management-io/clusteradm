@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	init_scenario "open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
-	"open-cluster-management.io/clusteradm/pkg/cmd/upgrade/clustermanager/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
@@ -19,7 +18,9 @@ import (
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun, )
 	o.values = Values{
-			Registry:    o.registry,
+		Hub: Hub{			
+			Registry:  o.registry,
+		},
 		}
 	
 
@@ -59,7 +60,7 @@ func (o *Options) validate() error {
 		return fmt.Errorf("clustermanager is not installed")
 	}
 
-	//TODO check desired version is grater then current version 
+	//TODO check desired version is greater then current version 
 
 	fmt.Fprint(o.Streams.Out, "clustermanager installed. starting upgrade")
 
@@ -69,8 +70,7 @@ func (o *Options) validate() error {
 
 func (o *Options) run() error {
 	output := make([]string, 0)
-	reader := scenario.GetScenarioResourcesReader()
-    init_reader := init_scenario.GetScenarioResourcesReader() 
+    reader := init_scenario.GetScenarioResourcesReader() 
 
 	kubeClient, apiExtensionsClient, dynamicClient, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
 	if err != nil {
@@ -80,13 +80,27 @@ func (o *Options) run() error {
 	applierBuilder := &apply.ApplierBuilder{}
 	applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
 
-	out, err := applier.ApplyDeployments(reader, o.values, o.ClusteradmFlags.DryRun, "", "clustermanager/operator.yaml")  // pkg/cmd/upgrade/clustermanager/scenario/clustermanager/operator.yaml
+	files := []string{
+		"init/clustermanager_cluster_role.yaml",
+		"init/clustermanager_cluster_role_binding.yaml",
+		"init/clustermanagers.crd.yaml",
+		"init/clustermanager_sa.yaml", 
+	}
+	
+	out, err := applier.ApplyDirectly(reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
 	if err != nil {
 		return err
 	}
 	output = append(output, out...)
 
-	out, err = applier.ApplyDirectly(init_reader, o.values, o.ClusteradmFlags.DryRun, "", "init/clustermanagers.crd.yaml")
+
+	out, err = applier.ApplyDeployments(reader, o.values, o.ClusteradmFlags.DryRun, "", "init/operator.yaml") 
+	if err != nil {
+		return err
+	}
+	output = append(output, out...)
+
+	out, err = applier.ApplyDirectly(reader, o.values, o.ClusteradmFlags.DryRun, "", "init/clustermanagers.crd.yaml")
 	if err != nil {
 		return err
 	}
@@ -105,7 +119,7 @@ func (o *Options) run() error {
 		}
 	}
 
-	out, err = applier.ApplyCustomResources(reader, o.values, o.ClusteradmFlags.DryRun, "", "clustermanager/clustermanager.cr.yaml")
+	out, err = applier.ApplyCustomResources(reader, o.values, o.ClusteradmFlags.DryRun, "", "init/clustermanager.cr.yaml")
 	if err != nil {
 		return err
 	}

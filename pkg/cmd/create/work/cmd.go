@@ -22,8 +22,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 
 	cmd := &cobra.Command{
 		Use:          "work",
-		Short:        "create a work",
-		Long:         "create manifestwork on a specified managedcluster",
+		Short:        "create a work using resource-to-apply yaml file",
+		Long:         "create a work using a file containing common kubernetes resource manifests, or a director containing a set of manifest files.",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRunE: func(c *cobra.Command, args []string) error {

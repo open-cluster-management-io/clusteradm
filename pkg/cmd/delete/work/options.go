@@ -16,6 +16,8 @@ type Options struct {
 	Cluster string
 
 	Workname string
+
+	Force bool
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {

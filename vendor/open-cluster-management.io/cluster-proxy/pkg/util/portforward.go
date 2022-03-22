@@ -59,7 +59,7 @@ type roundRobin struct {
 }
 
 func (r *roundRobin) Listen() (func(), error) {
-	klog.V(4).Info("Started local proxy server at port %d", r.targetPort)
+	klog.V(4).Infof("Started local proxy server at port %d", r.targetPort)
 	listener, err := net.Listen(
 		"tcp",
 		net.JoinHostPort("localhost", strconv.Itoa(int(r.targetPort))))

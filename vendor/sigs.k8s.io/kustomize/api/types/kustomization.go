@@ -17,7 +17,13 @@ const (
 	ComponentVersion      = "kustomize.config.k8s.io/v1alpha1"
 	ComponentKind         = "Component"
 	MetadataNamespacePath = "metadata/namespace"
+
+	OriginAnnotations      = "originAnnotations"
+	TransformerAnnotations = "transformerAnnotations"
+	ManagedByLabelOption   = "managedByLabel"
 )
+
+var BuildMetadataOptions = []string{OriginAnnotations, TransformerAnnotations, ManagedByLabelOption}
 
 // Kustomization holds the information needed to generate customized k8s api resources.
 type Kustomization struct {
@@ -161,6 +167,9 @@ type Kustomization struct {
 	// Inventory appends an object that contains the record
 	// of all other objects, which can be used in apply, prune and delete
 	Inventory *Inventory `json:"inventory,omitempty" yaml:"inventory,omitempty"`
+
+	// BuildMetadata is a list of strings used to toggle different build options
+	BuildMetadata []string `json:"buildMetadata,omitempty" yaml:"buildMetadata,omitempty"`
 }
 
 // FixKustomizationPostUnmarshalling fixes things

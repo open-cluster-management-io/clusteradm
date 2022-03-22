@@ -12,7 +12,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
-	helper_wait "open-cluster-management.io/clusteradm/pkg/helpers/wait"
+	helperwait "open-cluster-management.io/clusteradm/pkg/helpers/wait"
 
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
@@ -143,12 +143,12 @@ func (o *Options) run() error {
 	output = append(output, out...)
 
 	if o.wait && !o.ClusteradmFlags.DryRun {
-		if err := helper_wait.WaitUntilCRDReady(apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io"); err != nil {
+		if err := helperwait.WaitUntilCRDReady(apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io"); err != nil {
 			return err
 		}
 	}
 	if o.wait && !o.ClusteradmFlags.DryRun {
-		if err := helper_wait.WaitUntilRegistrationOperatorReady(
+		if err := helperwait.WaitUntilRegistrationOperatorReady(
 			o.ClusteradmFlags.KubectlFactory,
 			int64(o.ClusteradmFlags.Timeout)); err != nil {
 			return err
@@ -162,7 +162,7 @@ func (o *Options) run() error {
 	output = append(output, out...)
 
 	if o.wait && !o.ClusteradmFlags.DryRun {
-		if err := helper_wait.WaitUntilClusterManagerRegistrationReady(
+		if err := helperwait.WaitUntilClusterManagerRegistrationReady(
 			o.ClusteradmFlags.KubectlFactory,
 			int64(o.ClusteradmFlags.Timeout)); err != nil {
 			return err

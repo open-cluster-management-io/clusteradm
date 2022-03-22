@@ -18,7 +18,7 @@ type Options struct {
 	bundleVersion string
 	//If set, the command will hold until the OCM control plane initialized
 	wait bool
-		//
+	
 	Streams genericclioptions.IOStreams
 }
 

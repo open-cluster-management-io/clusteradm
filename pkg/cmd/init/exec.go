@@ -187,6 +187,9 @@ func (o *Options) run() error {
 
 	if len(o.outputJoinCommandFile) > 0 {
 		sh, err := os.OpenFile(o.outputJoinCommandFile, os.O_CREATE|os.O_WRONLY, 0755)
+		if err != nil {
+			return err
+		}
 		_, err = fmt.Fprintf(sh, "%s --cluster-name $1", cmd)
 		if err != nil {
 			return err

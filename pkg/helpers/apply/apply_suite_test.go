@@ -61,7 +61,7 @@ var _ = BeforeSuite(func(done Done) {
 	clusterClient, err = clusterv1client.NewForConfig(cfg)
 	Expect(err).NotTo(HaveOccurred())
 
-	clusterv1.AddToScheme(scheme.Scheme)
+	Expect(clusterv1.AddToScheme(scheme.Scheme)).ShouldNot(HaveOccurred())
 	Expect(err).NotTo(HaveOccurred())
 
 	restConfig = cfg

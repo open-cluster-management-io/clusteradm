@@ -86,12 +86,30 @@ func (o *Options) run() error {
 
 	//Delete the other applied resources
 	if o.purgeOperator {
-		kubeClient.AppsV1().Deployments(nameSpace).Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
-		apiExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().Delete(context.Background(), "klusterlets.operator.open-cluster-management.io", metav1.DeleteOptions{})
-		kubeClient.CoreV1().Namespaces().Delete(context.Background(), "open-cluster-management-agent", metav1.DeleteOptions{})
-		kubeClient.RbacV1().ClusterRoles().Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
-		kubeClient.RbacV1().ClusterRoleBindings().Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
-		kubeClient.CoreV1().ServiceAccounts("open-cluster-management").Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
+		err = kubeClient.AppsV1().Deployments(nameSpace).Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
+		if err != nil {
+			return err
+		}
+		err = apiExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().Delete(context.Background(), "klusterlets.operator.open-cluster-management.io", metav1.DeleteOptions{})
+		if err != nil {
+			return err
+		}
+		err = kubeClient.CoreV1().Namespaces().Delete(context.Background(), "open-cluster-management-agent", metav1.DeleteOptions{})
+		if err != nil {
+			return err
+		}
+		err = kubeClient.RbacV1().ClusterRoles().Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
+		if err != nil {
+			return err
+		}
+		err = kubeClient.RbacV1().ClusterRoleBindings().Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
+		if err != nil {
+			return err
+		}
+		err = kubeClient.CoreV1().ServiceAccounts("open-cluster-management").Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
+		if err != nil {
+			return err
+		}
 		log.Println("Other recources have been deleted.")
 	}
 

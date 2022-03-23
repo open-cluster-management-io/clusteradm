@@ -12,7 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/klog/v2"
-	"open-cluster-management.io/api/addon/v1alpha1"
+	addonv1alpha1 "open-cluster-management.io/api/addon/v1alpha1"
 	addonclient "open-cluster-management.io/api/client/addon/clientset/versioned"
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	workclient "open-cluster-management.io/api/client/work/clientset/versioned"
@@ -22,6 +22,7 @@ import (
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 
 	klog.V(1).InfoS("addon options:", "dry-run", o.ClusteradmFlags.DryRun, "clusters", o.clusters)
+	o.addons = args
 
 	return nil
 }
@@ -79,11 +80,13 @@ func (o *Options) printAddonTree(
 	if err != nil {
 		return err
 	}
-	addonByCluster := make(map[string][]*v1alpha1.ManagedClusterAddOn)
+	addonByCluster := make(map[string][]*addonv1alpha1.ManagedClusterAddOn)
 	for _, addon := range addonList.Items {
-		clusterName := addon.Namespace
-		addon := addon
-		addonByCluster[clusterName] = append(addonByCluster[clusterName], &addon)
+		if shouldShow(o.addons, &addon) {
+			clusterName := addon.Namespace
+			addon := addon
+			addonByCluster[clusterName] = append(addonByCluster[clusterName], &addon)
+		}
 	}
 
 	workList, err := workClient.WorkV1().
@@ -118,7 +121,7 @@ func (o *Options) printAddonTree(
 	return nil
 }
 
-func printAddonStatus(n gotree.Tree, addon *v1alpha1.ManagedClusterAddOn) {
+func printAddonStatus(n gotree.Tree, addon *addonv1alpha1.ManagedClusterAddOn) {
 	testingConds := []string{
 		"Available",
 		"ManifestApplied",
@@ -137,4 +140,20 @@ func printAddonStatus(n gotree.Tree, addon *v1alpha1.ManagedClusterAddOn) {
 		cond := meta.FindStatusCondition(addon.Status.Conditions, condType)
 		n.Add(fmt.Sprintf("%s -> %s", condType, sanitize(cond)))
 	}
+}
+
+func shouldShow(selectingAddons []string, addon *addonv1alpha1.ManagedClusterAddOn) bool {
+	if len(selectingAddons) == 0 { // empty list means all
+		return true
+	}
+	return contains(selectingAddons, addon.Name)
+}
+
+func contains(values []string, target string) bool {
+	for _, v := range values {
+		if target == v {
+			return true
+		}
+	}
+	return false
 }

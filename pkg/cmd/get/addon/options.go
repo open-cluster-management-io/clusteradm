@@ -9,8 +9,10 @@ import (
 type Options struct {
 	//ClusteradmFlags: The generic optiosn from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
-	//A list of comma separated cluster names
+	// A list of cluster to show
 	clusters []string
+	// A list of addon name to show
+	addons []string
 
 	Streams genericclioptions.IOStreams
 }

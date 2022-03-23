@@ -15,7 +15,7 @@ var example = `
 # Get enabled addon on specified cluster
 %[1]s get addon --clusters cluster1
 # Get all enabled addon
-%[1]s get addon
+%[1]s get addon <addon name>
 `
 
 // NewCmd...
@@ -47,7 +47,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		},
 	}
 
-	cmd.Flags().StringSliceVar(&o.clusters, "clusters", []string{}, "Names of the managed cluster to deploy the add-on to (comma separated)")
+	cmd.Flags().StringSliceVar(&o.clusters, "clusters", []string{},
+		"Names of the managed cluster to display (comma separated)")
 
 	return cmd
 }

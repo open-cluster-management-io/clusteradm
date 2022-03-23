@@ -1,6 +1,6 @@
 # Copyright Contributors to the Open Cluster Management project
 
-name: Integration Tests
+name: Verify
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
     branches: [ main, release-* ]
 
 jobs:
-  integration-test:
+  test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -19,5 +19,8 @@ jobs:
       with:
         go-version: 1.17
 
-    - name: Integration Tests
-      run: make test-integration
+    - name: Verify
+      run: |
+        go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.31.0
+        golangci-lint run -E gofmt
+

@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package addons
+package hubaddon
 
 import (
 	"context"
@@ -16,7 +16,7 @@ const (
 	subscriptionDeployment = "multicluster-operators-subscription"
 )
 
-var _ = ginkgo.Describe("install addon", func() {
+var _ = ginkgo.Describe("install hub-addon", func() {
 
 	ginkgo.Context("runWithClient", func() {
 
@@ -29,10 +29,9 @@ var _ = ginkgo.Describe("install addon", func() {
 			_, err := kubeClient.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
-			addonName := "no-such-addon"
 			o := Options{
 				values: Values{
-					addons: []string{addonName},
+					hubAddons: []string{"no-such-addon"},
 				},
 			}
 
@@ -59,7 +58,7 @@ var _ = ginkgo.Describe("install addon", func() {
 		ginkgo.It("Should deploy the built in application-manager add-on deployments in open-cluster-management namespace successfully", func() {
 			o := Options{
 				values: Values{
-					addons: []string{appMgrAddonName},
+					hubAddons: []string{appMgrAddonName},
 				},
 			}
 

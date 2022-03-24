@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package addons
+package hubaddon
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 
 var example = `
 # Install built-in add-ons to the hub cluster
-%[1]s install addon --names application-manager
+%[1]s install hub-addon --names application-manager
 `
 
 // NewCmd...
@@ -22,7 +22,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 
 	cmd := &cobra.Command{
 		Use:          "addon",
-		Short:        "install addon",
+		Short:        "install hub-addon",
 		Long:         "Install specific built-in add-on(s) to the hub cluster",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
 		SilenceUsage: true,

@@ -64,7 +64,7 @@ func (o *Options) run() error {
 
 		log.Fatal("AppliedManifestWork exist on the managed cluster, uninstalling the klusterlet will cause that the manifestworks on hub cannot be cleaned.")
 	} else {
-		//Create clusterlet client
+		//Create klusterlet client
 		klusterletClient, err := klusterletclient.NewForConfig(config)
 		if err != nil {
 			log.Fatal(err)
@@ -79,7 +79,7 @@ func (o *Options) run() error {
 
 			err = WaitResourceToBeDelete(context.Background(), klusterletClient, "klusterlet", b)
 			if err != nil && !errors.IsNotFound(err) {
-				log.Fatal("Recource Klusterlet should been deleted firstly.")
+				log.Fatal("Resource Klusterlet should be deleted first.")
 			}
 		}
 	}
@@ -92,10 +92,10 @@ func (o *Options) run() error {
 		kubeClient.RbacV1().ClusterRoles().Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
 		kubeClient.RbacV1().ClusterRoleBindings().Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
 		kubeClient.CoreV1().ServiceAccounts("open-cluster-management").Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
-		log.Println("Other recources have been deleted.")
+		log.Println("Other resources have been deleted.")
 	}
 
-	fmt.Printf("Applied reosuces have been deleted during the %s joined stage.Also the status of mcl %s will be unknown in the hub clusters\n", o.clusterName, o.clusterName)
+	fmt.Printf("Applied resources have been deleted during the %s joined stage. The status of mcl %s will be unknown in the hub cluster.\n", o.clusterName, o.clusterName)
 	return apply.WriteOutput(o.outputFile, output)
 
 }
@@ -118,8 +118,8 @@ func WaitResourceToBeDelete(context context.Context, client klusterletclient.Int
 	return errGet
 
 }
-func IsAppliedManifestWorkExist(cilent appliedwrokclient.Interface) bool {
-	obj, err := cilent.WorkV1().AppliedManifestWorks().List(context.Background(), metav1.ListOptions{})
+func IsAppliedManifestWorkExist(client appliedwrokclient.Interface) bool {
+	obj, err := client.WorkV1().AppliedManifestWorks().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}

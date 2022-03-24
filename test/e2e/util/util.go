@@ -34,13 +34,13 @@ func initE2E() *TestE2eConfig {
 			"--cluster-name", e2eConf.Cluster().ManagedCluster1().Name(),
 		)
 		if err != nil {
-			panic(fmt.Sprintf("error occurs while unjoing managedcluster1: %s", err.Error()))
+			panic(fmt.Sprintf("error occurred while unjoining managedcluster1: %s", err.Error()))
 		}
 
 		fmt.Println("cleaning hub...")
 		err = e2eConf.Clusteradm().Clean("--context", e2eConf.Cluster().Hub().Context())
 		if err != nil {
-			panic(fmt.Sprintf("error occurs while cleaning hub: %s", err.Error()))
+			panic(fmt.Sprintf("error occurred while cleaning hub: %s", err.Error()))
 		}
 		// clear token and apiserver value
 		e2eConf.clusteradm.h = HandledOutput{}
@@ -58,20 +58,20 @@ func initE2E() *TestE2eConfig {
 
 func (tec *TestE2eConfig) ResetEnv() {
 	// ensure hub is initialized, and token and apiserver is set.
-	fmt.Println("ensure hub is initilized...")
+	fmt.Println("ensure hub is initialized...")
 	err := tec.Clusteradm().Init(
 		"--context", tec.Cluster().Hub().Context(),
 		"--use-bootstrap-token",
 		"--wait",
 	)
 	if err != nil {
-		panic(fmt.Sprintf("error occurs while initializing hub: %s", err))
+		panic(fmt.Sprintf("error occurred while initializing hub: %s", err))
 	}
 
 	if tec.CommandResult() == nil || len(tec.CommandResult().RawCommand()) == 0 {
 		err = tec.Clusteradm().Get("token")
 		if err != nil {
-			panic(fmt.Sprintf("error occurs while get token from hub: %s", err))
+			panic(fmt.Sprintf("error occurred while get token from hub: %s", err))
 		}
 	}
 
@@ -85,7 +85,7 @@ func (tec *TestE2eConfig) ResetEnv() {
 		"--force-internal-endpoint-lookup",
 	)
 	if err != nil {
-		panic(fmt.Sprintf("error occurs while managedcluster1 joining hub: %s", err))
+		panic(fmt.Sprintf("error occurred while managedcluster1 joining hub: %s", err))
 	}
 
 	err = tec.Clusteradm().Accept(
@@ -94,19 +94,19 @@ func (tec *TestE2eConfig) ResetEnv() {
 		"--context", tec.Cluster().Hub().Context(),
 	)
 	if err != nil {
-		panic(fmt.Sprintf("error occurs while hub accepting managedcluster1: %s", err))
+		panic(fmt.Sprintf("error occurred while hub accepting managedcluster1: %s", err))
 	}
 
-	// ensure managed clsuter2 is not join-accepted
+	// ensure managed cluster2 is not join-accepted
 	fmt.Println("ensure managed cluster2 is unjoined...")
 	err = tec.Clusteradm().Unjoin(
 		"--context", tec.Cluster().ManagedCluster2().Context(),
 		"--cluster-name", tec.Cluster().ManagedCluster2().Name(),
 	)
 	if err != nil {
-		// TODO: figure out how to catch this error and then use panic here(when unjoin a unjoined managedcluster, this error occurs)
+		// TODO: figure out how to catch this error and then use panic here(when unjoin a unjoined managedcluster, this error occurred)
 		// 2022/03/04 06:43:00 the server could not find the requested resource (get appliedmanifestworks.work.open-cluster-management.io)
-		fmt.Printf("error occurs while unjoing managedcluster2: %s\n", err.Error())
+		fmt.Printf("error occurred while unjoining managedcluster2: %s\n", err.Error())
 	}
 
 	fmt.Println("reset e2e environment finished.")

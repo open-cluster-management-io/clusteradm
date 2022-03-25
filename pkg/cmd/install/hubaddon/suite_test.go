@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package addons
+package hubaddon
 
 import (
 	"testing"
@@ -29,7 +29,7 @@ var dynamicClient dynamic.Interface
 
 func TestIntegrationInstallAddons(t *testing.T) {
 	gomega.RegisterFailHandler(ginkgo.Fail)
-	ginkgo.RunSpecs(t, "Integration Install Addons Suite")
+	ginkgo.RunSpecs(t, "Integration install hub-addon Suite")
 }
 
 var _ = ginkgo.BeforeSuite(func(done ginkgo.Done) {

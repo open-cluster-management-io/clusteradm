@@ -4,7 +4,7 @@ package install
 import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"open-cluster-management.io/clusteradm/pkg/cmd/install/addons"
+	hubaddon "open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
@@ -15,7 +15,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		Short: "install a feature",
 	}
 
-	cmd.AddCommand(addons.NewCmd(clusteradmFlags, streams))
+	cmd.AddCommand(hubaddon.NewCmd(clusteradmFlags, streams))
 
 	return cmd
 }

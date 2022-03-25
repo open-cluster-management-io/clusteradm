@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package addons
+package hubaddon
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
-	"open-cluster-management.io/clusteradm/pkg/cmd/install/addons/scenario"
+	"open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 )
@@ -49,9 +49,9 @@ func (o *Options) run() error {
 			addons = append(addons, strings.TrimSpace(n))
 		}
 	}
-	o.values.addons = addons
+	o.values.hubAddons = addons
 
-	klog.V(3).InfoS("values:", "addon", o.values.addons)
+	klog.V(3).InfoS("values:", "addon", o.values.hubAddons)
 
 	kubeClient, apiExtensionsClient, dynamicClient, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
 	if err != nil {
@@ -72,7 +72,7 @@ func (o *Options) runWithClient(kubeClient kubernetes.Interface,
 	applierBuilder := &apply.ApplierBuilder{}
 	applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
 
-	for _, addon := range o.values.addons {
+	for _, addon := range o.values.hubAddons {
 		if addon == appMgrAddonName {
 			files := []string{
 				"addon/appmgr/clusterrole_agent.yaml",

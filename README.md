@@ -86,11 +86,11 @@ Accept the CSRs on the hub to approve the spoke clusters to join the hub.
 
 `clusteradm accept --clusters <cluster1>, <cluster2>,....`
 
-### install addons
+### install hub-addon
 
 Install specific built-in add-on(s) to the hub cluster.
 
-`clusteradm install addon --names application-manager`
+`clusteradm install hub-addon --names application-manager`
 
 ### enable addons
 

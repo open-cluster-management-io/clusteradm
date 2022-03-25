@@ -1,5 +1,5 @@
 // Copyright Contributors to the Open Cluster Management project
-package addons
+package hubaddon
 
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -7,7 +7,7 @@ import (
 )
 
 type Options struct {
-	//ClusteradmFlags: The generic optiosn from the clusteradm cli-runtime.
+	//ClusteradmFlags: The generic options from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 	//A list of comma separated addon names
 	names string
@@ -18,7 +18,7 @@ type Options struct {
 
 //Values: The values used in the template
 type Values struct {
-	addons []string
+	hubAddons []string
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {

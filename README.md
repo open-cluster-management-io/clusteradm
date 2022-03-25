@@ -92,6 +92,8 @@ Install specific built-in add-on(s) to the hub cluster.
 
 `clusteradm install hub-addon --names application-manager`
 
+`clusteradm install hub-addon --names policy-framework`
+
 ### enable addons
 
 Enable specific add-on(s) agent deployment to the given managed clusters of the specify namespace

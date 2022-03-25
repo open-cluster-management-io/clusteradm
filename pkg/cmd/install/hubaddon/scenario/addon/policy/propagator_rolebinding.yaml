@@ -1,0 +1,14 @@
+# Copyright Contributors to the Open Cluster Management project
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: governance-policy-propagator-leader-election-rolebinding
+  namespace: open-cluster-management
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: governance-policy-propagator-leader-election-role
+subjects:
+- kind: ServiceAccount
+  name: governance-policy-propagator
+  namespace: open-cluster-management

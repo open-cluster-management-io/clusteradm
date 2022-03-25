@@ -72,9 +72,9 @@ do
 
         COMMUNITY_HEADER_AS_COMMENT="$COMMENT_START$COMMUNITY_COPY_HEADER_STRING$COMMENT_END"
 
-        if ! grep -q "$COMMUNITY_HEADER_AS_COMMENT" "$FILE"; then
+        if [ -f "$FILE" ] && ! grep -q "$COMMUNITY_HEADER_AS_COMMENT" "$FILE"; then
             echo "FILE: $FILE:"
-            echo -e "\t- Need add Community copyright header to file"
+            echo -e "\t- Need to add Community copyright header to file"
             ERROR=true
         fi
     fi

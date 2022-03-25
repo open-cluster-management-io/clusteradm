@@ -9,7 +9,7 @@ import (
 	"open-cluster-management.io/clusteradm/test/unit/resources/scenario"
 )
 
-func TestMustTempalteAsset(t *testing.T) {
+func TestMustTemplateAsset(t *testing.T) {
 	type args struct {
 		name       string
 		headerFile string
@@ -79,13 +79,13 @@ func TestMustTempalteAsset(t *testing.T) {
 	a := ab.Build()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := a.MustTempalteAsset(tt.args.reader, tt.args.values, tt.args.headerFile, tt.args.name)
+			got, err := a.MustTemplateAsset(tt.args.reader, tt.args.values, tt.args.headerFile, tt.args.name)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("MustTempalteAsset() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("MustTemplateAsset() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("MustTempalteAsset() = \n<EOF>%v</EOF>\n, want \n<EOF>%v</EOF>", string(got), string(tt.want))
+				t.Errorf("MustTemplateAsset() = \n<EOF>%v</EOF>\n, want \n<EOF>%v</EOF>", string(got), string(tt.want))
 			}
 		})
 	}

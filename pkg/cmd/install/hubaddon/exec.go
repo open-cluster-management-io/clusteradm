@@ -16,7 +16,10 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 )
 
-const appMgrAddonName = "application-manager"
+const (
+	appMgrAddonName          = "application-manager"
+	policyFrameworkAddonName = "policy-framework"
+)
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	klog.V(1).InfoS("addon options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.names, "output-file", o.outputFile)
@@ -31,7 +34,12 @@ func (o *Options) validate() error {
 
 	names := strings.Split(o.names, ",")
 	for _, n := range names {
-		if n != appMgrAddonName {
+		switch n {
+		case appMgrAddonName:
+			continue
+		case policyFrameworkAddonName:
+			continue
+		default:
 			return fmt.Errorf("invalid add-on name %s", n)
 		}
 	}
@@ -73,7 +81,9 @@ func (o *Options) runWithClient(kubeClient kubernetes.Interface,
 	applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
 
 	for _, addon := range o.values.hubAddons {
-		if addon == appMgrAddonName {
+		switch addon {
+		// Install the Application Management Addon
+		case appMgrAddonName:
 			files := []string{
 				"addon/appmgr/clusterrole_agent.yaml",
 				"addon/appmgr/clusterrole_binding.yaml",
@@ -109,6 +119,39 @@ func (o *Options) runWithClient(kubeClient kubernetes.Interface,
 			output = append(output, out...)
 
 			fmt.Printf("Installing built-in %s add-on to the Hub cluster...\n", appMgrAddonName)
+
+		// Install the Policy Framework Addon
+		case policyFrameworkAddonName:
+			files := []string{
+				"addon/policy/policy.open-cluster-management.io_placementbindings.yaml",
+				"addon/policy/policy.open-cluster-management.io_policies.yaml",
+				"addon/policy/policy.open-cluster-management.io_policyautomations.yaml",
+				"addon/policy/policy.open-cluster-management.io_policysets.yaml",
+				"addon/policy/propagator_clusterrole.yaml",
+				"addon/policy/propagator_clusterrolebinding.yaml",
+				"addon/policy/propagator_role.yaml",
+				"addon/policy/propagator_rolebinding.yaml",
+				"addon/policy/propagator_serviceaccount.yaml",
+				"addon/appmgr/crd_placementrule.yaml",
+			}
+
+			out, err := applier.ApplyDirectly(reader, o.values, dryRun, "", files...)
+			if err != nil {
+				return err
+			}
+			output = append(output, out...)
+
+			deployments := []string{
+				"addon/policy/propagator_deployment.yaml",
+			}
+
+			out, err = applier.ApplyDeployments(reader, o.values, dryRun, "", deployments...)
+			if err != nil {
+				return err
+			}
+			output = append(output, out...)
+
+			fmt.Printf("Installing built-in %s add-on to the Hub cluster...\n", policyFrameworkAddonName)
 		}
 	}
 

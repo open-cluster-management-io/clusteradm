@@ -79,19 +79,21 @@ func (o *Options) run() error {
 
 			err = WaitResourceToBeDelete(context.Background(), klusterletClient, "klusterlet", b)
 			if err != nil && !errors.IsNotFound(err) {
-				log.Fatal("Resource Klusterlet should be deleted first.")
+				log.Fatal("Resource Klusterlet should be deleted first:", err)
 			}
 		}
 	}
 
 	//Delete the other applied resources
 	if o.purgeOperator {
-		kubeClient.AppsV1().Deployments(nameSpace).Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
-		apiExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().Delete(context.Background(), "klusterlets.operator.open-cluster-management.io", metav1.DeleteOptions{})
-		kubeClient.CoreV1().Namespaces().Delete(context.Background(), "open-cluster-management-agent", metav1.DeleteOptions{})
-		kubeClient.RbacV1().ClusterRoles().Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
-		kubeClient.RbacV1().ClusterRoleBindings().Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
-		kubeClient.CoreV1().ServiceAccounts("open-cluster-management").Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
+		if !o.ClusteradmFlags.DryRun {
+			kubeClient.AppsV1().Deployments(nameSpace).Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
+			apiExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().Delete(context.Background(), "klusterlets.operator.open-cluster-management.io", metav1.DeleteOptions{})
+			kubeClient.CoreV1().Namespaces().Delete(context.Background(), "open-cluster-management-agent", metav1.DeleteOptions{})
+			kubeClient.RbacV1().ClusterRoles().Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
+			kubeClient.RbacV1().ClusterRoleBindings().Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
+			kubeClient.CoreV1().ServiceAccounts("open-cluster-management").Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
+		}
 		log.Println("Other resources have been deleted.")
 	}
 
@@ -104,7 +106,7 @@ func WaitResourceToBeDelete(context context.Context, client klusterletclient.Int
 
 	errGet := retry.OnError(b, func(err error) bool {
 		if err != nil && !errors.IsNotFound(err) {
-			log.Println("Wait to deleted resource klusterlet.")
+			log.Println("Wait to deleted resource klusterlet:", err)
 			return true
 		}
 		return false

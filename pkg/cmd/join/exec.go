@@ -10,7 +10,6 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,7 +18,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
-	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
 	"k8s.io/kubectl/pkg/cmd/util"
 
@@ -28,6 +26,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 	"open-cluster-management.io/clusteradm/pkg/helpers/version"
+	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -143,7 +142,7 @@ func (o *Options) run() error {
 
 	if !o.ClusteradmFlags.DryRun {
 		if o.wait && !o.ClusteradmFlags.DryRun {
-			if err := waitUntilCRDReady(apiExtensionsClient); err != nil {
+			if err := wait.WaitUntilCRDReady(apiExtensionsClient, "klusterlets.operator.open-cluster-management.io" ); err != nil {
 				return err
 			}
 		}
@@ -176,17 +175,6 @@ func (o *Options) run() error {
 
 }
 
-func waitUntilCRDReady(apiExtensionsClient clientset.Interface) error {
-	b := retry.DefaultBackoff
-	b.Duration = 200 * time.Millisecond
-
-	crdSpinner := printer.NewSpinner("Waiting for CRD to be ready...", time.Second)
-	crdSpinner.FinalMSG = "CRD successfully registered.\n"
-	crdSpinner.Start()
-	defer crdSpinner.Stop()
-	return helpers.WaitCRDToBeReady(
-		apiExtensionsClient, "klusterlets.operator.open-cluster-management.io", b)
-}
 
 func waitUntilRegistrationOperatorConditionIsTrue(f util.Factory, timeout int64) error {
 	var restConfig *rest.Config

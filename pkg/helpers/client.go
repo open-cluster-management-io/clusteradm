@@ -15,6 +15,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
@@ -256,6 +257,24 @@ func IsClusterManagerInstalled(apiExtensionsClient apiextensionsclient.Interface
 	}
 	return false, err
 }
+
+// IsKlusterlets checks if the Managed cluster is already initialized.
+//It checks if the crd is already present to find out that the managed cluster is already initialized.
+func IsKlusterletsInstalled(apiExtensionsClient apiextensionsclient.Interface) (bool, error) {
+	_, err := apiExtensionsClient.ApiextensionsV1().
+		CustomResourceDefinitions().
+		Get(context.TODO(), "klusterlets.operator.open-cluster-management.io", v1.GetOptions{})
+	if err == nil {
+		return true, nil
+	}
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return false, nil
+		}
+	}
+	return false, err
+}
+
 
 // WatchUntil starts a watch stream and holds until the condition is satisfied.
 func WatchUntil(

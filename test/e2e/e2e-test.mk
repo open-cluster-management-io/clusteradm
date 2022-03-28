@@ -23,3 +23,7 @@ start-cluster:
 test-e2e: clean-e2e start-cluster deps install
 	go test -v ./test/e2e/clusteradm --timeout 1800s
 .PHONY: test-e2e
+
+test-only: 
+	go test -v ./test/e2e/clusteradm --timeout 1800s
+.PHONY: test-e2e

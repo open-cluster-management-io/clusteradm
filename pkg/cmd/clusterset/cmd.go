@@ -15,7 +15,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd := &cobra.Command{
 		Use:   "clusterset",
 		Short: "clusterset options",
-		Long:  "there are 3 clusterset options: add, bind and unbind",
+		Long:  "there are 3 clusterset options: set, bind and unbind",
 	}
 
 	cmd.AddCommand(set.NewCmd(clusteradmFlags, streams))

@@ -68,7 +68,11 @@ func (o *Options) run() (err error) {
 			return err
 		}
 
-		fmt.Fprintf(o.Streams.Out, "Cluster %s is set, from ClusterSet %s to Clusterset %s\n", clusterName, clusterset, o.Clusterset)
+		if len(clusterset) == 0 {
+			fmt.Fprintf(o.Streams.Out, "Cluster %s is set to Clusterset %s\n", clusterName, o.Clusterset)
+		} else {
+			fmt.Fprintf(o.Streams.Out, "Cluster %s is set, from ClusterSet %s to Clusterset %s\n", clusterName, clusterset, o.Clusterset)
+		}
 	}
 
 	return nil

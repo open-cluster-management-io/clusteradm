@@ -16,9 +16,7 @@ type VersionBundle struct {
 func GetVersionBundle(version string) (VersionBundle, error) {
 
 	// supporting either "x.y.z" or "vx.y.z" format version
-	if strings.HasPrefix(version, "v") {
-		version = strings.TrimPrefix(version, "v")
-	}
+	version = strings.TrimPrefix(version, "v")
 
 	versionBundleList := map[string]VersionBundle{}
 
@@ -46,8 +44,15 @@ func GetVersionBundle(version string) (VersionBundle, error) {
 		Operator:     "v0.6.0",
 	}
 
+	versionBundleList["0.7.0"] = VersionBundle{
+		Registration: "v0.7.0",
+		Placement:    "v0.4.0",
+		Work:         "v0.7.0",
+		Operator:     "v0.7.0",
+	}
+
 	// default
-	versionBundleList["default"] = versionBundleList["0.6.0"]
+	versionBundleList["default"] = versionBundleList["0.7.0"]
 
 	if val, ok := versionBundleList[version]; ok {
 		return val, nil

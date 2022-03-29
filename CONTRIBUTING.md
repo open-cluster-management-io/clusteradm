@@ -67,7 +67,8 @@ config, err := f.ToRESTConfig()
 A total coverage is shown when running `make test`. For the time being, the `cmd.go` and `client.go` are excluded from the total coverage.
 - The `make test` is part of the PR acceptance and it is launched by PROW.
 
-## Functional tests
+## E2E tests
 
-- The project runs functional-tests `make functional-test-full`, this test deploys a [KiND](https://kind.sigs.k8s.io/) cluster, install some resource using the applier and then runs a set of tests against that cluster [run-functional-tests.sh](build/run-functional-tests.sh).  A prerequisite is that Docker is already running.
-- The `make functional-tests-full` is part of the PR acceptance and it is launched using git-actions.
+- The project use `make test-e2e` to run e2e tests, this will deploy kind cluster and run a set of tests for clusteradm commands. A prerequisite is that Docker is already running.
+- We have a [README](/test/e2e/README.md) indicating the way to write e2e tests.
+- The `make test-e2e` is part of the PR acceptance and it is launched using git-actions.

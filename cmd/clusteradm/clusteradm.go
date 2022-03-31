@@ -42,6 +42,13 @@ func main() {
 	root :=
 		&cobra.Command{
 			Use: "clusteradm",
+			Long: ktemplates.LongDesc(`
+			clusteradm controls the OCM control plane.
+			
+			Find more information at:
+				https://github.com/open-cluster-management-io/clusteradm/blob/main/README.md
+			`),
+			Run: runHelp,
 		}
 
 	flags := root.PersistentFlags()
@@ -75,29 +82,39 @@ func main() {
 		{
 			Message: "General commands:",
 			Commands: []*cobra.Command{
+				create.NewCmd(clusteradmFlags, streams),
+				deletecmd.NewCmd(clusteradmFlags, streams),
+				get.NewCmd(clusteradmFlags, streams),
+				install.NewCmd(clusteradmFlags, streams),
+				upgrade.NewCmd(clusteradmFlags, streams),
 				version.NewCmd(clusteradmFlags, streams),
 			},
 		},
 		{
 			Message: "Registration commands:",
 			Commands: []*cobra.Command{
-				get.NewCmd(clusteradmFlags, streams),
-				deletecmd.NewCmd(clusteradmFlags, streams),
+				acceptclusters.NewCmd(clusteradmFlags, streams),
 				clean.NewCmd(clusteradmFlags, streams),
 				inithub.NewCmd(clusteradmFlags, streams),
 				joinhub.NewCmd(clusteradmFlags, streams),
 				unjoin.NewCmd(clusteradmFlags, streams),
+			},
+		},
+		{
+			Message: "Cluster Management commands:",
+			Commands: []*cobra.Command{
 				addon.NewCmd(clusteradmFlags, streams),
-				install.NewCmd(clusteradmFlags, streams),
-				acceptclusters.NewCmd(clusteradmFlags, streams),
-				proxy.NewCmd(clusteradmFlags, streams),
-				create.NewCmd(clusteradmFlags, streams),
 				clusterset.NewCmd(clusteradmFlags, streams),
-				upgrade.NewCmd(clusteradmFlags, streams),
+				proxy.NewCmd(clusteradmFlags, streams),
 			},
 		},
 	}
 	groups.Add(root)
+
+	filters := []string{"options"}
+
+	ktemplates.ActsAsRootCommand(root, filters, groups...)
+
 	err := root.Execute()
 	if err != nil {
 		klog.V(1).ErrorS(err, "Error:")
@@ -106,4 +123,8 @@ func main() {
 	if err != nil {
 		os.Exit(1)
 	}
+}
+
+func runHelp(cmd *cobra.Command, args []string) {
+	cmd.Help()
 }

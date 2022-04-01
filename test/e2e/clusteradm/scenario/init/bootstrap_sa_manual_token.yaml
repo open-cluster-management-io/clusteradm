@@ -1,0 +1,8 @@
+# Copyright Contributors to the Open Cluster Management project
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sa-manual-token
+  namespace: open-cluster-management
+secrets:
+  - name: sa-manual-token-bvbk5

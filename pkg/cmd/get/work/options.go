@@ -2,10 +2,9 @@
 package work
 
 import (
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/cli-runtime/pkg/printers"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
+	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 )
 
 type Options struct {
@@ -18,26 +17,12 @@ type Options struct {
 
 	Streams genericclioptions.IOStreams
 
-	printer printers.ResourcePrinter
+	printer *printer.Printer
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
 		Streams:         streams,
-		printer: printers.NewTablePrinter(printers.PrintOptions{
-			NoHeaders:     false,
-			WithNamespace: false,
-			WithKind:      false,
-			Wide:          false,
-			ShowLabels:    false,
-			Kind: schema.GroupKind{
-				Group: "work.open-cluster-management.io",
-				Kind:  "ManifestWork",
-			},
-			ColumnLabels:     []string{},
-			SortBy:           "",
-			AllowMissingKeys: true,
-		}),
 	}
 }

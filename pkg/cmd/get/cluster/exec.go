@@ -9,11 +9,31 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/cli-runtime/pkg/printers"
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
+	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 )
 
+var pntOpt = printers.PrintOptions{
+	NoHeaders:     false,
+	WithNamespace: false,
+	WithKind:      false,
+	Wide:          false,
+	ShowLabels:    false,
+	Kind: schema.GroupKind{
+		Group: "cluster.open-cluster-management.io",
+		Kind:  "ManagedCluster",
+	},
+	ColumnLabels:     []string{},
+	SortBy:           "",
+	AllowMissingKeys: true,
+}
+
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+	o.printer = printer.NewPrinter(o.ClusteradmFlags.Output)
+
 	return nil
 }
 
@@ -49,9 +69,19 @@ func (o *Options) run() (err error) {
 		return err
 	}
 
+	if o.printer.IsYaml() {
+		for _, item := range clusters.Items {
+			err = o.printer.PrintObject(o.Streams.Out, &item, printers.PrintOptions{})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
 	table := converToTable(clusters)
 
-	return o.printer.PrintObj(table, o.Streams.Out)
+	return o.printer.PrintObject(o.Streams.Out, table, pntOpt)
 }
 
 func converToTable(clusters *clusterapiv1.ManagedClusterList) *metav1.Table {

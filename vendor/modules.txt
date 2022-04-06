@@ -293,7 +293,7 @@ github.com/openshift/api/template
 github.com/openshift/api/template/v1
 github.com/openshift/api/user
 github.com/openshift/api/user/v1
-# github.com/openshift/library-go v0.0.0-20211209153216-ed9bc958bd8a
+# github.com/openshift/library-go v0.0.0-20220405134141-226b07263a02
 ## explicit; go 1.17
 github.com/openshift/library-go/pkg/operator/events
 github.com/openshift/library-go/pkg/operator/resource/resourceapply

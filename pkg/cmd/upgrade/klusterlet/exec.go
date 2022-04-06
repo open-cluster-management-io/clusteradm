@@ -20,9 +20,9 @@ import (
 
 //TODO add to a common folder
 const (
-	klusterletName                = "klusterlet"
-	registrationOperatorNamespace = "open-cluster-management"
-	klusterletCRD                 = "klusterlets.operator.open-cluster-management.io"
+	klusterletName                 = "klusterlet"
+	registrationOperatorNamespace  = "open-cluster-management"
+	klusterletCRD                  = "klusterlets.operator.open-cluster-management.io"
 	componentNameRegistrationAgent = "klusterlet-registration-agent"
 	componentNameWorkAgent         = "klusterlet-work-agent"
 )
@@ -43,14 +43,13 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun, )
-	o.values = Values{	
-		ClusterName: k.ClusterName ,			
-		Hub: Hub{			
-			Registry:  o.registry,
+	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun)
+	o.values = Values{
+		ClusterName: k.ClusterName,
+		Hub: Hub{
+			Registry: o.registry,
 		},
 	}
-	
 
 	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
 
@@ -75,7 +74,7 @@ func (o *Options) validate() error {
 	if err != nil {
 		return err
 	}
-	apiExtensionsClient , err := apiextensionsclient.NewForConfig(restConfig)
+	apiExtensionsClient, err := apiextensionsclient.NewForConfig(restConfig)
 	if err != nil {
 		return err
 	}
@@ -87,8 +86,7 @@ func (o *Options) validate() error {
 	if !installed {
 		return fmt.Errorf("klusterlet is not installed")
 	}
-	fmt.Fprint(o.Streams.Out,"Klusterlet installed. starting upgrade ")
-
+	fmt.Fprint(o.Streams.Out, "Klusterlet installed. starting upgrade ")
 
 	return nil
 }
@@ -127,7 +125,6 @@ func (o *Options) run() error {
 	}
 	output = append(output, out...)
 
-
 	if o.wait && !o.ClusteradmFlags.DryRun {
 		if err := wait.WaitUntilCRDReady(apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io"); err != nil {
 			return err
@@ -147,7 +144,6 @@ func (o *Options) run() error {
 	}
 	output = append(output, out...)
 
-
-	fmt.Fprint(o.Streams.Out,"upgraded completed successfully")
+	fmt.Fprint(o.Streams.Out, "upgraded completed successfully")
 	return apply.WriteOutput("", output)
 }

@@ -109,7 +109,7 @@ func (a *Applier) ApplyDirectly(
 	output := make([]string, 0)
 	//Apply resources
 	clients := resourceapply.NewClientHolder().WithAPIExtensionsClient(a.apiExtensionsClient).WithDynamicClient(a.dynamicClient).WithKubernetes(a.kubeClient)
-	resourceResults := resourceapply.ApplyDirectly(context.TODO(), clients, recorder, func(name string) ([]byte, error) {
+	resourceResults := resourceapply.ApplyDirectly(context.TODO(), clients, recorder, a.cache, func(name string) ([]byte, error) {
 		out, err := a.MustTemplateAsset(reader, values, headerFile, name)
 		if err != nil {
 			return nil, err

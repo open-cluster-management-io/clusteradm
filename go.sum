@@ -80,6 +80,7 @@ github.com/PuerkitoBio/purell v1.1.1 h1:WEQqlqaGbrPkxLJWfBwQmfEAE1Z7ONdDLqrN38tN
 github.com/PuerkitoBio/purell v1.1.1/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbtSwDGJws/X0=
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 h1:d+Bc7a5rLufV/sSk/8dngufqelfh6jnri85riMAaF/M=
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
+github.com/RangelReale/osincli v0.0.0-20160924135400-fababb0555f2/go.mod h1:XyjUkMA8GN+tOOPXvnbi3XuRxWFvTJntqvTFnjmhzbk=
 github.com/agnivade/levenshtein v1.0.1/go.mod h1:CURSv5d9Uaml+FovSIICkLbAUZ9S4RqaHDIsdSBg7lM=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
@@ -598,8 +599,8 @@ github.com/openshift/build-machinery-go v0.0.0-20211213093930-7e33a7eb4ce3/go.mo
 github.com/openshift/client-go v0.0.0-20210916133943-9acee1a0fb83/go.mod h1:iSeqKIqUKxVec3gV1kNvwS1tjDpzpdP134RimkLc3BE=
 github.com/openshift/client-go v0.0.0-20211209144617-7385dd6338e3/go.mod h1:cwhyki5lqBmrT0m8Im+9I7PGFaraOzcYPtEz93RcsGY=
 github.com/openshift/library-go v0.0.0-20210916194400-ae21aab32431/go.mod h1:FS2LWYy/Hf4+2qfMZnh1Mt7EoOkc79x58xg02sidhn8=
-github.com/openshift/library-go v0.0.0-20211209153216-ed9bc958bd8a h1:MoAaYFrzB5QlYzO7phyjx/JBxghUrLitwb69RaulRAs=
-github.com/openshift/library-go v0.0.0-20211209153216-ed9bc958bd8a/go.mod h1:M/Gi/GUUrMdSS07nrYtTiK43J6/VUAyk/+IfN4ZqUY4=
+github.com/openshift/library-go v0.0.0-20220405134141-226b07263a02 h1:2HyAslXbUMb4AbxKgoKsCAtUdin8DkPnxVbs+WBlKdo=
+github.com/openshift/library-go v0.0.0-20220405134141-226b07263a02/go.mod h1:5a5oGzRGu6XjtAmChVlwstxp0MWDGh7fIXlN34mFiLA=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pborman/uuid v1.2.0/go.mod h1:X/NO0urCmaxf9VXbdlT7C2Yzkj2IKimNn4k+gtPdI/k=

@@ -4,6 +4,7 @@ package apply
 import (
 	"text/template"
 
+	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -18,6 +19,7 @@ type Applier struct {
 	templateFuncMap     template.FuncMap
 	scheme              *runtime.Scheme
 	owner               runtime.Object
+	cache               resourceapply.ResourceCache
 	controller          *bool
 	blockOwnerDeletion  *bool
 }
@@ -45,6 +47,7 @@ var _ iApplierBuilder = &ApplierBuilder{}
 
 //Build returns the builded applier
 func (a *ApplierBuilder) Build() Applier {
+	a.cache = resourceapply.NewResourceCache()
 	return a.Applier
 }
 

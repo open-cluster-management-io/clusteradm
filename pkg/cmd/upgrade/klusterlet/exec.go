@@ -87,6 +87,7 @@ func (o *Options) validate() error {
 		return fmt.Errorf("klusterlet is not installed")
 	}
 	fmt.Fprint(o.Streams.Out, "Klusterlet installed. starting upgrade ")
+	fmt.Fprint(o.Streams.Out, "Klusterlet installed. starting upgrade\n")
 
 	return nil
 }
@@ -144,6 +145,7 @@ func (o *Options) run() error {
 	}
 	output = append(output, out...)
 
-	fmt.Fprint(o.Streams.Out, "upgraded completed successfully")
+	fmt.Fprint(o.Streams.Out, "upgraded completed successfully\n")
+
 	return apply.WriteOutput("", output)
 }

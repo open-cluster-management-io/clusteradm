@@ -62,7 +62,7 @@ func (o *Options) validate() error {
 
 	//TODO check desired version is greater then current version 
 
-	fmt.Fprint(o.Streams.Out, "clustermanager installed. starting upgrade")
+	fmt.Fprint(o.Streams.Out, "clustermanager installed. starting upgrade\n")
 
 
 	return nil
@@ -126,7 +126,7 @@ func (o *Options) run() error {
 	output = append(output, out...)
 
 
-	fmt.Fprint(o.Streams.Out,"upgraded completed successfully")
+	fmt.Fprint(o.Streams.Out,"upgraded completed successfully\n")
 	return apply.WriteOutput("", output)
 }
 

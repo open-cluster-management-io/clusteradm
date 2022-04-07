@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"open-cluster-management.io/clusteradm/pkg/helpers/asset"
 	"open-cluster-management.io/clusteradm/test/unit/resources/scenario"
 )
@@ -86,6 +87,51 @@ func TestMustTemplateAsset(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("MustTemplateAsset() = \n<EOF>%v</EOF>\n, want \n<EOF>%v</EOF>", string(got), string(tt.want))
+			}
+		})
+	}
+}
+
+func TestApplier_Default_GetCache(t *testing.T) {
+	tests := []struct {
+		name string
+		want resourceapply.ResourceCache
+	}{
+		{
+			name: "get default cache",
+			want: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			applierBuilder := NewApplierBuilder()
+			applier := applierBuilder.Build()
+
+			if got := applier.GetCache(); got == nil {
+				t.Errorf("Applier.GetCache() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestApplier_GetCache(t *testing.T) {
+	cache := NewResourceCache()
+	tests := []struct {
+		name string
+		want resourceapply.ResourceCache
+	}{
+		{
+			name: "get default cache",
+			want: cache,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			applierBuilder := NewApplierBuilder()
+			applier := applierBuilder.WithCache(cache).Build()
+
+			if got := applier.GetCache(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Applier.GetCache() = %v, want %v", got, tt.want)
 			}
 		})
 	}

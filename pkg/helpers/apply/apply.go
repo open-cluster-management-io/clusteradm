@@ -39,8 +39,11 @@ var (
 	genericScheme = runtime.NewScheme()
 	genericCodecs = serializer.NewCodecFactory(genericScheme)
 	genericCodec  = genericCodecs.UniversalDeserializer()
-	newAccessor   = meta.NewAccessor()
 )
+
+func (a *Applier) GetCache() resourceapply.ResourceCache {
+	return a.cache
+}
 
 //ApplyDeployments applies a appsv1.Deployment template
 func (a *Applier) ApplyDeployments(

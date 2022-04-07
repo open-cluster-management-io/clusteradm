@@ -4,7 +4,8 @@ package util
 import (
 	"fmt"
 	"os"
-	"time"
+
+	"open-cluster-management.io/clusteradm/pkg/config"
 )
 
 // PrepareE2eEnvironment will init the e2e environment and join managedcluster1 to hub.
@@ -18,8 +19,8 @@ func PrepareE2eEnvironment() *TestE2eConfig {
 
 // initE2E get environment variables and init e2e environment.
 func initE2E() *TestE2eConfig {
-
 	e2eConf := NewTestE2eConfig(
+		os.Getenv("KUBECONFIG"),
 		os.Getenv("HUB_NAME"), os.Getenv("HUB_CTX"),
 		os.Getenv("MANAGED_CLUSTER1_NAME"), os.Getenv("MANAGED_CLUSTER1_CTX"),
 		os.Getenv("MANAGED_CLUSTER2_NAME"), os.Getenv("MANAGED_CLUSTER2_CTX"),
@@ -37,18 +38,27 @@ func initE2E() *TestE2eConfig {
 			panic(fmt.Sprintf("error occurred while unjoining managedcluster1: %s", err.Error()))
 		}
 
+		err = WaitNamespaceDeleted(e2eConf.Kubeconfigpath, e2eConf.Cluster().ManagedCluster1().Context(), config.ManagedClusterNamespace)
+		if err != nil {
+			panic(fmt.Sprintf("error occurred while unjoining managedcluster1: %s", err.Error()))
+		}
+
 		fmt.Println("cleaning hub...")
 		err = e2eConf.Clusteradm().Clean("--context", e2eConf.Cluster().Hub().Context())
 		if err != nil {
 			panic(fmt.Sprintf("error occurred while cleaning hub: %s", err.Error()))
 		}
+		err = WaitNamespaceDeleted(e2eConf.Kubeconfigpath, e2eConf.Cluster().Hub().Context(), config.HubClusterNamespace)
+		if err != nil {
+			panic(fmt.Sprintf("error occurred while cleaning hub: %s", err.Error()))
+		}
+		err = WaitNamespaceDeleted(e2eConf.Kubeconfigpath, e2eConf.Cluster().Hub().Context(), config.OpenClusterManagementNamespace)
+		if err != nil {
+			panic(fmt.Sprintf("error occurred while cleaning hub: %s", err.Error()))
+		}
+
 		// clear token and apiserver value
 		e2eConf.clusteradm.h = HandledOutput{}
-
-		// wait for resources to terminate
-		t := 30
-		fmt.Fprintf(os.Stdout, "wait resources to be terminated for %d seconds", t)
-		time.Sleep(time.Duration(t) * time.Second)
 	}
 	// ClearEnv will unjoin managed cluster1 and clean hub.
 	e2eConf.ClearEnv = clearenv

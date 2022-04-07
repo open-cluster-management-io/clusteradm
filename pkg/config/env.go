@@ -11,4 +11,6 @@ const (
 	ClusterManagerName                = "cluster-manager"
 	LabelApp                          = "app"
 	BootstrapSecretPrefix             = "bootstrap-token-"
+	HubClusterNamespace               = "open-cluster-management-hub"
+	ManagedClusterNamespace           = "open-cluster-management-agent"
 )

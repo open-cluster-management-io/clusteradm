@@ -1,3 +1,5 @@
+export KUBECONFIG := ${HOME}/.kube/config
+
 export HUB_NAME := ${PROJECT_NAME}-e2e-test-hub
 export MANAGED_CLUSTER1_NAME := ${PROJECT_NAME}-e2e-test-c1
 export MANAGED_CLUSTER2_NAME := ${PROJECT_NAME}-e2e-test-c2

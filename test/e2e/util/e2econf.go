@@ -5,6 +5,8 @@ type TestE2eConfig struct {
 	values     *values
 	clusteradm *clusteradm
 
+	Kubeconfigpath string
+
 	ClearEnv func()
 }
 
@@ -21,6 +23,7 @@ func (tec *TestE2eConfig) Clusteradm() clusteradmInterface {
 }
 
 func NewTestE2eConfig(
+	kubeconfigpath string,
 	hub string,
 	hubctx string,
 	mcl1 string,
@@ -49,7 +52,8 @@ func NewTestE2eConfig(
 	}
 
 	return &TestE2eConfig{
-		values:     &cfgval,
-		clusteradm: &clusteradm{},
+		values:         &cfgval,
+		clusteradm:     &clusteradm{},
+		Kubeconfigpath: kubeconfigpath,
 	}
 }

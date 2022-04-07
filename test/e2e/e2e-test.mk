@@ -1,3 +1,4 @@
+# Copyright Contributors to the Open Cluster Management project
 export KUBECONFIG := ${HOME}/.kube/config
 
 export HUB_NAME := ${PROJECT_NAME}-e2e-test-hub

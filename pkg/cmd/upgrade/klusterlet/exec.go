@@ -101,7 +101,7 @@ func (o *Options) run() error {
 		return err
 	}
 
-	applierBuilder := &apply.ApplierBuilder{}
+	applierBuilder := apply.NewApplierBuilder()
 	applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
 
 	files := []string{

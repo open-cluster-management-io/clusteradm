@@ -16,13 +16,12 @@ import (
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
-	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun, )
+	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun)
 	o.values = Values{
-		Hub: Hub{			
-			Registry:  o.registry,
+		Hub: Hub{
+			Registry: o.registry,
 		},
-		}
-	
+	}
 
 	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
 
@@ -47,7 +46,7 @@ func (o *Options) validate() error {
 	if err != nil {
 		return err
 	}
-	apiExtensionsClient , err := apiextensionsclient.NewForConfig(restConfig)
+	apiExtensionsClient, err := apiextensionsclient.NewForConfig(restConfig)
 	if err != nil {
 		return err
 	}
@@ -60,41 +59,39 @@ func (o *Options) validate() error {
 		return fmt.Errorf("clustermanager is not installed")
 	}
 
-	//TODO check desired version is greater then current version 
+	//TODO check desired version is greater then current version
 
 	fmt.Fprint(o.Streams.Out, "clustermanager installed. starting upgrade\n")
-
 
 	return nil
 }
 
 func (o *Options) run() error {
 	output := make([]string, 0)
-    reader := init_scenario.GetScenarioResourcesReader() 
+	reader := init_scenario.GetScenarioResourcesReader()
 
 	kubeClient, apiExtensionsClient, dynamicClient, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
 	if err != nil {
 		return err
 	}
 
-	applierBuilder := &apply.ApplierBuilder{}
+	applierBuilder := apply.NewApplierBuilder()
 	applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
 
 	files := []string{
 		"init/clustermanager_cluster_role.yaml",
 		"init/clustermanager_cluster_role_binding.yaml",
 		"init/clustermanagers.crd.yaml",
-		"init/clustermanager_sa.yaml", 
+		"init/clustermanager_sa.yaml",
 	}
-	
+
 	out, err := applier.ApplyDirectly(reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
 	if err != nil {
 		return err
 	}
 	output = append(output, out...)
 
-
-	out, err = applier.ApplyDeployments(reader, o.values, o.ClusteradmFlags.DryRun, "", "init/operator.yaml") 
+	out, err = applier.ApplyDeployments(reader, o.values, o.ClusteradmFlags.DryRun, "", "init/operator.yaml")
 	if err != nil {
 		return err
 	}
@@ -107,7 +104,7 @@ func (o *Options) run() error {
 	output = append(output, out...)
 
 	if o.wait && !o.ClusteradmFlags.DryRun {
-		if err := wait.WaitUntilCRDReady(apiExtensionsClient,"clustermanagers.operator.open-cluster-management.io" )   ; err != nil {
+		if err := wait.WaitUntilCRDReady(apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io"); err != nil {
 			return err
 		}
 	}
@@ -125,9 +122,6 @@ func (o *Options) run() error {
 	}
 	output = append(output, out...)
 
-
-	fmt.Fprint(o.Streams.Out,"upgraded completed successfully\n")
+	fmt.Fprint(o.Streams.Out, "upgraded completed successfully\n")
 	return apply.WriteOutput("", output)
 }
-
-

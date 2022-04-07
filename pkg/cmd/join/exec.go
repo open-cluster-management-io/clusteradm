@@ -114,7 +114,7 @@ func (o *Options) run() error {
 	if err != nil {
 		return err
 	}
-	applierBuilder := &apply.ApplierBuilder{}
+	applierBuilder := apply.NewApplierBuilder()
 	applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
 
 	files := []string{
@@ -142,7 +142,7 @@ func (o *Options) run() error {
 
 	if !o.ClusteradmFlags.DryRun {
 		if o.wait && !o.ClusteradmFlags.DryRun {
-			if err := wait.WaitUntilCRDReady(apiExtensionsClient, "klusterlets.operator.open-cluster-management.io" ); err != nil {
+			if err := wait.WaitUntilCRDReady(apiExtensionsClient, "klusterlets.operator.open-cluster-management.io"); err != nil {
 				return err
 			}
 		}
@@ -174,7 +174,6 @@ func (o *Options) run() error {
 	return apply.WriteOutput(o.outputFile, output)
 
 }
-
 
 func waitUntilRegistrationOperatorConditionIsTrue(f util.Factory, timeout int64) error {
 	var restConfig *rest.Config

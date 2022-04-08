@@ -172,11 +172,11 @@ func (a *Applier) ApplyCustomResource(
 	if dryRun {
 		return output, nil
 	}
-	u, err := bytesToUnstructured(reader, asset)
+	required, err := bytesToUnstructured(reader, asset)
 	if err != nil {
 		return output, err
 	}
-	gvks, _, err := genericScheme.ObjectKinds(u)
+	gvks, _, err := genericScheme.ObjectKinds(required)
 	if err != nil {
 		return output, err
 	}
@@ -188,17 +188,26 @@ func (a *Applier) ApplyCustomResource(
 		return output, err
 	}
 	dr := a.dynamicClient.Resource(mapping.Resource)
-	ug, err := dr.Namespace(u.GetNamespace()).Get(context.TODO(), u.GetName(), metav1.GetOptions{})
+	existing, err := dr.Namespace(required.GetNamespace()).Get(context.TODO(), required.GetName(), metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			_, err = dr.Namespace(u.GetNamespace()).
-				Create(context.TODO(), u, metav1.CreateOptions{})
+			required := required.DeepCopy()
+			actual, err := dr.Namespace(required.GetNamespace()).
+				Create(context.TODO(), required, metav1.CreateOptions{})
+			a.GetCache().UpdateCachedResourceMetadata(required, actual)
+			return output, err
 		}
-	} else {
-		u.SetResourceVersion(ug.GetResourceVersion())
-		_, err = dr.Namespace(u.GetNamespace()).
-			Update(context.TODO(), u, metav1.UpdateOptions{})
+		return output, err
 	}
+
+	if a.GetCache().SafeToSkipApply(required, existing) {
+		return output, nil
+	}
+
+	required.SetResourceVersion(existing.GetResourceVersion())
+	_, err = dr.Namespace(required.GetNamespace()).
+		Update(context.TODO(), required, metav1.UpdateOptions{})
+
 	if err != nil {
 		return output, err
 	}

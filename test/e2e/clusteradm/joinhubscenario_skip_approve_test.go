@@ -4,6 +4,9 @@ package clusteradme2e
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -11,17 +14,11 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/config"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 	scenario "open-cluster-management.io/clusteradm/test/e2e/clusteradm/scenario"
-	"strings"
-	"time"
 )
+
 var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", func() {
 	ginkgo.BeforeEach(func() {
 		e2e.ClearEnv()
-	})
-
-	ginkgo.AfterEach(func() {
-		ginkgo.By("reset e2e environment...")
-		e2e.ResetEnv()
 	})
 
 	ginkgo.Context("join hub scenario with manual bootstrap token", func() {
@@ -52,41 +49,39 @@ var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", func() {
 			sa, err := kubeClient.CoreV1().
 				ServiceAccounts(config.OpenClusterManagementNamespace).
 				Get(context.TODO(), "sa-manual-token", metav1.GetOptions{})
-			var secret *corev1.Secret
-			var prefix string
-			for _, objectRef := range sa.Secrets {
-				if objectRef.Namespace != "" && objectRef.Namespace != config.OpenClusterManagementNamespace {
-					continue
+			gomega.Expect(err).To(gomega.BeNil())
+			var foundSecret *corev1.Secret
+			prefix := "sa-manual-token"
+			if len(prefix) > 63 {
+				prefix = prefix[:37]
+			}
+			gomega.Eventually(func() error {
+				secrets, err := kubeClient.CoreV1().
+					Secrets(config.OpenClusterManagementNamespace).
+					List(context.TODO(), metav1.ListOptions{})
+				if err != nil {
+					return err
 				}
-				prefix = "sa-manual-token"
-				if len(prefix) > 63 {
-					prefix = prefix[:37]
-				}
-				if strings.HasPrefix(objectRef.Name, prefix) {
-					secret, err = kubeClient.CoreV1().
-						Secrets(config.OpenClusterManagementNamespace).
-						Get(context.TODO(), objectRef.Name, metav1.GetOptions{})
-					if err != nil {
-						continue
-					}
-					if secret.Type == corev1.SecretTypeServiceAccountToken {
+				for _, secret := range secrets.Items {
+					if strings.HasPrefix(secret.Name, prefix) {
+						foundSecret = &secret
 						break
 					}
 				}
-			}
-			gomega.Expect(sa.Name).To(gomega.Equal("sa-manual-token"))
-			fmt.Println("service account", sa)
-			fmt.Println("secret", secret)
-			time.Sleep(1000000)
-			//token := string(secret.Data["token"])
+				if foundSecret == nil {
+					return fmt.Errorf("Secret with prefix %s not found, trying again", prefix)
+				}
+				return nil
+			}, 30, 1).Should(gomega.BeNil())
 
-		//	fmt.Println("tokeeeeeeeeeeeeeeeeen", token)
-			//fmt.Println("secretttttttttttttDattttttttta", secret.Data)
+			gomega.Expect(sa.Name).To(gomega.Equal("sa-manual-token"))
+			token := string(foundSecret.Data["token"])
+			fmt.Println("find token", token)
 
 			ginkgo.By("managedcluster1 join hub")
 			err = e2e.Clusteradm().Join(
 				"--context", e2e.Cluster().ManagedCluster1().Context(),
-				"--hub-token", e2e.CommandResult().Token(),
+				"--hub-token", token,
 				"--hub-apiserver", e2e.CommandResult().Host(),
 				"--force-internal-endpoint-lookup",
 				"--cluster-name", e2e.Cluster().ManagedCluster1().Name(),

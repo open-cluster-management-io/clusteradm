@@ -205,8 +205,9 @@ func (a *Applier) ApplyCustomResource(
 	}
 
 	required.SetResourceVersion(existing.GetResourceVersion())
-	_, err = dr.Namespace(required.GetNamespace()).
+	actual, err := dr.Namespace(required.GetNamespace()).
 		Update(context.TODO(), required, metav1.UpdateOptions{})
+	a.GetCache().UpdateCachedResourceMetadata(required, actual)
 
 	if err != nil {
 		return output, err

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -38,7 +38,7 @@ func TestIntegrationEnableAddons(t *testing.T) {
 	ginkgo.RunSpecs(t, "Integration Enable Addons Suite")
 }
 
-var _ = ginkgo.BeforeSuite(func(done ginkgo.Done) {
+var _ = ginkgo.BeforeSuite(func() {
 	ginkgo.By("bootstrapping test environment")
 
 	// start a kube-apiserver
@@ -66,8 +66,7 @@ var _ = ginkgo.BeforeSuite(func(done ginkgo.Done) {
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	restConfig = cfg
-	close(done)
-}, 60)
+})
 
 var _ = ginkgo.AfterSuite(func() {
 	ginkgo.By("tearing down the test environment")

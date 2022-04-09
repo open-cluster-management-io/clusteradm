@@ -39,7 +39,6 @@ var (
 	genericScheme = runtime.NewScheme()
 	genericCodecs = serializer.NewCodecFactory(genericScheme)
 	genericCodec  = genericCodecs.UniversalDeserializer()
-	newAccessor   = meta.NewAccessor()
 )
 
 //ApplyDeployments applies a appsv1.Deployment template

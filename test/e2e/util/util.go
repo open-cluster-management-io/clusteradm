@@ -3,9 +3,11 @@ package util
 
 import (
 	"fmt"
-	"os"
-
+	. "github.com/onsi/gomega"
 	"open-cluster-management.io/clusteradm/pkg/config"
+	"os"
+	"path"
+	"path/filepath"
 )
 
 // PrepareE2eEnvironment will init the e2e environment and join managedcluster1 to hub.
@@ -19,6 +21,34 @@ func PrepareE2eEnvironment() *TestE2eConfig {
 
 // initE2E get environment variables and init e2e environment.
 func initE2E() *TestE2eConfig {
+
+	pwd, err := os.Getwd()
+	Expect(err).To(BeNil())
+	projectName := path.Base(path.Clean(path.Join(pwd, "..", "..", "..")))
+	if v := os.Getenv("HUB_NAME"); v == "" {
+		os.Setenv("HUB_NAME", projectName+"-e2e-test-hub")
+	}
+	if v := os.Getenv("HUB_CTX"); v == "" {
+		os.Setenv("HUB_CTX", "kind-"+os.Getenv("HUB_NAME"))
+	}
+	if v := os.Getenv("MANAGED_CLUSTER1_NAME"); v == "" {
+		os.Setenv("MANAGED_CLUSTER1_NAME", projectName+"-e2e-test-c1")
+	}
+	if v := os.Getenv("MANAGED_CLUSTER1_CTX"); v == "" {
+		os.Setenv("MANAGED_CLUSTER1_CTX", "kind-"+os.Getenv("MANAGED_CLUSTER1_NAME"))
+	}
+	if v := os.Getenv("MANAGED_CLUSTER2_NAME"); v == "" {
+		os.Setenv("MANAGED_CLUSTER2_NAME", projectName+"-e2e-test-c2")
+	}
+	if v := os.Getenv("MANAGED_CLUSTER2_CTX"); v == "" {
+		os.Setenv("MANAGED_CLUSTER2_CTX", "kind-"+os.Getenv("MANAGED_CLUSTER2_NAME"))
+	}
+	if v:= os.Getenv("KUBECONFIG"); v == "" {
+		home, err := os.UserHomeDir()
+		Expect(err).To(BeNil())
+		os.Setenv("KUBECONFIG", filepath.Join(home, ".kube", "config"))
+	}
+
 	e2eConf := NewTestE2eConfig(
 		os.Getenv("KUBECONFIG"),
 		os.Getenv("HUB_NAME"), os.Getenv("HUB_CTX"),

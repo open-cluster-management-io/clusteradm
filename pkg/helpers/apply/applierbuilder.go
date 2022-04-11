@@ -41,13 +41,22 @@ type iApplierBuilder interface {
 	WithTemplateFuncMap(fm template.FuncMap) *ApplierBuilder
 	//WithOwner add an ownerref to the object
 	WithOwner(owner runtime.Object, blockOwnerDeletion, controller bool, scheme *runtime.Scheme) *ApplierBuilder
+	//WithCache add cache
+	WithCache(cache resourceapply.ResourceCache) *ApplierBuilder
 }
 
-var _ iApplierBuilder = &ApplierBuilder{}
+var _ iApplierBuilder = NewApplierBuilder()
+
+//New ApplyBuilder
+func NewApplierBuilder() *ApplierBuilder {
+	return &ApplierBuilder{}
+}
 
 //Build returns the builded applier
 func (a *ApplierBuilder) Build() Applier {
-	a.cache = resourceapply.NewResourceCache()
+	if a.cache == nil {
+		a.cache = NewResourceCache()
+	}
 	return a.Applier
 }
 
@@ -75,4 +84,14 @@ func (a *ApplierBuilder) WithOwner(owner runtime.Object, blockOwnerDeletion, con
 	a.controller = &controller
 	a.scheme = scheme
 	return a
+}
+
+//WithCache set a the cache instead of using the default cache created on the Build()
+func (a *ApplierBuilder) WithCache(cache resourceapply.ResourceCache) *ApplierBuilder {
+	a.cache = cache
+	return a
+}
+
+func NewResourceCache() resourceapply.ResourceCache {
+	return resourceapply.NewResourceCache()
 }

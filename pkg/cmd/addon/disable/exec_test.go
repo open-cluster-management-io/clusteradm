@@ -59,7 +59,7 @@ var _ = ginkgo.Describe("addon disable", func() {
 	assertEnableAddon := func(addons []string, clusters []string, ns string) {
 
 		reader := scenario.GetScenarioResourcesReader()
-		applierBuilder := &apply.ApplierBuilder{}
+		applierBuilder := apply.NewApplierBuilder()
 		applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
 
 		for _, addon := range addons {

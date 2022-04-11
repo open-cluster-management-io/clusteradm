@@ -96,7 +96,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 	output := make([]string, 0)
 	reader := scenario.GetScenarioResourcesReader()
 
-	applierBuilder := &apply.ApplierBuilder{}
+	applierBuilder := apply.NewApplierBuilder()
 	applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
 
 	for _, addon := range addons {

@@ -41,6 +41,10 @@ var (
 	genericCodec  = genericCodecs.UniversalDeserializer()
 )
 
+func (a *Applier) GetCache() resourceapply.ResourceCache {
+	return a.cache
+}
+
 //ApplyDeployments applies a appsv1.Deployment template
 func (a *Applier) ApplyDeployments(
 	reader asset.ScenarioReader,

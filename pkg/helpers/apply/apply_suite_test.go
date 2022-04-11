@@ -93,7 +93,7 @@ var _ = Describe("setOwnerRef", func() {
 		})
 		By("setReferenceOwner", func() {
 			reader := scenario.GetScenarioResourcesReader()
-			applierBuilder := &ApplierBuilder{}
+			applierBuilder := NewApplierBuilder()
 			applier := applierBuilder.
 				WithClient(kubeClient, apiExtensionsClient, dynamicClient).
 				WithTemplateFuncMap(FuncMap()).WithOwner(nsOwner, false, false, scheme.Scheme).
@@ -128,7 +128,7 @@ var _ = Describe("setOwnerRef", func() {
 		})
 		By("setReferenceOwner", func() {
 			reader := scenario.GetScenarioResourcesReader()
-			applierBuilder := &ApplierBuilder{}
+			applierBuilder := NewApplierBuilder()
 			applier := applierBuilder.
 				WithClient(kubeClient, apiExtensionsClient, dynamicClient).
 				WithTemplateFuncMap(FuncMap()).WithOwner(managedClusterOwner, false, false, scheme.Scheme).
@@ -153,7 +153,7 @@ var _ = Describe("setOwnerRef", func() {
 		var deployment *appsv1.Deployment
 		By("Creating cluster owner", func() {
 			reader := scenario.GetScenarioResourcesReader()
-			applierBuilder := &ApplierBuilder{}
+			applierBuilder := NewApplierBuilder()
 			applier := applierBuilder.
 				WithClient(kubeClient, apiExtensionsClient, dynamicClient).
 				WithTemplateFuncMap(FuncMap()).
@@ -171,7 +171,7 @@ var _ = Describe("setOwnerRef", func() {
 		})
 		By("setReferenceOwner", func() {
 			reader := scenario.GetScenarioResourcesReader()
-			applierBuilder := &ApplierBuilder{}
+			applierBuilder := NewApplierBuilder()
 			applier := applierBuilder.
 				WithClient(kubeClient, apiExtensionsClient, dynamicClient).
 				WithTemplateFuncMap(FuncMap()).WithOwner(deployment, false, false, scheme.Scheme).
@@ -201,7 +201,7 @@ var _ = Describe("setOwnerRef", func() {
 		var deployment *appsv1.Deployment
 		By("Creating cluster owner", func() {
 			reader := scenario.GetScenarioResourcesReader()
-			applierBuilder := &ApplierBuilder{}
+			applierBuilder := NewApplierBuilder()
 			applier := applierBuilder.
 				WithClient(kubeClient, apiExtensionsClient, dynamicClient).
 				WithTemplateFuncMap(FuncMap()).
@@ -219,7 +219,7 @@ var _ = Describe("setOwnerRef", func() {
 		})
 		By("setReferenceOwner", func() {
 			reader := scenario.GetScenarioResourcesReader()
-			applierBuilder := &ApplierBuilder{}
+			applierBuilder := NewApplierBuilder()
 			applier := applierBuilder.
 				WithClient(kubeClient, apiExtensionsClient, dynamicClient).
 				WithTemplateFuncMap(FuncMap()).WithOwner(deployment, true, true, scheme.Scheme).

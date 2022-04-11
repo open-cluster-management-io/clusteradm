@@ -92,7 +92,7 @@ func (o *Options) run() error {
 		return err
 	}
 
-	applierBuilder := &apply.ApplierBuilder{}
+	applierBuilder := apply.NewApplierBuilder()
 	applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
 
 	files := []string{
@@ -216,7 +216,6 @@ func waitForServiceAccountToken(kubeClient kubernetes.Interface) error {
 	})
 }
 
-
 func waitUntilRegistrationOperatorReady(f util.Factory, timeout int64) error {
 	var restConfig *rest.Config
 	restConfig, err := f.ToRESTConfig()
@@ -267,8 +266,6 @@ func waitUntilRegistrationOperatorReady(f util.Factory, timeout int64) error {
 			return meta.IsStatusConditionTrue(conds, "Ready")
 		})
 }
-
-
 
 func pollServiceAccountToken(kubeClient kubernetes.Interface) (bool, error) {
 	_, err := helpers.GetBootstrapTokenFromSA(kubeClient)

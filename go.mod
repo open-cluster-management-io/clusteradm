@@ -8,7 +8,6 @@ require (
 	github.com/disiqueira/gotree v1.0.0
 	github.com/fatih/color v1.13.0
 	github.com/ghodss/yaml v1.0.0
-	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/ginkgo/v2 v2.1.3
 	github.com/onsi/gomega v1.17.0
 	github.com/openshift/library-go v0.0.0-20220405134141-226b07263a02

@@ -55,7 +55,7 @@ func NewApplierBuilder() *ApplierBuilder {
 //Build returns the builded applier
 func (a *ApplierBuilder) Build() Applier {
 	if a.cache == nil {
-		a.cache = resourceapply.NewResourceCache()
+		a.cache = NewResourceCache()
 	}
 	return a.Applier
 }
@@ -86,8 +86,14 @@ func (a *ApplierBuilder) WithOwner(owner runtime.Object, blockOwnerDeletion, con
 	return a
 }
 
+<<<<<<< HEAD
 func (a *ApplierBuilder) WithCache(cache resourceapply.ResourceCache) *ApplierBuilder {
 	a.cache = NewResourceCache()
+=======
+//WithCache set a the cache instead of using the default cache created on the Build()
+func (a *ApplierBuilder) WithCache(cache resourceapply.ResourceCache) *ApplierBuilder {
+	a.cache = cache
+>>>>>>> upstream/main
 	return a
 }
 

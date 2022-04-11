@@ -33,6 +33,7 @@ build-bin:
 	@rm -rf bin
 	@mkdir -p bin
 	GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_darwin_amd64.tar.gz LICENSE -C bin/ clusteradm
+	GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_darwin_arm64.tar.gz LICENSE -C bin/ clusteradm
 	GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_linux_amd64.tar.gz LICENSE -C bin/ clusteradm
 	GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_linux_arm64.tar.gz LICENSE -C bin/ clusteradm
 	GOOS=linux GOARCH=ppc64le go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_linux_ppc64le.tar.gz LICENSE -C bin/ clusteradm

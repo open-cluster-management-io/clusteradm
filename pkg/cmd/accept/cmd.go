@@ -20,7 +20,7 @@ var example = `
 
 // NewCmd ...
 func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *cobra.Command {
-	o := newOptions(clusteradmFlags, streams)
+	o := NewOptions(clusteradmFlags, streams)
 
 	cmd := &cobra.Command{
 		Use:          "accept",
@@ -36,10 +36,10 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 			if err := o.complete(c, args); err != nil {
 				return err
 			}
-			if err := o.validate(); err != nil {
+			if err := o.Validate(); err != nil {
 				return err
 			}
-			if err := o.run(); err != nil {
+			if err := o.Run(); err != nil {
 				return err
 			}
 
@@ -47,8 +47,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		},
 	}
 
-	cmd.Flags().StringVar(&o.clusters, "clusters", "", "Names of the cluster to accept (comma separated)")
-	cmd.Flags().BoolVar(&o.wait, "wait", false, "If set, wait for the managedcluster and CSR in foreground.")
-	cmd.Flags().BoolVar(&o.skipApproveCheck, "skip-approve-check", false, "If set, then skip check and approve csr directly.")
+	cmd.Flags().StringVar(&o.Clusters, "clusters", "", "Names of the cluster to accept (comma separated)")
+	cmd.Flags().BoolVar(&o.Wait, "wait", false, "If set, wait for the managedcluster and CSR in foreground.")
+	cmd.Flags().BoolVar(&o.SkipApproveCheck, "skip-approve-check", false, "If set, then skip check and approve csr directly.")
 	return cmd
 }

@@ -20,27 +20,27 @@ import (
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
-	klog.V(1).InfoS("disable options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.names, "clusters", o.clusters, "all-clusters", o.allclusters)
+	klog.V(1).InfoS("disable options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.Names, "clusters", o.Clusters, "all-clusters", o.Allclusters)
 
 	return nil
 }
 
-func (o *Options) validate() (err error) {
-	if len(o.names) == 0 {
+func (o *Options) Validate() (err error) {
+	if len(o.Names) == 0 {
 		return fmt.Errorf("names is missing")
 	}
 
-	if !o.allclusters && len(o.clusters) == 0 {
+	if !o.Allclusters && len(o.Clusters) == 0 {
 		return fmt.Errorf("clusters is missing")
 	}
 
-	if o.allclusters && len(o.clusters) != 0 {
+	if o.Allclusters && len(o.Clusters) != 0 {
 		return fmt.Errorf("flag --all-cluster and --cluster can not be set together")
 	}
 	return nil
 }
 
-func (o *Options) run() (err error) {
+func (o *Options) Run() (err error) {
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
@@ -60,10 +60,10 @@ func (o *Options) run() (err error) {
 		return err
 	}
 
-	addons := sets.NewString(o.names...)
+	addons := sets.NewString(o.Names...)
 
 	var clusters sets.String
-	if o.allclusters {
+	if o.Allclusters {
 		clusters = sets.NewString()
 		mcllist, err := clusterClient.ClusterV1().ManagedClusters().List(context.TODO(),
 			metav1.ListOptions{})
@@ -74,7 +74,7 @@ func (o *Options) run() (err error) {
 			clusters.Insert(item.ObjectMeta.Name)
 		}
 	} else {
-		clusters = sets.NewString(o.clusters...)
+		clusters = sets.NewString(o.Clusters...)
 	}
 
 	klog.V(3).InfoS("addon to be disabled with cluster values:", "addon", addons.List(), "clusters", clusters.List())

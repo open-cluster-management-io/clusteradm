@@ -10,18 +10,18 @@ type Options struct {
 	//ClusteradmFlags: The generic optiosn from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 	//A list of comma separated addon names
-	names []string
+	Names []string
 	//The sepcified namespace for addon to install
-	namespace string
+	Namespace string
 	//A list of comma separated cluster names
-	clusters []string
+	Clusters []string
 	//The file to output the resources will be sent to the file.
-	outputFile string
+	OutputFile string
 	//
 	Streams genericclioptions.IOStreams
 }
 
-func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
+func NewOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
 		Streams:         streams,

@@ -58,7 +58,7 @@ var _ = ginkgo.Describe("addon enable", func() {
 			assertCreatingClusters(cluster1Name)
 
 			o := Options{
-				namespace: "open-cluster-management-agent-addon",
+				Namespace: "open-cluster-management-agent-addon",
 				Streams:   streams,
 			}
 
@@ -82,7 +82,7 @@ var _ = ginkgo.Describe("addon enable", func() {
 			assertCreatingClusters(cluster2Name)
 
 			o := Options{
-				namespace: "open-cluster-management-agent-addon",
+				Namespace: "open-cluster-management-agent-addon",
 				Streams:   streams,
 			}
 

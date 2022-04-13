@@ -30,30 +30,30 @@ const (
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
-	klog.V(1).InfoS("accept options:", "dry-run", o.ClusteradmFlags.DryRun, "clusters", o.clusters, "wait", o.wait)
+	klog.V(1).InfoS("accept options:", "dry-run", o.ClusteradmFlags.DryRun, "clusters", o.Clusters, "wait", o.Wait)
 	alreadyProvidedCluster := make(map[string]bool)
 	clusters := make([]string, 0)
-	if o.clusters != "" {
-		cs := strings.Split(o.clusters, ",")
+	if o.Clusters != "" {
+		cs := strings.Split(o.Clusters, ",")
 		for _, c := range cs {
 			if _, ok := alreadyProvidedCluster[c]; !ok {
 				alreadyProvidedCluster[c] = true
 				clusters = append(clusters, strings.TrimSpace(c))
 			}
 		}
-		o.values.clusters = clusters
+		o.Values.Clusters = clusters
 	} else {
 		return fmt.Errorf("values or name are missing")
 	}
-	klog.V(3).InfoS("values:", "clusters", o.values.clusters)
+	klog.V(3).InfoS("values:", "clusters", o.Values.Clusters)
 	return nil
 }
 
-func (o *Options) validate() error {
+func (o *Options) Validate() error {
 	return nil
 }
 
-func (o *Options) run() error {
+func (o *Options) Run() error {
 	kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
 	if err != nil {
 		return err
@@ -70,8 +70,8 @@ func (o *Options) run() error {
 }
 
 func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient *clusterclientset.Clientset) (err error) {
-	for _, clusterName := range o.values.clusters {
-		if !o.wait {
+	for _, clusterName := range o.Values.Clusters {
+		if !o.Wait {
 			var csrApproved bool
 			csrApproved, err = o.accept(kubeClient, clusterClient, clusterName, false)
 			if err == nil && !csrApproved {
@@ -118,7 +118,7 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 	}
 	var csr *certificatesv1.CertificateSigningRequest
 	var passedCSRs []certificatesv1.CertificateSigningRequest
-	if o.skipApproveCheck {
+	if o.SkipApproveCheck {
 		passedCSRs = csrs.Items
 	} else {
 		for _, item := range csrs.Items {

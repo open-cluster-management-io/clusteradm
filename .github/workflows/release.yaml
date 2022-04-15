@@ -33,6 +33,7 @@ jobs:
           body_path: CHANGELOG.md
           files: |
             bin/clusteradm_darwin_amd64.tar.gz
+            bin/clusteradm_darwin_arm64.tar.gz
             bin/clusteradm_linux_amd64.tar.gz
             bin/clusteradm_linux_arm64.tar.gz
             bin/clusteradm_linux_ppc64le.tar.gz

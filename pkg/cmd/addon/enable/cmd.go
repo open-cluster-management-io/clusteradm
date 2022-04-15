@@ -20,7 +20,7 @@ var example = `
 
 // NewCmd...
 func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *cobra.Command {
-	o := newOptions(clusteradmFlags, streams)
+	o := NewOptions(clusteradmFlags, streams)
 
 	cmd := &cobra.Command{
 		Use:          "enable",
@@ -37,10 +37,10 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 			if err := o.complete(c, args); err != nil {
 				return err
 			}
-			if err := o.validate(); err != nil {
+			if err := o.Validate(); err != nil {
 				return err
 			}
-			if err := o.run(); err != nil {
+			if err := o.Run(); err != nil {
 				return err
 			}
 
@@ -48,10 +48,10 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		},
 	}
 
-	cmd.Flags().StringSliceVar(&o.names, "name", []string{}, "Names of the add-on to deploy (comma separated)")
-	cmd.Flags().StringVarP(&o.namespace, "namespace", "n", "open-cluster-management-agent-addon", "Specified namespace to addon addon")
-	cmd.Flags().StringSliceVar(&o.clusters, "cluster", []string{}, "Names of the managed cluster to deploy the add-on to (comma separated)")
-	cmd.Flags().StringVar(&o.outputFile, "output-file", "", "The generated resources will be copied in the specified file")
+	cmd.Flags().StringSliceVar(&o.Names, "name", []string{}, "Names of the add-on to deploy (comma separated)")
+	cmd.Flags().StringVarP(&o.Namespace, "namespace", "n", "open-cluster-management-agent-addon", "Specified namespace to addon addon")
+	cmd.Flags().StringSliceVar(&o.Clusters, "cluster", []string{}, "Names of the managed cluster to deploy the add-on to (comma separated)")
+	cmd.Flags().StringVar(&o.OutputFile, "output-file", "", "The generated resources will be copied in the specified file")
 
 	return cmd
 }

@@ -36,26 +36,26 @@ func NewClusterAddonInfo(cn string, ns string, an string) ClusterAddonInfo {
 }
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
-	klog.V(1).InfoS("enable options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.names, "clusters", o.clusters, "output-file", o.outputFile)
+	klog.V(1).InfoS("enable options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.Names, "clusters", o.Clusters, "output-file", o.OutputFile)
 
 	return nil
 }
 
-func (o *Options) validate() error {
-	if len(o.names) == 0 {
+func (o *Options) Validate() error {
+	if len(o.Names) == 0 {
 		return fmt.Errorf("names is missing")
 	}
 
-	if len(o.clusters) == 0 {
+	if len(o.Clusters) == 0 {
 		return fmt.Errorf("clusters is misisng")
 	}
 
 	return nil
 }
 
-func (o *Options) run() error {
-	addons := sets.NewString(o.names...)
-	clusters := sets.NewString(o.clusters...)
+func (o *Options) Run() error {
+	addons := sets.NewString(o.Names...)
+	clusters := sets.NewString(o.Clusters...)
 
 	klog.V(3).InfoS("values:", "addon", addons, "clusters", clusters)
 
@@ -101,16 +101,16 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 
 	for _, addon := range addons {
 		for _, clusterName := range clusters {
-			cai := NewClusterAddonInfo(clusterName, o.namespace, addon)
+			cai := NewClusterAddonInfo(clusterName, o.Namespace, addon)
 			out, err := applier.ApplyCustomResources(reader, cai, dryRun, "", "addons/app/addon.yaml")
 			if err != nil {
 				return err
 			}
 			output = append(output, out...)
 
-			fmt.Fprintf(o.Streams.Out, "Deploying %s add-on to namespaces %s of managed cluster: %s.\n", addon, o.namespace, clusterName)
+			fmt.Fprintf(o.Streams.Out, "Deploying %s add-on to namespaces %s of managed cluster: %s.\n", addon, o.Namespace, clusterName)
 		}
 	}
 
-	return apply.WriteOutput(o.outputFile, output)
+	return apply.WriteOutput(o.OutputFile, output)
 }

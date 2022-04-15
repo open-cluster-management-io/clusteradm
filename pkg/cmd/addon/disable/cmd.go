@@ -22,7 +22,7 @@ var example = `
 
 // NewCmd...
 func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *cobra.Command {
-	o := newOptions(clusteradmFlags, streams)
+	o := NewOptions(clusteradmFlags, streams)
 
 	cmd := &cobra.Command{
 		Use:          "disable",
@@ -39,10 +39,10 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 			if err := o.complete(c, args); err != nil {
 				return err
 			}
-			if err := o.validate(); err != nil {
+			if err := o.Validate(); err != nil {
 				return err
 			}
-			if err := o.run(); err != nil {
+			if err := o.Run(); err != nil {
 				return err
 			}
 
@@ -50,9 +50,9 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		},
 	}
 
-	cmd.Flags().StringSliceVar(&o.names, "name", []string{}, "Names of the add-on to deploy (comma separated)")
-	cmd.Flags().StringSliceVar(&o.clusters, "cluster", []string{}, "Names of the managed cluster to deploy the add-on to (comma separated)")
-	cmd.Flags().BoolVar(&o.allclusters, "all-clusters", false, "Make all managed clusters to disable the add-on")
+	cmd.Flags().StringSliceVar(&o.Names, "name", []string{}, "Names of the add-on to deploy (comma separated)")
+	cmd.Flags().StringSliceVar(&o.Clusters, "cluster", []string{}, "Names of the managed cluster to deploy the add-on to (comma separated)")
+	cmd.Flags().BoolVar(&o.Allclusters, "all-clusters", false, "Make all managed clusters to disable the add-on")
 
 	return cmd
 }

@@ -98,4 +98,4 @@ Install specific built-in add-on(s) to the hub cluster.
 
 Enable specific add-on(s) agent deployment to the given managed clusters of the specify namespace
 
-`clusteradm addon enable --names application-manager --namespace <namespace> --cluster <cluster1>,<cluster2>,....`
+`clusteradm addon enable --name application-manager --namespace <namespace> --cluster <cluster1>,<cluster2>,....`

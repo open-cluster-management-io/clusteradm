@@ -13,7 +13,7 @@ import (
 
 var example = `
 # Join a cluster to the hub
-%[1]s join --hub-token <tokenID.tokenSecret> --hub-apiserver <hub_apiserveR_url> --name <cluster_name>
+%[1]s join --hub-token <tokenID.tokenSecret> --hub-apiserver <hub_apiserver_url> --cluster-name <cluster_name>
 `
 
 // NewCmd ...

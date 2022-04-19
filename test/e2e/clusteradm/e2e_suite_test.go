@@ -66,10 +66,8 @@ var _ = ginkgo.BeforeSuite(func() {
 	clusterClient, err = clusterv1client.NewForConfig(hubConfig)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
-	clusterv1.AddToScheme(scheme.Scheme)
+	err = clusterv1.AddToScheme(scheme.Scheme)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	restConfig = hubConfig
 })
-
-

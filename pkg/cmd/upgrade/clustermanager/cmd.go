@@ -20,9 +20,9 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	o := newOptions(clusteradmFlags, streams)
 
 	cmd := &cobra.Command{
-		Use:   "clustermanager",
-		Short: "use this command to upgrade the clustermanager.",
-		Long: "use this command to upgrade the clustermanager.",
+		Use:          "clustermanager",
+		Short:        "use this command to upgrade the clustermanager.",
+		Long:         "use this command to upgrade the clustermanager.",
 		Example:      fmt.Sprintf(example, helpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRun: func(c *cobra.Command, args []string) {

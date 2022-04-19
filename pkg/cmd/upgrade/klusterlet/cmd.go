@@ -20,9 +20,9 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	o := newOptions(clusteradmFlags, streams)
 
 	cmd := &cobra.Command{
-		Use:   "klusterlet",
-		Short: "use this command to upgrade the klusterlet.",
-		Long: "use this command to upgrade the klusterlet.",
+		Use:          "klusterlet",
+		Short:        "use this command to upgrade the klusterlet.",
+		Long:         "use this command to upgrade the klusterlet.",
 		Example:      fmt.Sprintf(example, helpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRun: func(c *cobra.Command, args []string) {

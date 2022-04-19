@@ -126,5 +126,5 @@ func main() {
 }
 
 func runHelp(cmd *cobra.Command, args []string) {
-	cmd.Help()
+	_ = cmd.Help()
 }

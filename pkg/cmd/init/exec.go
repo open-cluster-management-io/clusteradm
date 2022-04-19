@@ -2,10 +2,8 @@
 package init
 
 import (
-	"context"
 	"fmt"
 	"os"
-	"sync/atomic"
 	"time"
 
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
@@ -15,17 +13,11 @@ import (
 	helperwait "open-cluster-management.io/clusteradm/pkg/helpers/wait"
 
 	"github.com/spf13/cobra"
-	corev1 "k8s.io/api/core/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
-	"k8s.io/kubectl/pkg/cmd/util"
 	version "open-cluster-management.io/clusteradm/pkg/helpers/version"
 )
 
@@ -187,6 +179,9 @@ func (o *Options) run() error {
 
 	if len(o.outputJoinCommandFile) > 0 {
 		sh, err := os.OpenFile(o.outputJoinCommandFile, os.O_CREATE|os.O_WRONLY, 0755)
+		if err != nil {
+			return err
+		}
 		_, err = fmt.Fprintf(sh, "%s --cluster-name $1", cmd)
 		if err != nil {
 			return err
@@ -214,57 +209,6 @@ func waitForServiceAccountToken(kubeClient kubernetes.Interface) error {
 	return wait.PollImmediate(1*time.Second, 10*time.Second, func() (bool, error) {
 		return pollServiceAccountToken(kubeClient)
 	})
-}
-
-func waitUntilRegistrationOperatorReady(f util.Factory, timeout int64) error {
-	var restConfig *rest.Config
-	restConfig, err := f.ToRESTConfig()
-	if err != nil {
-		return err
-	}
-	client, err := kubernetes.NewForConfig(restConfig)
-	if err != nil {
-		return err
-	}
-
-	phase := &atomic.Value{}
-	phase.Store("")
-	text := "Waiting for registration operator to become ready..."
-	operatorSpinner := printer.NewSpinnerWithStatus(
-		text,
-		time.Second,
-		"Registration operator is now available.\n",
-		func() string {
-			return phase.Load().(string)
-		})
-	operatorSpinner.Start()
-	defer operatorSpinner.Stop()
-
-	return helpers.WatchUntil(
-		func() (watch.Interface, error) {
-			return client.CoreV1().Pods("open-cluster-management").
-				Watch(context.TODO(), metav1.ListOptions{
-					TimeoutSeconds: &timeout,
-					LabelSelector:  "app=cluster-manager",
-				})
-		},
-		func(event watch.Event) bool {
-			pod, ok := event.Object.(*corev1.Pod)
-			if !ok {
-				return false
-			}
-			phase.Store(printer.GetSpinnerPodStatus(pod))
-			conds := make([]metav1.Condition, len(pod.Status.Conditions))
-			for i := range pod.Status.Conditions {
-				conds[i] = metav1.Condition{
-					Type:    string(pod.Status.Conditions[i].Type),
-					Status:  metav1.ConditionStatus(pod.Status.Conditions[i].Status),
-					Reason:  pod.Status.Conditions[i].Reason,
-					Message: pod.Status.Conditions[i].Message,
-				}
-			}
-			return meta.IsStatusConditionTrue(conds, "Ready")
-		})
 }
 
 func pollServiceAccountToken(kubeClient kubernetes.Interface) (bool, error) {

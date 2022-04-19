@@ -43,7 +43,7 @@ func initE2E() *TestE2eConfig {
 	if v := os.Getenv("MANAGED_CLUSTER2_CTX"); v == "" {
 		os.Setenv("MANAGED_CLUSTER2_CTX", "kind-"+os.Getenv("MANAGED_CLUSTER2_NAME"))
 	}
-	if v:= os.Getenv("KUBECONFIG"); v == "" {
+	if v := os.Getenv("KUBECONFIG"); v == "" {
 		home, err := os.UserHomeDir()
 		Expect(err).To(BeNil())
 		os.Setenv("KUBECONFIG", filepath.Join(home, ".kube", "config"))

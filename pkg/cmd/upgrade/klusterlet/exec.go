@@ -19,6 +19,7 @@ import (
 )
 
 //TODO add to a common folder
+//nolint:deadcode,varcheck
 const (
 	klusterletName                 = "klusterlet"
 	registrationOperatorNamespace  = "open-cluster-management"

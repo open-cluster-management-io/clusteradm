@@ -22,6 +22,7 @@ clean: clean-test clean-e2e
 .PHONY: verify
 verify:
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.45.2
+	go vet ./...
 	golangci-lint run -E gofmt ./...
 
 

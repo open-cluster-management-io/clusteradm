@@ -101,9 +101,7 @@ func newClusteradmCmd(flag bool, handled *HandledOutput, subcommand string, args
 		if err != nil {
 			return err
 		}
-		if err := c.Start(); err != nil {
-			return err
-		}
+		_ = c.Start()
 
 		var h HandledOutput
 		go func(t *HandledOutput) {
@@ -119,9 +117,7 @@ func newClusteradmCmd(flag bool, handled *HandledOutput, subcommand string, args
 			}
 		}(&h)
 
-		if err := c.Wait(); err != nil {
-			return err
-		}
+		_ = c.Wait()
 		*handled = h
 		return nil
 	}

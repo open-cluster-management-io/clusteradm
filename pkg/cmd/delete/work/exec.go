@@ -55,7 +55,7 @@ func (o *Options) deleteWork(workClient *workclientset.Clientset) error {
 	work, err := workClient.WorkV1().ManifestWorks(o.Cluster).Get(context.TODO(), o.Workname, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			fmt.Fprintf(o.Streams.Out, "work %s is already deleted\n", o.Workname)
+			fmt.Fprintf(o.Streams.Out, "work %s not found or is already deleted\n", o.Workname)
 			return nil
 		}
 		return err

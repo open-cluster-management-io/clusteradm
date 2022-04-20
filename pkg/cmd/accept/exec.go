@@ -150,6 +150,7 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 			return true, nil
 		}
 		csr = &passedCSR
+		// nolint:staticcheck
 		break
 	}
 

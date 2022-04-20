@@ -21,9 +21,9 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	o := newOptions(clusteradmFlags, streams)
 
 	cmd := &cobra.Command{
-		Use:          "set",
-		Short:        "set clusters to a clusterset",
-		Long:         "after setting cluster to a clusterset, clusterset contains 1 valid cluster, and in order to " +
+		Use:   "set",
+		Short: "set clusters to a clusterset",
+		Long: "after setting cluster to a clusterset, clusterset contains 1 valid cluster, and in order to " +
 			"operate that clusterset we are supposed to bind it to an existing namespace",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
 		SilenceUsage: true,

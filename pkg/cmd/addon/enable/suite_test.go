@@ -18,6 +18,7 @@ import (
 	clusterv1client "open-cluster-management.io/api/client/cluster/clientset/versioned"
 )
 
+// nolint:deadcode,varcheck
 const (
 	eventuallyTimeout    = 30 // seconds
 	eventuallyInterval   = 1  // seconds

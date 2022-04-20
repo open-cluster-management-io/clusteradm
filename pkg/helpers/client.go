@@ -275,7 +275,6 @@ func IsKlusterletsInstalled(apiExtensionsClient apiextensionsclient.Interface) (
 	return false, err
 }
 
-
 // WatchUntil starts a watch stream and holds until the condition is satisfied.
 func WatchUntil(
 	watchFunc func() (watch.Interface, error),

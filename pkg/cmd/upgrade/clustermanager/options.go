@@ -11,14 +11,14 @@ type Options struct {
 	//ClusteradmFlags: The generic optiosn from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 
-	values          Values
+	values Values
 	//The file to output the resources will be sent to the file.
 	registry string
 	//version of predefined compatible image versions
 	bundleVersion string
 	//If set, the command will hold until the OCM control plane initialized
 	wait bool
-	
+
 	Streams genericclioptions.IOStreams
 }
 
@@ -51,7 +51,6 @@ type Hub struct {
 	//image registry
 	Registry string
 }
-
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{

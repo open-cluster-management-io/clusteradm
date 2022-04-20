@@ -18,7 +18,13 @@ export GOPACKAGES   = $(shell go list ./... | grep -v /vendor | grep -v /build |
 
 .PHONY: clean
 clean: clean-test clean-e2e
-	
+
+.PHONY: verify
+verify:
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.45.2
+	go vet ./...
+	golangci-lint run --timeout=3m --modules-download-mode vendor -E gofmt ./...
+
 .PHONY: deps
 deps:
 	@$(INSTALL_DEPENDENCIES)

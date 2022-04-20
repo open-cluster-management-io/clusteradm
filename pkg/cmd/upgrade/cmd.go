@@ -19,6 +19,5 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.AddCommand(klusterlet.NewCmd(clusteradmFlags, streams))
 	cmd.AddCommand(clustermanager.NewCmd(clusteradmFlags, streams))
 
-
 	return cmd
 }

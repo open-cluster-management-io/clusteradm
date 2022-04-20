@@ -23,9 +23,9 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	o := NewOptions(clusteradmFlags, streams)
 
 	cmd := &cobra.Command{
-		Use:          "accept",
-		Short:        "accept a list of clusters",
-		Long: 		  "accept the join request from managed cluster - the CSR from your managed cluster will be approved, " +
+		Use:   "accept",
+		Short: "accept a list of clusters",
+		Long: "accept the join request from managed cluster - the CSR from your managed cluster will be approved, " +
 			"and additionally it will prescribe the OCM hub control plane to setup related resources",
 		Example:      fmt.Sprintf(example, helpers.GetExampleHeader()),
 		SilenceUsage: true,

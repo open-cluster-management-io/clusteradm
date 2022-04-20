@@ -52,7 +52,7 @@ func (o *Options) run() error {
 }
 
 func (o *Options) deleteWork(workClient *workclientset.Clientset) error {
-	work, err := workClient.WorkV1().ManifestWorks(o.Cluster).Get(context.TODO(), o.Workname, metav1.GetOptions{})
+	_, err := workClient.WorkV1().ManifestWorks(o.Cluster).Get(context.TODO(), o.Workname, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			fmt.Fprintf(o.Streams.Out, "work %s not found or is already deleted\n", o.Workname)
@@ -90,7 +90,7 @@ func (o *Options) deleteWork(workClient *workclientset.Clientset) error {
 
 	if o.Force {
 		// check whether work is already deleted, if not, remove the finalizer
-		work, err = workClient.WorkV1().ManifestWorks(o.Cluster).Get(context.TODO(), o.Workname, metav1.GetOptions{})
+		work, err := workClient.WorkV1().ManifestWorks(o.Cluster).Get(context.TODO(), o.Workname, metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			fmt.Fprintf(o.Streams.Out, "work %s is deleted\n", o.Workname)
 			return nil

@@ -86,23 +86,46 @@ func (o *Options) run() error {
 	if err != nil {
 		return err
 	}
-	kubeClient.AppsV1().Deployments("open-cluster-management").Delete(context.Background(), "cluster-manager", metav1.DeleteOptions{})
-	apiExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().Delete(context.Background(), "clustermanagers.operator.open-cluster-management.io", metav1.DeleteOptions{})
-	kubeClient.RbacV1().ClusterRoles().Delete(context.Background(), "cluster-manager", metav1.DeleteOptions{})
-	kubeClient.RbacV1().ClusterRoleBindings().Delete(context.Background(), "cluster-manager", metav1.DeleteOptions{})
-	kubeClient.CoreV1().ServiceAccounts("open-cluster-management").Delete(context.Background(), "cluster-manager", metav1.DeleteOptions{})
+	_ = kubeClient.AppsV1().
+		Deployments("open-cluster-management").
+		Delete(context.Background(), "cluster-manager", metav1.DeleteOptions{})
+	_ = apiExtensionsClient.ApiextensionsV1().
+		CustomResourceDefinitions().
+		Delete(context.Background(), "clustermanagers.operator.open-cluster-management.io", metav1.DeleteOptions{})
+	_ = kubeClient.RbacV1().
+		ClusterRoles().
+		Delete(context.Background(), "cluster-manager", metav1.DeleteOptions{})
+	_ = kubeClient.RbacV1().
+		ClusterRoleBindings().
+		Delete(context.Background(), "cluster-manager", metav1.DeleteOptions{})
+	_ = kubeClient.CoreV1().
+		ServiceAccounts("open-cluster-management").
+		Delete(context.Background(), "cluster-manager", metav1.DeleteOptions{})
 
 	if o.useBootstrapToken {
-		kubeClient.RbacV1().ClusterRoles().Delete(context.Background(), "system:open-cluster-management:bootstrap", metav1.DeleteOptions{})
-		kubeClient.RbacV1().ClusterRoleBindings().Delete(context.Background(), "cluster-bootstrap", metav1.DeleteOptions{})
-		kubeClient.CoreV1().Secrets("kube-system").Delete(context.Background(), "bootstrap-token-"+o.values.Hub.TokenID, metav1.DeleteOptions{})
+		_ = kubeClient.RbacV1().
+			ClusterRoles().
+			Delete(context.Background(), "system:open-cluster-management:bootstrap", metav1.DeleteOptions{})
+		_ = kubeClient.RbacV1().
+			ClusterRoleBindings().
+			Delete(context.Background(), "cluster-bootstrap", metav1.DeleteOptions{})
+		_ = kubeClient.CoreV1().
+			Secrets("kube-system").
+			Delete(context.Background(), "bootstrap-token-"+o.values.Hub.TokenID, metav1.DeleteOptions{})
 	} else {
-		kubeClient.RbacV1().ClusterRoles().Delete(context.Background(), "system:open-cluster-management:bootstrap", metav1.DeleteOptions{})
-		kubeClient.RbacV1().ClusterRoleBindings().Delete(context.Background(), "cluster-bootstrap-sa", metav1.DeleteOptions{})
-		kubeClient.CoreV1().ServiceAccounts("open-cluster-management").Delete(context.Background(), "cluster-bootstrap", metav1.DeleteOptions{})
-
+		_ = kubeClient.RbacV1().
+			ClusterRoles().
+			Delete(context.Background(), "system:open-cluster-management:bootstrap", metav1.DeleteOptions{})
+		_ = kubeClient.RbacV1().
+			ClusterRoleBindings().
+			Delete(context.Background(), "cluster-bootstrap-sa", metav1.DeleteOptions{})
+		_ = kubeClient.CoreV1().
+			ServiceAccounts("open-cluster-management").
+			Delete(context.Background(), "cluster-bootstrap", metav1.DeleteOptions{})
 	}
-	kubeClient.CoreV1().Namespaces().Delete(context.Background(), "open-cluster-management", metav1.DeleteOptions{})
+	_ = kubeClient.CoreV1().
+		Namespaces().
+		Delete(context.Background(), "open-cluster-management", metav1.DeleteOptions{})
 	fmt.Println("The multicluster hub control plane has been clean up successfully!")
 
 	return apply.WriteOutput(o.outputFile, output)

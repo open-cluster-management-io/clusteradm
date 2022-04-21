@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	clusteradm "open-cluster-management.io/clusteradm"
+	version "open-cluster-management.io/clusteradm/pkg/helpers/version"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -27,5 +28,8 @@ func (o *Options) run() (err error) {
 		return err
 	}
 	fmt.Printf("server release\tversion\t:%s\n", serverVersion.GitVersion)
+
+	bundleVersion := version.GetDefaultBundleVersion()
+	fmt.Printf("default bundle\tversion\t:%s\n", bundleVersion)
 	return nil
 }

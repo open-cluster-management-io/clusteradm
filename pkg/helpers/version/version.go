@@ -13,6 +13,12 @@ type VersionBundle struct {
 	Operator     string
 }
 
+var defaultBundleVersion = "0.7.0"
+
+func GetDefaultBundleVersion() string {
+	return defaultBundleVersion
+}
+
 func GetVersionBundle(version string) (VersionBundle, error) {
 
 	// supporting either "x.y.z" or "vx.y.z" format version
@@ -52,7 +58,7 @@ func GetVersionBundle(version string) (VersionBundle, error) {
 	}
 
 	// default
-	versionBundleList["default"] = versionBundleList["0.7.0"]
+	versionBundleList["default"] = versionBundleList[defaultBundleVersion]
 
 	if val, ok := versionBundleList[version]; ok {
 		return val, nil

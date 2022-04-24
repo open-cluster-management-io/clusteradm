@@ -23,8 +23,8 @@ import (
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
-	klog.V(1).InfoS("clean options:", "dry-run", o.ClusteradmFlags.DryRun, "output-file", o.outputFile)
-	o.values = Values{
+	klog.V(1).InfoS("clean options:", "dry-run", o.ClusteradmFlags.DryRun, "output-file", o.OutputFile)
+	o.Values = Values{
 		Hub: Hub{
 			TokenID:     helpers.RandStringRunes_az09(6),
 			TokenSecret: helpers.RandStringRunes_az09(16),
@@ -33,7 +33,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	return nil
 }
 
-func (o *Options) validate() error {
+func (o *Options) Validate() error {
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
@@ -52,7 +52,7 @@ func (o *Options) validate() error {
 	return nil
 }
 
-func (o *Options) run() error {
+func (o *Options) Run() error {
 	output := make([]string, 0)
 
 	//Clean ClusterManager CR resource firstly
@@ -67,7 +67,7 @@ func (o *Options) run() error {
 	}
 
 	if IsClusterManagerExist(clusterManagerClient) {
-		err = clusterManagerClient.OperatorV1().ClusterManagers().Delete(context.Background(), o.clusterManageName, metav1.DeleteOptions{})
+		err = clusterManagerClient.OperatorV1().ClusterManagers().Delete(context.Background(), o.ClusterManageName, metav1.DeleteOptions{})
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -75,7 +75,7 @@ func (o *Options) run() error {
 			b := retry.DefaultBackoff
 			b.Duration = 1 * time.Second
 
-			err = WaitResourceToBeDelete(context.Background(), clusterManagerClient, o.clusterManageName, b)
+			err = WaitResourceToBeDelete(context.Background(), clusterManagerClient, o.ClusterManageName, b)
 			if !errors.IsNotFound(err) {
 				log.Fatal("Cluster Manager resource should be deleted firstly.")
 			}
@@ -102,7 +102,7 @@ func (o *Options) run() error {
 		ServiceAccounts("open-cluster-management").
 		Delete(context.Background(), "cluster-manager", metav1.DeleteOptions{})
 
-	if o.useBootstrapToken {
+	if o.UseBootstrapToken {
 		_ = kubeClient.RbacV1().
 			ClusterRoles().
 			Delete(context.Background(), "system:open-cluster-management:bootstrap", metav1.DeleteOptions{})
@@ -111,7 +111,7 @@ func (o *Options) run() error {
 			Delete(context.Background(), "cluster-bootstrap", metav1.DeleteOptions{})
 		_ = kubeClient.CoreV1().
 			Secrets("kube-system").
-			Delete(context.Background(), "bootstrap-token-"+o.values.Hub.TokenID, metav1.DeleteOptions{})
+			Delete(context.Background(), "bootstrap-token-"+o.Values.Hub.TokenID, metav1.DeleteOptions{})
 	} else {
 		_ = kubeClient.RbacV1().
 			ClusterRoles().
@@ -128,7 +128,7 @@ func (o *Options) run() error {
 		Delete(context.Background(), "open-cluster-management", metav1.DeleteOptions{})
 	fmt.Println("The multicluster hub control plane has been clean up successfully!")
 
-	return apply.WriteOutput(o.outputFile, output)
+	return apply.WriteOutput(o.OutputFile, output)
 }
 func WaitResourceToBeDelete(context context.Context, client clustermanagerclient.Interface, name string, b wait.Backoff) error {
 

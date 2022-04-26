@@ -63,7 +63,7 @@ func converToTable(clusters *clusterapiv1.ManagedClusterList) *metav1.Table {
 			{Name: "ClusterSet", Type: "string"},
 			{Name: "CPU", Type: "string"},
 			{Name: "Memory", Type: "string"},
-			{Name: "Kuberenetes Version", Type: "string"},
+			{Name: "Kubernetes Version", Type: "string"},
 		},
 		Rows: []metav1.TableRow{},
 	}

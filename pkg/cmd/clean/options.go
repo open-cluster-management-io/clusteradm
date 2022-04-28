@@ -11,13 +11,13 @@ import (
 type Options struct {
 	//ClusteradmFlags: The generic optiosn from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
-	values          Values
+	Values          Values
 	//The cluster manager resource name
-	clusterManageName string
+	ClusterManageName string
 	//The file to output the resources will be sent to the file.
-	outputFile string
+	OutputFile string
 	//If true the bootstrap token will be used instead of the service account token
-	useBootstrapToken bool
+	UseBootstrapToken bool
 }
 
 //Valus: The values used in the template
@@ -34,7 +34,7 @@ type Hub struct {
 	TokenSecret string `json:"tokenSecret"`
 }
 
-func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
+func NewOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
 	}

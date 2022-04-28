@@ -19,7 +19,7 @@ var example = `
 
 // NewCmd ...
 func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *cobra.Command {
-	o := newOptions(clusteradmFlags, streams)
+	o := NewOptions(clusteradmFlags, streams)
 
 	cmd := &cobra.Command{
 		Use:          "clean",
@@ -34,10 +34,10 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 			if err := o.complete(c, args); err != nil {
 				return err
 			}
-			if err := o.validate(); err != nil {
+			if err := o.Validate(); err != nil {
 				return err
 			}
-			if err := o.run(); err != nil {
+			if err := o.Run(); err != nil {
 				return err
 			}
 
@@ -45,8 +45,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		},
 	}
 
-	cmd.Flags().StringVar(&o.clusterManageName, "name", "cluster-manager", "The name of the cluster manager resource")
-	cmd.Flags().StringVar(&o.outputFile, "output-file", "", "The generated resources will be copied in the specified file")
-	cmd.Flags().BoolVar(&o.useBootstrapToken, "use-bootstrap-token", false, "If set then the boostrap token will used instead of a service account token")
+	cmd.Flags().StringVar(&o.ClusterManageName, "name", "cluster-manager", "The name of the cluster manager resource")
+	cmd.Flags().StringVar(&o.OutputFile, "output-file", "", "The generated resources will be copied in the specified file")
+	cmd.Flags().BoolVar(&o.UseBootstrapToken, "use-bootstrap-token", false, "If set then the boostrap token will used instead of a service account token")
 	return cmd
 }

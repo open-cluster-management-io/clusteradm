@@ -18,7 +18,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	return nil
 }
 
-func (o *Options) validate() (err error) {
+func (o *Options) Validate() (err error) {
 	if len(o.Clustersets) == 0 {
 		return fmt.Errorf("the name of the clusterset must be specified")
 	}
@@ -28,7 +28,7 @@ func (o *Options) validate() (err error) {
 	return nil
 }
 
-func (o *Options) run() (err error) {
+func (o *Options) Run() (err error) {
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err

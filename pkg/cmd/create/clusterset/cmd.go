@@ -18,7 +18,7 @@ var example = `
 
 // NewCmd...
 func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *cobra.Command {
-	o := newOptions(clusteradmFlags, streams)
+	o := NewOptions(clusteradmFlags, streams)
 
 	cmd := &cobra.Command{
 		Use:          "clusterset",
@@ -35,10 +35,10 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 			if err := o.complete(c, args); err != nil {
 				return err
 			}
-			if err := o.validate(); err != nil {
+			if err := o.Validate(); err != nil {
 				return err
 			}
-			if err := o.run(); err != nil {
+			if err := o.Run(); err != nil {
 				return err
 			}
 

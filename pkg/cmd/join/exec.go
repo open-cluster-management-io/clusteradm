@@ -53,6 +53,11 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		WorkImageVersion:         versionBundle.Work,
 		OperatorImageVersion:     versionBundle.Operator,
 	}
+	klog.V(3).InfoS("Image version:",
+		"'registration image version'", versionBundle.Registration,
+		"'placement image version'", versionBundle.Placement,
+		"'work image version'", versionBundle.Work,
+		"'operator image version'", versionBundle.Operator)
 
 	kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
 	if err != nil {

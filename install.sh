@@ -70,19 +70,6 @@ checkExisting() {
     fi
 }
 
-getLatestRelease() {
-    local releaseUrl="https://api.github.com/repos/${GITHUB_ORG}/${GITHUB_REPO}/releases"
-    local latest_release=""
-
-    if [ "$HTTP_REQUEST_CLI" == "curl" ]; then
-        latest_release=$(curl -s $releaseUrl | grep \"tag_name\" | grep -v rc | awk 'NR==1{print $2}' |  sed -n 's/\"\(.*\)\",/\1/p')
-    else
-        latest_release=$(wget -q --header="Accept: application/json" -O - $releaseUrl | grep \"tag_name\" | grep -v rc | awk 'NR==1{print $2}' |  sed -n 's/\"\(.*\)\",/\1/p')
-    fi
-
-    ret_val=$latest_release
-}
-
 runAsRoot() {
     local CMD="$*"
 
@@ -94,11 +81,15 @@ runAsRoot() {
 }
 
 downloadFile() {
-    LATEST_RELEASE_TAG=$1
-
+    TARGET_VERSION=$1
+    DOWNLOAD_BASE="https://github.com/${GITHUB_ORG}/${GITHUB_REPO}"
     CLI_ARTIFACT="${CLI_FILENAME}_${OS}_${ARCH}.tar.gz"
-    DOWNLOAD_BASE="https://github.com/${GITHUB_ORG}/${GITHUB_REPO}/releases/download"
-    DOWNLOAD_URL="${DOWNLOAD_BASE}/${LATEST_RELEASE_TAG}/${CLI_ARTIFACT}"
+
+    if [ "$TARGET_VERSION" == "latest" ]; then
+        DOWNLOAD_URL="${DOWNLOAD_BASE}/releases/latest/download/${CLI_ARTIFACT}"
+    else
+        DOWNLOAD_URL="${DOWNLOAD_BASE}/releases/download/${TARGET_VERSION}/${CLI_ARTIFACT}"
+    fi
 
     # Create the temp directory
     TMP_ROOT=$(mktemp -dt clusteradm-install-XXXXXX)
@@ -188,18 +179,17 @@ getSystemInfo
 checkHttpRequestCLI
 
 if [ -z "$1" ]; then
-    echo "Getting the latest clusteradm CLI..."
-    getLatestRelease
+    TARGET_VERSION="latest"
 else
-    ret_val=v$1
+    TARGET_VERSION=v$1
 fi
 
-verifySupported $ret_val
+verifySupported
 checkExisting
 
-echo "Installing $ret_val OCM clusteradm CLI..."
+echo "Installing $TARGET_VERSION OCM clusteradm CLI..."
 
-downloadFile $ret_val
+downloadFile $TARGET_VERSION
 installFile
 cleanup
 

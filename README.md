@@ -6,6 +6,19 @@ A CLI and kubernetes CLI plugin that allows you to interact with open-cluster-ma
 ## Quick start
 
 ### Install the clusteradm command-line:
+
+#### From install script:
+
+```shell
+curl -L https://raw.githubusercontent.com/open-cluster-management-io/clusteradm/main/install.sh | bash
+```
+
+#### From go install:
+
+```shell
+GO111MODULE=off go get -u open-cluster-management.io/clusteradm/...
+```
+
 #### From binaries:
 
 The binaries for several platforms are available [here](https://github.com/open-cluster-management-io/clusteradm/releases).
@@ -23,6 +36,7 @@ cd clusteradm
 make build
 clusteradm
 ```
+
 ### Initialize a hub and join a cluster
 
 ```bash

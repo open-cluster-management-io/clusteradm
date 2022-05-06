@@ -24,7 +24,7 @@ spec:
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
-    name: v1
+    name: v1beta1
     schema:
       openAPIV3Schema:
         description: PolicySet is the Schema for the policysets API
@@ -69,32 +69,6 @@ spec:
                     placementBinding:
                       type: string
                     placementRule:
-                      type: string
-                  type: object
-                type: array
-              results:
-                items:
-                  description: PolicySetStatusResult shows the compliance status of
-                    a policy in the set
-                  properties:
-                    clusters:
-                      items:
-                        description: PolicySetResultCluster shows the compliance status
-                          of a policy for a specific cluster
-                        properties:
-                          clusterName:
-                            type: string
-                          clusterNamespace:
-                            type: string
-                          compliant:
-                            type: string
-                        type: object
-                      type: array
-                    compliant:
-                      type: string
-                    message:
-                      type: string
-                    policy:
                       type: string
                   type: object
                 type: array

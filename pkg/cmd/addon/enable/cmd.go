@@ -12,10 +12,26 @@ import (
 )
 
 var example = `
-# Enable addon on to the given managed clusters of the specify namespace
+## Application Manager
+
+# Enable application-manager addon on the given managed clusters in the specified namespace
 %[1]s addon enable --names application-manager --namespace namespace --clusters cluster1,cluster2
-# Enable application-manager addon specified clusters
+# Enable application-manager addon for specified clusters
 %[1]s addon enable --names application-manager --clusters cluster1,cluster2
+
+## Policy Framework
+
+# Enable policy-framework addon on to the given managed clusters in the specified namespace
+%[1]s addon enable --names policy-framework --namespace namespace --clusters cluster1,cluster2
+# Enable policy-framework addon on to the given hub clusters in the specified namespace for self-management
+%[1]s addon enable --names policy-framework --namespace namespace --clusters cluster1,cluster2 --hub
+# Enable policy-framework addon for specified clusters
+%[1]s addon enable --names policy-framework --clusters cluster1,cluster2
+
+# Enable config-policy-controller addon on the given managed clusters in the specified namespace
+%[1]s addon enable --names config-policy-controller --namespace namespace --clusters cluster1,cluster2
+# Enable config-policy-controller addon for specified clusters
+%[1]s addon enable --names config-policy-controller --clusters cluster1,cluster2
 `
 
 // NewCmd...
@@ -52,6 +68,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().StringVarP(&o.Namespace, "namespace", "n", "open-cluster-management-agent-addon", "Specified namespace to addon addon")
 	cmd.Flags().StringSliceVar(&o.Clusters, "clusters", []string{}, "Names of the managed cluster to deploy the add-on to (comma separated)")
 	cmd.Flags().StringVar(&o.OutputFile, "output-file", "", "The generated resources will be copied in the specified file")
+	cmd.Flags().BoolVar(&o.IsHub, "hub", false, "Signal whether the cluster is a hub cluster")
 
 	return cmd
 }

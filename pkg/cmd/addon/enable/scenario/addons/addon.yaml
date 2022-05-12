@@ -4,5 +4,7 @@ kind: ManagedClusterAddOn
 metadata:
   name: {{ .AddonName }}
   namespace: {{ .ClusterName }}
+  annotations:
+    {{ range $key, $value := .Annotations }}{{ $key }}: {{ "$value" }}{{ end }}
 spec:
   installNamespace: {{ .NameSpace }} 

@@ -23,13 +23,21 @@ type ClusterAddonInfo struct {
 	ClusterName string
 	NameSpace   string
 	AddonName   string
+	Annotations map[string]string
 }
 
-func NewClusterAddonInfo(cn string, ns string, an string) ClusterAddonInfo {
+func NewClusterAddonInfo(cn string, o *Options, an string) ClusterAddonInfo {
+	var anno map[string]string
+	if o.IsHub && an == "policy-framework" {
+		anno = make(map[string]string)
+		anno["addon.open-cluster-management.io/on-multicluster-hub"] = "true"
+	}
+
 	return ClusterAddonInfo{
 		ClusterName: cn,
-		NameSpace:   ns,
+		NameSpace:   o.Namespace,
 		AddonName:   an,
+		Annotations: anno,
 	}
 }
 
@@ -99,8 +107,8 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 
 	for _, addon := range addons {
 		for _, clusterName := range clusters {
-			cai := NewClusterAddonInfo(clusterName, o.Namespace, addon)
-			out, err := applier.ApplyCustomResources(reader, cai, dryRun, "", "addons/app/addon.yaml")
+			cai := NewClusterAddonInfo(clusterName, o, addon)
+			out, err := applier.ApplyCustomResources(reader, cai, dryRun, "", "addons/addon.yaml")
 			if err != nil {
 				return err
 			}

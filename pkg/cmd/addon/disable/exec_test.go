@@ -56,17 +56,18 @@ var _ = ginkgo.Describe("addon disable", func() {
 
 	streams := genericclioptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr}
 
-	assertEnableAddon := func(addons []string, clusters []string, ns string) {
+	assertEnableAddon := func(addons []string, clusters []string, o *enable.Options) {
 
 		reader := scenario.GetScenarioResourcesReader()
 		applierBuilder := apply.NewApplierBuilder()
 		applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
+		ns := o.Namespace
 
 		for _, addon := range addons {
 			for _, clus := range clusters {
-				ginkgo.By(fmt.Sprintf("Enableing %s addon on %s cluster in %s namespce", addon, clus, ns))
+				ginkgo.By(fmt.Sprintf("Enabling %s addon on %s cluster in %s namespace", addon, clus, ns))
 
-				cai := enable.NewClusterAddonInfo(clus, ns, addon)
+				cai := enable.NewClusterAddonInfo(clus, o, addon)
 				_, err := applier.ApplyCustomResources(reader, cai, false, "", "addons/addon.yaml")
 				gomega.Expect(err).ToNot(gomega.HaveOccurred(), "enable addon error")
 				fmt.Fprintf(streams.Out, "Deploying %s add-on to namespaces %s of managed cluster: %s.\n", addon, ns, clus)
@@ -81,7 +82,7 @@ var _ = ginkgo.Describe("addon disable", func() {
 
 			addons := []string{appMgrAddonName}
 			clusters := []string{cluster1Name}
-			assertEnableAddon([]string{appMgrAddonName}, []string{cluster1Name}, "default")
+			assertEnableAddon([]string{appMgrAddonName}, []string{cluster1Name}, &enable.Options{Namespace: "default"})
 
 			o := Options{
 				Streams: streams,
@@ -97,7 +98,7 @@ var _ = ginkgo.Describe("addon disable", func() {
 
 			addons := []string{appMgrAddonName}
 			clusters := []string{cluster1Name, cluster2Name}
-			assertEnableAddon(addons, clusters, "default")
+			assertEnableAddon(addons, clusters, &enable.Options{Namespace: "default"})
 
 			o := Options{
 				Streams: streams,
@@ -112,7 +113,7 @@ var _ = ginkgo.Describe("addon disable", func() {
 
 			addons := []string{appMgrAddonName}
 			clusters := []string{cluster1Name}
-			assertEnableAddon(addons, clusters, "default")
+			assertEnableAddon(addons, clusters, &enable.Options{Namespace: "default"})
 
 			wrongCluster := "no-such-addon"
 			wrongClusters := []string{wrongCluster}

@@ -39,7 +39,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd := &cobra.Command{
 		Use:   "kubectl",
 		Short: "Use kubectl through cluster-proxy addon.",
-		Long:  "Use kubectl through cluster-proxy addon.(only support managed service account token as certificate yet)",
+		Long:  "Use kubectl through cluster-proxy addon. (Only supports managed service account token as certificate.)",
 		Example: `If you want to get nodes on managed cluster named "cluster1", you can use the following command:
 		clusteradm proxy kubectl --cluster=cluster1 --sa=test --args="get nodes"`,
 		SilenceUsage: true,
@@ -135,7 +135,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	}
 
 	cmd.Flags().StringVar(&o.cluster, "cluster", "", "The name of the managed cluster")
-	cmd.Flags().StringVar(&o.managedServiceAccount, "sa", "", "the name of the managedServiceAccount")
+	cmd.Flags().StringVar(&o.managedServiceAccount, "sa", "", "The name of the managedServiceAccount")
 	cmd.Flags().StringVar(&o.kubectlArgs, "args", "", "The arguments to pass to kubectl")
 
 	return cmd
@@ -144,7 +144,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 func getProxyConfig(hubRestConfig *rest.Config, streams genericclioptions.IOStreams) (*proxyv1alpha1.ManagedProxyConfiguration, error) {
 	addonClient, err := addonv1alpha1client.NewForConfig(hubRestConfig)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed newing addon api client")
+		return nil, errors.Wrapf(err, "failed initializing addon api client")
 	}
 
 	clusterAddon, err := addonClient.AddonV1alpha1().ClusterManagementAddOns().Get(

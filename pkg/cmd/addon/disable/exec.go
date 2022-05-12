@@ -35,7 +35,7 @@ func (o *Options) Validate() (err error) {
 	}
 
 	if o.Allclusters && len(o.Clusters) != 0 {
-		return fmt.Errorf("flag --all-cluster and --cluster can not be set together")
+		return fmt.Errorf("flag --all-clusters and --clusters can not be set together")
 	}
 	return nil
 }

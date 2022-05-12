@@ -12,12 +12,12 @@ import (
 )
 
 var example = `
-# Disable application-manager addon on speccified clusters
-%[1]s addon disable --name application-manager --cluster cluster1,cluster2
+# Disable application-manager addon on specified clusters
+%[1]s addon disable --names application-manager --clusters cluster1,cluster2
 # Disable application-manager addon on all clusters
-%[1]s addon disable --name application-manager --all-clusters
-# Disable application-manager addon to the given managed clusters of the specify namespace
-%[1]s addon disable --names application-manager --namespace <namespace> --cluster <cluster1>
+%[1]s addon disable --names application-manager --all-clusters
+# Disable application-manager addon to the given managed clusters in the specified namespace
+%[1]s addon disable --names application-manager --namespace <namespace> --clusters <cluster1>
 `
 
 // NewCmd...
@@ -50,8 +50,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		},
 	}
 
-	cmd.Flags().StringSliceVar(&o.Names, "name", []string{}, "Names of the add-on to deploy (comma separated)")
-	cmd.Flags().StringSliceVar(&o.Clusters, "cluster", []string{}, "Names of the managed cluster to deploy the add-on to (comma separated)")
+	cmd.Flags().StringSliceVar(&o.Names, "names", []string{}, "Names of the add-on to deploy (comma separated)")
+	cmd.Flags().StringSliceVar(&o.Clusters, "clusters", []string{}, "Names of the managed cluster to deploy the add-on to (comma separated)")
 	cmd.Flags().BoolVar(&o.Allclusters, "all-clusters", false, "Make all managed clusters to disable the add-on")
 
 	return cmd

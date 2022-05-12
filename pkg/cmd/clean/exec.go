@@ -47,7 +47,7 @@ func (o *Options) Validate() error {
 		return err
 	}
 	if !installed {
-		return fmt.Errorf("hub not be initialized")
+		return fmt.Errorf("hub has not been initialized")
 	}
 	return nil
 }

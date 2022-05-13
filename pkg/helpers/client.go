@@ -197,14 +197,13 @@ func GetBootstrapSecretFromSA(
 		return nil, err
 	}
 	var secret *corev1.Secret
-	var prefix string
+	prefix := config.BootstrapSAName
+	if len(prefix) > 63 {
+		prefix = prefix[:37]
+	}
 	for _, objectRef := range sa.Secrets {
 		if objectRef.Namespace != "" && objectRef.Namespace != config.OpenClusterManagementNamespace {
 			continue
-		}
-		prefix = config.BootstrapSAName
-		if len(prefix) > 63 {
-			prefix = prefix[:37]
 		}
 		if strings.HasPrefix(objectRef.Name, prefix) {
 			secret, err = kubeClient.CoreV1().

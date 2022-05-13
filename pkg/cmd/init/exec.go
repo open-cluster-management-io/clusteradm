@@ -14,7 +14,6 @@ import (
 
 	"github.com/spf13/cobra"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
@@ -207,16 +206,19 @@ func waitForServiceAccountToken(kubeClient kubernetes.Interface) error {
 	tokenSpinner.Start()
 	defer tokenSpinner.Stop()
 	return wait.PollImmediate(1*time.Second, 10*time.Second, func() (bool, error) {
-		return pollServiceAccountToken(kubeClient)
+		found, err := pollServiceAccountToken(kubeClient)
+		if err != nil {
+			// Don't print a success message if there was an error
+			tokenSpinner.FinalMSG = ""
+			return found, err
+		}
+		return found, nil
 	})
 }
 
 func pollServiceAccountToken(kubeClient kubernetes.Interface) (bool, error) {
 	_, err := helpers.GetBootstrapTokenFromSA(kubeClient)
-	switch {
-	case errors.IsNotFound(err):
-		return false, err
-	case err != nil:
+	if err != nil {
 		return false, err
 	}
 	return true, nil

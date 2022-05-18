@@ -214,7 +214,7 @@ func getManagedServiceAccountToken(hubRestConfig *rest.Config, msaName string, n
 // Configurate a tmp kubeconfig and store it in a tmp file
 func genTmpKubeconfig(cluster string, msaToken string) (string, error) {
 	c := &clientcmdapi.Cluster{
-		Server:                fmt.Sprintf("https://localhost:9090/%s", cluster),
+		Server:                "https://localhost:9090",
 		InsecureSkipTLSVerify: true, // Because we are using a local proxy
 	}
 

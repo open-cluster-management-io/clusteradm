@@ -81,6 +81,7 @@ func (s *httpProxyServer) Listen(ctx context.Context, port int32) error {
 		}
 	}()
 	go func() {
+		<-ctx.Done()
 		if err := srv.Shutdown(ctx); err != nil {
 			runtime.HandleError(errors.Wrapf(err, "failed to shutdown http proxy server"))
 		}

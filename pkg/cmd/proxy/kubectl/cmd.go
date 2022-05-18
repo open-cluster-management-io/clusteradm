@@ -37,9 +37,11 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	var proxyConfig *proxyv1alpha1.ManagedProxyConfiguration
 
 	cmd := &cobra.Command{
-		Use:          "kubectl",
-		Short:        "Use kubectl through cluster-proxy addon.",
-		Long:         "Use kubectl through cluster-proxy addon.(only support managed service account token as certificate yet)",
+		Use:   "kubectl",
+		Short: "Use kubectl through cluster-proxy addon.",
+		Long:  "Use kubectl through cluster-proxy addon.(only support managed service account token as certificate yet)",
+		Example: `If you want to get nodes on managed cluster named "cluster1", you can use the following command:
+		clusteradm proxy kubectl --cluster=cluster1 --sa=test --args="get nodes"`,
 		SilenceUsage: true,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			var err error
@@ -90,7 +92,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 				hubRestConfig,
 				proxyConfig.Spec.ProxyServer.Namespace,
 				common.LabelKeyComponentName+"="+common.ComponentNameProxyServer,
-				int32(8090),
+				int32(8090), // TODO make it configurable or random later
 			)
 			portForwardClose, err := localProxy.Listen()
 			if err != nil {
@@ -101,13 +103,13 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 			// Run a http-proxy-server in goroutine
 			hps, err := newHttpProxyServer(
 				cmd.Context(),
-				int32(8090),
+				int32(8090), // TODO make it configurable or random later
 				proxyCertificates,
 			)
 			if err != nil {
 				return err
 			}
-			err = hps.Listen(int32(9090))
+			err = hps.Listen(cmd.Context(), int32(9090)) // TODO make it configurable or random later
 			if err != nil {
 				return errors.Wrapf(err, "failed listening http proxy server")
 			}
@@ -134,7 +136,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	}
 
 	cmd.Flags().StringVar(&o.cluster, "cluster", "", "The name of the managed cluster")
-	cmd.Flags().StringVar(&o.managedServiceAccount, "managedServiceAccount", "", "the name of the managedServiceAccount")
+	cmd.Flags().StringVar(&o.managedServiceAccount, "sa", "", "the name of the managedServiceAccount")
 	cmd.Flags().StringVar(&o.kubectlArgs, "args", "", "The arguments to pass to kubectl")
 
 	return cmd

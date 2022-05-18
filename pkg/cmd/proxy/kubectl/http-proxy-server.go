@@ -64,7 +64,7 @@ func newHttpProxyServer(
 	}, nil
 }
 
-func (s *httpProxyServer) Listen(port int32) error {
+func (s *httpProxyServer) Listen(ctx context.Context, port int32) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", s.handle)
 
@@ -76,6 +76,11 @@ func (s *httpProxyServer) Listen(port int32) error {
 	go func() {
 		if err := srv.ListenAndServeTLS("", ""); err != nil {
 			runtime.HandleError(errors.Wrapf(err, "failed to listen http proxy server"))
+		}
+	}()
+	go func() {
+		if err := srv.Shutdown(ctx); err != nil {
+			runtime.HandleError(errors.Wrapf(err, "failed to shutdown http proxy server"))
 		}
 	}()
 	return nil

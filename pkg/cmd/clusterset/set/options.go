@@ -17,7 +17,7 @@ type Options struct {
 	Clusterset string
 }
 
-func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
+func NewOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
 		Streams:         streams,

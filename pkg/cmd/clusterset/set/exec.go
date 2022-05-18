@@ -24,14 +24,14 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	return nil
 }
 
-func (o *Options) validate() (err error) {
+func (o *Options) Validate() (err error) {
 	if len(o.Clusters) == 0 {
 		return fmt.Errorf("cluster name must be specified in --clusters")
 	}
 	return nil
 }
 
-func (o *Options) run() (err error) {
+func (o *Options) Run() (err error) {
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err

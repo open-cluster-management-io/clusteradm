@@ -103,6 +103,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 			// Run a http-proxy-server in goroutine
 			hps, err := newHttpProxyServer(
 				cmd.Context(),
+				o.cluster,
 				int32(8090), // TODO make it configurable or random later
 				proxyCertificates,
 			)

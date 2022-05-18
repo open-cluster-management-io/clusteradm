@@ -10,7 +10,6 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -25,10 +24,12 @@ import (
 type httpProxyServer struct {
 	getTunnel       func() (konnectivity.Tunnel, error)
 	serverTLSConfig *tls.Config
+	cluster         string
 }
 
 func newHttpProxyServer(
 	ctx context.Context,
+	cluster string,
 	proxyServerPort int32,
 	pc *proxyCertificates,
 ) (*httpProxyServer, error) {
@@ -61,6 +62,7 @@ func newHttpProxyServer(
 			return tunnel, nil
 		},
 		serverTLSConfig: proxyServerTLSCfg,
+		cluster:         cluster,
 	}, nil
 }
 
@@ -86,18 +88,6 @@ func (s *httpProxyServer) Listen(ctx context.Context, port int32) error {
 	return nil
 }
 
-func parseRequestURL(requestURL string) (clusterID string, kubeAPIPath string, err error) {
-	paths := strings.Split(requestURL, "/")
-	if len(paths) <= 2 {
-		err = fmt.Errorf("requestURL format not correct, path more than 2: %s", requestURL)
-		return
-	}
-	clusterID = paths[1]                             // <clusterID>
-	kubeAPIPath = strings.Join(paths[2:], "/")       // api/pods?timeout=32s
-	kubeAPIPath = strings.Split(kubeAPIPath, "?")[0] // api/pods note: we only need path here, the proxy pkg would add params back
-	return
-}
-
 func (s *httpProxyServer) handle(wr http.ResponseWriter, req *http.Request) {
 	if klog.V(4).Enabled() {
 		dump, err := httputil.DumpRequest(req, true)
@@ -108,14 +98,7 @@ func (s *httpProxyServer) handle(wr http.ResponseWriter, req *http.Request) {
 		klog.V(4).Infof("request:\n%s", string(dump))
 	}
 
-	// parse clusterID from current requestURL
-	clusterID, kubeAPIPath, err := parseRequestURL(req.RequestURI)
-	if err != nil {
-		http.Error(wr, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	target := fmt.Sprintf("https://%s", clusterID)
+	target := fmt.Sprintf("https://%s", s.cluster)
 	apiserverURL, err := url.Parse(target)
 	if err != nil {
 		http.Error(wr, err.Error(), http.StatusBadRequest)
@@ -166,9 +149,6 @@ func (s *httpProxyServer) handle(wr http.ResponseWriter, req *http.Request) {
 		}
 		klog.Errorf("proxy to anp-proxy-server failed because %v", e)
 	}
-
-	// update request URL path
-	req.URL.Path = kubeAPIPath
 
 	klog.V(4).Infof("request scheme:%s; rawQuery:%s; path:%s", req.URL.Scheme, req.URL.RawQuery, req.URL.Path)
 

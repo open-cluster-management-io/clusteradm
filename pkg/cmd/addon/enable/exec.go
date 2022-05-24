@@ -28,7 +28,7 @@ type ClusterAddonInfo struct {
 
 func NewClusterAddonInfo(cn string, o *Options, an string) ClusterAddonInfo {
 	var anno map[string]string
-	if o.IsHub && an == "policy-framework" {
+	if o.IsHub && an == "governance-policy-framework" {
 		anno = make(map[string]string)
 		anno["addon.open-cluster-management.io/on-multicluster-hub"] = "true"
 	}

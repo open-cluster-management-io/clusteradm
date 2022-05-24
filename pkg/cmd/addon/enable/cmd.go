@@ -21,12 +21,12 @@ var example = `
 
 ## Policy Framework
 
-# Enable policy-framework addon on to the given managed clusters in the specified namespace
-%[1]s addon enable --names policy-framework --namespace namespace --clusters cluster1,cluster2
-# Enable policy-framework addon on to the given hub clusters in the specified namespace for self-management
-%[1]s addon enable --names policy-framework --namespace namespace --clusters cluster1,cluster2 --hub
-# Enable policy-framework addon for specified clusters
-%[1]s addon enable --names policy-framework --clusters cluster1,cluster2
+# Enable governance-policy-framework addon on to the given managed clusters in the specified namespace
+%[1]s addon enable --names governance-policy-framework --namespace namespace --clusters cluster1,cluster2
+# Enable governance-policy-framework addon on to the given hub clusters in the specified namespace for self-management
+%[1]s addon enable --names governance-policy-framework --namespace namespace --clusters cluster1,cluster2 --hub
+# Enable governance-policy-framework addon for specified clusters
+%[1]s addon enable --names governance-policy-framework --clusters cluster1,cluster2
 
 # Enable config-policy-controller addon on the given managed clusters in the specified namespace
 %[1]s addon enable --names config-policy-controller --namespace namespace --clusters cluster1,cluster2

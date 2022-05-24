@@ -5,6 +5,6 @@ metadata:
   name: {{ .AddonName }}
   namespace: {{ .ClusterName }}
   annotations:
-    {{ range $key, $value := .Annotations }}{{ $key }}: {{ "$value" }}{{ end }}
+    {{ range $key, $value := .Annotations }}{{ $key }}: {{ $value | quote }}{{ end }}
 spec:
   installNamespace: {{ .NameSpace }} 

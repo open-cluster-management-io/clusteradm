@@ -84,7 +84,7 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 			}, eventuallyTimeout, eventuallyInterval).ShouldNot(gomega.HaveOccurred())
 		})
 
-		ginkgo.It("Should deploy the built-in policy-framework add-on deployments in open-cluster-management namespace successfully", func() {
+		ginkgo.It("Should deploy the built-in governance-policy-framework add-on deployments in open-cluster-management namespace successfully", func() {
 			o := Options{
 				values: Values{
 					hubAddons: []string{policyFrameworkAddonName},

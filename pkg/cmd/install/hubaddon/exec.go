@@ -18,7 +18,7 @@ import (
 
 const (
 	appMgrAddonName          = "application-manager"
-	policyFrameworkAddonName = "policy-framework"
+	policyFrameworkAddonName = "governance-policy-framework"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {

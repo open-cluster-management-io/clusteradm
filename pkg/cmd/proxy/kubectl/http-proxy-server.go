@@ -117,7 +117,7 @@ func (s *httpProxyServer) handle(wr http.ResponseWriter, req *http.Request) {
 		if proxyConn != nil {
 			err = proxyConn.Close()
 			if err != nil {
-				klog.Errorf("connection closed: %v", err)
+				klog.V(4).ErrorS(err, "connection closed")
 			}
 		}
 	}()

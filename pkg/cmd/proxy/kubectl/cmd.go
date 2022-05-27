@@ -124,10 +124,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 			klog.V(4).Infof("kubeconfig file path is %s", tmpKubeconfigFilePath)
 
 			// Using kubectl to access the managed cluster using the above customized kubeconfig
-			result, err := runKubectlCommmand(tmpKubeconfigFilePath, o.kubectlArgs)
-			if err != nil {
-				return errors.Wrap(err, "run kubectl commands failed")
-			}
+			// We are using combinedoutput, so err msg should include in result, no need to handle err
+			result, _ := runKubectlCommmand(tmpKubeconfigFilePath, o.kubectlArgs)
 			if _, err = streams.Out.Write(result); err != nil {
 				return errors.Wrap(err, "streams out write failed")
 			}

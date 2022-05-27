@@ -34,7 +34,7 @@ func GetVersionBundle(version string) (VersionBundle, error) {
 		Operator:     "latest",
 	}
 
-	// predifined bundle version
+	// predefined bundle version
 	// TODO: automated version tracking
 	versionBundleList["0.5.0"] = VersionBundle{
 		Registration: "v0.5.0",

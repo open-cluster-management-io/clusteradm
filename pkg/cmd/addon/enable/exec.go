@@ -47,7 +47,7 @@ func (o *Options) Validate() error {
 	}
 
 	if len(o.Clusters) == 0 {
-		return fmt.Errorf("clusters is misisng")
+		return fmt.Errorf("clusters is missing")
 	}
 
 	return nil

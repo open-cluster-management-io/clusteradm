@@ -9,7 +9,7 @@ import (
 )
 
 type Options struct {
-	//ClusteradmFlags: The generic optiosn from the clusteradm cli-runtime.
+	//ClusteradmFlags: The generic options from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 	//Clusterset of the clusters
 	Clusterset string

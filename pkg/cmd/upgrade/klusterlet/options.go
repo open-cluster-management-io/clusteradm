@@ -8,7 +8,7 @@ import (
 
 //Options: The structure holding all the command-line options
 type Options struct {
-	//ClusteradmFlags: The generic optiosn from the clusteradm cli-runtime.
+	//ClusteradmFlags: The generic options from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 
 	values Values
@@ -23,7 +23,7 @@ type Options struct {
 }
 
 type BundleVersion struct {
-	// registation image version
+	// registration image version
 	RegistrationImageVersion string
 	// placement image version
 	PlacementImageVersion string
@@ -54,7 +54,7 @@ type Klusterlet struct {
 type Hub struct {
 	//APIServer: The API Server external URL
 	APIServer string
-	//KubeConfig: The kubeconfig of the boostrap secret to connect to the hub
+	//KubeConfig: The kubeconfig of the bootstrap secret to connect to the hub
 	KubeConfig string
 	//image registry
 	Registry string

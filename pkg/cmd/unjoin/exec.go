@@ -16,7 +16,7 @@ import (
 	"k8s.io/client-go/util/retry"
 
 	klusterletclient "open-cluster-management.io/api/client/operator/clientset/versioned"
-	appliedwrokclient "open-cluster-management.io/api/client/work/clientset/versioned"
+	appliedworkclient "open-cluster-management.io/api/client/work/clientset/versioned"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 )
@@ -55,7 +55,7 @@ func (o *Options) run() error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	appliedWorkClient, err := appliedwrokclient.NewForConfig(config)
+	appliedWorkClient, err := appliedworkclient.NewForConfig(config)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -132,7 +132,7 @@ func WaitResourceToBeDelete(context context.Context, client klusterletclient.Int
 	return errGet
 
 }
-func IsAppliedManifestWorkExist(client appliedwrokclient.Interface) bool {
+func IsAppliedManifestWorkExist(client appliedworkclient.Interface) bool {
 	obj, err := client.WorkV1().AppliedManifestWorks().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		log.Fatal(err)

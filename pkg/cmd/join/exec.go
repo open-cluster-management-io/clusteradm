@@ -43,7 +43,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
 
 	if err != nil {
-		klog.Errorf("unable to retrive version ", err)
+		klog.Errorf("unable to retrieve version ", err)
 		return err
 	}
 
@@ -84,7 +84,7 @@ func (o *Options) validate() error {
 		return fmt.Errorf("token is missing")
 	}
 	if o.values.Hub.APIServer == "" {
-		return fmt.Errorf("hub-server is misisng")
+		return fmt.Errorf("hub-server is missing")
 	}
 	if o.values.ClusterName == "" {
 		return fmt.Errorf("name is missing")

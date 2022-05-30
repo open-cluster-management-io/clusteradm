@@ -39,7 +39,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd := &cobra.Command{
 		Use:   "kubectl",
 		Short: "Use kubectl through cluster-proxy addon.",
-		Long:  "Use kubectl through cluster-proxy addon.(only support managed service account token as certificate yet)",
+		Long:  "Use kubectl through cluster-proxy addon. (Only supports managed service account token as certificate.)",
 		Example: `If you want to get nodes on managed cluster named "cluster1", you can use the following command:
 		clusteradm proxy kubectl --cluster=cluster1 --sa=test --args="get nodes"`,
 		SilenceUsage: true,
@@ -115,7 +115,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 				return errors.Wrapf(err, "failed listening http proxy server")
 			}
 
-			// Configurate a customized kubeconfig amd write into /tmp dir with a random name
+			// Configure a customized kubeconfig amd write into /tmp dir with a random name
 			tmpKubeconfigFilePath, err := genTmpKubeconfig(o.cluster, managedServiceAccountToken)
 			if err != nil {
 				return err
@@ -125,7 +125,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 
 			// Using kubectl to access the managed cluster using the above customized kubeconfig
 			// We are using combinedoutput, so err msg should include in result, no need to handle err
-			result, _ := runKubectlCommmand(tmpKubeconfigFilePath, o.kubectlArgs)
+			result, _ := runKubectlCommand(tmpKubeconfigFilePath, o.kubectlArgs)
 			if _, err = streams.Out.Write(result); err != nil {
 				return errors.Wrap(err, "streams out write failed")
 			}
@@ -135,7 +135,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	}
 
 	cmd.Flags().StringVar(&o.cluster, "cluster", "", "The name of the managed cluster")
-	cmd.Flags().StringVar(&o.managedServiceAccount, "sa", "", "the name of the managedServiceAccount")
+	cmd.Flags().StringVar(&o.managedServiceAccount, "sa", "", "The name of the managedServiceAccount")
 	cmd.Flags().StringVar(&o.kubectlArgs, "args", "", "The arguments to pass to kubectl")
 
 	return cmd
@@ -144,7 +144,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 func getProxyConfig(hubRestConfig *rest.Config, streams genericclioptions.IOStreams) (*proxyv1alpha1.ManagedProxyConfiguration, error) {
 	addonClient, err := addonv1alpha1client.NewForConfig(hubRestConfig)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed newing addon api client")
+		return nil, errors.Wrapf(err, "failed initializing addon api client")
 	}
 
 	clusterAddon, err := addonClient.AddonV1alpha1().ClusterManagementAddOns().Get(
@@ -170,7 +170,7 @@ func getProxyConfig(hubRestConfig *rest.Config, streams genericclioptions.IOStre
 
 	proxyClient, err := clusterproxyclient.NewForConfig(hubRestConfig)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed newing proxy api client")
+		return nil, errors.Wrapf(err, "failed initializing proxy api client")
 	}
 	proxyConfig, err := proxyClient.ProxyV1alpha1().ManagedProxyConfigurations().
 		Get(context.TODO(), clusterAddon.Spec.AddOnConfiguration.CRName, metav1.GetOptions{})
@@ -209,7 +209,7 @@ func getManagedServiceAccountToken(hubRestConfig *rest.Config, msaName string, n
 	return string(token), nil
 }
 
-// Configurate a tmp kubeconfig and store it in a tmp file
+// Configure a tmp kubeconfig and store it in a tmp file
 func genTmpKubeconfig(cluster string, msaToken string) (string, error) {
 	c := &clientcmdapi.Cluster{
 		Server:                "https://localhost:9090",
@@ -247,8 +247,8 @@ func genTmpKubeconfig(cluster string, msaToken string) (string, error) {
 	return tmpFile, nil
 }
 
-// Use runKubectlCommmand to access the managed cluster
-func runKubectlCommmand(kubeconfigFilePath string, args string) ([]byte, error) {
+// Use runKubectlCommand to access the managed cluster
+func runKubectlCommand(kubeconfigFilePath string, args string) ([]byte, error) {
 	cmd := exec.Command("kubectl", strings.Split(args, " ")...)
 	cmd.Env = append(os.Environ(), fmt.Sprintf("KUBECONFIG=%s", kubeconfigFilePath))
 	return cmd.CombinedOutput()

@@ -8,7 +8,7 @@ import (
 
 //Options: The structure holding all the command-line options
 type Options struct {
-	//ClusteradmFlags: The generic optiosn from the clusteradm cli-runtime.
+	//ClusteradmFlags: The generic options from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 	values          Values
 	//The file to output the resources will be sent to the file.
@@ -17,7 +17,7 @@ type Options struct {
 	useBootstrapToken bool
 }
 
-//Valus: The values used in the template
+//Values: The values used in the template
 type Values struct {
 	//The values related to the hub
 	Hub Hub `json:"hub"`

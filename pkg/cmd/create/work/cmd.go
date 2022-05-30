@@ -13,7 +13,7 @@ import (
 
 var example = `
 # Create manifestwork on a specified managed cluster"
-%[1]s create work work-example -f xxx.yaml --cluster cluster1
+%[1]s create work work-example -f xxx.yaml --clusters cluster1
 `
 
 // NewCmd...
@@ -46,7 +46,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		},
 	}
 
-	cmd.Flags().StringVar(&o.Cluster, "cluster", "", "Names of the managed cluster to apply work")
+	cmd.Flags().StringVar(&o.Cluster, "clusters", "", "Names of the managed cluster to apply work")
 	cmd.Flags().BoolVar(&o.Overwrite, "overwrite", false, "Overwrite the existing work if it exists already")
 	o.FileNameFlags.AddFlags(cmd.Flags())
 

@@ -13,7 +13,7 @@ import (
 )
 
 type ScenarioReader interface {
-	//Retreive an asset from the data source
+	//Retrieve an asset from the data source
 	Asset(templatePath string) ([]byte, error)
 	//List all available assets in the data source
 	AssetNames(excluded []string) ([]string, error)
@@ -93,8 +93,8 @@ func isExcluded(f string, excluded []string) bool {
 	return false
 }
 
-func (r *ScenarioResourcesReader) ExtractAssets(prefix, dir string, exclusded []string) error {
-	assetNames, err := r.AssetNames(exclusded)
+func (r *ScenarioResourcesReader) ExtractAssets(prefix, dir string, excluded []string) error {
+	assetNames, err := r.AssetNames(excluded)
 	if err != nil {
 		return err
 	}

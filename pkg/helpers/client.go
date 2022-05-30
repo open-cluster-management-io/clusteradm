@@ -137,7 +137,7 @@ func WaitCRDToBeReady(apiExtensionsClient apiextensionsclient.Interface, name st
 }
 
 //GetToken returns the bootstrap token.
-//It searchs first for the service-account token and then if it is not found
+//It searches first for the service-account token and then if it is not found
 //it looks for the bootstrap token in kube-system.
 func GetToken(kubeClient kubernetes.Interface) (string, TokenType, error) {
 	token, err := GetBootstrapTokenFromSA(kubeClient)

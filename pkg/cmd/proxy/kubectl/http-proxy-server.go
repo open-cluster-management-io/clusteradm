@@ -132,7 +132,7 @@ func (s *httpProxyServer) handle(wr http.ResponseWriter, req *http.Request) {
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true, // Skip server-auth for kube-apiserver
 		},
-		// golang http pkg automaticly upgrade http connection to http2 connection, but http2 can not upgrade to SPDY which used in "kubectl exec".
+		// golang http pkg automatically upgrade http connection to http2 connection, but http2 can not upgrade to SPDY which used in "kubectl exec".
 		// set ForceAttemptHTTP2 = false to prevent auto http2 upgration
 		ForceAttemptHTTP2: false,
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {

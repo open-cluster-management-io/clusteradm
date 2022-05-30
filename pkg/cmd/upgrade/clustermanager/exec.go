@@ -26,7 +26,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
 
 	if err != nil {
-		klog.Errorf("unable to retrive version ", err)
+		klog.Errorf("unable to retrieve version ", err)
 		return err
 	}
 

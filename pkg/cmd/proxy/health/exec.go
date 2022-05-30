@@ -7,7 +7,6 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"net"
 	"net/http"
 	"net/url"
@@ -15,6 +14,8 @@ import (
 	"strings"
 	"text/tabwriter"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -72,7 +73,7 @@ func (o *Options) run(streams genericclioptions.IOStreams) error {
 	}
 	addonClient, err := addonv1alpha1client.NewForConfig(hubRestConfig)
 	if err != nil {
-		return errors.Wrapf(err, "failed newing addon api client")
+		return errors.Wrapf(err, "failed initializing addon api client")
 	}
 
 	clusterAddon, err := addonClient.AddonV1alpha1().ClusterManagementAddOns().Get(
@@ -98,7 +99,7 @@ func (o *Options) run(streams genericclioptions.IOStreams) error {
 
 	proxyClient, err := versioned.NewForConfig(hubRestConfig)
 	if err != nil {
-		return errors.Wrapf(err, "failed newing proxy api client")
+		return errors.Wrapf(err, "failed initializing proxy api client")
 	}
 	proxyConfig, err := proxyClient.ProxyV1alpha1().ManagedProxyConfigurations().
 		Get(context.TODO(), clusterAddon.Spec.AddOnConfiguration.CRName, metav1.GetOptions{})
@@ -108,7 +109,7 @@ func (o *Options) run(streams genericclioptions.IOStreams) error {
 
 	clusterClient, err := clusterv1.NewForConfig(hubRestConfig)
 	if err != nil {
-		return errors.Wrapf(err, "failed newing cluster client")
+		return errors.Wrapf(err, "failed initializing cluster client")
 	}
 	managedClusterList, err := clusterClient.ManagedClusters().List(
 		context.TODO(),

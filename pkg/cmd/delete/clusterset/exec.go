@@ -55,7 +55,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 	_, err := clusterClient.ClusterV1beta1().ManagedClusterSets().Get(context.TODO(), clusterset, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			fmt.Fprintf(o.Streams.Out, "Clusterset %s is already deleted\n", clusterset)
+			fmt.Fprintf(o.Streams.Out, "Clusterset %s not found or is already deleted\n", clusterset)
 			return nil
 		}
 		return err

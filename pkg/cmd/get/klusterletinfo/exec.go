@@ -101,7 +101,7 @@ func (o *Options) printRegistrationOperator() error {
 	registrationOperatorExpectedRs := *deploy.Spec.Replicas
 	registrationOperatorAvailableRs := deploy.Status.AvailableReplicas
 	for _, container := range deploy.Spec.Template.Spec.Containers {
-		if container.Name == "registration-operator" {
+		if container.Name == "klusterlet" {
 			imageName = container.Image
 		}
 	}

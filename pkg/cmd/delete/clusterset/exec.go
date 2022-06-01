@@ -51,6 +51,12 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 	dryRun bool,
 	clusterset string) error {
 
+	// not allow to delete default clusterset
+	if clusterset == "default" {
+		fmt.Fprintf(o.Streams.Out, "Clusterset %s can not be deleted\n", clusterset)
+		return nil
+	}
+
 	// check existing
 	_, err := clusterClient.ClusterV1beta1().ManagedClusterSets().Get(context.TODO(), clusterset, metav1.GetOptions{})
 	if err != nil {

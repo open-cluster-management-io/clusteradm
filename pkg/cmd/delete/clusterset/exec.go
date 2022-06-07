@@ -80,6 +80,11 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 		return err
 	}
 
+	if dryRun {
+		fmt.Fprintf(o.Streams.Out, "Clusterset %s is deleted\n", clusterset)
+		return nil
+	}
+
 	// start a goroutine to watch the delete event
 	errChannel := make(chan error)
 	go func(c chan<- error) {

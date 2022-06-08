@@ -108,9 +108,12 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 			if err != nil {
 				if !errors.IsNotFound(err) {
 					return err
+				} else {
+					fmt.Fprintf(o.Streams.Out, "%s add-on not found in cluster: %s.\n", addon, clusterName)
 				}
+			} else {
+				fmt.Fprintf(o.Streams.Out, "Undeploying %s add-on in managed cluster: %s.\n", addon, clusterName)
 			}
-			fmt.Fprintf(o.Streams.Out, "Undeploying %s add-on in managed cluster: %s.\n", addon, clusterName)
 		}
 	}
 

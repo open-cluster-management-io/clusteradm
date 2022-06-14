@@ -26,7 +26,7 @@ type Applier struct {
 
 //ApplierBuilder a builder to build the applier
 type ApplierBuilder struct {
-	Applier
+	applier Applier
 }
 
 type iApplierBuilder interface {
@@ -54,10 +54,10 @@ func NewApplierBuilder() *ApplierBuilder {
 
 //Build returns the builded applier
 func (a *ApplierBuilder) Build() Applier {
-	if a.cache == nil {
-		a.cache = NewResourceCache()
+	if a.applier.cache == nil {
+		a.applier.cache = NewResourceCache()
 	}
-	return a.Applier
+	return a.applier
 }
 
 //WithClient adds the several clients to the applier
@@ -65,30 +65,30 @@ func (a *ApplierBuilder) WithClient(
 	kubeClient kubernetes.Interface,
 	apiExtensionsClient apiextensionsclient.Interface,
 	dynamicClient dynamic.Interface) *ApplierBuilder {
-	a.kubeClient = kubeClient
-	a.apiExtensionsClient = apiExtensionsClient
-	a.dynamicClient = dynamicClient
+	a.applier.kubeClient = kubeClient
+	a.applier.apiExtensionsClient = apiExtensionsClient
+	a.applier.dynamicClient = dynamicClient
 	return a
 }
 
 //WithTemplateFuncMap add template.FuncMap to the applier.
 func (a *ApplierBuilder) WithTemplateFuncMap(fm template.FuncMap) *ApplierBuilder {
-	a.templateFuncMap = fm
+	a.applier.templateFuncMap = fm
 	return a
 }
 
 //WithOwner add an ownerref to the object
 func (a *ApplierBuilder) WithOwner(owner runtime.Object, blockOwnerDeletion, controller bool, scheme *runtime.Scheme) *ApplierBuilder {
-	a.owner = owner
-	a.blockOwnerDeletion = &blockOwnerDeletion
-	a.controller = &controller
-	a.scheme = scheme
+	a.applier.owner = owner
+	a.applier.blockOwnerDeletion = &blockOwnerDeletion
+	a.applier.controller = &controller
+	a.applier.scheme = scheme
 	return a
 }
 
 //WithCache set a the cache instead of using the default cache created on the Build()
 func (a *ApplierBuilder) WithCache(cache resourceapply.ResourceCache) *ApplierBuilder {
-	a.cache = cache
+	a.applier.cache = cache
 	return a
 }
 

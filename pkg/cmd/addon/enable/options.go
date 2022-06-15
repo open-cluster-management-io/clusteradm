@@ -17,8 +17,8 @@ type Options struct {
 	Clusters []string
 	//The file to output the resources will be sent to the file.
 	OutputFile string
-	//Signal whether the cluster is a hub cluster
-	IsHub bool
+	//Annotations to add to the addon
+	Annotate []string
 	//
 	Streams genericclioptions.IOStreams
 }

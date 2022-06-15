@@ -23,10 +23,10 @@ var example = `
 
 # Enable governance-policy-framework addon on to the given managed clusters in the specified namespace
 %[1]s addon enable --names governance-policy-framework --namespace namespace --clusters cluster1,cluster2
-# Enable governance-policy-framework addon on to the given hub clusters in the specified namespace for self-management
-%[1]s addon enable --names governance-policy-framework --namespace namespace --clusters cluster1,cluster2 --hub
 # Enable governance-policy-framework addon for specified clusters
 %[1]s addon enable --names governance-policy-framework --clusters cluster1,cluster2
+# Enable governance-policy-framework addon for a self-managed hub cluster
+%[1]s addon enable --names governance-policy-framework --annotate addon.open-cluster-management.io/on-multicluster-hub=true  --clusters hub-cluster
 
 # Enable config-policy-controller addon on the given managed clusters in the specified namespace
 %[1]s addon enable --names config-policy-controller --namespace namespace --clusters cluster1,cluster2
@@ -68,7 +68,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().StringVarP(&o.Namespace, "namespace", "n", "open-cluster-management-agent-addon", "Specified namespace to addon addon")
 	cmd.Flags().StringSliceVar(&o.Clusters, "clusters", []string{}, "Names of the managed cluster to deploy the add-on to (comma separated)")
 	cmd.Flags().StringVar(&o.OutputFile, "output-file", "", "The generated resources will be copied in the specified file")
-	cmd.Flags().BoolVar(&o.IsHub, "hub", false, "Signal whether the cluster is a hub cluster")
+	cmd.Flags().StringSliceVar(&o.Annotate, "annotate", []string{}, "Annotations to add to the ManagedClusterAddon (eg. key1=value1,key2=value2)")
 
 	return cmd
 }

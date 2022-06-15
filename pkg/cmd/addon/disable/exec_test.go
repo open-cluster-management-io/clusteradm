@@ -67,8 +67,9 @@ var _ = ginkgo.Describe("addon disable", func() {
 			for _, clus := range clusters {
 				ginkgo.By(fmt.Sprintf("Enabling %s addon on %s cluster in %s namespace", addon, clus, ns))
 
-				cai := enable.NewClusterAddonInfo(clus, o, addon)
-				_, err := applier.ApplyCustomResources(reader, cai, false, "", "addons/addon.yaml")
+				cai, err := enable.NewClusterAddonInfo(clus, o, addon)
+				gomega.Expect(err).ToNot(gomega.HaveOccurred(), "enable addon error")
+				_, err = applier.ApplyCustomResources(reader, cai, false, "", "addons/addon.yaml")
 				gomega.Expect(err).ToNot(gomega.HaveOccurred(), "enable addon error")
 				fmt.Fprintf(streams.Out, "Deploying %s add-on to namespaces %s of managed cluster: %s.\n", addon, ns, clus)
 			}

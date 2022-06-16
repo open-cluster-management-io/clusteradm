@@ -11,6 +11,8 @@ type Options struct {
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 	//A list of comma separated addon names
 	Names []string
+	//The specified namespace for addon to disable
+	Namespace string
 	//A list of comma separated cluster names
 	Clusters []string
 	//A bool value shows whether specified add-on will be disable in all managed clusters.

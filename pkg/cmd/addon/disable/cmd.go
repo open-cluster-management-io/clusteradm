@@ -18,6 +18,22 @@ var example = `
 %[1]s addon disable --names application-manager --all-clusters
 # Disable application-manager addon to the given managed clusters in the specified namespace
 %[1]s addon disable --names application-manager --namespace <namespace> --clusters <cluster1>
+
+## Policy Framework
+
+# Disable governance-policy-framework addon on specified clusters
+%[1]s addon disable --names governance-policy-framework --clusters cluster1,cluster2
+# Disable governance-policy-framework addon on all clusters
+%[1]s addon disable --names governance-policy-framework --all-clusters
+# Disable governance-policy-framework addon to the given managed clusters in the specified namespace
+%[1]s addon disable --names governance-policy-framework --namespace <namespace> --clusters <cluster1>
+
+# Disable config-policy-controller addon on specified clusters
+%[1]s addon disable --names config-policy-controller --clusters cluster1,cluster2
+# Disable config-policy-controller addon on all clusters
+%[1]s addon disable --names config-policy-controller --all-clusters
+# Disable config-policy-controller addon to the given managed clusters in the specified namespace
+%[1]s addon disable --names config-policy-controller --namespace <namespace> --clusters <cluster1>
 `
 
 // NewCmd...

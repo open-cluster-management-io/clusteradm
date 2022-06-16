@@ -15,6 +15,7 @@ const (
 	channelDeployment      = "multicluster-operators-channel"
 	subscriptionDeployment = "multicluster-operators-subscription"
 	propagatorDeployment   = "governance-policy-propagator"
+	policyAddonDeployment  = "governance-policy-addon-controller"
 )
 
 var _ = ginkgo.Describe("install hub-addon", func() {
@@ -83,7 +84,7 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 			}, eventuallyTimeout, eventuallyInterval).ShouldNot(gomega.HaveOccurred())
 		})
 
-		ginkgo.It("Should deploy the built-in policy-framework add-on deployments in open-cluster-management namespace successfully", func() {
+		ginkgo.It("Should deploy the built-in governance-policy-framework add-on deployments in open-cluster-management namespace successfully", func() {
 			o := Options{
 				values: Values{
 					hubAddons: []string{policyFrameworkAddonName},
@@ -101,6 +102,13 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 				return nil
 			}, eventuallyTimeout, eventuallyInterval).ShouldNot(gomega.HaveOccurred())
 
+			gomega.Eventually(func() error {
+				_, err := kubeClient.AppsV1().Deployments(ocmNamespace).Get(context.Background(), policyAddonDeployment, metav1.GetOptions{})
+				if err != nil {
+					return err
+				}
+				return nil
+			}, eventuallyTimeout, eventuallyInterval).ShouldNot(gomega.HaveOccurred())
 		})
 	})
 })

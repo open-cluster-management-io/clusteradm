@@ -4,6 +4,7 @@ package enable
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,20 +20,30 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 )
 
-// const appMgrAddonName = "application-manager"
-
 type ClusterAddonInfo struct {
 	ClusterName string
 	NameSpace   string
 	AddonName   string
+	Annotations map[string]string
 }
 
-func NewClusterAddonInfo(cn string, ns string, an string) ClusterAddonInfo {
+func NewClusterAddonInfo(cn string, o *Options, an string) (ClusterAddonInfo, error) {
+	// Parse provided annotations
+	annos := map[string]string{}
+	for _, annoString := range o.Annotate {
+		annoSlice := strings.Split(annoString, "=")
+		if len(annoSlice) != 2 {
+			return ClusterAddonInfo{},
+				fmt.Errorf("error parsing annotation '%s'. Expected to be of the form: key=value", annoString)
+		}
+		annos[annoSlice[0]] = annoSlice[1]
+	}
 	return ClusterAddonInfo{
 		ClusterName: cn,
-		NameSpace:   ns,
+		NameSpace:   o.Namespace,
 		AddonName:   an,
-	}
+		Annotations: annos,
+	}, nil
 }
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -101,8 +112,11 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 
 	for _, addon := range addons {
 		for _, clusterName := range clusters {
-			cai := NewClusterAddonInfo(clusterName, o.Namespace, addon)
-			out, err := applier.ApplyCustomResources(reader, cai, dryRun, "", "addons/app/addon.yaml")
+			cai, err := NewClusterAddonInfo(clusterName, o, addon)
+			if err != nil {
+				return err
+			}
+			out, err := applier.ApplyCustomResources(reader, cai, dryRun, "", "addons/addon.yaml")
 			if err != nil {
 				return err
 			}

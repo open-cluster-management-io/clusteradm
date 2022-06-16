@@ -1,0 +1,57 @@
+# Copyright Contributors to the Open Cluster Management project
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: governance-policy-addon-controller
+    control-plane: controller-manager
+  name: governance-policy-addon-controller
+  namespace: open-cluster-management
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: governance-policy-addon-controller
+      control-plane: controller-manager
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+      labels:
+        app: governance-policy-addon-controller
+        control-plane: controller-manager
+    spec:
+      containers:
+        - args:
+            - controller
+          command:
+            - governance-policy-addon-controller
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: CONFIG_POLICY_CONTROLLER_IMAGE
+              value: quay.io/open-cluster-management/config-policy-controller:latest
+            - name: GOVERNANCE_POLICY_SPEC_SYNC_IMAGE
+              value: quay.io/open-cluster-management/governance-policy-spec-sync:latest
+            - name: GOVERNANCE_POLICY_STATUS_SYNC_IMAGE
+              value: quay.io/open-cluster-management/governance-policy-status-sync:latest
+            - name: GOVERNANCE_POLICY_TEMPLATE_SYNC_IMAGE
+              value: quay.io/open-cluster-management/governance-policy-template-sync:latest
+          image: quay.io/open-cluster-management/governance-policy-addon-controller:latest
+          imagePullPolicy: IfNotPresent
+          name: manager
+          resources:
+            limits:
+              cpu: 500m
+              memory: 128Mi
+            requests:
+              cpu: 10m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+      securityContext:
+        runAsNonRoot: true
+      serviceAccountName: policy-addon-ctrl-controller-manager
+      terminationGracePeriodSeconds: 10

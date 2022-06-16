@@ -11,12 +11,14 @@ type Options struct {
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 	//A list of comma separated addon names
 	Names []string
-	//The sepcified namespace for addon to install
+	//The specified namespace for addon to install
 	Namespace string
 	//A list of comma separated cluster names
 	Clusters []string
 	//The file to output the resources will be sent to the file.
 	OutputFile string
+	//Annotations to add to the addon
+	Annotate []string
 	//
 	Streams genericclioptions.IOStreams
 }

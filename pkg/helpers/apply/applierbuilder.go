@@ -2,6 +2,7 @@
 package apply
 
 import (
+	"context"
 	"text/template"
 
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
@@ -20,6 +21,7 @@ type Applier struct {
 	scheme              *runtime.Scheme
 	owner               runtime.Object
 	cache               resourceapply.ResourceCache
+	context             context.Context
 	controller          *bool
 	blockOwnerDeletion  *bool
 }
@@ -43,6 +45,14 @@ type iApplierBuilder interface {
 	WithOwner(owner runtime.Object, blockOwnerDeletion, controller bool, scheme *runtime.Scheme) *ApplierBuilder
 	//WithCache add cache
 	WithCache(cache resourceapply.ResourceCache) *ApplierBuilder
+	//WithContext use a context or use a new one if not provided
+	WithContext(ctx context.Context) *ApplierBuilder
+	//GetKubeClient returns the kubeclient
+	GetKubeClient() kubernetes.Interface
+	//GetAPIExtensionClient returns the APIExtensionClient
+	GetAPIExtensionClient() apiextensionsclient.Interface
+	//GetDynamicClient returns the dynamicClient
+	GetDynamicClient() dynamic.Interface
 }
 
 var _ iApplierBuilder = NewApplierBuilder()
@@ -56,6 +66,9 @@ func NewApplierBuilder() *ApplierBuilder {
 func (a *ApplierBuilder) Build() Applier {
 	if a.applier.cache == nil {
 		a.applier.cache = NewResourceCache()
+	}
+	if a.applier.context == nil {
+		a.applier.context = context.Background()
 	}
 	return a.applier
 }
@@ -90,6 +103,24 @@ func (a *ApplierBuilder) WithOwner(owner runtime.Object, blockOwnerDeletion, con
 func (a *ApplierBuilder) WithCache(cache resourceapply.ResourceCache) *ApplierBuilder {
 	a.applier.cache = cache
 	return a
+}
+
+//WithContext  set a the cache instead of using the default cache created on the Build()
+func (a *ApplierBuilder) WithContext(ctx context.Context) *ApplierBuilder {
+	a.applier.context = ctx
+	return a
+}
+
+func (a *ApplierBuilder) GetKubeClient() kubernetes.Interface {
+	return a.applier.kubeClient
+}
+
+func (a *ApplierBuilder) GetAPIExtensionClient() apiextensionsclient.Interface {
+	return a.applier.apiExtensionsClient
+}
+
+func (a *ApplierBuilder) GetDynamicClient() dynamic.Interface {
+	return a.applier.dynamicClient
 }
 
 func NewResourceCache() resourceapply.ResourceCache {

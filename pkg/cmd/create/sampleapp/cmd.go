@@ -15,6 +15,8 @@ import (
 var example = `
 # Create a sample app
 %[1]s create sampleapp sampleapp1
+# Create a sample app on specified namespace 
+%[1]s create sampleapp sampleapp1 --namespace namespace1
 `
 
 // NewCmd...
@@ -48,6 +50,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	}
 
 	cmd.Flags().StringVar(&o.OutputFile, "output-file", "", "The generated resources will be copied in the specified file")
+	cmd.Flags().StringVarP(&o.Namespace, "namespace", "n", "default", "Specified namespace to deploy sample app")
 
 	return cmd
 }

@@ -47,6 +47,7 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 
 	const (
 		testSampleAppName     = "sampleapp"
+		testNamespace         = "default"
 		appMgrAddonName       = "application-manager"
 		installAddonDir       = "scenario/addons/install"
 		enableAddonFile       = "addons/enable/addon.yaml"
@@ -55,7 +56,6 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 		dryRun                = false
 		clusterSetLabel       = "cluster.open-cluster-management.io/clusterset"
 		placementLabel        = "placement"
-		resourceNamespace     = "default"
 		channelGroup          = "apps.open-cluster-management.io"
 		channelVersion        = "v1"
 		channelResource       = "channels"
@@ -186,6 +186,7 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 			o := Options{
 				Streams:       streams,
 				SampleAppName: testSampleAppName,
+				Namespace:     testNamespace,
 			}
 
 			clusters := []string{cluster1Name, cluster2Name}
@@ -219,20 +220,20 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 					subscriptionName             = fmt.Sprintf("%s-subscription", o.SampleAppName)
 				)
 
-				if _, err := clusterClient.ClusterV1alpha1().Placements(resourceNamespace).Get(context.TODO(), placementResourceName, metav1.GetOptions{}); err != nil {
-					return errors.New(fmt.Sprintf("Missing Placement resource \"%s\" in namespace %s", placementResourceName, resourceNamespace))
+				if _, err := clusterClient.ClusterV1alpha1().Placements(testNamespace).Get(context.TODO(), placementResourceName, metav1.GetOptions{}); err != nil {
+					return errors.New(fmt.Sprintf("Missing Placement resource \"%s\" in namespace %s", placementResourceName, testNamespace))
 				}
-				fmt.Fprintf(streams.Out, "Placement resource \"%s\" created successfully in namespace %s.\n", placementResourceName, resourceNamespace)
+				fmt.Fprintf(streams.Out, "Placement resource \"%s\" created successfully in namespace %s.\n", placementResourceName, testNamespace)
 
 				if _, err := clusterClient.ClusterV1alpha1().ManagedClusterSets().Get(context.TODO(), managedClusterSetName, metav1.GetOptions{}); err != nil {
 					return errors.New(fmt.Sprintf("Missing ManagedClusterSet resource \"%s\"", managedClusterSetName))
 				}
 				fmt.Fprintf(streams.Out, "ManagedClusterSet resource \"%s\" created successfully.\n", managedClusterSetName)
 
-				if _, err := clusterClient.ClusterV1alpha1().ManagedClusterSetBindings(resourceNamespace).Get(context.TODO(), managedClusterSetBindingName, metav1.GetOptions{}); err != nil {
-					return errors.New(fmt.Sprintf("Missing ManagedClusterSetBinding resource \"%s\" in namespace %s", managedClusterSetBindingName, resourceNamespace))
+				if _, err := clusterClient.ClusterV1alpha1().ManagedClusterSetBindings(testNamespace).Get(context.TODO(), managedClusterSetBindingName, metav1.GetOptions{}); err != nil {
+					return errors.New(fmt.Sprintf("Missing ManagedClusterSetBinding resource \"%s\" in namespace %s", managedClusterSetBindingName, testNamespace))
 				}
-				fmt.Fprintf(streams.Out, "ManagedClusterSetBinding resource \"%s\" created successfully in namespace %s.\n", managedClusterSetBindingName, resourceNamespace)
+				fmt.Fprintf(streams.Out, "ManagedClusterSetBinding resource \"%s\" created successfully in namespace %s.\n", managedClusterSetBindingName, testNamespace)
 
 				channelGVR := schema.GroupVersionResource{
 					Group:    channelGroup,
@@ -244,7 +245,7 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 				if !contains(channelObjlist, channelName) {
 					return errors.New(fmt.Sprintf("Missing Channel custom resource \"%s\"", channelName))
 				}
-				fmt.Fprintf(streams.Out, "Channel custom resource \"%s\" created successfully.\n", channelName)
+				fmt.Fprintf(streams.Out, "Channel custom resource \"%s\" created successfully in namespace %s.\n", channelName, testNamespace)
 
 				subscriptionGVR := schema.GroupVersionResource{
 					Group:    subscriptionGroup,
@@ -256,7 +257,7 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 				if !contains(subscriptionObjlist, subscriptionName) {
 					return errors.New(fmt.Sprintf("Missing Subscription custom resource \"%s\"", subscriptionName))
 				}
-				fmt.Fprintf(streams.Out, "Subscription custom resource \"%s\" created successfully.\n", subscriptionName)
+				fmt.Fprintf(streams.Out, "Subscription custom resource \"%s\" created successfully in namespace %s.\n", subscriptionName, testNamespace)
 
 				return nil
 			}, eventuallyTimeout, eventuallyInterval).ShouldNot(gomega.HaveOccurred())

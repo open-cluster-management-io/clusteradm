@@ -2,6 +2,6 @@ apiVersion: cluster.open-cluster-management.io/v1beta1
 kind: ManagedClusterSetBinding
 metadata:
   name: app-{{.SampleAppName}}
-  namespace: default
+  namespace: {{.Namespace}}
 spec:
   clusterSet: app-{{.SampleAppName}}

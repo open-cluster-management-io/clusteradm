@@ -2,9 +2,9 @@ apiVersion: apps.open-cluster-management.io/v1
 kind: Subscription
 metadata:
   name: {{.SampleAppName}}-subscription
-  namespace: default
+  namespace: {{.Namespace}}
 spec:
-  channel: default/{{.SampleAppName}}-helmrepo
+  channel: {{.Namespace}}/{{.SampleAppName}}-helmrepo
   name: nginx-ingress
   placement:
     placementRef:

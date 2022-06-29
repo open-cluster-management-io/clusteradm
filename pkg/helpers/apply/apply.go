@@ -3,7 +3,6 @@ package apply
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -88,7 +87,7 @@ func (a *Applier) ApplyDeployment(
 	if err != nil {
 		return output, fmt.Errorf("%q: %v %v", name, sch, err)
 	}
-	_, _, err = resourceapply.ApplyDeployment(context.TODO(),
+	_, _, err = resourceapply.ApplyDeployment(a.context,
 		a.kubeClient.AppsV1(),
 		recorder,
 		deployment.(*appsv1.Deployment), 0)
@@ -112,7 +111,7 @@ func (a *Applier) ApplyDirectly(
 	output := make([]string, 0)
 	//Apply resources
 	clients := resourceapply.NewClientHolder().WithAPIExtensionsClient(a.apiExtensionsClient).WithDynamicClient(a.dynamicClient).WithKubernetes(a.kubeClient)
-	resourceResults := resourceapply.ApplyDirectly(context.TODO(), clients, recorder, a.cache, func(name string) ([]byte, error) {
+	resourceResults := resourceapply.ApplyDirectly(a.context, clients, recorder, a.cache, func(name string) ([]byte, error) {
 		out, err := a.MustTemplateAsset(reader, values, headerFile, name)
 		if err != nil {
 			return nil, err
@@ -188,12 +187,12 @@ func (a *Applier) ApplyCustomResource(
 		return output, err
 	}
 	dr := a.dynamicClient.Resource(mapping.Resource)
-	existing, err := dr.Namespace(required.GetNamespace()).Get(context.TODO(), required.GetName(), metav1.GetOptions{})
+	existing, err := dr.Namespace(required.GetNamespace()).Get(a.context, required.GetName(), metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			required := required.DeepCopy()
 			actual, err := dr.Namespace(required.GetNamespace()).
-				Create(context.TODO(), required, metav1.CreateOptions{})
+				Create(a.context, required, metav1.CreateOptions{})
 			a.GetCache().UpdateCachedResourceMetadata(required, actual)
 			return output, err
 		}
@@ -206,7 +205,7 @@ func (a *Applier) ApplyCustomResource(
 
 	required.SetResourceVersion(existing.GetResourceVersion())
 	actual, err := dr.Namespace(required.GetNamespace()).
-		Update(context.TODO(), required, metav1.UpdateOptions{})
+		Update(a.context, required, metav1.UpdateOptions{})
 	a.GetCache().UpdateCachedResourceMetadata(required, actual)
 
 	if err != nil {

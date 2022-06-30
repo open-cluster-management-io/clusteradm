@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
@@ -19,7 +18,9 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
-	"open-cluster-management.io/clusteradm/pkg/cmd/create/sampleapp/scenario"
+	"open-cluster-management.io/clusteradm/pkg/cmd/addon/enable"
+	enableScenario "open-cluster-management.io/clusteradm/pkg/cmd/addon/enable/scenario"
+	installScenario "open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 )
 
@@ -33,13 +34,6 @@ type Values struct {
 	hubAddons []string
 }
 
-// ClusterAddonInfo: The values used in the addons enable template
-type ClusterAddonInfo struct {
-	ClusterName string
-	NameSpace   string
-	AddonName   string
-}
-
 var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 	var cluster1Name string
 	var cluster2Name string
@@ -49,8 +43,8 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 		testSampleAppName     = "sampleapp"
 		testNamespace         = "default"
 		appMgrAddonName       = "application-manager"
-		installAddonDir       = "scenario/addons/install"
-		enableAddonFile       = "addons/enable/addon.yaml"
+		installAddonDir       = "install/hubaddon/scenario/addon/appmgr"
+		enableAddonFile       = "addons/addon.yaml"
 		installAddonNamespace = "open-cluster-management"
 		enableAddonNamespace  = "default"
 		dryRun                = false
@@ -86,7 +80,7 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 				Name: clusterName,
 			},
 		}
-		_, err := kubeClient.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
+		_, err = kubeClient.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
 		gomega.Expect(err).ToNot(gomega.HaveOccurred())
 	}
 
@@ -94,7 +88,7 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 
 	addonPathWalkDir := func(root string) ([]string, error) {
 		var files []string
-		err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 			if !info.IsDir() {
 				relPath, err := filepath.Rel(filepath.Dir(filepath.Dir(root)), path)
 				if err != nil {
@@ -132,20 +126,17 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 			},
 		}
 
-		_, err := kubeClient.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
+		_, err = kubeClient.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
 		gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
-		reader := scenario.GetScenarioResourcesReader()
+		reader := installScenario.GetScenarioResourcesReader()
 		applierBuilder := apply.NewApplierBuilder()
 		applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
 
-		_, currentFilePath, _, ok := runtime.Caller(0)
-		if !ok {
-			err = errors.New("Error retrieving current file path")
-			gomega.Expect(err).ToNot(gomega.HaveOccurred(), "install addon error")
-		}
+		mydir, err := os.Getwd()
+		gomega.Expect(err).ToNot(gomega.HaveOccurred(), "install addon error")
+		appDir := filepath.Join(filepath.Dir(filepath.Dir(mydir)), addonDir)
 
-		appDir := filepath.Join(filepath.Dir(currentFilePath), addonDir)
 		files, err := addonPathWalkDir(appDir)
 		gomega.Expect(err).ToNot(gomega.HaveOccurred(), "install addon error")
 
@@ -157,7 +148,7 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 
 	assertEnableAddon := func(addon string, clusters []string, addonNamespace string, addonFilePath string) {
 
-		reader := scenario.GetScenarioResourcesReader()
+		reader := enableScenario.GetScenarioResourcesReader()
 		applierBuilder := apply.NewApplierBuilder()
 		applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
 
@@ -165,12 +156,13 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 
 			ginkgo.By(fmt.Sprintf("Enabling %s addon on %s cluster in %s namespce", addon, clus, addonNamespace))
 
-			cai := ClusterAddonInfo{
-				ClusterName: clus,
-				NameSpace:   addonNamespace,
-				AddonName:   addon,
+			eo := enable.Options{
+				Namespace: addonNamespace,
 			}
-			_, err := applier.ApplyCustomResources(reader, cai, false, "", addonFilePath)
+			cai, err := enable.NewClusterAddonInfo(clus, &eo, addon)
+			gomega.Expect(err).ToNot(gomega.HaveOccurred(), "enable addon error")
+
+			_, err = applier.ApplyCustomResources(reader, cai, false, "", addonFilePath)
 			gomega.Expect(err).ToNot(gomega.HaveOccurred(), "enable addon error")
 
 			fmt.Fprintf(streams.Out, "Deploying %s add-on to namespace %s of managed cluster: %s.\n", addon, addonNamespace, clus)
@@ -194,7 +186,7 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 			assertInstallAddon(appMgrAddonName, installAddonNamespace, installAddonDir)
 			assertEnableAddon(appMgrAddonName, clusters, enableAddonNamespace, enableAddonFile)
 
-			err := o.runWithClient(clusterClient, kubeClient, apiExtensionsClient, dynamicClient, dryRun)
+			err = o.runWithClient(clusterClient, kubeClient, apiExtensionsClient, dynamicClient, dryRun)
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 			gomega.Eventually(func() error {
@@ -220,17 +212,17 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 					subscriptionName             = fmt.Sprintf("%s-subscription", o.SampleAppName)
 				)
 
-				if _, err := clusterClient.ClusterV1alpha1().Placements(testNamespace).Get(context.TODO(), placementResourceName, metav1.GetOptions{}); err != nil {
+				if _, err = clusterClient.ClusterV1alpha1().Placements(testNamespace).Get(context.TODO(), placementResourceName, metav1.GetOptions{}); err != nil {
 					return errors.New(fmt.Sprintf("Missing Placement resource \"%s\" in namespace %s", placementResourceName, testNamespace))
 				}
 				fmt.Fprintf(streams.Out, "Placement resource \"%s\" created successfully in namespace %s.\n", placementResourceName, testNamespace)
 
-				if _, err := clusterClient.ClusterV1alpha1().ManagedClusterSets().Get(context.TODO(), managedClusterSetName, metav1.GetOptions{}); err != nil {
+				if _, err = clusterClient.ClusterV1alpha1().ManagedClusterSets().Get(context.TODO(), managedClusterSetName, metav1.GetOptions{}); err != nil {
 					return errors.New(fmt.Sprintf("Missing ManagedClusterSet resource \"%s\"", managedClusterSetName))
 				}
 				fmt.Fprintf(streams.Out, "ManagedClusterSet resource \"%s\" created successfully.\n", managedClusterSetName)
 
-				if _, err := clusterClient.ClusterV1alpha1().ManagedClusterSetBindings(testNamespace).Get(context.TODO(), managedClusterSetBindingName, metav1.GetOptions{}); err != nil {
+				if _, err = clusterClient.ClusterV1alpha1().ManagedClusterSetBindings(testNamespace).Get(context.TODO(), managedClusterSetBindingName, metav1.GetOptions{}); err != nil {
 					return errors.New(fmt.Sprintf("Missing ManagedClusterSetBinding resource \"%s\" in namespace %s", managedClusterSetBindingName, testNamespace))
 				}
 				fmt.Fprintf(streams.Out, "ManagedClusterSetBinding resource \"%s\" created successfully in namespace %s.\n", managedClusterSetBindingName, testNamespace)

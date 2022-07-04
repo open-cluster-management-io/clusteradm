@@ -79,6 +79,9 @@ spec:
                 description: InsecureSkipVerify is used to skip repo server's TLS
                   certificate verification
                 type: boolean
+              watchNamespaceScopedResources:
+                description: WatchNamespaceScopedResources is used to enable watching namespace scope Helm chart resources
+                type: boolean
               secretRef:
                 description: Secret to use to access the helm-repo defined in the
                   CatalogSource.

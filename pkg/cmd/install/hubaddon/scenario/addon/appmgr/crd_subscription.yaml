@@ -251,6 +251,9 @@ spec:
                   - kinds
                   type: object
                 type: array
+              watchHelmNamespaceScopedResources:
+                description: WatchHelmNamespaceScopedResources is used to enable watching namespace scope Helm chart resources
+                type: boolean
               placement:
                 description: For hub use only, to specify which clusters to go to
                 properties:

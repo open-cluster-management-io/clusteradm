@@ -14,6 +14,8 @@ type Options struct {
 
 	Cluster string
 
+	Placement string
+
 	Workname string
 
 	FileNameFlags genericclioptions.FileNameFlags

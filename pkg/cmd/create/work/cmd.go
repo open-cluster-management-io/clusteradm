@@ -12,8 +12,21 @@ import (
 )
 
 var example = `
-# Create manifestwork on a specified managed cluster"
+# Create manifestwork on a specified managed cluster.
 %[1]s create work work-example -f xxx.yaml --clusters cluster1
+
+# Update manifestwork on a specified managed cluster.
+%[1]s create work work-example -f xxx.yaml --clusters cluster1 --overwrite
+
+# Create manifestwork on placement selected managed clusters.
+# For example, if placement1 in default namespace select cluster1 and cluster2, 
+# then the manifestwork will be created on cluster1 and cluster2.
+%[1]s create work work-example -f xxx.yaml --placement default/placement1
+
+# Reschedule manifestwork to placement newly selected clusters.
+# For example, if placement1 update decision to cluster2 and cluster3, 
+# then the manifestwork will be deleted from cluster1 and created on cluster3.
+%[1]s create work work-example -f xxx.yaml --placement default/placement1 --overwrite
 `
 
 // NewCmd...
@@ -47,6 +60,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	}
 
 	cmd.Flags().StringVar(&o.Cluster, "clusters", "", "Names of the managed cluster to apply work")
+	cmd.Flags().StringVar(&o.Placement, "placement", "", "Specify an existing placement with format <namespace>/<name>")
 	cmd.Flags().BoolVar(&o.Overwrite, "overwrite", false, "Overwrite the existing work if it exists already")
 	o.FileNameFlags.AddFlags(cmd.Flags())
 

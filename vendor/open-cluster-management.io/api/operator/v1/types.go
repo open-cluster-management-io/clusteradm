@@ -13,12 +13,13 @@ import (
 
 // ClusterManager configures the controllers on the hub that govern registration and work distribution for attached Klusterlets.
 // In Default mode, ClusterManager will only be deployed in open-cluster-management-hub namespace.
-// In Detached mode, ClusterManager will be deployed in the namespace with the same name as cluster manager.
+// In Hosted mode, ClusterManager will be deployed in the namespace with the same name as cluster manager.
 type ClusterManager struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec represents a desired deployment configuration of controllers that govern registration and work distribution for attached Klusterlets.
+	// +kubebuilder:default={deployOption: {mode: Default}}
 	Spec ClusterManagerSpec `json:"spec"`
 
 	// Status represents the current status of controllers that govern the lifecycle of managed clusters.
@@ -51,29 +52,107 @@ type ClusterManagerSpec struct {
 	// Default mode is used if DeployOption is not set.
 	// +optional
 	// +kubebuilder:default={mode: Default}
-	DeployOption DeployOption `json:"deployOption,omitempty"`
+	DeployOption ClusterManagerDeployOption `json:"deployOption,omitempty"`
+
+	// RegistrationConfiguration contains the configuration of registration
+	// +optional
+	RegistrationConfiguration *RegistrationConfiguration `json:"registrationConfiguration,omitempty"`
 }
 
-// DeployOption describes the deploy options for cluster-manager or klusterlet
-type DeployOption struct {
-	// Mode can be Default or Detached.
-	// For cluster-manager:
-	//   - In Default mode, the Hub is installed as a whole and all parts of Hub are deployed in the same cluster.
-	//   - In Detached mode, only crd and configurations are installed on one cluster(defined as hub-cluster). Controllers run in another cluster (defined as management-cluster) and connect to the hub with the kubeconfig in secret of "external-hub-kubeconfig"(a kubeconfig of hub-cluster with cluster-admin permission).
-	// For klusterlet:
-	//   - In Default mode, all klusterlet related resources are deployed on the managed cluster.
-	//   - In Detached mode, only crd and configurations are installed on the spoke/managed cluster. Controllers run in another cluster (defined as management-cluster) and connect to the mangaged cluster with the kubeconfig in secret of "external-managed-kubeconfig"(a kubeconfig of managed-cluster with cluster-admin permission).
-	// The purpose of Detached mode is to give it more flexibility, for example we can install a hub on a cluster with no worker nodes, meanwhile running all deployments on another more powerful cluster.
-	// And we can also register a managed cluster to the hub that has some firewall rules preventing access from the managed cluster.
-	//
+type RegistrationConfiguration struct {
+	// FeatureGates represents the list of feature gates for registration
+	// If it is set empty, default feature gates will be used.
+	// If it is set, featuregate/Foo is an example of one item in FeatureGates:
+	//   1. If featuregate/Foo does not exist, registration-operator will discard it
+	//   2. If featuregate/Foo exists and is false by default. It is now possible to set featuregate/Foo=[false|true]
+	//   3. If featuregate/Foo exists and is true by default. If a cluster-admin upgrading from 1 to 2 wants to continue having featuregate/Foo=false,
+	//  	he can set featuregate/Foo=false before upgrading. Let's say the cluster-admin wants featuregate/Foo=false.
+	// +optional
+	FeatureGates []FeatureGate `json:"featureGates,omitempty"`
+}
+
+type FeatureGate struct {
+	// Feature is the key of feature gate. e.g. featuregate/Foo.
+	// +kubebuilder:validation:Required
+	// +required
+	Feature string `json:"feature"`
+
+	// Mode is either Enable, Disable, "" where "" is Disable by default.
+	// In Enable mode, a valid feature gate `featuregate/Foo` will be set to "--featuregate/Foo=true".
+	// In Disable mode, a valid feature gate `featuregate/Foo` will be set to "--featuregate/Foo=false".
+	// +kubebuilder:default:=Disable
+	// +kubebuilder:validation:Enum:=Enable;Disable
+	// +optional
+	Mode FeatureGateModeType `json:"mode,omitempty"`
+}
+
+type FeatureGateModeType string
+
+const (
+	// Valid FeatureGateModeType value is Enable, Disable.
+	FeatureGateModeTypeEnable  FeatureGateModeType = "Enable"
+	FeatureGateModeTypeDisable FeatureGateModeType = "Disable"
+)
+
+// HostedClusterManagerConfiguration represents customized configurations we need to set for clustermanager in the Hosted mode.
+type HostedClusterManagerConfiguration struct {
+	// RegistrationWebhookConfiguration represents the customized webhook-server configuration of registration.
+	// +optional
+	RegistrationWebhookConfiguration WebhookConfiguration `json:"registrationWebhookConfiguration,omitempty"`
+
+	// WorkWebhookConfiguration represents the customized webhook-server configuration of work.
+	// +optional
+	WorkWebhookConfiguration WebhookConfiguration `json:"workWebhookConfiguration,omitempty"`
+}
+
+// WebhookConfiguration has two properties: Address and Port.
+type WebhookConfiguration struct {
+	// Address represents the address of a webhook-server.
+	// It could be in IP format or fqdn format.
+	// The Address must be reachable by apiserver of the hub cluster.
+	// +required
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$
+	Address string `json:"address"`
+
+	// Port represents the port of a webhook-server. The default value of Port is 443.
+	// +optional
+	// +default=443
+	// +kubebuilder:default=443
+	// +kubebuilder:validation:Maximum=65535
+	Port int32 `json:"port,omitempty"`
+}
+
+// KlusterletDeployOption describes the deploy options for klusterlet
+type KlusterletDeployOption struct {
+	// Mode can be Default or Hosted. It is Default mode if not specified
+	// In Default mode, all klusterlet related resources are deployed on the managed cluster.
+	// In Hosted mode, only crd and configurations are installed on the spoke/managed cluster. Controllers run in another
+	// cluster (defined as management-cluster) and connect to the mangaged cluster with the kubeconfig in secret of
+	// "external-managed-kubeconfig"(a kubeconfig of managed-cluster with cluster-admin permission).
 	// Note: Do not modify the Mode field once it's applied.
-	//
+	// +optional
+	Mode InstallMode `json:"mode"`
+}
+
+// ClusterManagerDeployOption describes the deploy options for cluster-manager
+type ClusterManagerDeployOption struct {
+	// Mode can be Default or Hosted.
+	// In Default mode, the Hub is installed as a whole and all parts of Hub are deployed in the same cluster.
+	// In Hosted mode, only crd and configurations are installed on one cluster(defined as hub-cluster). Controllers run in another
+	// cluster (defined as management-cluster) and connect to the hub with the kubeconfig in secret of "external-hub-kubeconfig"(a kubeconfig
+	// of hub-cluster with cluster-admin permission).
+	// Note: Do not modify the Mode field once it's applied.
 	// +required
 	// +default=Default
 	// +kubebuilder:validation:Required
 	// +kubebuilder:default=Default
-	// +kubebuilder:validation:Enum=Default;Detached
-	Mode InstallMode `json:"mode"`
+	// +kubebuilder:validation:Enum=Default;Hosted
+	Mode InstallMode `json:"mode,omitempty"`
+
+	// Hosted includes configurations we needs for clustermanager in the Hosted mode.
+	// +optional
+	Hosted *HostedClusterManagerConfiguration `json:"hosted,omitempty"`
 }
 
 // InstallMode represents the mode of deploy cluster-manager or klusterlet
@@ -86,7 +165,12 @@ const (
 
 	// InstallModeDetached means deploying components outside.
 	// The cluster-manager will be deployed outside of the hub-cluster, the klusterlet will be deployed outside of the managed-cluster.
+	// DEPRECATED: please use Hosted instead.
 	InstallModeDetached InstallMode = "Detached"
+
+	// InstallModeHosted means deploying components outside.
+	// The cluster-manager will be deployed outside of the hub-cluster, the klusterlet will be deployed outside of the managed-cluster.
+	InstallModeHosted InstallMode = "Hosted"
 )
 
 // ClusterManagerStatus represents the current status of the registration and work distribution controllers running on the hub.
@@ -187,7 +271,7 @@ type ClusterManagerList struct {
 // Klusterlet represents controllers to install the resources for a managed cluster.
 // When configured, the Klusterlet requires a secret named bootstrap-hub-kubeconfig in the
 // agent namespace to allow API requests to the hub for the registration protocol.
-// In Detached mode, the Klusterlet requires an additional secret named external-managed-kubeconfig
+// In Hosted mode, the Klusterlet requires an additional secret named external-managed-kubeconfig
 // in the agent namespace to allow API requests to the managed cluster for resources installation.
 type Klusterlet struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -202,22 +286,24 @@ type Klusterlet struct {
 
 // KlusterletSpec represents the desired deployment configuration of Klusterlet agent.
 type KlusterletSpec struct {
-	// Namespace is the namespace to deploy the agent.
+	// Namespace is the namespace to deploy the agent on the managed cluster.
 	// The namespace must have a prefix of "open-cluster-management-", and if it is not set,
 	// the namespace of "open-cluster-management-agent" is used to deploy agent.
-	// Note: in Detach mode, this field will be **ignored**, the agent will be deployed to the
-	// namespace with the same name as klusterlet.
+	// In addition, the add-ons are deployed to the namespace of "{Namespace}-addon".
+	// In the Hosted mode, this namespace still exists on the managed cluster to contain
+	// necessary resources, like service accounts, roles and rolebindings, while the agent
+	// is deployed to the namespace with the same name as klusterlet on the management cluster.
 	// +optional
 	Namespace string `json:"namespace,omitempty"`
 
 	// RegistrationImagePullSpec represents the desired image configuration of registration agent.
-	// +required
-	// +kubebuilder:default=quay.io/open-cluster-management/registration
-	RegistrationImagePullSpec string `json:"registrationImagePullSpec"`
+	// quay.io/open-cluster-management.io/registration:latest will be used if unspecified.
+	// +optional
+	RegistrationImagePullSpec string `json:"registrationImagePullSpec,omitempty"`
 
 	// WorkImagePullSpec represents the desired image configuration of work agent.
-	// +required
-	// +kubebuilder:default=quay.io/open-cluster-management/work
+	// quay.io/open-cluster-management.io/work:latest will be used if unspecified.
+	// +optional
 	WorkImagePullSpec string `json:"workImagePullSpec,omitempty"`
 
 	// ClusterName is the name of the managed cluster to be created on hub.
@@ -236,8 +322,16 @@ type KlusterletSpec struct {
 
 	// DeployOption contains the options of deploying a klusterlet
 	// +optional
-	// +kubebuilder:default={mode: Default}
-	DeployOption DeployOption `json:"deployOption,omitempty"`
+	DeployOption KlusterletDeployOption `json:"deployOption,omitempty"`
+
+	// RegistrationConfiguration contains the configuration of registration
+	// +optional
+	RegistrationConfiguration *RegistrationConfiguration `json:"registrationConfiguration,omitempty"`
+
+	// HubApiServerHostAlias contains the host alias for hub api server.
+	// registration-agent and work-agent will use it to communicate with hub api server.
+	// +optional
+	HubApiServerHostAlias *HubApiServerHostAlias `json:"hubApiServerHostAlias,omitempty"`
 }
 
 // ServerURL represents the apiserver url and ca bundle that is accessible externally
@@ -263,6 +357,22 @@ type NodePlacement struct {
 	// The default is an empty list.
 	// +optional
 	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
+}
+
+// HubApiServerHostAlias holds the mapping between IP and hostname that will be injected as an entry in the
+// pod's hosts file.
+type HubApiServerHostAlias struct {
+	// IP address of the host file entry.
+	// +required
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=`^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$`
+	IP string `json:"ip"`
+
+	// Hostname for the above IP address.
+	// +required
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=`^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$`
+	Hostname string `json:"hostname"`
 }
 
 // KlusterletStatus represents the current status of Klusterlet agent.

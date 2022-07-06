@@ -4,13 +4,18 @@ package work
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/cli-runtime/pkg/resource"
+	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	workclientset "open-cluster-management.io/api/client/work/clientset/versioned"
+	clusterv1beta1 "open-cluster-management.io/api/cluster/v1beta1"
 	workapiv1 "open-cluster-management.io/api/work/v1"
 )
 
@@ -29,8 +34,14 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 }
 
 func (o *Options) validate() (err error) {
-	if len(o.Cluster) == 0 {
-		return fmt.Errorf("the name of the cluster must be specified")
+	if len(o.Cluster) == 0 && len(o.Placement) == 0 {
+		return fmt.Errorf("--clusters or --placement must be specified")
+	}
+	if len(o.Cluster) > 0 && len(o.Placement) > 0 {
+		return fmt.Errorf("--clusters and --placement can only specify one")
+	}
+	if len(o.Placement) > 0 && len(strings.Split(o.Placement, "/")) != 2 {
+		return fmt.Errorf("the name of the placement %s must be in the format of <namespace>/<name>", o.Placement)
 	}
 	if len(*o.FileNameFlags.Filenames) == 0 {
 		return fmt.Errorf("manifest files must be specified")
@@ -47,18 +58,26 @@ func (o *Options) run() (err error) {
 	if err != nil {
 		return err
 	}
+	clusterClient, err := clusterclientset.NewForConfig(restConfig)
+	if err != nil {
+		return err
+	}
 
 	manifests, err := o.readManifests()
 	if err != nil {
 		return err
 	}
 
-	err = o.applyWork(workClient, manifests)
+	addedClusters, deletedClusters, err := o.getClusters(workClient, clusterClient)
 	if err != nil {
 		return err
 	}
 
-	fmt.Fprintf(o.Streams.Out, "work %s in cluster %s is created\n", o.Workname, o.Cluster)
+	err = o.applyWork(workClient, manifests, addedClusters, deletedClusters)
+	if err != nil {
+		return err
+	}
+
 	return
 }
 
@@ -88,33 +107,122 @@ func (o *Options) readManifests() ([]workapiv1.Manifest, error) {
 	return manifests, nil
 }
 
-func (o *Options) applyWork(workClient workclientset.Interface, manifests []workapiv1.Manifest) error {
-	work, err := workClient.WorkV1().ManifestWorks(o.Cluster).Get(context.TODO(), o.Workname, metav1.GetOptions{})
+func (o *Options) getPlacement(clusterClient *clusterclientset.Clientset) (*clusterv1beta1.Placement, error) {
+	parts := strings.Split(o.Placement, "/")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("the name of the placement %s must be in the format of <namespace>/<name>", o.Placement)
+	}
 
-	switch {
-	case errors.IsNotFound(err):
-		work = &workapiv1.ManifestWork{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      o.Workname,
-				Namespace: o.Cluster,
-			},
-			Spec: workapiv1.ManifestWorkSpec{
-				Workload: workapiv1.ManifestsTemplate{
-					Manifests: manifests,
-				},
-			},
+	namespace, name := parts[0], parts[1]
+	placement, err := clusterClient.ClusterV1beta1().Placements(namespace).Get(context.Background(), name, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get placement %s", err)
+	}
+
+	return placement, nil
+}
+
+func (o *Options) getWorkDepolyClusters(workClient workclientset.Interface) (sets.String, error) {
+	works, err := workClient.WorkV1().ManifestWorks("").List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	depolyClusters := sets.NewString()
+	for _, work := range works.Items {
+		if work.Name == o.Workname {
+			depolyClusters.Insert(work.Namespace)
 		}
-		_, createErr := workClient.WorkV1().ManifestWorks(o.Cluster).Create(context.TODO(), work, metav1.CreateOptions{})
-		return createErr
-	case err != nil:
-		return err
+	}
+	return depolyClusters, nil
+}
+
+func (o *Options) getClusters(workClient workclientset.Interface, clusterClient *clusterclientset.Clientset) (sets.String, sets.String, error) {
+	existingDeployClusters, err := o.getWorkDepolyClusters(workClient)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	if !o.Overwrite {
-		return fmt.Errorf("work %s in cluster %s already exists", o.Workname, o.Cluster)
+	// if define --clusters, return that as addedClusters and no deletedClusters
+	if len(o.Cluster) > 0 {
+		return sets.NewString().Insert(o.Cluster), nil, nil
 	}
 
-	work.Spec.Workload.Manifests = manifests
-	_, err = workClient.WorkV1().ManifestWorks(o.Cluster).Update(context.TODO(), work, metav1.UpdateOptions{})
-	return err
+	placement, err := o.getPlacement(clusterClient)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	pdtracker := clusterv1beta1.NewPlacementDecisionClustersTracker(placement, placementDecisionGetter{clusterClient: clusterClient}, existingDeployClusters)
+	addedClusters, deletedClusters, err := pdtracker.Get()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return addedClusters, deletedClusters, nil
+}
+
+func (o *Options) applyWork(workClient workclientset.Interface, manifests []workapiv1.Manifest, addedClusters, deletedClusters sets.String) error {
+	for clusterName := range deletedClusters {
+		if o.Overwrite {
+			if err := workClient.WorkV1().ManifestWorks(clusterName).Delete(context.TODO(), o.Workname, metav1.DeleteOptions{}); err != nil {
+				fmt.Fprintf(o.Streams.Out, "failed to delete work %s in cluster %s as %s\n", o.Workname, clusterName, err)
+			}
+			fmt.Fprintf(o.Streams.Out, "delete work %s in cluster %s\n", o.Workname, clusterName)
+		}
+	}
+
+	for clusterName := range addedClusters {
+		work, err := workClient.WorkV1().ManifestWorks(clusterName).Get(context.TODO(), o.Workname, metav1.GetOptions{})
+
+		switch {
+		case errors.IsNotFound(err):
+			work = &workapiv1.ManifestWork{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      o.Workname,
+					Namespace: clusterName,
+				},
+				Spec: workapiv1.ManifestWorkSpec{
+					Workload: workapiv1.ManifestsTemplate{
+						Manifests: manifests,
+					},
+				},
+			}
+			if _, err := workClient.WorkV1().ManifestWorks(clusterName).Create(context.TODO(), work, metav1.CreateOptions{}); err != nil {
+				return err
+			}
+			fmt.Fprintf(o.Streams.Out, "create work %s in cluster %s\n", o.Workname, clusterName)
+			continue
+		case err != nil:
+			return err
+		}
+
+		if !o.Overwrite {
+			fmt.Fprintf(o.Streams.Out, "work %s in cluster %s already exists\n", o.Workname, clusterName)
+		} else {
+			work.Spec.Workload.Manifests = manifests
+			if _, err := workClient.WorkV1().ManifestWorks(clusterName).Update(context.TODO(), work, metav1.UpdateOptions{}); err != nil {
+				return err
+			}
+			fmt.Fprintf(o.Streams.Out, "update work %s in cluster %s\n", o.Workname, clusterName)
+		}
+	}
+
+	return nil
+}
+
+type placementDecisionGetter struct {
+	clusterClient *clusterclientset.Clientset
+}
+
+func (pdl placementDecisionGetter) List(selector labels.Selector, namespace string) ([]*clusterv1beta1.PlacementDecision, error) {
+	decisionList, err := pdl.clusterClient.ClusterV1beta1().PlacementDecisions(namespace).List(context.Background(), metav1.ListOptions{LabelSelector: selector.String()})
+	if err != nil {
+		return nil, err
+	}
+	var decisions []*clusterv1beta1.PlacementDecision
+	for i := range decisionList.Items {
+		decisions = append(decisions, &decisionList.Items[i])
+	}
+	return decisions, nil
 }

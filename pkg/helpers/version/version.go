@@ -13,7 +13,7 @@ type VersionBundle struct {
 	Operator     string
 }
 
-var defaultBundleVersion = "0.7.0"
+var defaultBundleVersion = "0.8.0"
 
 func GetDefaultBundleVersion() string {
 	return defaultBundleVersion
@@ -55,6 +55,13 @@ func GetVersionBundle(version string) (VersionBundle, error) {
 		Placement:    "v0.4.0",
 		Work:         "v0.7.0",
 		Operator:     "v0.7.0",
+	}
+
+	versionBundleList["0.8.0"] = VersionBundle{
+		Registration: "v0.8.0",
+		Placement:    "v0.8.0",
+		Work:         "v0.8.0",
+		Operator:     "v0.8.0",
 	}
 
 	// default

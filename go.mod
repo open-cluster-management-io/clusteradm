@@ -24,7 +24,7 @@ require (
 	k8s.io/component-base v0.23.5
 	k8s.io/klog/v2 v2.30.0
 	k8s.io/kubectl v0.23.5
-	open-cluster-management.io/api v0.7.1-0.20220630123726-101917f3a51a
+	open-cluster-management.io/api v0.8.0
 	open-cluster-management.io/cluster-proxy v0.1.2
 	open-cluster-management.io/managed-serviceaccount v0.2.1-0.20220427065210-de6a7b7b5be8
 	sigs.k8s.io/apiserver-network-proxy v0.0.30

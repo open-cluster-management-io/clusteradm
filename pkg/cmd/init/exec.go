@@ -6,7 +6,9 @@ import (
 	"os"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
+	"open-cluster-management.io/clusteradm/pkg/cmd/preflight"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
@@ -50,6 +52,28 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 func (o *Options) validate() error {
 	if o.force {
 		return nil
+	}
+	// preflight check
+	f := o.ClusteradmFlags.KubectlFactory
+	kubeClient, _, _, err := helpers.GetClients(f)
+	if err != nil {
+		return err
+	}
+	if err := preflight.RunChecks(
+		[]preflight.Checker{
+			preflight.HubApiServerCheck{
+				ClusterCtx: o.ClusteradmFlags.Context,
+				ConfigPath: "", // TODO(@Promacanthus)： user custom kubeconfig path from command line arguments.
+			},
+			preflight.ClusterInfoCheck{
+				Namespace:    metav1.NamespacePublic,
+				ResourceName: preflight.BootstrapConfigMap,
+				ClusterCtx:   o.ClusteradmFlags.Context,
+				ConfigPath:   "", // TODO(@Promacanthus)： user custom kubeconfig path from command line arguments.
+				Client:       kubeClient,
+			},
+		}, os.Stderr); err != nil {
+		return err
 	}
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {

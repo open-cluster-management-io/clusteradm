@@ -22,9 +22,11 @@ import (
 )
 
 const (
-	placement            = "sampleapp"
 	defaultSampleAppName = "sampleapp"
 	pathToAppManifests   = "scenario/sampleapp"
+	clusterSetLabel      = "cluster.open-cluster-management.io/clusterset"
+	placementLabel       = "placement"
+	placementLabelValue  = "sampleapp"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -74,7 +76,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 	dryRun bool) error {
 
 	// Label all managed clusters with clusterset and placement labels
-	err := o.labelManagedClusters(clusterClient)
+	err := o.checkManagedClusterBinding(clusterClient, dryRun)
 	if err != nil {
 		return err
 	}
@@ -97,26 +99,30 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 	return apply.WriteOutput(o.OutputFile, output)
 }
 
-func (o *Options) labelManagedClusters(clusterClient clusterclientset.Interface) error {
+func (o *Options) checkManagedClusterBinding(clusterClient clusterclientset.Interface, dryRun bool) error {
+
+	// Skip if dryRun
+	if dryRun {
+		return nil
+	}
 
 	// Get managed clusters
-	listOpt := metav1.ListOptions{}
-	clusters, err := clusterClient.ClusterV1().ManagedClusters().List(context.TODO(), listOpt)
+	clusters, err := clusterClient.ClusterV1().ManagedClusters().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
 
-	// Label managed clusters
+	// Check for binding labels in managed clusters
 	for _, cluster := range clusters.Items {
-		currentcluster, err := clusterClient.ClusterV1().ManagedClusters().Get(context.TODO(), cluster.Name, metav1.GetOptions{})
-		if len(currentcluster.Labels) == 0 {
-			currentcluster.Labels = map[string]string{}
-		}
-		currentcluster.Labels["cluster.open-cluster-management.io/clusterset"] = fmt.Sprintf("app-%s", o.SampleAppName)
-		currentcluster.Labels["placement"] = placement
-		_, err = clusterClient.ClusterV1().ManagedClusters().Update(context.TODO(), currentcluster, metav1.UpdateOptions{})
+		managedCluster, err := clusterClient.ClusterV1().ManagedClusters().Get(context.TODO(), cluster.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
+		}
+		if cs, ok := managedCluster.Labels[clusterSetLabel]; !ok || (cs != fmt.Sprintf("app-%s", o.SampleAppName)) {
+			fmt.Fprintf(o.Streams.Out, "[WARNING] Label \"%s=%s\" has not been found in ManagedCluster %s, could not establish binding.\n", clusterSetLabel, fmt.Sprintf("app-%s", o.SampleAppName), cluster.Name)
+		}
+		if p, ok := managedCluster.Labels[placementLabel]; !ok || (p != placementLabelValue) {
+			fmt.Fprintf(o.Streams.Out, "[WARNING] Label \"%s=%s\" has not been found in ManagedCluster %s, could not establish binding.\n", placementLabel, placementLabelValue, cluster.Name)
 		}
 	}
 

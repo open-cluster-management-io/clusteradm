@@ -50,6 +50,7 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 		dryRun                = false
 		clusterSetLabel       = "cluster.open-cluster-management.io/clusterset"
 		placementLabel        = "placement"
+		placementLabelValue   = "sampleapp"
 		channelGroup          = "apps.open-cluster-management.io"
 		channelVersion        = "v1"
 		channelResource       = "channels"
@@ -69,6 +70,10 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 		cluster := &clusterapiv1.ManagedCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: clusterName,
+				Labels: map[string]string{
+					clusterSetLabel: fmt.Sprintf("app-%s", testSampleAppName),
+					placementLabel:  placementLabelValue,
+				},
 			},
 		}
 
@@ -190,19 +195,6 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 			gomega.Eventually(func() error {
-				for _, cluster := range clusters {
-					managedCluster, err := clusterClient.ClusterV1().ManagedClusters().Get(context.TODO(), cluster, metav1.GetOptions{})
-					if err != nil {
-						return err
-					}
-					if _, ok := managedCluster.Labels[clusterSetLabel]; !ok {
-						return errors.New(fmt.Sprintf("Missing label \"%s\" in ManagedCluster %s", clusterSetLabel, cluster))
-					}
-					if _, ok := managedCluster.Labels[placementLabel]; !ok {
-						return errors.New(fmt.Sprintf("Missing label \"%s\" in ManagedCluster %s", placementLabel, cluster))
-					}
-					fmt.Fprintf(streams.Out, "ManagedCluster %s labeled successfully.\n", cluster)
-				}
 
 				var (
 					placementResourceName        = fmt.Sprintf("%s-placement", o.SampleAppName)

@@ -115,3 +115,9 @@ Enable specific add-on(s) agent deployment to the given managed clusters of the 
 `clusteradm addon enable --names application-manager --namespace <namespace> --clusters <cluster1>,<cluster2>,....`
 
 `clusteradm addon enable --names governance-policy-framework --namespace <namespace> --clusters <cluster1>,<cluster2>,....`
+
+### create sample application
+
+Create and Deploy a Sample Subscription Application
+
+`clusteradm create sampleapp sampleapp1`

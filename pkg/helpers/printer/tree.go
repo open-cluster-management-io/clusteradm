@@ -21,6 +21,8 @@ import (
 )
 
 func PrintWorkDetail(n gotree.Tree, work *workapiv1.ManifestWork) {
+	node := n.Add(fmt.Sprintf("<name>: %v", work.ObjectMeta.Name))
+
 	condByRs := make(map[string][]workapiv1.ManifestCondition)
 	for _, cond := range work.Status.ResourceStatus.Manifests {
 		cond := cond
@@ -28,7 +30,7 @@ func PrintWorkDetail(n gotree.Tree, work *workapiv1.ManifestWork) {
 		condByRs[groupResource] = append(condByRs[groupResource], cond)
 	}
 	for gr, rss := range condByRs {
-		rsNode := n.Add(gr)
+		rsNode := node.Add(fmt.Sprintf("<GroupResource>: %v", gr))
 		for _, rs := range rss {
 			identifier := rs.ResourceMeta.Name
 			if len(rs.ResourceMeta.Namespace) > 0 {

@@ -10,11 +10,31 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/cli-runtime/pkg/printers"
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	clusterapiv1beta1 "open-cluster-management.io/api/cluster/v1beta1"
+	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 )
 
+var pngOpt = printers.PrintOptions{
+	NoHeaders:     false,
+	WithNamespace: false,
+	WithKind:      false,
+	Wide:          false,
+	ShowLabels:    false,
+	Kind: schema.GroupKind{
+		Group: "cluster.open-cluster-management.io",
+		Kind:  "ManagedCluster",
+	},
+	ColumnLabels:     []string{},
+	SortBy:           "",
+	AllowMissingKeys: true,
+}
+
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+	o.printer = printer.NewPrinter(o.ClusteradmFlags.Output)
+
 	return nil
 }
 
@@ -40,6 +60,16 @@ func (o *Options) run() (err error) {
 		return err
 	}
 
+	if o.printer.IsYaml() {
+		for _, item := range clustersets.Items {
+			err = o.printer.PrintObject(o.Streams.Out, &item, printers.PrintOptions{})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
 	bindingMap := map[string][]string{}
 
 	bindings, err := clusterClient.ClusterV1beta1().ManagedClusterSetBindings(metav1.NamespaceAll).List(context.TODO(), metav1.ListOptions{})
@@ -56,7 +86,7 @@ func (o *Options) run() (err error) {
 
 	table := converToTable(clustersets, bindingMap)
 
-	return o.printer.PrintObj(table, o.Streams.Out)
+	return o.printer.PrintObject(o.Streams.Out, table, pngOpt)
 }
 
 func converToTable(clustersets *clusterapiv1beta1.ManagedClusterSetList, bindingMap map[string][]string) *metav1.Table {

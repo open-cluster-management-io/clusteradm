@@ -2,20 +2,17 @@
 package init
 
 import (
+	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
-	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 	helperwait "open-cluster-management.io/clusteradm/pkg/helpers/wait"
 
 	"github.com/spf13/cobra"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 	version "open-cluster-management.io/clusteradm/pkg/helpers/version"
 )
@@ -118,10 +115,7 @@ func (o *Options) run() error {
 
 	//if service-account wait for the sa secret
 	if !o.useBootstrapToken && !o.ClusteradmFlags.DryRun {
-		if err := waitForServiceAccountToken(kubeClient); err != nil {
-			return err
-		}
-		token, err = helpers.GetBootstrapTokenFromSA(kubeClient)
+		token, err = helpers.GetBootstrapTokenFromSA(context.TODO(), kubeClient)
 		if err != nil {
 			return err
 		}
@@ -198,28 +192,4 @@ func (o *Options) run() error {
 	)
 
 	return apply.WriteOutput(o.outputFile, output)
-}
-
-func waitForServiceAccountToken(kubeClient kubernetes.Interface) error {
-	tokenSpinner := printer.NewSpinner("Waiting for service account token...", time.Second)
-	tokenSpinner.FinalMSG = "Service account token successfully signed.\n"
-	tokenSpinner.Start()
-	defer tokenSpinner.Stop()
-	return wait.PollImmediate(1*time.Second, 10*time.Second, func() (bool, error) {
-		found, err := pollServiceAccountToken(kubeClient)
-		if err != nil {
-			// Don't print a success message if there was an error
-			tokenSpinner.FinalMSG = ""
-			return found, err
-		}
-		return found, nil
-	})
-}
-
-func pollServiceAccountToken(kubeClient kubernetes.Interface) (bool, error) {
-	_, err := helpers.GetBootstrapTokenFromSA(kubeClient)
-	if err != nil {
-		return false, err
-	}
-	return true, nil
 }

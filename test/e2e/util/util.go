@@ -3,11 +3,12 @@ package util
 
 import (
 	"fmt"
-	. "github.com/onsi/gomega"
-	"open-cluster-management.io/clusteradm/pkg/config"
 	"os"
 	"path"
 	"path/filepath"
+
+	. "github.com/onsi/gomega"
+	"open-cluster-management.io/clusteradm/pkg/config"
 )
 
 // PrepareE2eEnvironment will init the e2e environment and join managedcluster1 to hub.
@@ -83,6 +84,10 @@ func initE2E() *TestE2eConfig {
 			panic(fmt.Sprintf("error occurred while cleaning hub: %s", err.Error()))
 		}
 		err = WaitNamespaceDeleted(e2eConf.Kubeconfigpath, e2eConf.Cluster().Hub().Context(), config.OpenClusterManagementNamespace)
+		if err != nil {
+			panic(fmt.Sprintf("error occurred while cleaning hub: %s", err.Error()))
+		}
+		err = WaitCRDDeleted(e2eConf.Kubeconfigpath, e2eConf.Cluster().Hub().Context(), "clustermanagers.operator.open-cluster-management.io")
 		if err != nil {
 			panic(fmt.Sprintf("error occurred while cleaning hub: %s", err.Error()))
 		}

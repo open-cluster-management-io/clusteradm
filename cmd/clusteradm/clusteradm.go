@@ -69,6 +69,7 @@ func main() {
 
 	clusteradmFlags := genericclioptionsclusteradm.NewClusteradmFlags(f)
 	clusteradmFlags.AddFlags(flags)
+	clusteradmFlags.SetContext(kubeConfigFlags.Context)
 
 	// From this point and forward we get warnings on flags that contain "_" separators
 

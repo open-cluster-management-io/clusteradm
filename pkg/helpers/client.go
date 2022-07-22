@@ -201,7 +201,7 @@ func GetBootstrapTokenFromSA(ctx context.Context, kubeClient kubernetes.Interfac
 			},
 		}, metav1.CreateOptions{})
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get token from sa %s/%s: %v", config.OpenClusterManagementNamespace, config.BootstrapSAName, err)
 	}
 	return tr.Status.Token, nil
 }

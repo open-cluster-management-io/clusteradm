@@ -137,14 +137,6 @@ func (o *Options) run() error {
 	}
 	output = append(output, out...)
 
-	//if service-account wait for the sa secret
-	if !o.useBootstrapToken && !o.ClusteradmFlags.DryRun {
-		token, err = helpers.GetBootstrapTokenFromSA(context.TODO(), kubeClient)
-		if err != nil {
-			return err
-		}
-	}
-
 	out, err = applier.ApplyDeployments(reader, o.values, o.ClusteradmFlags.DryRun, "", "init/operator.yaml")
 	if err != nil {
 		return err
@@ -174,6 +166,14 @@ func (o *Options) run() error {
 		if err := helperwait.WaitUntilClusterManagerRegistrationReady(
 			o.ClusteradmFlags.KubectlFactory,
 			int64(o.ClusteradmFlags.Timeout)); err != nil {
+			return err
+		}
+	}
+
+	//if service-account wait for the sa secret
+	if !o.useBootstrapToken && !o.ClusteradmFlags.DryRun {
+		token, err = helpers.GetBootstrapTokenFromSA(context.TODO(), kubeClient)
+		if err != nil {
 			return err
 		}
 	}

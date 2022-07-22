@@ -20,7 +20,7 @@ clean-e2e:
 start-cluster: 
 	kind create cluster --name ${MANAGED_CLUSTER1_NAME}
 	kind create cluster --name ${MANAGED_CLUSTER2_NAME}
-	kind create cluster --name ${HUB_NAME} --image kindest/node:v1.19.7@sha256:a70639454e97a4b733f9d9b67e12c01f6b0297449d5b9cbbef87473458e26dca
+	kind create cluster --name ${HUB_NAME} --image kindest/node:v1.24.0
 .PHONY: start-cluster 
 
 test-e2e: clean-e2e ensure-kubebuilder-tools start-cluster deps install

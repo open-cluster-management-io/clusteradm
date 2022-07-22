@@ -132,8 +132,12 @@ func WaitResourceToBeDelete(context context.Context, client klusterletclient.Int
 	return errGet
 
 }
+
 func IsAppliedManifestWorkExist(client appliedworkclient.Interface) bool {
 	obj, err := client.WorkV1().AppliedManifestWorks().List(context.Background(), metav1.ListOptions{})
+	if errors.IsNotFound(err) {
+		return false
+	}
 	if err != nil {
 		log.Fatal(err)
 	}

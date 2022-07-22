@@ -8,12 +8,8 @@ import (
 
 var _ = ginkgo.Describe("test clusteradm with timeout", func() {
 	ginkgo.BeforeEach(func() {
+		ginkgo.By("clear e2e environment...")
 		e2e.ClearEnv()
-	})
-
-	ginkgo.AfterEach(func() {
-		ginkgo.By("reset e2e environment...")
-		e2e.ResetEnv()
 	})
 
 	ginkgo.Context("join hub scenario with timeout", func() {

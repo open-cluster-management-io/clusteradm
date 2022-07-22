@@ -30,3 +30,16 @@ jobs:
         go-version: 1.17
     - name: Integration Tests
       run: make test-integration
+  
+  e2e-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+
+    - name: E2E Tests
+      run: make test-e2e

@@ -1220,7 +1220,7 @@ func NewFlagSet(name string, errorHandling ErrorHandling) *FlagSet {
 		argsLenAtDash: -1,
 		interspersed:  true,
 		SortFlags:     true,
-	}
+	} 
 	return f
 }
 

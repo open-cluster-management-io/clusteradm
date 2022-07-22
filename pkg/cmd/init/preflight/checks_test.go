@@ -119,6 +119,15 @@ func TestHubApiServerCheck_Check(t *testing.T) {
 		wantErrorList []error
 	}{
 		{
+			name: "empty context",
+			fields: fields{
+				ClusterCtx: "",
+				ConfigPath: kubeconfigFilePath,
+			},
+			wantWarnings:  []error{errors.New("Hub Api Server is a domain name, maybe you should set HostAlias in klusterlet")},
+			wantErrorList: nil,
+		},
+		{
 			name: "no kubeconfig file",
 			fields: fields{
 				ClusterCtx: currentContext,

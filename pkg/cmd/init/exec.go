@@ -7,8 +7,8 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"open-cluster-management.io/clusteradm/pkg/cmd/init/preflight"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
-	"open-cluster-management.io/clusteradm/pkg/cmd/preflight"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 	"open-cluster-management.io/clusteradm/pkg/helpers/printer"

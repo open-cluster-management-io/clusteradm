@@ -1,12 +1,16 @@
 [comment]: # ( Copyright Contributors to the Open Cluster Management project )**Table of Contents**
 
 - [Contributing guidelines](#contributing-guidelines)
-    - [Terms](#terms)
-    - [Certificate of Origin](#certificate-of-origin)
-    - [Contributing a patch](#contributing-a-patch)
-    - [Issue and pull request management](#issue-and-pull-request-management)
-    - [Requirements](#requirements)
-    - [Develop new commands](#Develop-new-commands)
+  - [Terms](#terms)
+  - [Certificate of Origin](#certificate-of-origin)
+  - [Contributing a patch](#contributing-a-patch)
+  - [Issue and pull request management](#issue-and-pull-request-management)
+- [Requirements](#requirements)
+- [Develop new commands](#develop-new-commands)
+  - [Resources](#resources)
+  - [Client](#client)
+  - [Unit tests](#unit-tests)
+  - [E2E tests](#e2e-tests)
 
 # Contributing guidelines
 
@@ -27,6 +31,7 @@ By contributing to this project, you agree to the Developer Certificate of Origi
 ## Issue and pull request management
 
 Anyone can comment on issues and submit reviews for pull requests. In order to be assigned an issue or pull request, you can leave a `/assign <your Github ID>` comment on the issue or pull request.
+
 # Requirements
 
 - Go 1.17
@@ -43,18 +48,17 @@ clusteradm <cmd> [subcmd] [flags]
 - Each command must support the flag `--dry-run`.
 - The command uses [klog V2](https://github.com/kubernetes/klog) as logging package. All messages must be using `klog.V(x)`, in rare exception `klog.Error` and `klog.Warning` can be used.
 
-
 ## Resources
 
 - Some commands needs resources files, in the project uses the `Go 1.17` `go:embed` functionality to store the resources files.
-- Each command package contains its own resources in the scenario package. The scenario package contains one go file which provides the `go:embed` `embed.FS` files. 
+- Each command package contains its own resources in the scenario package. The scenario package contains one go file which provides the `go:embed` `embed.FS` files.
 
 ## Client
 
 - The [main](cmd/clusteradm.go) provides a cmdutil.Factory which can be leveraged to get different clients and also the *rest.Config. The factory can be passed to the cobra.Command and then save in the Options.
 
 ```Go
-	kubeClient, err := o.factory.KubernetesClientSet()
+kubeClient, err := o.factory.KubernetesClientSet()
 ```
 
 ```Go

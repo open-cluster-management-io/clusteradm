@@ -93,7 +93,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 		for _, s := range output {
 			dryRunOutput += fmt.Sprintf("%s\n---\n", s)
 		}
-		fmt.Printf(dryRunOutput)
+		fmt.Print(dryRunOutput)
 	}
 
 	return apply.WriteOutput(o.OutputFile, output)

@@ -53,6 +53,11 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 		return nil
 	}
 
+	if dryRun {
+		fmt.Fprintf(o.Streams.Out, "Clusterset %s is created\n", clusterset)
+		return nil
+	}
+
 	mcs := &clusterapiv1beta1.ManagedClusterSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: clusterset,

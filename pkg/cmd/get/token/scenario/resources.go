@@ -2,8 +2,8 @@
 package scenario
 
 import (
+	"github.com/stolostron/applier/pkg/asset"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
-	"open-cluster-management.io/clusteradm/pkg/helpers/asset"
 )
 
 func GetScenarioResourcesReader() *asset.ScenarioResourcesReader {

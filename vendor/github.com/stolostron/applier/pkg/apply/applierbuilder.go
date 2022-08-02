@@ -91,7 +91,10 @@ func (a *ApplierBuilder) WithTemplateFuncMap(fm template.FuncMap) *ApplierBuilde
 }
 
 //WithOwner add an ownerref to the object
-func (a *ApplierBuilder) WithOwner(owner runtime.Object, blockOwnerDeletion, controller bool, scheme *runtime.Scheme) *ApplierBuilder {
+func (a *ApplierBuilder) WithOwner(owner runtime.Object,
+	blockOwnerDeletion,
+	controller bool,
+	scheme *runtime.Scheme) *ApplierBuilder {
 	a.applier.owner = owner
 	a.applier.blockOwnerDeletion = &blockOwnerDeletion
 	a.applier.controller = &controller

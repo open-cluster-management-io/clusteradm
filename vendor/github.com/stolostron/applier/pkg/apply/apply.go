@@ -10,13 +10,14 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/stolostron/applier/pkg/asset"
+	"github.com/stolostron/applier/pkg/helpers"
+
 	"github.com/Masterminds/sprig"
 	"github.com/ghodss/yaml"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"open-cluster-management.io/clusteradm/pkg/helpers"
-	"open-cluster-management.io/clusteradm/pkg/helpers/asset"
 
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -110,15 +111,19 @@ func (a *Applier) ApplyDirectly(
 	recorder := events.NewInMemoryRecorder(helpers.GetExampleHeader())
 	output := make([]string, 0)
 	//Apply resources
-	clients := resourceapply.NewClientHolder().WithAPIExtensionsClient(a.apiExtensionsClient).WithDynamicClient(a.dynamicClient).WithKubernetes(a.kubeClient)
-	resourceResults := resourceapply.ApplyDirectly(a.context, clients, recorder, a.cache, func(name string) ([]byte, error) {
-		out, err := a.MustTemplateAsset(reader, values, headerFile, name)
-		if err != nil {
-			return nil, err
-		}
-		output = append(output, string(out))
-		return out, nil
-	}, files...)
+	clients := resourceapply.NewClientHolder().
+		WithAPIExtensionsClient(a.apiExtensionsClient).
+		WithDynamicClient(a.dynamicClient).
+		WithKubernetes(a.kubeClient)
+	resourceResults := resourceapply.
+		ApplyDirectly(a.context, clients, recorder, a.cache, func(name string) ([]byte, error) {
+			out, err := a.MustTemplateAsset(reader, values, headerFile, name)
+			if err != nil {
+				return nil, err
+			}
+			output = append(output, string(out))
+			return out, nil
+		}, files...)
 	//Check errors
 	for _, result := range resourceResults {
 		if result.Error != nil && !IsEmptyAsset(result.Error) {
@@ -245,9 +250,15 @@ func getTemplate(templateName string, customFuncMap template.FuncMap) *template.
 }
 
 //MustTemplateAssets render list of files
-func (a *Applier) MustTemplateAssets(reader asset.ScenarioReader, values interface{}, headerFile string, files ...string) ([]string, error) {
+func (a *Applier) MustTemplateAssets(reader asset.ScenarioReader,
+	values interface{},
+	headerFile string,
+	files ...string) ([]string, error) {
 	output := make([]string, 0)
 	for _, name := range files {
+		if name == headerFile {
+			continue
+		}
 		deploymentBytes, err := a.MustTemplateAsset(reader, values, headerFile, name)
 		if err != nil {
 			if IsEmptyAsset(err) {
@@ -262,10 +273,13 @@ func (a *Applier) MustTemplateAssets(reader asset.ScenarioReader, values interfa
 
 //MustTemplateAsset generates textual output for a template file name.
 //The headerfile will be added to each file.
-//Usually it contains nested template definitions as described https://golang.org/pkg/text/template/#hdr-Nested_template_definitions
+//Usually it contains nested template definitions as described
+// https://golang.org/pkg/text/template/#hdr-Nested_template_definitions
 //This allows to add functions which can be use in each file.
 //The values object will be used to render the template
-func (a *Applier) MustTemplateAsset(reader asset.ScenarioReader, values interface{}, headerFile, name string) ([]byte, error) {
+func (a *Applier) MustTemplateAsset(reader asset.ScenarioReader,
+	values interface{},
+	headerFile, name string) ([]byte, error) {
 	tmpl := getTemplate(name, a.templateFuncMap)
 	h := []byte{}
 	var err error
@@ -280,11 +294,11 @@ func (a *Applier) MustTemplateAsset(reader asset.ScenarioReader, values interfac
 		return nil, err
 	}
 	var buf bytes.Buffer
-	tmplParsed, err := tmpl.Parse(string(b))
+	tmplParsed, err := tmpl.Parse(string(h))
 	if err != nil {
 		return nil, err
 	}
-	tmplParsed, err = tmplParsed.Parse(string(h))
+	tmplParsed, err = tmplParsed.Parse(string(b))
 	if err != nil {
 		return nil, err
 	}
@@ -410,12 +424,16 @@ func WriteOutput(fileName string, output []string) (err error) {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	// defer f.Close()
 	for _, s := range output {
 		_, err := f.WriteString(fmt.Sprintf("%s\n---\n", s))
 		if err != nil {
+			if errClose := f.Close(); errClose != nil {
+				return fmt.Errorf("failed to close %v after err %v on writing", errClose, err)
+			}
 			return err
 		}
 	}
+	err = f.Close()
 	return err
 }

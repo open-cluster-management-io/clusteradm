@@ -8,10 +8,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	"github.com/stolostron/applier/pkg/apply"
+	"github.com/stolostron/applier/pkg/asset"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
-	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
-	"open-cluster-management.io/clusteradm/pkg/helpers/asset"
 
 	"github.com/spf13/cobra"
 

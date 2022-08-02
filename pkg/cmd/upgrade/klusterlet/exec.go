@@ -5,10 +5,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/stolostron/applier/pkg/apply"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	join_scenario "open-cluster-management.io/clusteradm/pkg/cmd/join/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
-	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
 
 	"github.com/spf13/cobra"

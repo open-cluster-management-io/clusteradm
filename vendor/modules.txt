@@ -190,18 +190,19 @@ github.com/onsi/ginkgo/v2/internal/parallel_support
 github.com/onsi/ginkgo/v2/internal/testingtproxy
 github.com/onsi/ginkgo/v2/reporters
 github.com/onsi/ginkgo/v2/types
-# github.com/onsi/gomega v1.17.0
-## explicit; go 1.16
+# github.com/onsi/gomega v1.19.0
+## explicit; go 1.18
 github.com/onsi/gomega
 github.com/onsi/gomega/format
 github.com/onsi/gomega/internal
+github.com/onsi/gomega/internal/gutil
 github.com/onsi/gomega/matchers
 github.com/onsi/gomega/matchers/support/goraph/bipartitegraph
 github.com/onsi/gomega/matchers/support/goraph/edge
 github.com/onsi/gomega/matchers/support/goraph/node
 github.com/onsi/gomega/matchers/support/goraph/util
 github.com/onsi/gomega/types
-# github.com/openshift/api v0.0.0-20220315184754-d7c10d0b647e
+# github.com/openshift/api v0.0.0-20220525145417-ee5b62754c68
 ## explicit; go 1.16
 github.com/openshift/api
 github.com/openshift/api/apiserver
@@ -229,6 +230,8 @@ github.com/openshift/api/kubecontrolplane/v1
 github.com/openshift/api/legacyconfig/v1
 github.com/openshift/api/machine
 github.com/openshift/api/machine/v1beta1
+github.com/openshift/api/monitoring
+github.com/openshift/api/monitoring/v1alpha1
 github.com/openshift/api/network
 github.com/openshift/api/network/v1
 github.com/openshift/api/networkoperator
@@ -263,7 +266,7 @@ github.com/openshift/api/template
 github.com/openshift/api/template/v1
 github.com/openshift/api/user
 github.com/openshift/api/user/v1
-# github.com/openshift/library-go v0.0.0-20220405134141-226b07263a02
+# github.com/openshift/library-go v0.0.0-20220713145611-ca167a8bd342
 ## explicit; go 1.17
 github.com/openshift/library-go/pkg/operator/events
 github.com/openshift/library-go/pkg/operator/resource/resourceapply
@@ -300,12 +303,17 @@ github.com/prometheus/procfs/internal/util
 # github.com/russross/blackfriday v1.6.0
 ## explicit; go 1.13
 github.com/russross/blackfriday
-# github.com/spf13/cobra v1.4.0
+# github.com/spf13/cobra v1.5.0
 ## explicit; go 1.15
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 ## explicit; go 1.12
 github.com/spf13/pflag
+# github.com/stolostron/applier v1.0.2-0.20220802003824-ca5e63261fa1
+## explicit; go 1.18
+github.com/stolostron/applier/pkg/apply
+github.com/stolostron/applier/pkg/asset
+github.com/stolostron/applier/pkg/helpers
 # github.com/stretchr/testify v1.7.1
 ## explicit; go 1.13
 github.com/stretchr/testify/assert
@@ -338,7 +346,7 @@ golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
 golang.org/x/net/trace
-# golang.org/x/oauth2 v0.0.0-20220309155454-6242fa91716a
+# golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5
 ## explicit; go 1.11
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
@@ -477,7 +485,7 @@ gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 ## explicit
 gopkg.in/yaml.v3
-# k8s.io/api v0.23.5
+# k8s.io/api v0.24.3 => k8s.io/api v0.23.5
 ## explicit; go 1.16
 k8s.io/api/admission/v1
 k8s.io/api/admission/v1beta1
@@ -527,7 +535,7 @@ k8s.io/api/scheduling/v1beta1
 k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
-# k8s.io/apiextensions-apiserver v0.23.5
+# k8s.io/apiextensions-apiserver v0.24.2 => k8s.io/apiextensions-apiserver v0.23.5
 ## explicit; go 1.16
 k8s.io/apiextensions-apiserver/pkg/apihelpers
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
@@ -537,7 +545,7 @@ k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1
-# k8s.io/apimachinery v0.23.5
+# k8s.io/apimachinery v0.24.3 => k8s.io/apimachinery v0.23.5
 ## explicit; go 1.16
 k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/api/errors
@@ -591,12 +599,12 @@ k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/third_party/forked/golang/json
 k8s.io/apimachinery/third_party/forked/golang/netutil
 k8s.io/apimachinery/third_party/forked/golang/reflect
-# k8s.io/cli-runtime v0.23.5
+# k8s.io/cli-runtime v0.24.3 => k8s.io/cli-runtime v0.23.5
 ## explicit; go 1.16
 k8s.io/cli-runtime/pkg/genericclioptions
 k8s.io/cli-runtime/pkg/printers
 k8s.io/cli-runtime/pkg/resource
-# k8s.io/client-go v0.23.5
+# k8s.io/client-go v0.24.3 => k8s.io/client-go v0.23.5
 ## explicit; go 1.16
 k8s.io/client-go/applyconfigurations/admissionregistration/v1
 k8s.io/client-go/applyconfigurations/admissionregistration/v1beta1
@@ -839,29 +847,33 @@ k8s.io/client-go/util/jsonpath
 k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/retry
 k8s.io/client-go/util/workqueue
-# k8s.io/component-base v0.23.5
+# k8s.io/component-base v0.24.3 => k8s.io/component-base v0.23.5
 ## explicit; go 1.16
 k8s.io/component-base/cli/flag
 k8s.io/component-base/metrics
 k8s.io/component-base/metrics/legacyregistry
 k8s.io/component-base/version
-# k8s.io/klog/v2 v2.30.0
+# k8s.io/klog/v2 v2.60.1
 ## explicit; go 1.13
 k8s.io/klog/v2
-# k8s.io/kube-aggregator v0.23.5
+k8s.io/klog/v2/internal/buffer
+k8s.io/klog/v2/internal/clock
+k8s.io/klog/v2/internal/serialize
+k8s.io/klog/v2/internal/severity
+# k8s.io/kube-aggregator v0.24.0
 ## explicit; go 1.16
 k8s.io/kube-aggregator/pkg/apis/apiregistration
 k8s.io/kube-aggregator/pkg/apis/apiregistration/v1
 k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1
 k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/scheme
 k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/typed/apiregistration/v1
-# k8s.io/kube-openapi v0.0.0-20220316025549-ddc66922ab18 => k8s.io/kube-openapi v0.0.0-20220310132336-3f90b8c54bbb
+# k8s.io/kube-openapi v0.0.0-20220328201542-3ee0da9b0b42 => k8s.io/kube-openapi v0.0.0-20220310132336-3f90b8c54bbb
 ## explicit; go 1.16
 k8s.io/kube-openapi/pkg/schemaconv
 k8s.io/kube-openapi/pkg/util/proto
 k8s.io/kube-openapi/pkg/util/proto/validation
 k8s.io/kube-openapi/pkg/validation/spec
-# k8s.io/kubectl v0.23.5
+# k8s.io/kubectl v0.24.3 => k8s.io/kubectl v0.23.5
 ## explicit; go 1.16
 k8s.io/kubectl/pkg/cmd/apiresources
 k8s.io/kubectl/pkg/cmd/config
@@ -901,15 +913,6 @@ open-cluster-management.io/api/client/cluster/clientset/versioned/scheme
 open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1
 open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1alpha1
 open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1beta1
-open-cluster-management.io/api/client/cluster/informers/externalversions
-open-cluster-management.io/api/client/cluster/informers/externalversions/cluster
-open-cluster-management.io/api/client/cluster/informers/externalversions/cluster/v1
-open-cluster-management.io/api/client/cluster/informers/externalversions/cluster/v1alpha1
-open-cluster-management.io/api/client/cluster/informers/externalversions/cluster/v1beta1
-open-cluster-management.io/api/client/cluster/informers/externalversions/internalinterfaces
-open-cluster-management.io/api/client/cluster/listers/cluster/v1
-open-cluster-management.io/api/client/cluster/listers/cluster/v1alpha1
-open-cluster-management.io/api/client/cluster/listers/cluster/v1beta1
 open-cluster-management.io/api/client/operator/clientset/versioned
 open-cluster-management.io/api/client/operator/clientset/versioned/scheme
 open-cluster-management.io/api/client/operator/clientset/versioned/typed/operator/v1
@@ -943,7 +946,7 @@ sigs.k8s.io/apiserver-network-proxy/pkg/util
 ## explicit; go 1.13
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client/pkg/client
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client/proto/client
-# sigs.k8s.io/controller-runtime v0.11.1
+# sigs.k8s.io/controller-runtime v0.12.2
 ## explicit; go 1.17
 sigs.k8s.io/controller-runtime/pkg/client
 sigs.k8s.io/controller-runtime/pkg/client/apiutil
@@ -970,7 +973,7 @@ sigs.k8s.io/kube-storage-version-migrator/pkg/apis/migration/v1alpha1
 sigs.k8s.io/kube-storage-version-migrator/pkg/clients/clientset
 sigs.k8s.io/kube-storage-version-migrator/pkg/clients/clientset/scheme
 sigs.k8s.io/kube-storage-version-migrator/pkg/clients/clientset/typed/migration/v1alpha1
-# sigs.k8s.io/kustomize/api v0.11.2
+# sigs.k8s.io/kustomize/api v0.11.4
 ## explicit; go 1.16
 sigs.k8s.io/kustomize/api/filters/annotations
 sigs.k8s.io/kustomize/api/filters/fieldspec
@@ -1016,7 +1019,7 @@ sigs.k8s.io/kustomize/api/provider
 sigs.k8s.io/kustomize/api/resmap
 sigs.k8s.io/kustomize/api/resource
 sigs.k8s.io/kustomize/api/types
-# sigs.k8s.io/kustomize/kyaml v0.13.3
+# sigs.k8s.io/kustomize/kyaml v0.13.6
 ## explicit; go 1.16
 sigs.k8s.io/kustomize/kyaml/comments
 sigs.k8s.io/kustomize/kyaml/errors
@@ -1061,5 +1064,12 @@ sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.3.0
 ## explicit; go 1.12
 sigs.k8s.io/yaml
+# k8s.io/api => k8s.io/api v0.23.5
+# k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.23.5
+# k8s.io/apimachinery => k8s.io/apimachinery v0.23.5
+# k8s.io/cli-runtime => k8s.io/cli-runtime v0.23.5
+# k8s.io/client-go => k8s.io/client-go v0.23.5
+# k8s.io/component-base => k8s.io/component-base v0.23.5
 # k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20220310132336-3f90b8c54bbb
+# k8s.io/kubectl => k8s.io/kubectl v0.23.5
 # sigs.k8s.io/apiserver-network-proxy/konnectivity-client => sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.24

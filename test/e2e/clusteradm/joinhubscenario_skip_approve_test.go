@@ -9,10 +9,10 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
+	"github.com/stolostron/applier/pkg/apply"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"open-cluster-management.io/clusteradm/pkg/config"
-	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 	scenario "open-cluster-management.io/clusteradm/test/e2e/clusteradm/scenario"
 )
 

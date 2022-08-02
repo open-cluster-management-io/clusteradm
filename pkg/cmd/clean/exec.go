@@ -8,9 +8,9 @@ import (
 	"log"
 	"time"
 
+	"github.com/stolostron/applier/pkg/apply"
 	clustermanagerclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
-	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 
 	"github.com/spf13/cobra"
 

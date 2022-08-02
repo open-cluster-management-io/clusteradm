@@ -6,9 +6,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/stolostron/applier/pkg/apply"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
-	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 	helperwait "open-cluster-management.io/clusteradm/pkg/helpers/wait"
 

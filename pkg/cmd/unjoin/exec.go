@@ -15,10 +15,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 
+	"github.com/stolostron/applier/pkg/apply"
 	klusterletclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 	appliedworkclient "open-cluster-management.io/api/client/work/clientset/versioned"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
-	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {

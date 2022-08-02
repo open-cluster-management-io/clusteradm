@@ -18,7 +18,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/cmd/addon/enable"
 	"open-cluster-management.io/clusteradm/pkg/cmd/addon/enable/scenario"
 
-	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
+	"github.com/stolostron/applier/pkg/apply"
 )
 
 var _ = ginkgo.Describe("addon disable", func() {

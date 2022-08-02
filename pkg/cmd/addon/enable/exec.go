@@ -10,6 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 
+	"github.com/stolostron/applier/pkg/apply"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/dynamic"
@@ -17,7 +18,6 @@ import (
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	"open-cluster-management.io/clusteradm/pkg/cmd/addon/enable/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
-	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 )
 
 type ClusterAddonInfo struct {

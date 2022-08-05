@@ -115,6 +115,19 @@ rules:
   - apiGroups:
       - ""
     resourceNames:
+      - events
+    resources:
+      - secrets
+    verbs:
+      - create
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - ""
+    resourceNames:
       - policy-encryption-key
     resources:
       - secrets

@@ -17,6 +17,8 @@ type Options struct {
 	SkipApproveCheck bool
 
 	Values Values
+
+	Streams genericclioptions.IOStreams
 }
 
 //Values: The values used in the template
@@ -27,5 +29,6 @@ type Values struct {
 func NewOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
+		Streams:         streams,
 	}
 }

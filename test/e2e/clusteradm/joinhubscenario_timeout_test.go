@@ -36,7 +36,7 @@ var _ = ginkgo.Describe("test clusteradm with timeout", func() {
 			ginkgo.By("hub accept managedcluster1")
 			err = e2e.Clusteradm().Accept(
 				"--clusters", e2e.Cluster().ManagedCluster1().Name(),
-				"--wait", "30",
+				"--wait",
 				"--context", e2e.Cluster().Hub().Context(),
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm accept error")

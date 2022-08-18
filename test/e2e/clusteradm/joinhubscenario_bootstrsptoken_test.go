@@ -37,7 +37,7 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token", func() {
 			ginkgo.By("hub accept managedcluster1")
 			err = e2e.Clusteradm().Accept(
 				"--clusters", e2e.Cluster().ManagedCluster1().Name(),
-				"--wait", "30",
+				"--wait",
 				"--context", e2e.Cluster().Hub().Context(),
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm accept error")
@@ -64,7 +64,7 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token", func() {
 			ginkgo.By("hub accept managedcluster2")
 			err = e2e.Clusteradm().Accept(
 				"--clusters", e2e.Cluster().ManagedCluster2().Name(),
-				"--wait", "30",
+				"--wait",
 				"--context", e2e.Cluster().Hub().Context(),
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm accept error")

@@ -64,18 +64,28 @@ func initE2E() *TestE2eConfig {
 		err := e2eConf.Clusteradm().Unjoin(
 			"--context", e2eConf.Cluster().ManagedCluster1().Context(),
 			"--cluster-name", e2eConf.Cluster().ManagedCluster1().Name(),
+			"--purge-operator=false",
 		)
 		if err != nil {
 			panic(fmt.Sprintf("error occurred while unjoining managedcluster1: %s", err.Error()))
 		}
 
-		err = WaitNamespaceDeleted(e2eConf.Kubeconfigpath, e2eConf.Cluster().ManagedCluster1().Context(), config.ManagedClusterNamespace)
+		fmt.Println("unjoin managedcluster2...")
+		err = e2eConf.Clusteradm().Unjoin(
+			"--context", e2eConf.Cluster().ManagedCluster2().Context(),
+			"--cluster-name", e2eConf.Cluster().ManagedCluster2().Name(),
+			"--purge-operator=false",
+		)
 		if err != nil {
-			panic(fmt.Sprintf("error occurred while unjoining managedcluster1: %s", err.Error()))
+			panic(fmt.Sprintf("error occurred while unjoining managedcluster2: %s", err.Error()))
 		}
 
 		fmt.Println("cleaning hub...")
 		err = e2eConf.Clusteradm().Clean("--context", e2eConf.Cluster().Hub().Context())
+		if err != nil {
+			panic(fmt.Sprintf("error occurred while cleaning hub: %s", err.Error()))
+		}
+		err = DeleteClusterCSRs(e2eConf.Kubeconfigpath, e2eConf.Cluster().Hub().Context())
 		if err != nil {
 			panic(fmt.Sprintf("error occurred while cleaning hub: %s", err.Error()))
 		}
@@ -135,7 +145,7 @@ func (tec *TestE2eConfig) ResetEnv() {
 
 	err = tec.Clusteradm().Accept(
 		"--clusters", tec.Cluster().ManagedCluster1().Name(),
-		"--wait", "30",
+		"--wait",
 		"--context", tec.Cluster().Hub().Context(),
 	)
 	if err != nil {

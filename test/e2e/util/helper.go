@@ -40,6 +40,22 @@ func WaitNamespaceDeleted(kubeconfigpath string, ctx string, namespace string) e
 	})
 }
 
+func DeleteClusterCSRs(kubeconfigpath string, ctx string) error {
+	restcfg, err := buildConfigFromFlags(ctx, kubeconfigpath)
+	if err != nil {
+		return fmt.Errorf("error occurred while build rest config: %s", err)
+	}
+
+	clientset, err := kubernetes.NewForConfig(restcfg)
+	if err != nil {
+		return err
+	}
+
+	return clientset.CertificatesV1().CertificateSigningRequests().DeleteCollection(context.TODO(), metav1.DeleteOptions{}, metav1.ListOptions{
+		LabelSelector: "open-cluster-management.io/cluster-name",
+	})
+}
+
 func WaitCRDDeleted(kubeconfigpath string, ctx string, name string) error {
 	restcfg, err := buildConfigFromFlags(ctx, kubeconfigpath)
 	if err != nil {

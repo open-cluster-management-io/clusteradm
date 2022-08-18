@@ -16,19 +16,19 @@ var _ = ginkgo.Describe("test clusteradm upgrade clustermanager and Klusterlets"
 
 	var err error
 
-	ginkgo.It("run cluster manager upgrade version 0.6.0 ", func() {
+	ginkgo.It("run cluster manager upgrade version 0.8.0 ", func() {
 		err = e2e.Clusteradm().Upgrade(
 			"clustermanager",
-			"--bundle-version", "0.6.0",
+			"--bundle-version", "0.8.0",
 			"--context", e2e.Cluster().Hub().Context(),
 		)
 	})
 	gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm upgrade error")
 
-	ginkgo.It("run klusterlet upgrade version 0.6.0 ", func() {
+	ginkgo.It("run klusterlet upgrade version 0.8.0 ", func() {
 		err = e2e.Clusteradm().Upgrade(
 			"klusterlet",
-			"--bundle-version", "0.6.0",
+			"--bundle-version", "0.8.0",
 			"--context", e2e.Cluster().ManagedCluster1().Context(),
 		)
 	})

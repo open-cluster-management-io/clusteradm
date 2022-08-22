@@ -2,11 +2,10 @@
 package token
 
 import (
+	"context"
 	"fmt"
-	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/stolostron/applier/pkg/apply"
 	"github.com/stolostron/applier/pkg/asset"
@@ -16,7 +15,6 @@ import (
 	"github.com/spf13/cobra"
 
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	"k8s.io/client-go/kubernetes"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -65,9 +63,9 @@ func (o *Options) run() error {
 	// and if not found create it
 	var token string
 	if o.useBootstrapToken {
-		token, err = helpers.GetBootstrapToken(kubeClient)
+		token, err = helpers.GetBootstrapToken(context.TODO(), kubeClient)
 	} else {
-		token, err = helpers.GetBootstrapTokenFromSA(kubeClient)
+		token, err = helpers.GetBootstrapTokenFromSA(context.TODO(), kubeClient)
 	}
 	switch {
 	case errors.IsNotFound(err):
@@ -101,39 +99,20 @@ func (o *Options) run() error {
 
 	//if bootstrap token then read the token
 	if o.useBootstrapToken {
-		token, err = helpers.GetBootstrapToken(kubeClient)
+		token, err = helpers.GetBootstrapToken(context.TODO(), kubeClient)
 		if err != nil {
 			return err
 		}
 		return o.writeResult(token, restConfig.Host, output)
 	}
 
-	//if service-account wait for the sa secret
-	err = wait.PollImmediate(1*time.Second, 10*time.Second, func() (bool, error) {
-		return waitForBootstrapToken(kubeClient)
-	})
-	if err != nil {
-		return err
-	}
-
 	//read the token
-	token, err = helpers.GetBootstrapTokenFromSA(kubeClient)
+	token, err = helpers.GetBootstrapTokenFromSA(context.TODO(), kubeClient)
 	if err != nil {
 		return err
 	}
 
 	return o.writeResult(token, restConfig.Host, output)
-}
-
-func waitForBootstrapToken(kubeClient kubernetes.Interface) (bool, error) {
-	_, err := helpers.GetBootstrapTokenFromSA(kubeClient)
-	switch {
-	case errors.IsNotFound(err):
-		return false, nil
-	case err != nil:
-		return false, err
-	}
-	return true, nil
 }
 
 func (o *Options) applyToken(applier apply.Applier, reader *asset.ScenarioResourcesReader) ([]string, error) {

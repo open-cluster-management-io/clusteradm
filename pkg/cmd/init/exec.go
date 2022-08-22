@@ -2,22 +2,18 @@
 package init
 
 import (
+	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/stolostron/applier/pkg/apply"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/preflight"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
-	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 	helperwait "open-cluster-management.io/clusteradm/pkg/helpers/wait"
 
 	"github.com/spf13/cobra"
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 	version "open-cluster-management.io/clusteradm/pkg/helpers/version"
 )
@@ -75,21 +71,7 @@ func (o *Options) validate() error {
 		}, os.Stderr); err != nil {
 		return err
 	}
-	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
-	if err != nil {
-		return err
-	}
-	apiExtensionsClient, err := apiextensionsclient.NewForConfig(restConfig)
-	if err != nil {
-		return err
-	}
-	installed, err := helpers.IsClusterManagerInstalled(apiExtensionsClient)
-	if err != nil {
-		return err
-	}
-	if installed {
-		return fmt.Errorf("hub already initialized")
-	}
+
 	if len(o.registry) == 0 {
 		return fmt.Errorf("registry should not be empty")
 	}
@@ -140,17 +122,6 @@ func (o *Options) run() error {
 	}
 	output = append(output, out...)
 
-	//if service-account wait for the sa secret
-	if !o.useBootstrapToken && !o.ClusteradmFlags.DryRun {
-		if err := waitForServiceAccountToken(kubeClient); err != nil {
-			return err
-		}
-		token, err = helpers.GetBootstrapTokenFromSA(kubeClient)
-		if err != nil {
-			return err
-		}
-	}
-
 	out, err = applier.ApplyDeployments(reader, o.values, o.ClusteradmFlags.DryRun, "", "init/operator.yaml")
 	if err != nil {
 		return err
@@ -180,6 +151,14 @@ func (o *Options) run() error {
 		if err := helperwait.WaitUntilClusterManagerRegistrationReady(
 			o.ClusteradmFlags.KubectlFactory,
 			int64(o.ClusteradmFlags.Timeout)); err != nil {
+			return err
+		}
+	}
+
+	//if service-account wait for the sa secret
+	if !o.useBootstrapToken && !o.ClusteradmFlags.DryRun {
+		token, err = helpers.GetBootstrapTokenFromSA(context.TODO(), kubeClient)
+		if err != nil {
 			return err
 		}
 	}
@@ -222,28 +201,4 @@ func (o *Options) run() error {
 	)
 
 	return apply.WriteOutput(o.outputFile, output)
-}
-
-func waitForServiceAccountToken(kubeClient kubernetes.Interface) error {
-	tokenSpinner := printer.NewSpinner("Waiting for service account token...", time.Second)
-	tokenSpinner.FinalMSG = "Service account token successfully signed.\n"
-	tokenSpinner.Start()
-	defer tokenSpinner.Stop()
-	return wait.PollImmediate(1*time.Second, 10*time.Second, func() (bool, error) {
-		found, err := pollServiceAccountToken(kubeClient)
-		if err != nil {
-			// Don't print a success message if there was an error
-			tokenSpinner.FinalMSG = ""
-			return found, err
-		}
-		return found, nil
-	})
-}
-
-func pollServiceAccountToken(kubeClient kubernetes.Interface) (bool, error) {
-	_, err := helpers.GetBootstrapTokenFromSA(kubeClient)
-	if err != nil {
-		return false, err
-	}
-	return true, nil
 }

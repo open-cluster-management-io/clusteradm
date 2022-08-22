@@ -17,6 +17,8 @@ type Options struct {
 	//The file to output the resources will be sent to the file.
 	outputFile string
 	values     Values
+
+	Streams genericclioptions.IOStreams
 }
 type Values struct {
 	//ClusterName: the name of the joined cluster on the hub
@@ -26,5 +28,6 @@ type Values struct {
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
+		Streams:         streams,
 	}
 }

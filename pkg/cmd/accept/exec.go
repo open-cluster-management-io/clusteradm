@@ -10,6 +10,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -99,7 +100,7 @@ func (o *Options) accept(kubeClient *kubernetes.Clientset, clusterClient *cluste
 		return false, err
 	}
 	if csrApproved && mcUpdated {
-		fmt.Printf("\n Your managed cluster %s has joined the Hub successfully. Visit https://open-cluster-management.io/scenarios or https://github.com/open-cluster-management-io/OCM/tree/main/solutions for next steps.\n", clusterName)
+		fmt.Fprintf(o.Streams.Out, "\n Your managed cluster %s has joined the Hub successfully. Visit https://open-cluster-management.io/scenarios or https://github.com/open-cluster-management-io/OCM/tree/main/solutions for next steps.\n", clusterName)
 		return true, nil
 	}
 	return false, nil
@@ -141,12 +142,12 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 		approved, denied := GetCertApprovalCondition(&passedCSR.Status)
 		//if already denied, then nothing to do
 		if denied {
-			fmt.Printf("CSR %s already denied\n", passedCSR.Name)
+			fmt.Fprintf(o.Streams.Out, "CSR %s already denied\n", passedCSR.Name)
 			return true, nil
 		}
 		//if already approved, then nothing to do
 		if approved {
-			fmt.Printf("CSR %s already approved\n", passedCSR.Name)
+			fmt.Fprintf(o.Streams.Out, "CSR %s already approved\n", passedCSR.Name)
 			return true, nil
 		}
 		csr = &passedCSR
@@ -157,7 +158,7 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 	//no csr found
 	if csr == nil {
 		if waitMode {
-			fmt.Printf("no CSR to approve for cluster %s\n", clusterName)
+			fmt.Fprintf(o.Streams.Out, "no CSR to approve for cluster %s\n", clusterName)
 		}
 		return false, nil
 	}
@@ -182,7 +183,7 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 		return false, err
 	}
 
-	fmt.Printf("CSR %s approved\n", csr.Name)
+	fmt.Fprintf(o.Streams.Out, "CSR %s approved\n", csr.Name)
 	return true, nil
 }
 
@@ -197,19 +198,19 @@ func (o *Options) updateManagedCluster(clusterClient *clusterclientset.Clientset
 		return false, err
 	}
 	if mc.Spec.HubAcceptsClient {
-		fmt.Printf("hubAcceptsClient already set for managed cluster %s\n", clusterName)
+		fmt.Fprintf(o.Streams.Out, "hubAcceptsClient already set for managed cluster %s\n", clusterName)
 		return true, nil
 	}
 	if o.ClusteradmFlags.DryRun {
 		return true, nil
 	}
 	if !mc.Spec.HubAcceptsClient {
-		mc.Spec.HubAcceptsClient = true
-		_, err = clusterClient.ClusterV1().ManagedClusters().Update(context.TODO(), mc, metav1.UpdateOptions{})
+		patch := `{"spec":{"hubAcceptsClient":true}}`
+		_, err = clusterClient.ClusterV1().ManagedClusters().Patch(context.TODO(), mc.Name, types.MergePatchType, []byte(patch), metav1.PatchOptions{})
 		if err != nil {
 			return false, err
 		}
-		fmt.Printf("set hubAcceptsClient to true for managed cluster %s\n", clusterName)
+		fmt.Fprintf(o.Streams.Out, "set hubAcceptsClient to true for managed cluster %s\n", clusterName)
 	}
 	return true, nil
 }

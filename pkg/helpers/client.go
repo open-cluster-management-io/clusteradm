@@ -8,10 +8,12 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
+	authv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionshelpers "k8s.io/apiextensions-apiserver/pkg/apihelpers"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/utils/pointer"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -139,13 +141,13 @@ func WaitCRDToBeReady(apiExtensionsClient apiextensionsclient.Interface, name st
 //GetToken returns the bootstrap token.
 //It searches first for the service-account token and then if it is not found
 //it looks for the bootstrap token in kube-system.
-func GetToken(kubeClient kubernetes.Interface) (string, TokenType, error) {
-	token, err := GetBootstrapTokenFromSA(kubeClient)
+func GetToken(ctx context.Context, kubeClient kubernetes.Interface) (string, TokenType, error) {
+	token, err := GetBootstrapTokenFromSA(ctx, kubeClient)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			//As no SA search for bootstrap token
 			var token string
-			token, err = GetBootstrapToken(kubeClient)
+			token, err = GetBootstrapToken(ctx, kubeClient)
 			if err == nil {
 				return token, BootstrapToken, nil
 			}
@@ -156,11 +158,11 @@ func GetToken(kubeClient kubernetes.Interface) (string, TokenType, error) {
 }
 
 //GetBootstrapSecret returns the secret in kube-system
-func GetBootstrapSecret(kubeClient kubernetes.Interface) (*corev1.Secret, error) {
+func GetBootstrapSecret(ctx context.Context, kubeClient kubernetes.Interface) (*corev1.Secret, error) {
 	var bootstrapSecret *corev1.Secret
 	l, err := kubeClient.CoreV1().
 		Secrets("kube-system").
-		List(context.TODO(), metav1.ListOptions{LabelSelector: fmt.Sprintf("%v = %v", config.LabelApp, config.ClusterManagerName)})
+		List(ctx, metav1.ListOptions{LabelSelector: fmt.Sprintf("%v = %v", config.LabelApp, config.ClusterManagerName)})
 	if err != nil {
 		return nil, err
 	}
@@ -180,64 +182,28 @@ func GetBootstrapSecret(kubeClient kubernetes.Interface) (*corev1.Secret, error)
 }
 
 //GetBootstrapToken returns the token in kube-system
-func GetBootstrapToken(kubeClient kubernetes.Interface) (string, error) {
-	bootstrapSecret, err := GetBootstrapSecret(kubeClient)
+func GetBootstrapToken(ctx context.Context, kubeClient kubernetes.Interface) (string, error) {
+	bootstrapSecret, err := GetBootstrapSecret(ctx, kubeClient)
 	if err != nil {
 		return "", err
 	}
 	return fmt.Sprintf("%s.%s", string(bootstrapSecret.Data["token-id"]), string(bootstrapSecret.Data["token-secret"])), nil
 }
 
-func GetBootstrapSecretFromSA(
-	kubeClient kubernetes.Interface) (*corev1.Secret, error) {
-	sa, err := kubeClient.CoreV1().
-		ServiceAccounts(config.OpenClusterManagementNamespace).
-		Get(context.TODO(), config.BootstrapSAName, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	var secret *corev1.Secret
-	prefix := config.BootstrapSAName
-	if len(prefix) > 63 {
-		prefix = prefix[:37]
-	}
-	for _, objectRef := range sa.Secrets {
-		if objectRef.Namespace != "" && objectRef.Namespace != config.OpenClusterManagementNamespace {
-			continue
-		}
-		if strings.HasPrefix(objectRef.Name, prefix) {
-			secret, err = kubeClient.CoreV1().
-				Secrets(config.OpenClusterManagementNamespace).
-				Get(context.TODO(), objectRef.Name, metav1.GetOptions{})
-			if err != nil {
-				continue
-			}
-			if secret.Type == corev1.SecretTypeServiceAccountToken {
-				break
-			}
-		}
-	}
-	if secret == nil {
-		return nil, errors.NewNotFound(schema.GroupResource{
-			Group:    corev1.GroupName,
-			Resource: "secrets"},
-			fmt.Sprintf("secret with prefix %s and type %s not found in service account %s/%s",
-				prefix,
-				corev1.SecretTypeServiceAccountToken,
-				config.OpenClusterManagementNamespace,
-				config.BootstrapSAName))
-	}
-	return secret, nil
-}
-
 //GetBootstrapSecretFromSA retrieves the service-account token secret
-func GetBootstrapTokenFromSA(
-	kubeClient kubernetes.Interface) (string, error) {
-	secret, err := GetBootstrapSecretFromSA(kubeClient)
+func GetBootstrapTokenFromSA(ctx context.Context, kubeClient kubernetes.Interface) (string, error) {
+	tr, err := kubeClient.CoreV1().
+		ServiceAccounts(config.OpenClusterManagementNamespace).
+		CreateToken(ctx, config.BootstrapSAName, &authv1.TokenRequest{
+			Spec: authv1.TokenRequestSpec{
+				// token expired in 1 hour
+				ExpirationSeconds: pointer.Int64Ptr(3600),
+			},
+		}, metav1.CreateOptions{})
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get token from sa %s/%s: %v", config.OpenClusterManagementNamespace, config.BootstrapSAName, err)
 	}
-	return string(secret.Data["token"]), nil
+	return tr.Status.Token, nil
 }
 
 //IsClusterManagerInstalled checks if the hub is already initialized.

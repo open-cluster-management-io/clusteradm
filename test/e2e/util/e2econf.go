@@ -7,7 +7,7 @@ type TestE2eConfig struct {
 
 	Kubeconfigpath string
 
-	ClearEnv func()
+	ClearEnv func() error
 }
 
 func (tec *TestE2eConfig) CommandResult() *HandledOutput {

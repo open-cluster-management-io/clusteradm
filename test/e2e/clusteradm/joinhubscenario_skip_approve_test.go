@@ -3,22 +3,22 @@ package clusteradme2e
 
 import (
 	"context"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/stolostron/applier/pkg/apply"
-	corev1 "k8s.io/api/core/v1"
+	authv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 	"open-cluster-management.io/clusteradm/pkg/config"
 	scenario "open-cluster-management.io/clusteradm/test/e2e/clusteradm/scenario"
 )
 
 var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", func() {
 	ginkgo.BeforeEach(func() {
-		e2e.ClearEnv()
+		err := e2e.ClearEnv()
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	})
 
 	ginkgo.Context("join hub scenario with manual bootstrap token", func() {
@@ -46,37 +46,23 @@ var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", func() {
 			applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
 			_, err = applier.ApplyDirectly(reader, values, false, "", files...)
 			gomega.Expect(err).To(gomega.BeNil())
-			sa, err := kubeClient.CoreV1().
-				ServiceAccounts(config.OpenClusterManagementNamespace).
-				Get(context.TODO(), "sa-manual-token", metav1.GetOptions{})
-			gomega.Expect(err).To(gomega.BeNil())
-			var foundSecret *corev1.Secret
-			prefix := "sa-manual-token"
-			if len(prefix) > 63 {
-				prefix = prefix[:37]
-			}
+
+			var token string
 			gomega.Eventually(func() error {
-				secrets, err := kubeClient.CoreV1().
-					Secrets(config.OpenClusterManagementNamespace).
-					List(context.TODO(), metav1.ListOptions{})
+				tr, err := kubeClient.CoreV1().
+					ServiceAccounts(config.OpenClusterManagementNamespace).
+					CreateToken(context.TODO(), "sa-manual-token", &authv1.TokenRequest{
+						Spec: authv1.TokenRequestSpec{
+							// token expired in 1 hour
+							ExpirationSeconds: pointer.Int64Ptr(3600),
+						},
+					}, metav1.CreateOptions{})
 				if err != nil {
 					return err
 				}
-				for _, secret := range secrets.Items {
-					if strings.HasPrefix(secret.Name, prefix) {
-						foundSecret = &secret
-						break
-					}
-				}
-				if foundSecret == nil {
-					return fmt.Errorf("Secret with prefix %s not found, trying again", prefix)
-				}
+				token = tr.Status.Token
 				return nil
 			}, 30, 1).Should(gomega.BeNil())
-
-			gomega.Expect(sa.Name).To(gomega.Equal("sa-manual-token"))
-			token := string(foundSecret.Data["token"])
-			fmt.Println("find token", token)
 
 			ginkgo.By("managedcluster1 join hub")
 			err = e2e.Clusteradm().Join(
@@ -92,7 +78,7 @@ var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", func() {
 			ginkgo.By("hub accept managedcluster1")
 			err = e2e.Clusteradm().Accept(
 				"--clusters", e2e.Cluster().ManagedCluster1().Name(),
-				"--wait", "30",
+				"--wait",
 				"--context", e2e.Cluster().Hub().Context(),
 				"--skip-approve-check",
 			)

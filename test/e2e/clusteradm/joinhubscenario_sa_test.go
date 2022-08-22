@@ -9,7 +9,8 @@ import (
 var _ = ginkgo.Describe("test clusteradm with service account", func() {
 	ginkgo.BeforeEach(func() {
 		ginkgo.By("clear e2e environment...")
-		e2e.ClearEnv()
+		err := e2e.ClearEnv()
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	})
 
 	ginkgo.Context("join hub scenario with service account", func() {

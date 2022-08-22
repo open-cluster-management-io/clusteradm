@@ -10,8 +10,8 @@ var _ = ginkgo.Describe("test clusteradm upgrade clustermanager and Klusterlets"
 
 	ginkgo.BeforeAll(func() {
 		ginkgo.By("reset e2e environment...")
-		e2e.ClearEnv()
-		e2e.ResetEnv()
+		err := e2e.ResetEnv()
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	})
 
 	var err error

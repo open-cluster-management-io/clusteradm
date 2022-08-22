@@ -8,7 +8,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/stolostron/applier/pkg/apply"
 	clustermanagerclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 
@@ -17,7 +16,9 @@ import (
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
 )
@@ -53,95 +54,60 @@ func (o *Options) Validate() error {
 }
 
 func (o *Options) Run() error {
-	output := make([]string, 0)
-
 	//Clean ClusterManager CR resource firstly
 	f := o.ClusteradmFlags.KubectlFactory
 	config, err := f.ToRESTConfig()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	clusterManagerClient, err := clustermanagerclient.NewForConfig(config)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	if IsClusterManagerExist(clusterManagerClient) {
-		err = clusterManagerClient.OperatorV1().ClusterManagers().Delete(context.Background(), o.ClusterManageName, metav1.DeleteOptions{})
-		if err != nil {
-			log.Fatal(err)
-		}
-		if !o.ClusteradmFlags.DryRun {
-			b := retry.DefaultBackoff
-			b.Duration = 1 * time.Second
-
-			err = WaitResourceToBeDelete(context.Background(), clusterManagerClient, o.ClusterManageName, b)
-			if !errors.IsNotFound(err) {
-				log.Fatal("Cluster Manager resource should be deleted firstly.")
-			}
-		}
-	}
 	//Clean other resources
 	kubeClient, apiExtensionsClient, _, err := helpers.GetClients(f)
 	if err != nil {
 		return err
 	}
-	_ = kubeClient.AppsV1().
-		Deployments("open-cluster-management").
-		Delete(context.Background(), "cluster-manager", metav1.DeleteOptions{})
-	_ = apiExtensionsClient.ApiextensionsV1().
-		CustomResourceDefinitions().
-		Delete(context.Background(), "clustermanagers.operator.open-cluster-management.io", metav1.DeleteOptions{})
-	_ = kubeClient.RbacV1().
-		ClusterRoles().
-		Delete(context.Background(), "cluster-manager", metav1.DeleteOptions{})
-	_ = kubeClient.RbacV1().
-		ClusterRoleBindings().
-		Delete(context.Background(), "cluster-manager", metav1.DeleteOptions{})
-	_ = kubeClient.CoreV1().
-		ServiceAccounts("open-cluster-management").
-		Delete(context.Background(), "cluster-manager", metav1.DeleteOptions{})
 
-	if o.UseBootstrapToken {
-		_ = kubeClient.RbacV1().
-			ClusterRoles().
-			Delete(context.Background(), "system:open-cluster-management:bootstrap", metav1.DeleteOptions{})
-		_ = kubeClient.RbacV1().
-			ClusterRoleBindings().
-			Delete(context.Background(), "cluster-bootstrap", metav1.DeleteOptions{})
-		_ = kubeClient.CoreV1().
-			Secrets("kube-system").
-			Delete(context.Background(), "bootstrap-token-"+o.Values.Hub.TokenID, metav1.DeleteOptions{})
-	} else {
-		_ = kubeClient.RbacV1().
-			ClusterRoles().
-			Delete(context.Background(), "system:open-cluster-management:bootstrap", metav1.DeleteOptions{})
-		_ = kubeClient.RbacV1().
-			ClusterRoleBindings().
-			Delete(context.Background(), "cluster-bootstrap-sa", metav1.DeleteOptions{})
-		_ = kubeClient.CoreV1().
-			ServiceAccounts("open-cluster-management").
-			Delete(context.Background(), "cluster-bootstrap", metav1.DeleteOptions{})
+	if err := o.removeBootStrapSecret(kubeClient); err != nil {
+		return err
 	}
-	_ = kubeClient.CoreV1().
-		Namespaces().
-		Delete(context.Background(), "open-cluster-management", metav1.DeleteOptions{})
-	fmt.Println("The multicluster hub control plane has been clean up successfully!")
 
-	return apply.WriteOutput(o.OutputFile, output)
+	err = clusterManagerClient.OperatorV1().ClusterManagers().Delete(context.Background(), o.ClusterManageName, metav1.DeleteOptions{})
+	if errors.IsNotFound(err) {
+		fmt.Fprintf(o.Streams.Out, "The multicluster hub control plane is cleand up already\n")
+		return nil
+	}
+	b := retry.DefaultBackoff
+	b.Duration = 1 * time.Second
+
+	err = WaitResourceToBeDelete(context.Background(), clusterManagerClient, o.ClusterManageName, b)
+	if err != nil {
+		return err
+	}
+
+	if o.purgeOperator {
+		if err := puregeOperator(kubeClient, apiExtensionsClient); err != nil {
+			return err
+		}
+	}
+
+	fmt.Fprintf(o.Streams.Out, "The multicluster hub control plane has been clean up successfully!\n")
+
+	return nil
 }
 func WaitResourceToBeDelete(context context.Context, client clustermanagerclient.Interface, name string, b wait.Backoff) error {
-
 	errGet := retry.OnError(b, func(err error) bool {
-		if err != nil && !errors.IsNotFound(err) {
-			log.Printf("Wait to delete cluster manager resource: %s.\n", name)
-			return true
-		}
-		return false
+		return true
 	}, func() error {
 		_, err := client.OperatorV1().ClusterManagers().Get(context, name, metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			return nil
+		}
 		if err == nil {
-			return fmt.Errorf("ClusterManager is still exist")
+			return fmt.Errorf("cluster manager still exists")
 		}
 		return err
 	})
@@ -157,4 +123,81 @@ func IsClusterManagerExist(cilent clustermanagerclient.Interface) bool {
 		return true
 	}
 	return false
+}
+
+func (o *Options) removeBootStrapSecret(client kubernetes.Interface) error {
+	var errs []error
+	err := client.RbacV1().
+		ClusterRoles().
+		Delete(context.Background(), "system:open-cluster-management:bootstrap", metav1.DeleteOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		errs = append(errs, err)
+	}
+	err = client.RbacV1().
+		ClusterRoleBindings().
+		Delete(context.Background(), "cluster-bootstrap", metav1.DeleteOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		errs = append(errs, err)
+	}
+	err = client.CoreV1().
+		Secrets("kube-system").
+		Delete(context.Background(), "bootstrap-token-"+o.Values.Hub.TokenID, metav1.DeleteOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		errs = append(errs, err)
+	}
+	err = client.RbacV1().
+		ClusterRoleBindings().
+		Delete(context.Background(), "cluster-bootstrap-sa", metav1.DeleteOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		errs = append(errs, err)
+	}
+	err = client.CoreV1().
+		ServiceAccounts("open-cluster-management").
+		Delete(context.Background(), "cluster-bootstrap", metav1.DeleteOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		errs = append(errs, err)
+	}
+	return utilerrors.NewAggregate(errs)
+}
+
+func puregeOperator(client kubernetes.Interface, extensionClient apiextensionsclient.Interface) error {
+	var errs []error
+	err := client.AppsV1().
+		Deployments("open-cluster-management").
+		Delete(context.Background(), "cluster-manager", metav1.DeleteOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		errs = append(errs, err)
+	}
+	err = extensionClient.ApiextensionsV1().
+		CustomResourceDefinitions().
+		Delete(context.Background(), "clustermanagers.operator.open-cluster-management.io", metav1.DeleteOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		errs = append(errs, err)
+	}
+	err = client.RbacV1().
+		ClusterRoles().
+		Delete(context.Background(), "cluster-manager", metav1.DeleteOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		errs = append(errs, err)
+	}
+	err = client.RbacV1().
+		ClusterRoleBindings().
+		Delete(context.Background(), "cluster-manager", metav1.DeleteOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		errs = append(errs, err)
+	}
+	err = client.CoreV1().
+		ServiceAccounts("open-cluster-management").
+		Delete(context.Background(), "cluster-manager", metav1.DeleteOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		errs = append(errs, err)
+	}
+	err = client.CoreV1().
+		Namespaces().
+		Delete(context.Background(), "open-cluster-management", metav1.DeleteOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		errs = append(errs, err)
+	}
+
+	return utilerrors.NewAggregate(errs)
 }

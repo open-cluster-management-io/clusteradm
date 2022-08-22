@@ -13,9 +13,11 @@ import (
 	"k8s.io/klog/v2"
 
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
 
-	"github.com/stolostron/applier/pkg/apply"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	klusterletclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 	appliedworkclient "open-cluster-management.io/api/client/work/clientset/versioned"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
@@ -41,91 +43,108 @@ func (o *Options) validate() error {
 func (o *Options) run() error {
 
 	// Delete the applied resource in the Managed cluster
-	nameSpace := "open-cluster-management"
-	output := make([]string, 0)
-	fmt.Printf("Remove applied resources in the managed cluster %s ... \n", o.clusterName)
+	fmt.Fprintf(o.Streams.Out, "Remove applied resources in the managed cluster %s ... \n", o.clusterName)
 
 	//Delete Klusterlet CR resources firstly
 	f := o.ClusteradmFlags.KubectlFactory
 	config, err := f.ToRESTConfig()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	kubeClient, apiExtensionsClient, _, err := helpers.GetClients(f)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	appliedWorkClient, err := appliedworkclient.NewForConfig(config)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	if IsAppliedManifestWorkExist(appliedWorkClient) {
-
-		log.Fatal("AppliedManifestWork exist on the managed cluster, uninstalling the klusterlet will cause that the manifestworks on hub cannot be cleaned.")
+		return fmt.Errorf("appliedManifestWork exist on the managed cluster, uninstalling the klusterlet will cause that the manifestworks on hub cannot be cleaned")
 	} else {
 		//Create klusterlet client
 		klusterletClient, err := klusterletclient.NewForConfig(config)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		err = klusterletClient.OperatorV1().Klusterlets().Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
-		if err != nil && !errors.IsNotFound(err) {
-			log.Fatal(err)
+		if errors.IsNotFound(err) {
+			fmt.Fprintf(o.Streams.Out, "klusterlet is cleaned up already")
+			return nil
 		}
-		if !o.ClusteradmFlags.DryRun {
-			b := retry.DefaultBackoff
-			b.Duration = 1 * time.Second
+		if err != nil {
+			return err
+		}
+		b := retry.DefaultBackoff
+		b.Duration = 1 * time.Second
 
-			err = WaitResourceToBeDelete(context.Background(), klusterletClient, "klusterlet", b)
-			if err != nil && !errors.IsNotFound(err) {
-				log.Fatal("Resource Klusterlet should be deleted first:", err)
-			}
+		err = WaitResourceToBeDelete(context.Background(), klusterletClient, "klusterlet", b)
+		if err != nil {
+			return err
 		}
 	}
 
 	//Delete the other applied resources
 	if o.purgeOperator {
-		if !o.ClusteradmFlags.DryRun {
-			_ = kubeClient.AppsV1().
-				Deployments(nameSpace).
-				Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
-			_ = apiExtensionsClient.ApiextensionsV1().
-				CustomResourceDefinitions().
-				Delete(context.Background(), "klusterlets.operator.open-cluster-management.io", metav1.DeleteOptions{})
-			_ = kubeClient.CoreV1().
-				Namespaces().
-				Delete(context.Background(), "open-cluster-management-agent", metav1.DeleteOptions{})
-			_ = kubeClient.RbacV1().
-				ClusterRoles().
-				Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
-			_ = kubeClient.RbacV1().
-				ClusterRoleBindings().
-				Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
-			_ = kubeClient.CoreV1().
-				ServiceAccounts("open-cluster-management").
-				Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
+		if err := puregeOperator(kubeClient, apiExtensionsClient); err != nil {
+			return err
 		}
-		log.Println("Other resources have been deleted.")
 	}
 
-	fmt.Printf("Applied resources have been deleted during the %s joined stage. The status of mcl %s will be unknown in the hub cluster.\n", o.clusterName, o.clusterName)
-	return apply.WriteOutput(o.outputFile, output)
+	fmt.Fprintf(o.Streams.Out, "Applied resources have been deleted during the %s joined stage. The status of mcl %s will be unknown in the hub cluster.\n", o.clusterName, o.clusterName)
+	return nil
 
 }
 
-func WaitResourceToBeDelete(context context.Context, client klusterletclient.Interface, name string, b wait.Backoff) error {
+func puregeOperator(client kubernetes.Interface, extensionClient apiextensionsclient.Interface) error {
+	var errs []error
 
+	nameSpace := "open-cluster-management"
+	err := client.AppsV1().
+		Deployments(nameSpace).
+		Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		errs = append(errs, err)
+	}
+	err = extensionClient.ApiextensionsV1().
+		CustomResourceDefinitions().
+		Delete(context.Background(), "klusterlets.operator.open-cluster-management.io", metav1.DeleteOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		errs = append(errs, err)
+	}
+	err = client.RbacV1().
+		ClusterRoles().
+		Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		errs = append(errs, err)
+	}
+	err = client.RbacV1().
+		ClusterRoleBindings().
+		Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		errs = append(errs, err)
+	}
+	err = client.CoreV1().
+		ServiceAccounts("open-cluster-management").
+		Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		errs = append(errs, err)
+	}
+
+	return utilerrors.NewAggregate(errs)
+}
+
+func WaitResourceToBeDelete(context context.Context, client klusterletclient.Interface, name string, b wait.Backoff) error {
 	errGet := retry.OnError(b, func(err error) bool {
-		if err != nil && !errors.IsNotFound(err) {
-			log.Println("Wait to deleted resource klusterlet:", err)
-			return true
-		}
-		return false
+		return true
 	}, func() error {
 		_, err := client.OperatorV1().Klusterlets().Get(context, name, metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			return nil
+		}
 		if err == nil {
-			return fmt.Errorf("klusterlet is still exist")
+			return fmt.Errorf("klusterlet still exists")
 		}
 		return err
 	})

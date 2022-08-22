@@ -14,7 +14,6 @@ import (
 	helperwait "open-cluster-management.io/clusteradm/pkg/helpers/wait"
 
 	"github.com/spf13/cobra"
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/klog/v2"
 	version "open-cluster-management.io/clusteradm/pkg/helpers/version"
 )
@@ -72,21 +71,7 @@ func (o *Options) validate() error {
 		}, os.Stderr); err != nil {
 		return err
 	}
-	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
-	if err != nil {
-		return err
-	}
-	apiExtensionsClient, err := apiextensionsclient.NewForConfig(restConfig)
-	if err != nil {
-		return err
-	}
-	installed, err := helpers.IsClusterManagerInstalled(apiExtensionsClient)
-	if err != nil {
-		return err
-	}
-	if installed {
-		return fmt.Errorf("hub already initialized")
-	}
+
 	if len(o.registry) == 0 {
 		return fmt.Errorf("registry should not be empty")
 	}

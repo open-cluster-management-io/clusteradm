@@ -16,8 +16,10 @@ type Options struct {
 	ClusterManageName string
 	//The file to output the resources will be sent to the file.
 	OutputFile string
-	//If true the bootstrap token will be used instead of the service account token
-	UseBootstrapToken bool
+	//Delete the operator by default
+	purgeOperator bool
+
+	Streams genericclioptions.IOStreams
 }
 
 //Values: The values used in the template
@@ -37,5 +39,6 @@ type Hub struct {
 func NewOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
+		Streams:         streams,
 	}
 }

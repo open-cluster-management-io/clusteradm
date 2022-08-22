@@ -17,7 +17,8 @@ import (
 
 var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", func() {
 	ginkgo.BeforeEach(func() {
-		e2e.ClearEnv()
+		err := e2e.ClearEnv()
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	})
 
 	ginkgo.Context("join hub scenario with manual bootstrap token", func() {

@@ -44,8 +44,11 @@ func TestE2EClusteradm(t *testing.T) {
 var _ = ginkgo.BeforeSuite(func() {
 	ginkgo.By("Starting e2e test environment")
 
+	var err error
+
 	// set cluster info and start clusters.
-	e2e = util.PrepareE2eEnvironment()
+	e2e, err = util.PrepareE2eEnvironment()
+	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	pathOptions := clientcmd.NewDefaultPathOptions()
 	configapi, err := pathOptions.GetStartingConfig()

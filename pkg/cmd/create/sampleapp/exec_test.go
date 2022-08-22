@@ -16,11 +16,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
+	"github.com/stolostron/applier/pkg/apply"
 	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
 	"open-cluster-management.io/clusteradm/pkg/cmd/addon/enable"
 	enableScenario "open-cluster-management.io/clusteradm/pkg/cmd/addon/enable/scenario"
 	installScenario "open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
-	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 )
 
 // AddonOptions: options used for addon deployment

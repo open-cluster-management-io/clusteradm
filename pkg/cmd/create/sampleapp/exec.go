@@ -11,6 +11,7 @@ import (
 	"runtime"
 
 	"github.com/spf13/cobra"
+	"github.com/stolostron/applier/pkg/apply"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
@@ -18,7 +19,6 @@ import (
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	"open-cluster-management.io/clusteradm/pkg/cmd/create/sampleapp/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
-	"open-cluster-management.io/clusteradm/pkg/helpers/apply"
 )
 
 const (

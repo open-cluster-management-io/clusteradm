@@ -104,7 +104,7 @@ func (o *Options) run() error {
 	output = append(output, out...)
 
 	if o.wait && !o.ClusteradmFlags.DryRun {
-		apiExtensionsClient, err := apiExtensionsclient.NewForConfig(restConfig)
+		apiExtensionsClient, err := apiextensionsclient.NewForConfig(restConfig)
 		if err != nil {
 			return err
 		}

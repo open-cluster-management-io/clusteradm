@@ -102,13 +102,18 @@ func (o *Options) run() error {
 	output := make([]string, 0)
 	reader := scenario.GetScenarioResourcesReader()
 
-	kubeClient, apiExtensionsClient, dynamicClient, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
+	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
+	if err != nil {
+		return err
+	}
+
+	kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
 	if err != nil {
 		return err
 	}
 
 	applierBuilder := apply.NewApplierBuilder()
-	applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
+	applier := applierBuilder.WithRestConfig(restConfig).Build()
 
 	files := []string{
 		"init/namespace.yaml",
@@ -158,6 +163,10 @@ func (o *Options) run() error {
 	output = append(output, out...)
 
 	if o.wait && !o.ClusteradmFlags.DryRun {
+		apiExtensionsClient, err := apiextensionsclient.NewForConfig(restConfig)
+		if err != nil {
+			return err
+		}
 		if err := helperwait.WaitUntilCRDReady(apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io"); err != nil {
 			return err
 		}
@@ -182,11 +191,6 @@ func (o *Options) run() error {
 			int64(o.ClusteradmFlags.Timeout)); err != nil {
 			return err
 		}
-	}
-
-	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
-	if err != nil {
-		return nil
 	}
 
 	cmd := fmt.Sprintf("%s join --hub-token %s --hub-apiserver %s",

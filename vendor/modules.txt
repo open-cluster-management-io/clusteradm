@@ -334,10 +334,11 @@ github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 ## explicit; go 1.12
 github.com/spf13/pflag
-# github.com/stolostron/applier v1.0.2-0.20220802003824-ca5e63261fa1
+# github.com/stolostron/applier v1.2.5-0.20220822005819-3dc2b46b7e02
 ## explicit; go 1.18
 github.com/stolostron/applier/pkg/apply
 github.com/stolostron/applier/pkg/asset
+github.com/stolostron/applier/pkg/genericclioptions
 github.com/stolostron/applier/pkg/helpers
 # github.com/stretchr/testify v1.7.1
 ## explicit; go 1.13

@@ -1,25 +1,11 @@
-// Copyright Contributors to the Open Cluster Management project
+// Copyright Red Hat
 
 package asset
 
 import (
 	"embed"
-	"io/ioutil"
-	"os"
 	"path/filepath"
-	"strings"
-
-	"github.com/ghodss/yaml"
 )
-
-type ScenarioReader interface {
-	//Retrieve an asset from the data source
-	Asset(templatePath string) ([]byte, error)
-	//List all available assets in the data source
-	AssetNames(excluded []string) ([]string, error)
-	ExtractAssets(prefix, dir string, excluded []string) error
-	ToJSON(b []byte) ([]byte, error)
-}
 
 type ScenarioResourcesReader struct {
 	files *embed.FS
@@ -39,17 +25,20 @@ func (r *ScenarioResourcesReader) Asset(name string) ([]byte, error) {
 	return r.files.ReadFile(name)
 }
 
-func (r *ScenarioResourcesReader) AssetNames(excluded []string) ([]string, error) {
+func (r *ScenarioResourcesReader) AssetNames(prefixes, excluded []string, headerFile string) ([]string, error) {
 	assetNames := make([]string, 0)
 	got, err := r.assetWalk(".")
 	if err != nil {
 		return nil, err
 	}
 	for _, f := range got {
-		if !isExcluded(f, excluded) {
+		if !isExcluded(f, prefixes, excluded) {
 			assetNames = append(assetNames, f)
 		}
 	}
+	// The header file must be added in the assetNames as it is retrieved latter
+	// to render asset in the MustTemplateAsset
+	assetNames = AppendItNotExists(assetNames, headerFile)
 	return assetNames, nil
 }
 
@@ -82,51 +71,4 @@ func (r *ScenarioResourcesReader) assetWalk(f string) ([]string, error) {
 		return assets, nil
 	}
 	return append(assets, f), nil
-}
-
-func isExcluded(f string, excluded []string) bool {
-	for _, e := range excluded {
-		if f == e {
-			return true
-		}
-	}
-	return false
-}
-
-func (r *ScenarioResourcesReader) ExtractAssets(prefix, dir string, excluded []string) error {
-	assetNames, err := r.AssetNames(excluded)
-	if err != nil {
-		return err
-	}
-	for _, assetName := range assetNames {
-		if !strings.HasPrefix(assetName, prefix) {
-			continue
-		}
-		relPath, err := filepath.Rel(prefix, assetName)
-		if err != nil {
-			return err
-		}
-		path := filepath.Join(dir, relPath)
-
-		if relPath == "." {
-			path = filepath.Join(dir, filepath.Base(assetName))
-		}
-		err = os.MkdirAll(filepath.Dir(path), os.FileMode(0700))
-		if err != nil {
-			return err
-		}
-		data, err := r.Asset(assetName)
-		if err != nil {
-			return err
-		}
-		err = ioutil.WriteFile(path, data, os.FileMode(0600))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (r *ScenarioResourcesReader) ToJSON(b []byte) ([]byte, error) {
-	return yaml.YAMLToJSON(b)
 }

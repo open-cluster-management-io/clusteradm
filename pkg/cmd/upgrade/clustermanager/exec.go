@@ -70,13 +70,13 @@ func (o *Options) run() error {
 	output := make([]string, 0)
 	reader := init_scenario.GetScenarioResourcesReader()
 
-	kubeClient, apiExtensionsClient, dynamicClient, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
+	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
 	}
 
 	applierBuilder := apply.NewApplierBuilder()
-	applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
+	applier := applierBuilder.WithRestConfig(restConfig).Build()
 
 	files := []string{
 		"init/clustermanager_cluster_role.yaml",
@@ -104,6 +104,10 @@ func (o *Options) run() error {
 	output = append(output, out...)
 
 	if o.wait && !o.ClusteradmFlags.DryRun {
+		apiExtensionsClient, err := apiExtensionsclient.NewForConfig(restConfig)
+		if err != nil {
+			return err
+		}
 		if err := wait.WaitUntilCRDReady(apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io"); err != nil {
 			return err
 		}

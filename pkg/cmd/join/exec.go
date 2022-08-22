@@ -10,6 +10,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -115,12 +116,13 @@ func (o *Options) run() error {
 		return err
 	}
 
-	kubeClient, apiExtensionsClient, dynamicClient, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
+	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
 	}
+
 	applierBuilder := apply.NewApplierBuilder()
-	applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
+	applier := applierBuilder.WithRestConfig(restConfig).Build()
 
 	files := []string{
 		"join/namespace_agent.yaml",
@@ -147,6 +149,10 @@ func (o *Options) run() error {
 
 	if !o.ClusteradmFlags.DryRun {
 		if o.wait && !o.ClusteradmFlags.DryRun {
+			apiExtensionsClient, err := apiextensionsclient.NewForConfig(restConfig)
+			if err != nil {
+				return err
+			}
 			if err := wait.WaitUntilCRDReady(apiExtensionsClient, "klusterlets.operator.open-cluster-management.io"); err != nil {
 				return err
 			}

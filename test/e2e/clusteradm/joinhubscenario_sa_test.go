@@ -21,6 +21,7 @@ var _ = ginkgo.Describe("test clusteradm with service account", func() {
 			ginkgo.By("init hub with service account")
 			err = e2e.Clusteradm().Init(
 				"--context", e2e.Cluster().Hub().Context(),
+				"--bundle-version=latest",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 
@@ -30,6 +31,7 @@ var _ = ginkgo.Describe("test clusteradm with service account", func() {
 				"--hub-token", e2e.CommandResult().Token(), "--hub-apiserver", e2e.CommandResult().Host(),
 				"--cluster-name", e2e.Cluster().ManagedCluster1().Name(),
 				"--wait",
+				"--bundle-version=latest",
 				"--force-internal-endpoint-lookup",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "managedcluster1 join error")
@@ -54,6 +56,7 @@ var _ = ginkgo.Describe("test clusteradm with service account", func() {
 				"--hub-token", e2e.CommandResult().Token(), "--hub-apiserver", e2e.CommandResult().Host(),
 				"--cluster-name", e2e.Cluster().ManagedCluster2().Name(),
 				"--wait",
+				"--bundle-version=latest",
 				"--force-internal-endpoint-lookup",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "managedcluster2 join error")

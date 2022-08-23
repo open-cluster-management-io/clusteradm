@@ -21,6 +21,7 @@ var _ = ginkgo.Describe("test clusteradm with timeout", func() {
 			err = e2e.Clusteradm().Init(
 				"--timeout", "400",
 				"--context", e2e.Cluster().Hub().Context(),
+				"--bundle-version=latest",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 
@@ -30,6 +31,7 @@ var _ = ginkgo.Describe("test clusteradm with timeout", func() {
 				"--hub-token", e2e.CommandResult().Token(), "--hub-apiserver", e2e.CommandResult().Host(),
 				"--cluster-name", e2e.Cluster().ManagedCluster1().Name(),
 				"--wait",
+				"--bundle-version=latest",
 				"--force-internal-endpoint-lookup",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "managedcluster1 join error")

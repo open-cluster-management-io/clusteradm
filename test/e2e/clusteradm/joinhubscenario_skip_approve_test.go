@@ -28,6 +28,7 @@ var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", func() {
 			err = e2e.Clusteradm().Init(
 				"--timeout", "400",
 				"--context", e2e.Cluster().Hub().Context(),
+				"--bundle-version=latest",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 			time.Sleep(1000000)
@@ -71,6 +72,7 @@ var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", func() {
 				"--hub-apiserver", e2e.CommandResult().Host(),
 				"--force-internal-endpoint-lookup",
 				"--cluster-name", e2e.Cluster().ManagedCluster1().Name(),
+				"--bundle-version=latest",
 				"--wait",
 			)
 

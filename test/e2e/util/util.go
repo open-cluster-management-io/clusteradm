@@ -129,6 +129,7 @@ func (tec *TestE2eConfig) ResetEnv() error {
 	err := tec.Clusteradm().Init(
 		"--context", tec.Cluster().Hub().Context(),
 		"--use-bootstrap-token",
+		"--bundle-version=latest",
 		"--wait",
 	)
 	if err != nil {

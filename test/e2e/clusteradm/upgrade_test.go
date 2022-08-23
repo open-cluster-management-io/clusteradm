@@ -10,27 +10,29 @@ var _ = ginkgo.Describe("test clusteradm upgrade clustermanager and Klusterlets"
 
 	ginkgo.BeforeAll(func() {
 		ginkgo.By("reset e2e environment...")
-		err := e2e.ResetEnv()
+		err := e2e.ClearEnv()
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+		err = e2e.ResetEnv()
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	})
 
 	var err error
 
-	ginkgo.It("run cluster manager upgrade version 0.8.0 ", func() {
+	ginkgo.It("run cluster manager upgrade version latest ", func() {
 		err = e2e.Clusteradm().Upgrade(
 			"clustermanager",
-			"--bundle-version", "0.8.0",
+			"--bundle-version", "latest",
 			"--context", e2e.Cluster().Hub().Context(),
 		)
-	})
-	gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm upgrade error")
 
-	ginkgo.It("run klusterlet upgrade version 0.8.0 ", func() {
+		gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm upgrade error")
+
 		err = e2e.Clusteradm().Upgrade(
 			"klusterlet",
-			"--bundle-version", "0.8.0",
+			"--bundle-version", "latest",
 			"--context", e2e.Cluster().ManagedCluster1().Context(),
 		)
+
+		gomega.Expect(err).NotTo(gomega.HaveOccurred(), "klusterlet upgrade error")
 	})
-	gomega.Expect(err).NotTo(gomega.HaveOccurred(), "klusterlet upgrade error")
 })

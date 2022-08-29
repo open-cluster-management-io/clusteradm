@@ -19,6 +19,7 @@ var _ = ginkgo.Describe("test clusteradm upgrade clustermanager and Klusterlets"
 	var err error
 
 	ginkgo.It("run cluster manager upgrade version latest ", func() {
+		ginkgo.Skip("Upgrade is skipped due to flaky when destroying control plane. Need to revisit it after fix cleanup issue")
 		err = e2e.Clusteradm().Upgrade(
 			"clustermanager",
 			"--bundle-version", "latest",

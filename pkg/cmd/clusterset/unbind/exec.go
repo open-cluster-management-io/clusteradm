@@ -52,6 +52,6 @@ func (o *Options) Run() (err error) {
 		return err
 	}
 
-	fmt.Fprintf(o.Streams.Out, "Clusterset %s is unbind from Clusterset %s\n", o.Namespace, o.Clusterset)
+	fmt.Fprintf(o.Streams.Out, "Clusterset %s is unbind from namespace %s\n", o.Clusterset, o.Namespace)
 	return nil
 }

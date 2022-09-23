@@ -19,6 +19,7 @@ import (
 
 	"github.com/spf13/cobra"
 	certificatesv1 "k8s.io/api/certificates/v1"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 )
 
@@ -70,54 +71,58 @@ func (o *Options) Run() error {
 	return o.runWithClient(kubeClient, clusterClient)
 }
 
-func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient *clusterclientset.Clientset) (err error) {
+func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient *clusterclientset.Clientset) error {
+	var errs []error
 	for _, clusterName := range o.Values.Clusters {
 		if !o.Wait {
-			var csrApproved bool
-			csrApproved, err = o.accept(kubeClient, clusterClient, clusterName, false)
-			if err == nil && !csrApproved {
-				err = fmt.Errorf("no CSR to approve for cluster %s", clusterName)
+			approved, err := o.accept(kubeClient, clusterClient, clusterName, false)
+			if err != nil {
+				errs = append(errs, err)
+			}
+			if !approved {
+				errs = append(errs, fmt.Errorf("no csr is approved yet for cluster %s", clusterName))
 			}
 		} else {
-			err = wait.PollImmediate(1*time.Second, time.Duration(o.ClusteradmFlags.Timeout)*time.Second, func() (bool, error) {
-				return o.accept(kubeClient, clusterClient, clusterName, true)
+			err := wait.PollImmediate(1*time.Second, time.Duration(o.ClusteradmFlags.Timeout)*time.Second, func() (bool, error) {
+				approved, err := o.accept(kubeClient, clusterClient, clusterName, true)
+				if !approved {
+					return false, nil
+				}
+				if errors.IsNotFound(err) {
+					return false, nil
+				}
+				return true, err
 			})
-		}
-		if err != nil {
-			return err
+			errs = append(errs, err)
 		}
 	}
-	return nil
+	return utilerrors.NewAggregate(errs)
 }
 
 func (o *Options) accept(kubeClient *kubernetes.Clientset, clusterClient *clusterclientset.Clientset, clusterName string, waitMode bool) (bool, error) {
-	csrApproved, err := o.approveCSR(kubeClient, clusterName, waitMode)
+	approved, err := o.approveCSR(kubeClient, clusterName, waitMode)
 	if err != nil {
-		return false, err
+		return approved, fmt.Errorf("fail to approve the csr for cluster %s: %v", clusterName, err)
 	}
-	mcUpdated, err := o.updateManagedCluster(clusterClient, clusterName)
+	err = o.updateManagedCluster(clusterClient, clusterName)
 	if err != nil {
-		return false, err
+		return approved, err
 	}
-	if csrApproved && mcUpdated {
-		fmt.Fprintf(o.Streams.Out, "\n Your managed cluster %s has joined the Hub successfully. Visit https://open-cluster-management.io/scenarios or https://github.com/open-cluster-management-io/OCM/tree/main/solutions for next steps.\n", clusterName)
-		return true, nil
-	}
-	return false, nil
+	fmt.Fprintf(o.Streams.Out, "\n Your managed cluster %s has joined the Hub successfully. Visit https://open-cluster-management.io/scenarios or https://github.com/open-cluster-management-io/OCM/tree/main/solutions for next steps.\n", clusterName)
+	return approved, nil
 }
 
 func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName string, waitMode bool) (bool, error) {
+	var hasApproved bool
 	csrs, err := kubeClient.CertificatesV1().CertificateSigningRequests().List(context.TODO(),
 		metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("%v = %v", clusterLabel, clusterName),
 		})
 	if err != nil {
-		if errors.IsNotFound(err) {
-			return false, nil
-		}
-		return false, err
+		return hasApproved, err
 	}
-	var csr *certificatesv1.CertificateSigningRequest
+
+	// Check if csr has the correct requester
 	var passedCSRs []certificatesv1.CertificateSigningRequest
 	if o.SkipApproveCheck {
 		passedCSRs = csrs.Items
@@ -137,82 +142,87 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 			passedCSRs = append(passedCSRs, item)
 		}
 	}
+
+	// approve all csrs that are not approved.
+	var csrToApprove []certificatesv1.CertificateSigningRequest
 	for _, passedCSR := range passedCSRs {
 		//Check if already approved or denied
 		approved, denied := GetCertApprovalCondition(&passedCSR.Status)
 		//if already denied, then nothing to do
 		if denied {
 			fmt.Fprintf(o.Streams.Out, "CSR %s already denied\n", passedCSR.Name)
-			return true, nil
+			continue
 		}
 		//if already approved, then nothing to do
 		if approved {
 			fmt.Fprintf(o.Streams.Out, "CSR %s already approved\n", passedCSR.Name)
-			return true, nil
+			hasApproved = true
+			continue
 		}
-		csr = &passedCSR
-		// nolint:staticcheck
-		break
+		csrToApprove = append(csrToApprove, passedCSR)
 	}
 
 	//no csr found
-	if csr == nil {
+	if len(csrToApprove) == 0 {
 		if waitMode {
 			fmt.Fprintf(o.Streams.Out, "no CSR to approve for cluster %s\n", clusterName)
 		}
-		return false, nil
+
+		return hasApproved, nil
 	}
 	//if dry-run don't approve
 	if o.ClusteradmFlags.DryRun {
-		return true, nil
-	}
-	if csr.Status.Conditions == nil {
-		csr.Status.Conditions = make([]certificatesv1.CertificateSigningRequestCondition, 0)
+		return hasApproved, nil
 	}
 
-	csr.Status.Conditions = append(csr.Status.Conditions, certificatesv1.CertificateSigningRequestCondition{
-		Status:         corev1.ConditionTrue,
-		Type:           certificatesv1.CertificateApproved,
-		Reason:         fmt.Sprintf("%s Approve", helpers.GetExampleHeader()),
-		Message:        fmt.Sprintf("This CSR was approved by %s certificate approve.", helpers.GetExampleHeader()),
-		LastUpdateTime: metav1.Now(),
-	})
+	var errs []error
+	fmt.Fprintf(o.Streams.Out, "Starting approve csrs for the cluster %s\n", clusterName)
+	for _, csr := range csrToApprove {
+		if csr.Status.Conditions == nil {
+			csr.Status.Conditions = make([]certificatesv1.CertificateSigningRequestCondition, 0)
+		}
+		csr.Status.Conditions = append(csr.Status.Conditions, certificatesv1.CertificateSigningRequestCondition{
+			Status:         corev1.ConditionTrue,
+			Type:           certificatesv1.CertificateApproved,
+			Reason:         fmt.Sprintf("%s Approve", helpers.GetExampleHeader()),
+			Message:        fmt.Sprintf("This CSR was approved by %s certificate approve.", helpers.GetExampleHeader()),
+			LastUpdateTime: metav1.Now(),
+		})
 
-	signingRequest := kubeClient.CertificatesV1().CertificateSigningRequests()
-	if _, err := signingRequest.UpdateApproval(context.TODO(), csr.Name, csr, metav1.UpdateOptions{}); err != nil {
-		return false, err
+		signingRequest := kubeClient.CertificatesV1().CertificateSigningRequests()
+		if _, err := signingRequest.UpdateApproval(context.TODO(), csr.Name, &csr, metav1.UpdateOptions{}); err != nil {
+			errs = append(errs, err)
+		} else {
+			fmt.Fprintf(o.Streams.Out, "CSR %s approved\n", csr.Name)
+			hasApproved = true
+		}
 	}
-
-	fmt.Fprintf(o.Streams.Out, "CSR %s approved\n", csr.Name)
-	return true, nil
+	return hasApproved, utilerrors.NewAggregate(errs)
 }
 
-func (o *Options) updateManagedCluster(clusterClient *clusterclientset.Clientset, clusterName string) (bool, error) {
+func (o *Options) updateManagedCluster(clusterClient *clusterclientset.Clientset, clusterName string) error {
 	mc, err := clusterClient.ClusterV1().ManagedClusters().Get(context.TODO(),
 		clusterName,
 		metav1.GetOptions{})
 	if err != nil {
-		if errors.IsNotFound(err) {
-			return false, nil
-		}
-		return false, err
+		return err
 	}
 	if mc.Spec.HubAcceptsClient {
 		fmt.Fprintf(o.Streams.Out, "hubAcceptsClient already set for managed cluster %s\n", clusterName)
-		return true, nil
+		return nil
 	}
 	if o.ClusteradmFlags.DryRun {
-		return true, nil
+		return nil
 	}
 	if !mc.Spec.HubAcceptsClient {
 		patch := `{"spec":{"hubAcceptsClient":true}}`
 		_, err = clusterClient.ClusterV1().ManagedClusters().Patch(context.TODO(), mc.Name, types.MergePatchType, []byte(patch), metav1.PatchOptions{})
 		if err != nil {
-			return false, err
+			return err
 		}
 		fmt.Fprintf(o.Streams.Out, "set hubAcceptsClient to true for managed cluster %s\n", clusterName)
 	}
-	return true, nil
+	return nil
 }
 
 func GetCertApprovalCondition(status *certificatesv1.CertificateSigningRequestStatus) (approved bool, denied bool) {

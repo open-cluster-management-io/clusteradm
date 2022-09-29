@@ -88,28 +88,11 @@ func (o *Options) printRegistrationOperator() error {
 			imageName = container.Image
 		}
 	}
-	crdStatus := make(map[string]string)
-	cmgrCrd, err := o.crdClient.ApiextensionsV1().
-		CustomResourceDefinitions().
-		Get(context.TODO(), clusterManagerNameCRD, metav1.GetOptions{})
-	if err != nil {
-		if !apierrors.IsNotFound(err) {
-			return err
-		}
-	}
-	if cmgrCrd != nil {
-		crdStatus[clusterManagerNameCRD] = "installed"
-	} else {
-		crdStatus[clusterManagerNameCRD] = "absent"
-	}
 
 	o.printer.Write(printer.LEVEL_0, "Registration Operator:\n")
 	o.printer.Write(printer.LEVEL_1, "Controller:\t(%d/%d) %s\n", registrationOperatorAvailableRs, registrationOperatorExpectedRs, imageName)
 	o.printer.Write(printer.LEVEL_1, "CustomResourceDefinition:\n")
-	for name, st := range crdStatus {
-		o.printer.Write(printer.LEVEL_2, "(%s) %s\n", st, name)
-	}
-	return nil
+	return printer.PrintOperatorCRD(o.printer, o.crdClient, clusterManagerNameCRD)
 }
 
 func (o *Options) printComponents() error {

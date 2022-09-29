@@ -11,9 +11,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
+	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+	o.printer.Competele()
+
 	return nil
 }
 
@@ -21,6 +24,12 @@ func (o *Options) validate(args []string) (err error) {
 	if len(args) != 0 {
 		return fmt.Errorf("there should be no argument")
 	}
+
+	err = o.printer.Validate()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -49,12 +58,30 @@ func (o *Options) run() (err error) {
 		return err
 	}
 
-	table := converToTable(clusters)
+	o.printer.WithTreeConverter(o.convertToTree).WithTableConverter(o.converToTable)
 
-	return o.printer.PrintObj(table, o.Streams.Out)
+	return o.printer.Print(o.Streams, clusters)
 }
 
-func converToTable(clusters *clusterapiv1.ManagedClusterList) *metav1.Table {
+func (o *Options) convertToTree(obj runtime.Object, tree *printer.TreePrinter) *printer.TreePrinter {
+	if mclList, ok := obj.(*clusterapiv1.ManagedClusterList); ok {
+		for _, cluster := range mclList.Items {
+			accepted, available, version, cpu, memory, clusterset := getFileds(cluster)
+			mp := make(map[string]interface{})
+			mp[".Accepted"] = accepted
+			mp[".Available"] = available
+			mp[".ClusterSet"] = clusterset
+			mp[".KubernetesVersion"] = version
+			mp[".Capacity.Cpu"] = cpu
+			mp[".Capacity.Memory"] = memory
+
+			tree.AddFileds(cluster.Name, &mp)
+		}
+	}
+	return tree
+}
+
+func (o *Options) converToTable(obj runtime.Object) *metav1.Table {
 	table := &metav1.Table{
 		ColumnDefinitions: []metav1.TableColumnDefinition{
 			{Name: "Name", Type: "string"},
@@ -68,16 +95,24 @@ func converToTable(clusters *clusterapiv1.ManagedClusterList) *metav1.Table {
 		Rows: []metav1.TableRow{},
 	}
 
-	for _, cluster := range clusters.Items {
-		row := convertRow(cluster)
-		table.Rows = append(table.Rows, row)
-	}
+	if mclList, ok := obj.(*clusterapiv1.ManagedClusterList); ok {
+		for _, cluster := range mclList.Items {
+			accepted, available, version, cpu, memory, clusterset := getFileds(cluster)
+			row := metav1.TableRow{
+				Cells:  []interface{}{cluster.Name, accepted, available, clusterset, cpu, memory, version},
+				Object: runtime.RawExtension{Object: &cluster},
+			}
 
+			table.Rows = append(table.Rows, row)
+		}
+	}
 	return table
 }
 
-func convertRow(cluster clusterapiv1.ManagedCluster) metav1.TableRow {
-	var available, cpu, memory, clusterset string
+func getFileds(cluster clusterapiv1.ManagedCluster) (accepted bool, available, version, cpu, memory, clusterset string) {
+	accepted = cluster.Spec.HubAcceptsClient
+
+	version = cluster.Status.Version.Kubernetes
 
 	availableCond := meta.FindStatusCondition(cluster.Status.Conditions, clusterapiv1.ManagedClusterConditionAvailable)
 	if availableCond != nil {
@@ -96,8 +131,5 @@ func convertRow(cluster clusterapiv1.ManagedCluster) metav1.TableRow {
 		clusterset = cluster.Labels["cluster.open-cluster-management.io/clusterset"]
 	}
 
-	return metav1.TableRow{
-		Cells:  []interface{}{cluster.Name, cluster.Spec.HubAcceptsClient, available, clusterset, cpu, memory, cluster.Status.Version.Kubernetes},
-		Object: runtime.RawExtension{Object: &cluster},
-	}
+	return
 }

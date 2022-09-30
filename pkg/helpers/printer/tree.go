@@ -9,6 +9,7 @@ import (
 	"github.com/disiqueira/gotree"
 	"github.com/fatih/color"
 	appsv1 "k8s.io/api/apps/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -50,18 +51,42 @@ func getManifestResourceStatus(manifestCond *workapiv1.ManifestCondition) string
 	return color.RedString("not-applied")
 }
 
-func PrintComponentsCRD(printer PrefixWriter, crdClient clientset.Interface, resource []operatorv1.RelatedResourceMeta) error {
-	testingCRDNames := sets.NewString()
-	for _, rs := range resource {
-		if rs.Resource == "customresourcedefinitions" {
-			testingCRDNames.Insert(rs.Name)
+func PrintOperatorCRD(printer PrefixWriter, crdClient clientset.Interface, name string) error {
+	crdList, err := crdClient.ApiextensionsV1().
+		CustomResourceDefinitions().
+		List(context.TODO(), metav1.ListOptions{
+			FieldSelector: fmt.Sprintf("metadata.name=%s", name),
+		})
+	if err != nil {
+		if !apierrors.IsNotFound(err) {
+			return err
 		}
 	}
+
+	cmgr := operatorv1.RelatedResourceMeta{
+		Resource: "customresourcedefinitions",
+		Name:     name,
+	}
+	return printCRD(printer, crdList, []operatorv1.RelatedResourceMeta{cmgr})
+}
+
+func PrintComponentsCRD(printer PrefixWriter, crdClient clientset.Interface, resource []operatorv1.RelatedResourceMeta) error {
 	crdList, err := crdClient.ApiextensionsV1().
 		CustomResourceDefinitions().
 		List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return err
+	}
+
+	return printCRD(printer, crdList, resource)
+}
+
+func printCRD(printer PrefixWriter, crdList *apiextensionsv1.CustomResourceDefinitionList, resource []operatorv1.RelatedResourceMeta) error {
+	testingCRDNames := sets.NewString()
+	for _, rs := range resource {
+		if rs.Resource == "customresourcedefinitions" {
+			testingCRDNames.Insert(rs.Name)
+		}
 	}
 	statuses := make(map[string]string)
 	existingCRDNames := sets.NewString()

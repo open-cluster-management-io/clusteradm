@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: governance-policy-propagator
-  namespace: open-cluster-management
+  namespace: {{ .Namespace }}
 spec:
   replicas: 1
   selector:

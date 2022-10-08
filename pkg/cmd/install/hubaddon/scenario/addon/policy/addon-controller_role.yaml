@@ -5,7 +5,7 @@ metadata:
   labels:
     app: governance-policy-addon-controller
   name: policy-addon-ctrl-leader-election-role
-  namespace: open-cluster-management
+  namespace: {{ .Namespace }}
 rules:
   - apiGroups:
       - ""

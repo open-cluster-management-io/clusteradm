@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: multicluster-operators-channel
-  namespace: open-cluster-management
+  namespace: {{ .Namespace }}
   labels:
     name: multicluster-operators-channel
 spec:

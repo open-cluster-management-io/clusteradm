@@ -11,7 +11,10 @@ import (
 )
 
 const (
-	ocmNamespace           = "open-cluster-management"
+	invalidNamespace = "no-such-ns"
+	ocmNamespace     = "open-cluster-management"
+
+	invalidAddon           = "no-such-addon"
 	channelDeployment      = "multicluster-operators-channel"
 	subscriptionDeployment = "multicluster-operators-subscription"
 	propagatorDeployment   = "governance-policy-propagator"
@@ -33,7 +36,7 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 
 			o := Options{
 				values: Values{
-					hubAddons: []string{"no-such-addon"},
+					hubAddons: []string{invalidAddon},
 				},
 			}
 
@@ -57,9 +60,22 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 			}, consistentlyTimeout, consistentlyInterval).Should(gomega.HaveOccurred())
 		})
 
+		ginkgo.It("Should not create any built-in add-on deployment(s) because it's not a valid namespace", func() {
+			o := Options{
+				values: Values{
+					Namespace: invalidNamespace,
+					hubAddons: []string{appMgrAddonName},
+				},
+			}
+
+			err := o.runWithClient(kubeClient, apiExtensionsClient, dynamicClient, false)
+			gomega.Expect(err).Should(gomega.HaveOccurred())
+		})
+
 		ginkgo.It("Should deploy the built in application-manager add-on deployments in open-cluster-management namespace successfully", func() {
 			o := Options{
 				values: Values{
+					Namespace: ocmNamespace,
 					hubAddons: []string{appMgrAddonName},
 				},
 			}
@@ -84,10 +100,11 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 			}, eventuallyTimeout, eventuallyInterval).ShouldNot(gomega.HaveOccurred())
 		})
 
-		ginkgo.It("Should deploy the built-in governance-policy-framework add-on deployments in open-cluster-management namespace successfully", func() {
+		ginkgo.It("Should deploy the built-in governance-policy-framework add-on deployments in open-cluster-management-hub namespace successfully", func() {
 			o := Options{
 				values: Values{
 					hubAddons: []string{policyFrameworkAddonName},
+					Namespace: ocmNamespace,
 				},
 			}
 

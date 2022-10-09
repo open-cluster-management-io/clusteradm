@@ -6,7 +6,7 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: multicluster-operators-subscription
-  namespace: open-cluster-management
+  namespace: {{ .Namespace }}
 roleRef:
   kind: ClusterRole
   name: multicluster-operators-subscription

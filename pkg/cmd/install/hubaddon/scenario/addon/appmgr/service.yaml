@@ -5,7 +5,7 @@ metadata:
   labels:
     name: multicluster-operators-subscription
   name: multicluster-operators-subscription
-  namespace: open-cluster-management
+  namespace: {{ .Namespace }}
 spec:
   ports:
   - port: 8443

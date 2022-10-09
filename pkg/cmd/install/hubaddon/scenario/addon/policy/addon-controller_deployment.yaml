@@ -6,7 +6,7 @@ metadata:
     app: governance-policy-addon-controller
     control-plane: controller-manager
   name: governance-policy-addon-controller
-  namespace: open-cluster-management
+  namespace: {{ .Namespace }}
 spec:
   replicas: 1
   selector:

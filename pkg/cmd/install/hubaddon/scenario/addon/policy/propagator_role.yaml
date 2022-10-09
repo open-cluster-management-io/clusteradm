@@ -3,7 +3,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: governance-policy-propagator-leader-election-role
-  namespace: open-cluster-management
+  namespace: {{ .Namespace }}
 rules:
 - apiGroups:
   - ""

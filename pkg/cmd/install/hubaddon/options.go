@@ -19,6 +19,8 @@ type Options struct {
 //Values: The values used in the template
 type Values struct {
 	hubAddons []string
+	// Namespace to install
+	Namespace string
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {

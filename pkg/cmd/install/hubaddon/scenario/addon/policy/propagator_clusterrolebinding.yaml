@@ -10,4 +10,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: governance-policy-propagator
-  namespace: open-cluster-management
+  namespace: {{ .Namespace }}

@@ -10,11 +10,11 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      name: multicluster-operators-subscription
+      app: multicluster-operators-hub-subscription
   template:
     metadata:
       labels:
-        name: multicluster-operators-subscription
+        app: multicluster-operators-hub-subscription
     spec:
       serviceAccountName: multicluster-operators-subscription
       containers:

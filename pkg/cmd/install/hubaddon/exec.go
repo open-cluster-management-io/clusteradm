@@ -96,7 +96,8 @@ func (o *Options) runWithClient(kubeClient kubernetes.Interface,
 				"addon/appmgr/crd_report.yaml",
 				"addon/appmgr/crd_clusterreport.yaml",
 				"addon/appmgr/service_account.yaml",
-				"addon/appmgr/service.yaml",
+				"addon/appmgr/service_metrics.yaml",
+				"addon/appmgr/service_operator.yaml",
 			}
 
 			out, err := applier.ApplyDirectly(reader, o.values, dryRun, "", files...)

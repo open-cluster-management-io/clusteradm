@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/disiqueira/gotree"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,7 +16,6 @@ import (
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
-
 	if len(args) > 1 {
 		return fmt.Errorf("can only specify one manifestwork")
 	}
@@ -26,6 +24,8 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		o.workName = args[0]
 	}
 
+	o.printer.Competele()
+
 	return nil
 }
 
@@ -33,6 +33,12 @@ func (o *Options) validate() (err error) {
 	if len(o.cluster) == 0 {
 		return fmt.Errorf("cluster name must be specified")
 	}
+
+	err = o.printer.Validate()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -55,29 +61,40 @@ func (o *Options) run() (err error) {
 		return err
 	}
 
+	var workList *workapiv1.ManifestWorkList
 	if len(o.workName) == 0 {
-		workList, err := workClient.WorkV1().ManifestWorks(o.cluster).List(context.TODO(), metav1.ListOptions{})
-		if err != nil {
-			return err
-		}
-
-		table := converToTable(workList)
-		return o.printer.PrintObj(table, o.Streams.Out)
+		workList, err = workClient.WorkV1().ManifestWorks(o.cluster).List(context.TODO(), metav1.ListOptions{})
+	} else {
+		workList, err = workClient.WorkV1().ManifestWorks(o.cluster).List(context.TODO(), metav1.ListOptions{
+			FieldSelector: fmt.Sprintf("name=%s", o.workName),
+		})
 	}
-
-	work, err := workClient.WorkV1().ManifestWorks(o.cluster).Get(context.TODO(), o.workName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
-	root := gotree.New("<ManifestWork>")
-	printer.PrintWorkDetail(root, work)
+	o.printer.WithTreeConverter(o.convertToTree).WithTableConverter(o.converToTable)
 
-	fmt.Fprint(o.Streams.Out, root.Print())
-	return nil
+	return o.printer.Print(o.Streams, workList)
 }
 
-func converToTable(works *workapiv1.ManifestWorkList) *metav1.Table {
+func (o *Options) convertToTree(obj runtime.Object, tree *printer.TreePrinter) *printer.TreePrinter {
+	if workList, ok := obj.(*workapiv1.ManifestWorkList); ok {
+		for _, work := range workList.Items {
+			cluster, number, applied, available := getFileds(work)
+			mp := make(map[string]interface{})
+			mp[".Cluster"] = cluster
+			mp[".Number of Manifests"] = number
+			mp[".Applied"] = applied
+			mp[".Available"] = available
+
+			tree.AddFileds(work.Name, &mp)
+		}
+	}
+	return tree
+}
+
+func (o *Options) converToTable(obj runtime.Object) *metav1.Table {
 	table := &metav1.Table{
 		ColumnDefinitions: []metav1.TableColumnDefinition{
 			{Name: "Name", Type: "string"},
@@ -89,16 +106,24 @@ func converToTable(works *workapiv1.ManifestWorkList) *metav1.Table {
 		Rows: []metav1.TableRow{},
 	}
 
-	for _, work := range works.Items {
-		row := convertRow(work)
-		table.Rows = append(table.Rows, row)
+	if workList, ok := obj.(*workapiv1.ManifestWorkList); ok {
+		for _, work := range workList.Items {
+			cluster, number, applied, available := getFileds(work)
+			row := metav1.TableRow{
+				Cells:  []interface{}{work.Name, cluster, number, applied, available},
+				Object: runtime.RawExtension{Object: &work},
+			}
+
+			table.Rows = append(table.Rows, row)
+		}
 	}
 
 	return table
 }
 
-func convertRow(work workapiv1.ManifestWork) metav1.TableRow {
-	var applied, available string
+func getFileds(work workapiv1.ManifestWork) (cluster string, number int, applied, available string) {
+	cluster = work.Namespace
+	number = len(work.Spec.Workload.Manifests)
 
 	appliedCond := meta.FindStatusCondition(work.Status.Conditions, workapiv1.WorkApplied)
 	if appliedCond != nil {
@@ -110,8 +135,5 @@ func convertRow(work workapiv1.ManifestWork) metav1.TableRow {
 		available = string(availableCond.Status)
 	}
 
-	return metav1.TableRow{
-		Cells:  []interface{}{work.Name, work.Namespace, len(work.Spec.Workload.Manifests), applied, available},
-		Object: runtime.RawExtension{Object: &work},
-	}
+	return
 }

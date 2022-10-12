@@ -45,5 +45,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		},
 	}
 
+	o.printer.AddFlag(cmd.Flags())
+
 	return cmd
 }

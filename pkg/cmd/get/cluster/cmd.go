@@ -50,5 +50,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 
 	cmd.Flags().StringVar(&o.Clusterset, "clusterset", "", "ClusterSet of the clusters")
 
+	o.printer.AddFlag(cmd.Flags())
+
 	return cmd
 }

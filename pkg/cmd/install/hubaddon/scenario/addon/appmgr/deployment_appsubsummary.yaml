@@ -19,7 +19,7 @@ spec:
       serviceAccountName: multicluster-operators-subscription
       containers:
         - name: multicluster-operators-appsub-summary
-          image: quay.io/open-cluster-management/multicloud-operators-subscription:latest
+          image: quay.io/open-cluster-management/multicloud-operators-subscription:{{ .BundleVersion.AppAddon }}
           ports:
           - containerPort: 9443
           command:

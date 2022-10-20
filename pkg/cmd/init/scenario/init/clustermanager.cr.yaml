@@ -7,3 +7,7 @@ spec:
   registrationImagePullSpec: {{ .Hub.Registry }}/registration:{{ .BundleVersion.RegistrationImageVersion }}
   workImagePullSpec: {{ .Hub.Registry }}/work:{{ .BundleVersion.WorkImageVersion }}
   placementImagePullSpec: {{ .Hub.Registry }}/placement:{{ .BundleVersion.PlacementImageVersion }}
+  registrationConfiguration:
+      featureGates:
+      - feature: DefaultClusterSet
+        mode: Enable

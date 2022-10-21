@@ -1,20 +1,23 @@
 [comment]: # ( Copyright Contributors to the Open Cluster Management project )
 # Release Content
 ## Additions
-N/A
+- [build: create metrics service when installing hub](https://github.com/open-cluster-management-io/clusteradm/pull/271) @chenz402
+- [Added command to create a sample application](https://github.com/open-cluster-management-io/clusteradm/pull/245) @IlonaShishov
+- [feat: add command clusteradm get placements](https://github.com/open-cluster-management-io/clusteradm/pull/158) @ycyaoxdu
+- [feat: add printer supporting tree, table and yaml format](https://github.com/open-cluster-management-io/clusteradm/pull/174) @ycyaoxdu
 
 ## Breaking Changes
 N/A
 
 ## Changes
-- [Add preflight checks](https://github.com/open-cluster-management-io/clusteradm/pull/250) @Promacanthu
-- [use applier repo](https://github.com/open-cluster-management-io/clusteradm/pull/254) @itdove
-- [Update README with an additional policy config-policy-controller example](https://github.com/open-cluster-management-io/clusteradm/pull/258) @mikeshng
-- [Add dry run for create clusterset](https://github.com/open-cluster-management-io/clusteradm/pull/253) @IlonaShishov
+- [allow install hub-addon specify ns](https://github.com/open-cluster-management-io/clusteradm/pull/275) @ycyaoxdu
+- [Remove redundant check](https://github.com/open-cluster-management-io/clusteradm/pull/268) @qiujian16
+- [Refactor accept for better error message](https://github.com/open-cluster-management-io/clusteradm/pull/270) @qiujian16
+- [Remove unnecessary files when join](https://github.com/open-cluster-management-io/clusteradm/pull/266) @qiujian16
 
 ## Bug Fixes
-- [show not exist when disable not-found addon](https://github.com/open-cluster-management-io/clusteradm/pull/241) @jichenjc
-- [Update the Policy Addon controller permissions](https://github.com/open-cluster-management-io/clusteradm/pull/257) @mprahl
-- [Load auth plugin for kube client](https://github.com/open-cluster-management-io/clusteradm/pull/263) @qiujian16
-- [Fix sa token issue in 1.24](https://github.com/open-cluster-management-io/clusteradm/pull/252) @qiujian16
+- [bug fix: apply klusterlet cr after crd applied](https://github.com/open-cluster-management-io/clusteradm/pull/282) @ycyaoxdu
+- [sync governance-policy-addon-controller deployment image](https://github.com/open-cluster-management-io/clusteradm/pull/279) @haoqing0110
+- [bug fix: cr apply before crd registered](https://github.com/open-cluster-management-io/clusteradm/pull/276) @ycyaoxdu
+- [fix: show crd version in command get hub-info](https://github.com/open-cluster-management-io/clusteradm/pull/272) @ycyaoxdu
 

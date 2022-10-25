@@ -11,6 +11,8 @@ type VersionBundle struct {
 	Placement    string
 	Work         string
 	Operator     string
+	AppAddon     string
+	PolicyAddon  string
 }
 
 var defaultBundleVersion = "0.9.0"
@@ -32,6 +34,8 @@ func GetVersionBundle(version string) (VersionBundle, error) {
 		Placement:    "latest",
 		Work:         "latest",
 		Operator:     "latest",
+		AppAddon:     "latest",
+		PolicyAddon:  "latest",
 	}
 
 	// predefined bundle version
@@ -41,6 +45,8 @@ func GetVersionBundle(version string) (VersionBundle, error) {
 		Placement:    "v0.2.0",
 		Work:         "v0.5.0",
 		Operator:     "v0.5.0",
+		AppAddon:     "v0.5.0",
+		PolicyAddon:  "v0.8.0",
 	}
 
 	versionBundleList["0.6.0"] = VersionBundle{
@@ -48,6 +54,8 @@ func GetVersionBundle(version string) (VersionBundle, error) {
 		Placement:    "v0.3.0",
 		Work:         "v0.6.0",
 		Operator:     "v0.6.0",
+		AppAddon:     "v0.6.0",
+		PolicyAddon:  "v0.8.0",
 	}
 
 	versionBundleList["0.7.0"] = VersionBundle{
@@ -55,6 +63,8 @@ func GetVersionBundle(version string) (VersionBundle, error) {
 		Placement:    "v0.4.0",
 		Work:         "v0.7.0",
 		Operator:     "v0.7.0",
+		AppAddon:     "v0.7.0",
+		PolicyAddon:  "v0.8.0",
 	}
 
 	versionBundleList["0.8.0"] = VersionBundle{
@@ -62,6 +72,8 @@ func GetVersionBundle(version string) (VersionBundle, error) {
 		Placement:    "v0.8.0",
 		Work:         "v0.8.0",
 		Operator:     "v0.8.0",
+		AppAddon:     "v0.8.0",
+		PolicyAddon:  "v0.8.0",
 	}
 
 	versionBundleList["0.9.0"] = VersionBundle{
@@ -69,6 +81,8 @@ func GetVersionBundle(version string) (VersionBundle, error) {
 		Placement:    "v0.9.0",
 		Work:         "v0.9.0",
 		Operator:     "v0.9.0",
+		AppAddon:     "v0.9.0",
+		PolicyAddon:  "v0.9.0",
 	}
 
 	// default

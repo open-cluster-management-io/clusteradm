@@ -12,15 +12,25 @@ type Options struct {
 	//A list of comma separated addon names
 	names string
 	//The file to output the resources will be sent to the file.
-	outputFile string
-	values     Values
+	outputFile    string
+	values        Values
+	bundleVersion string
 }
 
-//Values: The values used in the template
+type BundleVersion struct {
+	// app image version
+	AppAddon string
+	// policy image version
+	PolicyAddon string
+}
+
+// Values: The values used in the template
 type Values struct {
 	hubAddons []string
 	// Namespace to install
 	Namespace string
+	// Version to install
+	BundleVersion BundleVersion
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {

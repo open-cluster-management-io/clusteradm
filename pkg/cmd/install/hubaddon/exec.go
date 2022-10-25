@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
+	"open-cluster-management.io/clusteradm/pkg/helpers/version"
 )
 
 const (
@@ -42,6 +43,18 @@ func (o *Options) validate() error {
 		default:
 			return fmt.Errorf("invalid add-on name %s", n)
 		}
+	}
+
+	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
+
+	if err != nil {
+		klog.Errorf("unable to retrieve version "+o.bundleVersion, err)
+		return err
+	}
+
+	o.values.BundleVersion = BundleVersion{
+		AppAddon:    versionBundle.AppAddon,
+		PolicyAddon: versionBundle.PolicyAddon,
 	}
 
 	return nil

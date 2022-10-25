@@ -13,6 +13,7 @@ import (
 const (
 	invalidNamespace = "no-such-ns"
 	ocmNamespace     = "open-cluster-management"
+	ocmVersion       = "latest"
 
 	invalidAddon           = "no-such-addon"
 	channelDeployment      = "multicluster-operators-channel"
@@ -22,6 +23,26 @@ const (
 )
 
 var _ = ginkgo.Describe("install hub-addon", func() {
+	ginkgo.Context("validate", func() {
+
+		ginkgo.It("Should not create any built-in add-on deployment(s) because it's not a valid add-on name", func() {
+			o := Options{
+				names: invalidAddon,
+			}
+
+			err := o.validate()
+			gomega.Expect(err).To(gomega.HaveOccurred())
+		})
+
+		ginkgo.It("Should not create any built-in add-on deployment(s) because it's not a valid version", func() {
+			o := Options{
+				bundleVersion: "invalid",
+			}
+
+			err := o.validate()
+			gomega.Expect(err).Should(gomega.HaveOccurred())
+		})
+	})
 
 	ginkgo.Context("runWithClient", func() {
 
@@ -62,6 +83,7 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 
 		ginkgo.It("Should not create any built-in add-on deployment(s) because it's not a valid namespace", func() {
 			o := Options{
+				bundleVersion: ocmVersion,
 				values: Values{
 					Namespace: invalidNamespace,
 					hubAddons: []string{appMgrAddonName},
@@ -77,6 +99,9 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 				values: Values{
 					Namespace: ocmNamespace,
 					hubAddons: []string{appMgrAddonName},
+					BundleVersion: BundleVersion{
+						AppAddon: ocmVersion,
+					},
 				},
 			}
 
@@ -105,6 +130,9 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 				values: Values{
 					hubAddons: []string{policyFrameworkAddonName},
 					Namespace: ocmNamespace,
+					BundleVersion: BundleVersion{
+						PolicyAddon: ocmVersion,
+					},
 				},
 			}
 

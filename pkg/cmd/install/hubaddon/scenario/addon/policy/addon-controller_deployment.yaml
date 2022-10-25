@@ -32,12 +32,18 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: CONFIG_POLICY_CONTROLLER_IMAGE
-              value: quay.io/open-cluster-management/config-policy-controller:latest
+              value: quay.io/open-cluster-management/config-policy-controller:{{ .BundleVersion.PolicyAddon }}
+            - name: GOVERNANCE_POLICY_SPEC_SYNC_IMAGE
+              value: quay.io/open-cluster-management/governance-policy-spec-sync:{{ .BundleVersion.PolicyAddon }}
+            - name: GOVERNANCE_POLICY_STATUS_SYNC_IMAGE
+              value: quay.io/open-cluster-management/governance-policy-status-sync:{{ .BundleVersion.PolicyAddon }}
+            - name: GOVERNANCE_POLICY_TEMPLATE_SYNC_IMAGE
+              value: quay.io/open-cluster-management/governance-policy-template-sync:{{ .BundleVersion.PolicyAddon }}
+            - name: GOVERNANCE_POLICY_FRAMEWORK_ADDON_IMAGE
+              value: quay.io/open-cluster-management/governance-policy-framework-addon:{{ .BundleVersion.PolicyAddon }}
             - name: KUBE_RBAC_PROXY_IMAGE
               value: registry.redhat.io/openshift4/ose-kube-rbac-proxy:v4.10
-            - name: GOVERNANCE_POLICY_FRAMEWORK_ADDON_IMAGE
-              value: quay.io/open-cluster-management/governance-policy-framework-addon:latest
-          image: quay.io/open-cluster-management/governance-policy-addon-controller:latest
+          image: quay.io/open-cluster-management/governance-policy-addon-controller:{{ .BundleVersion.PolicyAddon }}
           imagePullPolicy: IfNotPresent
           name: manager
           resources:

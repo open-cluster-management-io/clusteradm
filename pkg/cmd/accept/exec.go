@@ -7,20 +7,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/cobra"
+	certificatesv1 "k8s.io/api/certificates/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
-	"open-cluster-management.io/clusteradm/pkg/helpers"
-
-	"github.com/spf13/cobra"
-	certificatesv1 "k8s.io/api/certificates/v1"
-	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
+	"open-cluster-management.io/clusteradm/pkg/helpers"
 )
 
 const (
@@ -52,6 +51,11 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 }
 
 func (o *Options) Validate() error {
+	err := o.ClusteradmFlags.ValidateHub()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

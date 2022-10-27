@@ -5,16 +5,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/spf13/cobra"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
+	"k8s.io/client-go/kubernetes"
 	"open-cluster-management.io/clusteradm/pkg/config"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
-
-	"github.com/spf13/cobra"
-
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	"k8s.io/client-go/kubernetes"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {

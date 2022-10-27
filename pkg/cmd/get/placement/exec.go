@@ -25,6 +25,11 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 }
 
 func (o *Options) validate(args []string) (err error) {
+	err = o.ClusteradmFlags.ValidateHub()
+	if err != nil {
+		return err
+	}
+
 	if len(args) > 1 {
 		return fmt.Errorf("the number of placement name should be 0 or 1")
 	}

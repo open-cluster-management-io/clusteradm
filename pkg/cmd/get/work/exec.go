@@ -30,6 +30,11 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 }
 
 func (o *Options) validate() (err error) {
+	err = o.ClusteradmFlags.ValidateHub()
+	if err != nil {
+		return err
+	}
+
 	if len(o.cluster) == 0 {
 		return fmt.Errorf("cluster name must be specified")
 	}

@@ -2,8 +2,12 @@
 package genericclioptions
 
 import (
+	"fmt"
+
 	"github.com/spf13/pflag"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
+	"open-cluster-management.io/clusteradm/pkg/helpers/check"
 )
 
 type ClusteradmFlags struct {
@@ -31,4 +35,31 @@ func (f *ClusteradmFlags) SetContext(context *string) {
 	if context != nil {
 		f.Context = *context
 	}
+}
+
+func (f *ClusteradmFlags) ValidateHub() error {
+	client, err := f.buildClusterClientset()
+	if err != nil {
+		return err
+	}
+	return check.CheckForHub(client)
+}
+func (f *ClusteradmFlags) ValidateManagedCluster() error {
+	client, err := f.buildClusterClientset()
+	if err != nil {
+		return err
+	}
+	return check.CheckForManagedCluster(client)
+}
+
+func (f *ClusteradmFlags) buildClusterClientset() (*clusterclientset.Clientset, error) {
+	config, err := f.KubectlFactory.ToRESTConfig()
+	if err != nil {
+		return nil, fmt.Errorf("Build ClusteradmFlags failed: %v", err)
+	}
+	client, err := clusterclientset.NewForConfig(config)
+	if err != nil {
+		return nil, fmt.Errorf("Build ClusteradmFlags failed: %v", err)
+	}
+	return client, nil
 }

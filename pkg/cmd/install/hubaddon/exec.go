@@ -28,7 +28,12 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	return nil
 }
 
-func (o *Options) validate() error {
+func (o *Options) validate() (err error) {
+	err = o.ClusteradmFlags.ValidateHub()
+	if err != nil {
+		return err
+	}
+
 	if o.names == "" {
 		return fmt.Errorf("names is missing")
 	}

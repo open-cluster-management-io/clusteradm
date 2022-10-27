@@ -5,16 +5,12 @@ import (
 	"context"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/api/errors"
-
+	"github.com/spf13/cobra"
 	"github.com/stolostron/applier/pkg/apply"
 	"github.com/stolostron/applier/pkg/asset"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
-
-	"github.com/spf13/cobra"
-
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -27,23 +23,12 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	return nil
 }
 
-func (o *Options) validate() error {
-	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
+func (o *Options) validate() (err error) {
+	err = o.ClusteradmFlags.ValidateHub()
 	if err != nil {
 		return err
 	}
 
-	apiExtensionsClient, err := apiextensionsclient.NewForConfig(restConfig)
-	if err != nil {
-		return err
-	}
-	installed, err := helpers.IsClusterManagerInstalled(apiExtensionsClient)
-	if err != nil {
-		return err
-	}
-	if !installed {
-		return fmt.Errorf("this is not a hub")
-	}
 	return err
 }
 

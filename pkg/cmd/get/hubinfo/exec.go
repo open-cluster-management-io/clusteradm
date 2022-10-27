@@ -39,10 +39,16 @@ func (o *Options) complete(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func (o *Options) validate(args []string) error {
+func (o *Options) validate(args []string) (err error) {
+	err = o.ClusteradmFlags.ValidateHub()
+	if err != nil {
+		return err
+	}
+
 	if len(args) != 0 {
 		return fmt.Errorf("there should be no argument")
 	}
+
 	return nil
 }
 

@@ -27,9 +27,15 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 }
 
 func (o *Options) Validate() (err error) {
+	err = o.ClusteradmFlags.ValidateHub()
+	if err != nil {
+		return err
+	}
+
 	if len(o.Namespace) == 0 {
 		return fmt.Errorf("namespace name must be specified in --namespace")
 	}
+
 	return nil
 }
 

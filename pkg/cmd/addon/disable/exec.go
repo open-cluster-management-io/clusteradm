@@ -5,10 +5,9 @@ import (
 	"context"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/api/errors"
-
 	"github.com/spf13/cobra"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/dynamic"
@@ -26,6 +25,11 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 }
 
 func (o *Options) Validate() (err error) {
+	err = o.ClusteradmFlags.ValidateHub()
+	if err != nil {
+		return err
+	}
+
 	if len(o.Names) == 0 {
 		return fmt.Errorf("names is missing")
 	}
@@ -37,6 +41,7 @@ func (o *Options) Validate() (err error) {
 	if o.Allclusters && len(o.Clusters) != 0 {
 		return fmt.Errorf("flag --all-clusters and --clusters can not be set together")
 	}
+
 	return nil
 }
 

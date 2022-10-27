@@ -162,7 +162,7 @@ func createClusterInfo(client kubernetes.Interface, cluster *clientcmdapi.Cluste
 	return CreateOrUpdateConfigMap(client, clusterInfo)
 }
 
-// RunChecks runs each check, display it's warning/errors,
+// RunChecks runs each check, display it's check/errors,
 // and once all are processed will exist if any errors occured.
 func RunChecks(checks []Checker, ww io.Writer) error {
 	var errsBuffer bytes.Buffer

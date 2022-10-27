@@ -5,17 +5,16 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/stolostron/applier/pkg/apply"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	join_scenario "open-cluster-management.io/clusteradm/pkg/cmd/join/scenario"
-	"open-cluster-management.io/clusteradm/pkg/helpers"
-	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
-
 	"github.com/spf13/cobra"
+	"github.com/stolostron/applier/pkg/apply"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
+	join_scenario "open-cluster-management.io/clusteradm/pkg/cmd/join/scenario"
+	"open-cluster-management.io/clusteradm/pkg/helpers"
 	version "open-cluster-management.io/clusteradm/pkg/helpers/version"
+	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
 )
 
 //TODO add to a common folder
@@ -29,6 +28,11 @@ const (
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+	err = o.ClusteradmFlags.ValidateManagedCluster()
+	if err != nil {
+		return err
+	}
+
 	cfg, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err

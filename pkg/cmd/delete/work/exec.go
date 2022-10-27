@@ -6,14 +6,12 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/apimachinery/pkg/watch"
-
+	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	workclientset "open-cluster-management.io/api/client/work/clientset/versioned"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
-
-	"github.com/spf13/cobra"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -30,7 +28,12 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	return nil
 }
 
-func (o *Options) validate() error {
+func (o *Options) validate() (err error) {
+	err = o.ClusteradmFlags.ValidateHub()
+	if err != nil {
+		return err
+	}
+
 	if len(o.Cluster) == 0 {
 		return fmt.Errorf("the name of the cluster must be specified")
 	}

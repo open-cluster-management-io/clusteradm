@@ -6,16 +6,15 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
 	"github.com/stolostron/applier/pkg/apply"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog/v2"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/preflight"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
-	helperwait "open-cluster-management.io/clusteradm/pkg/helpers/wait"
-
-	"github.com/spf13/cobra"
-	"k8s.io/klog/v2"
 	version "open-cluster-management.io/clusteradm/pkg/helpers/version"
+	helperwait "open-cluster-management.io/clusteradm/pkg/helpers/wait"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {

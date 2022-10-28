@@ -4,15 +4,14 @@ package clustermanager
 import (
 	"fmt"
 
-	"github.com/stolostron/applier/pkg/apply"
-	init_scenario "open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
-	"open-cluster-management.io/clusteradm/pkg/helpers"
-	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
-
 	"github.com/spf13/cobra"
+	"github.com/stolostron/applier/pkg/apply"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/klog/v2"
+	init_scenario "open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
+	"open-cluster-management.io/clusteradm/pkg/helpers"
 	version "open-cluster-management.io/clusteradm/pkg/helpers/version"
+	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -40,12 +39,17 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	return nil
 }
 
-func (o *Options) validate() error {
+func (o *Options) validate() (err error) {
+	err = o.ClusteradmFlags.ValidateHub()
+	if err != nil {
+		return err
+	}
 
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
 	}
+
 	apiExtensionsClient, err := apiextensionsclient.NewForConfig(restConfig)
 	if err != nil {
 		return err

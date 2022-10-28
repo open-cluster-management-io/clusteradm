@@ -34,6 +34,11 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 }
 
 func (o *Options) validate() (err error) {
+	err = o.ClusteradmFlags.ValidateHub()
+	if err != nil {
+		return err
+	}
+
 	if len(o.Cluster) == 0 && len(o.Placement) == 0 {
 		return fmt.Errorf("--clusters or --placement must be specified")
 	}
@@ -46,6 +51,7 @@ func (o *Options) validate() (err error) {
 	if len(*o.FileNameFlags.Filenames) == 0 {
 		return fmt.Errorf("manifest files must be specified")
 	}
+
 	return nil
 }
 

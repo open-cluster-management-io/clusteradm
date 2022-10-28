@@ -12,19 +12,24 @@ import (
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
-
 	o.Clustersets = args
 
 	return nil
 }
 
 func (o *Options) Validate() (err error) {
+	err = o.ClusteradmFlags.ValidateHub()
+	if err != nil {
+		return err
+	}
+
 	if len(o.Clustersets) == 0 {
 		return fmt.Errorf("the name of the clusterset must be specified")
 	}
 	if len(o.Clustersets) > 1 {
 		return fmt.Errorf("only one clusterset can be created")
 	}
+
 	return nil
 }
 

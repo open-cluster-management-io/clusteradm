@@ -8,9 +8,12 @@ import (
 	"github.com/onsi/gomega"
 
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
@@ -26,6 +29,7 @@ var restConfig *rest.Config
 var kubeClient kubernetes.Interface
 var apiExtensionsClient apiextensionsclient.Interface
 var dynamicClient dynamic.Interface
+var clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 
 func TestIntegrationInstallAddons(t *testing.T) {
 	gomega.RegisterFailHandler(ginkgo.Fail)
@@ -50,6 +54,12 @@ var _ = ginkgo.BeforeSuite(func() {
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	restConfig = cfg
+
+	// add clusteradm flags
+	kubeConfigFlags := genericclioptions.NewConfigFlags(true).WithDeprecatedPasswordFlag()
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(kubeConfigFlags)
+	f := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+	clusteradmFlags = genericclioptionsclusteradm.NewClusteradmFlags(f)
 })
 
 var _ = ginkgo.AfterSuite(func() {

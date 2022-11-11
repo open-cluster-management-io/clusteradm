@@ -42,11 +42,14 @@ spec:
           metadata:
             type: object
           spec:
-            description: PolicySetSpec defines the desired state of PolicySet
+            description: PolicySetSpec describes a group of policies that are related
+              and can be placed on the same managed clusters.
             properties:
               description:
+                description: Description of this PolicySet.
                 type: string
               policies:
+                description: Policies that are grouped together within the PolicySet.
                 items:
                   minLength: 1
                   type: string
@@ -72,6 +75,8 @@ spec:
                       type: string
                   type: object
                 type: array
+              statusMessage:
+                type: string
             type: object
         required:
         - spec

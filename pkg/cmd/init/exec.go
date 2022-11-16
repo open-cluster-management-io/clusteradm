@@ -13,6 +13,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/preflight"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
+	clusteradmjson "open-cluster-management.io/clusteradm/pkg/helpers/json"
 	version "open-cluster-management.io/clusteradm/pkg/helpers/version"
 	helperwait "open-cluster-management.io/clusteradm/pkg/helpers/wait"
 )
@@ -192,12 +193,22 @@ func (o *Options) run() error {
 		}
 	}
 
-	fmt.Printf("The multicluster hub control plane has been initialized successfully!\n\n"+
-		"You can now register cluster(s) to the hub control plane. Log onto those cluster(s) and run the following command:\n\n"+
-		"    %s --cluster-name <cluster_name>\n\n"+
-		"Replace <cluster_name> with a cluster name of your choice. For example, cluster1.\n\n",
-		cmd,
-	)
+	if o.output == "json" {
+		err := clusteradmjson.WriteJsonOutput(os.Stdout, clusteradmjson.HubInfo{
+			HubToken:     token,
+			HubApiserver: restConfig.Host,
+		})
+		if err != nil {
+			return err
+		}
+	} else {
+		fmt.Printf("The multicluster hub control plane has been initialized successfully!\n\n"+
+			"You can now register cluster(s) to the hub control plane. Log onto those cluster(s) and run the following command:\n\n"+
+			"    %s --cluster-name <cluster_name>\n\n"+
+			"Replace <cluster_name> with a cluster name of your choice. For example, cluster1.\n\n",
+			cmd,
+		)
+	}
 
 	return apply.WriteOutput(o.outputFile, output)
 }

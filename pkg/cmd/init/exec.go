@@ -76,6 +76,11 @@ func (o *Options) validate() error {
 		return fmt.Errorf("registry should not be empty")
 	}
 
+	// If --wait is set, some information during initialize process will print to output, the output would not keep
+	// machine readable, so this behavior should be disabled
+	if o.wait && o.output != "text" {
+		return fmt.Errorf("output should be text if --wait is set")
+	}
 	return nil
 }
 
@@ -129,7 +134,7 @@ func (o *Options) run() error {
 	output = append(output, out...)
 
 	if !o.ClusteradmFlags.DryRun {
-		if err := helperwait.WaitUntilCRDReady(apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io"); err != nil {
+		if err := helperwait.WaitUntilCRDReady(apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", o.wait); err != nil {
 			return err
 		}
 	}

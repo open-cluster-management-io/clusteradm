@@ -2,14 +2,14 @@
 apiVersion: operator.open-cluster-management.io/v1
 kind: Klusterlet
 metadata:
-  name: klusterlet
+  name: {{ .Klusterlet.Name }}
 spec:
   deployOption:
-    mode: Default
+    mode: {{ .Klusterlet.Mode }}
   registrationImagePullSpec: {{ .Registry }}/registration:{{ .BundleVersion.RegistrationImageVersion }}
   workImagePullSpec: {{ .Registry }}/work:{{ .BundleVersion.RegistrationImageVersion }}  
   clusterName: {{ .ClusterName }}
-  namespace: open-cluster-management-agent
+  namespace: {{ .Klusterlet.KlusterletNamespace }} 
   externalServerURLs:
   {{ if .Klusterlet.APIServer }}
   - url: {{ .Klusterlet.APIServer }}

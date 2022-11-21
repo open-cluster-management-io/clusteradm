@@ -39,9 +39,19 @@ func RunChecks(checks []Checker, ww io.Writer) error {
 		for _, err := range errs {
 			_, _ = errsBuffer.WriteString(fmt.Sprintf("\t[ERROR %s]: %v\n", name, err.Error()))
 		}
+		_, _ = io.WriteString(ww, printCheckResult(name, warnings, errs))
 	}
 	if errsBuffer.Len() > 0 {
 		return &Error{Msg: errsBuffer.String()}
 	}
 	return nil
+}
+
+func printCheckResult(name string, warningList []string, errorList []error) string {
+	flag := "Passed"
+	warningNum, errorNum := len(warningList), len(errorList)
+	if errorNum != 0 {
+		flag = "Failed"
+	}
+	return fmt.Sprintf("Preflight check: %s %s with %d warnings and %d errors\n", name, flag, warningNum, errorNum)
 }

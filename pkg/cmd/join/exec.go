@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -30,6 +31,21 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
 )
 
+const (
+	OperatorNamesapce         = "open-cluster-management"
+	DefaultOperatorName       = "klusterlet"
+	InstallModeDefault        = "Default"
+	InstallModeHosted         = "Hosted"
+	KlusterletNamespacePrefix = "open-cluster-management-"
+)
+
+func format(s string) string {
+	if s == "" {
+		return ""
+	}
+	return strings.ToUpper(s[:1]) + strings.ToLower(s[1:])
+}
+
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	if o.token == "" {
 		return fmt.Errorf("token is missing")
@@ -45,12 +61,41 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	}
 	klog.V(1).InfoS("join options:", "dry-run", o.ClusteradmFlags.DryRun, "cluster", o.clusterName, "api-server", o.hubAPIServer, "output", o.outputFile)
 
+	// convert mode string to lower
+	o.mode = format(o.mode)
+
+	// operatorNamespace is the namespace to deploy klsuterlet;
+	// agentNamespace is the namesapce to deploy the agents(registration agent, work agent, etc.);
+	// klusterletNamespace is the namespace created on the managed cluster for each klusterlet.
+	//
+	// The operatorNamespace is fixed to "open-cluster-management".
+	// In default mode, agentNamespace is "open-cluster-management-agent", klusterletNamespace refers to agentNamespace, all of these three namesapces are on the managed cluster;
+	// In hosted mode, operatorNamespace is on the management cluster, agentNamesapce is "<cluster name>-<6-bit random string>" on the management cluster, and the klusterletNamespace is "open-cluster-management-<agentNamespace>" on the managed cluster.
+
+	// values for default mode
+	klusterletName := DefaultOperatorName
+	agentNamespace := KlusterletNamespacePrefix + "agent"
+	klusterletNamespace := agentNamespace
+	if o.mode == InstallModeHosted {
+		// add hash suffix to avoid conflict
+		klusterletName += "-hosted-" + helpers.RandStringRunes_az09(6)
+		agentNamespace = klusterletName
+		klusterletNamespace = KlusterletNamespacePrefix + agentNamespace
+	}
+
 	o.values = Values{
 		ClusterName: o.clusterName,
 		Hub: Hub{
 			APIServer: o.hubAPIServer,
 		},
 		Registry: o.registry,
+		Klusterlet: Klusterlet{
+			Mode:                o.mode,
+			Name:                klusterletName,
+			AgentNamespace:      agentNamespace,
+			KlusterletNamespace: klusterletNamespace,
+		},
+		ManagedKubeconfig: o.managedKubeconfigFile,
 	}
 
 	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
@@ -130,6 +175,11 @@ func (o *Options) validate() error {
 			preflight.HubKubeconfigCheck{
 				Config: o.HubConfig,
 			},
+			preflight.DeployModeCheck{
+				Mode:                  o.mode,
+				InternalEndpoint:      o.forceHubInClusterEndpointLookup,
+				ManagedKubeconfigFile: o.managedKubeconfigFile,
+			},
 		}, os.Stderr); err != nil {
 		return err
 	}
@@ -138,6 +188,16 @@ func (o *Options) validate() error {
 	if err != nil {
 		return err
 	}
+
+	// get ManagedKubeconfig from given file
+	if o.mode == InstallModeHosted {
+		managedConfig, err := os.ReadFile(o.managedKubeconfigFile)
+		if err != nil {
+			return err
+		}
+		o.values.ManagedKubeconfig = string(managedConfig)
+	}
+
 	return nil
 }
 
@@ -149,17 +209,35 @@ func (o *Options) run() error {
 	if err != nil {
 		return err
 	}
+
+	available, err := checkIfRegistrationOperatorAvailable(o.ClusteradmFlags.KubectlFactory)
+	if err != nil {
+		return err
+	}
+
 	applierBuilder := apply.NewApplierBuilder()
 	applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
 
-	files := []string{
+	files := []string{}
+	// If Deployment/klusterlet is not deployed, deploy it
+	if !available {
+		files = append(files,
+			"join/klusterlets.crd.yaml",
+			"join/namespace.yaml",
+			"join/service_account.yaml",
+			"join/cluster_role.yaml",
+			"join/cluster_role_binding.yaml",
+		)
+	}
+	files = append(files,
 		"join/namespace_agent.yaml",
-		"join/namespace.yaml",
 		"join/bootstrap_hub_kubeconfig.yaml",
-		"join/cluster_role.yaml",
-		"join/cluster_role_binding.yaml",
-		"join/klusterlets.crd.yaml",
-		"join/service_account.yaml",
+	)
+
+	if o.mode == InstallModeHosted {
+		files = append(files,
+			"join/hosted/external_managed_kubeconfig.yaml",
+		)
 	}
 
 	out, err := applier.ApplyDirectly(reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
@@ -168,11 +246,14 @@ func (o *Options) run() error {
 	}
 	output = append(output, out...)
 
-	out, err = applier.ApplyDeployments(reader, o.values, o.ClusteradmFlags.DryRun, "", "join/operator.yaml")
-	if err != nil {
-		return err
+	if !available {
+		operator := "join/operator.yaml"
+		out, err = applier.ApplyDeployments(reader, o.values, o.ClusteradmFlags.DryRun, "", operator)
+		if err != nil {
+			return err
+		}
+		output = append(output, out...)
 	}
-	output = append(output, out...)
 
 	if !o.ClusteradmFlags.DryRun {
 		if err := wait.WaitUntilCRDReady(apiExtensionsClient, "klusterlets.operator.open-cluster-management.io", o.wait); err != nil {
@@ -180,13 +261,17 @@ func (o *Options) run() error {
 		}
 	}
 
-	out, err = applier.ApplyCustomResources(reader, o.values, o.ClusteradmFlags.DryRun, "", "join/klusterlets.cr.yaml")
+	cr := "join/klusterlets.cr.yaml"
+	out, err = applier.ApplyCustomResources(reader, o.values, o.ClusteradmFlags.DryRun, "", cr)
 	if err != nil {
 		return err
 	}
 	output = append(output, out...)
 
-	if o.wait && !o.ClusteradmFlags.DryRun {
+	klusterletNamespace := o.values.Klusterlet.KlusterletNamespace
+	agentNamespace := o.values.Klusterlet.AgentNamespace
+
+	if !available && o.wait && !o.ClusteradmFlags.DryRun {
 		err = waitUntilRegistrationOperatorConditionIsTrue(o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout))
 		if err != nil {
 			return err
@@ -194,9 +279,16 @@ func (o *Options) run() error {
 	}
 
 	if o.wait && !o.ClusteradmFlags.DryRun {
-		err = waitUntilKlusterletConditionIsTrue(o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout))
-		if err != nil {
-			return err
+		if o.mode == InstallModeHosted {
+			err = waitUntilKlusterletConditionIsTrue(o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout), agentNamespace)
+			if err != nil {
+				return err
+			}
+		} else {
+			err = waitUntilKlusterletConditionIsTrue(o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout), klusterletNamespace)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -205,6 +297,38 @@ func (o *Options) run() error {
 
 	return apply.WriteOutput(o.outputFile, output)
 
+}
+
+func checkIfRegistrationOperatorAvailable(f util.Factory) (bool, error) {
+	var restConfig *rest.Config
+	restConfig, err := f.ToRESTConfig()
+	if err != nil {
+		return false, err
+	}
+	client, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return false, err
+	}
+
+	deploy, err := client.AppsV1().Deployments(OperatorNamesapce).
+		Get(context.TODO(), DefaultOperatorName, metav1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	conds := make([]metav1.Condition, len(deploy.Status.Conditions))
+	for i := range deploy.Status.Conditions {
+		conds[i] = metav1.Condition{
+			Type:    string(deploy.Status.Conditions[i].Type),
+			Status:  metav1.ConditionStatus(deploy.Status.Conditions[i].Status),
+			Reason:  deploy.Status.Conditions[i].Reason,
+			Message: deploy.Status.Conditions[i].Message,
+		}
+	}
+	return meta.IsStatusConditionTrue(conds, "Available"), nil
 }
 
 func waitUntilRegistrationOperatorConditionIsTrue(f util.Factory, timeout int64) error {
@@ -232,7 +356,7 @@ func waitUntilRegistrationOperatorConditionIsTrue(f util.Factory, timeout int64)
 
 	return helpers.WatchUntil(
 		func() (watch.Interface, error) {
-			return client.CoreV1().Pods("open-cluster-management").
+			return client.CoreV1().Pods(OperatorNamesapce).
 				Watch(context.TODO(), metav1.ListOptions{
 					TimeoutSeconds: &timeout,
 					LabelSelector:  "app=klusterlet",
@@ -258,7 +382,7 @@ func waitUntilRegistrationOperatorConditionIsTrue(f util.Factory, timeout int64)
 }
 
 // Wait until the klusterlet condition available=true, or timeout in $timeout seconds
-func waitUntilKlusterletConditionIsTrue(f util.Factory, timeout int64) error {
+func waitUntilKlusterletConditionIsTrue(f util.Factory, timeout int64, agentNamespace string) error {
 	client, err := f.KubernetesClientSet()
 	if err != nil {
 		return err
@@ -278,7 +402,7 @@ func waitUntilKlusterletConditionIsTrue(f util.Factory, timeout int64) error {
 
 	return helpers.WatchUntil(
 		func() (watch.Interface, error) {
-			return client.CoreV1().Pods("open-cluster-management-agent").
+			return client.CoreV1().Pods(agentNamespace).
 				Watch(context.TODO(), metav1.ListOptions{
 					TimeoutSeconds: &timeout,
 					LabelSelector:  "app=klusterlet-registration-agent",

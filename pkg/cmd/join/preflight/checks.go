@@ -2,11 +2,17 @@
 package preflight
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
+)
+
+const (
+	InstallModeDefault = "Default"
+	InstallModeHosted  = "Hosted"
 )
 
 type HubKubeconfigCheck struct {
@@ -47,6 +53,40 @@ func (c HubKubeconfigCheck) Check() (warningList []string, errorList []error) {
 
 func (c HubKubeconfigCheck) Name() string {
 	return "HubKubeconfig check"
+}
+
+type DeployModeCheck struct {
+	Mode                  string
+	InternalEndpoint      bool
+	ManagedKubeconfigFile string
+}
+
+func (c DeployModeCheck) Check() (warningList []string, errorList []error) {
+	if c.Mode != InstallModeDefault && c.Mode != InstallModeHosted {
+		return nil, []error{errors.New("deploy mode should be default or hosted")}
+	}
+	if c.Mode == InstallModeDefault {
+		if c.ManagedKubeconfigFile != "" {
+			return nil, []error{errors.New("--managed-cluster-kubeconfig should not be set in default deploy mode")}
+		}
+	} else { // c.Mode == InstallModeHosted
+		if c.ManagedKubeconfigFile == "" {
+			return nil, []error{errors.New("--managed-cluster-kubeconfig should be set in hosted deploy mode")}
+		}
+		// if we use kind cluster as managed cluster, the kubeconfig should be --internal, the kubeconfig can be used by klusterlet
+		// deployed in management cluster, but can not be used by clusteradm to validate. so we jump the validate process
+		if !c.InternalEndpoint {
+			err := helpers.ValidateKubeconfigFile(c.ManagedKubeconfigFile)
+			if err != nil {
+				return nil, []error{errors.New(fmt.Sprintf("validate managed kubeconfig file failed: %v", err))}
+			}
+		}
+	}
+	return nil, nil
+}
+
+func (c DeployModeCheck) Name() string {
+	return "DeployMode Check"
 }
 
 // utils

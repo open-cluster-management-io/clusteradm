@@ -4,4 +4,4 @@ kind: Namespace
 metadata:
   annotations:
     workload.openshift.io/allowed: "management"
-  name: open-cluster-management
+  name: {{ .Klusterlet.AgentNamespace }}

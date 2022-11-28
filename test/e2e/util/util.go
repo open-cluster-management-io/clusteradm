@@ -96,6 +96,11 @@ func initE2E() (*TestE2eConfig, error) {
 			return err
 		}
 
+		// delete cluster finalizers
+		err = DeleteClusterFinalizers(e2eConf.Kubeconfigpath, e2eConf.Cluster().Hub().Context())
+		if err != nil {
+			return err
+		}
 		err = e2eConf.Clusteradm().Clean(
 			"--context", e2eConf.Cluster().Hub().Context(),
 			"--purge-operator=false",

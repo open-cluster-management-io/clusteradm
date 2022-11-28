@@ -13,6 +13,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	clusterclient "open-cluster-management.io/api/client/cluster/clientset/versioned"
 )
 
 // WaitNamespaceDeleted receive a kubeconfigpath, a context name and a namespace name,
@@ -54,6 +55,31 @@ func DeleteClusterCSRs(kubeconfigpath string, ctx string) error {
 	return clientset.CertificatesV1().CertificateSigningRequests().DeleteCollection(context.TODO(), metav1.DeleteOptions{}, metav1.ListOptions{
 		LabelSelector: "open-cluster-management.io/cluster-name",
 	})
+}
+
+func DeleteClusterFinalizers(kubeconfigpath string, ctx string) error {
+	restcfg, err := buildConfigFromFlags(ctx, kubeconfigpath)
+	if err != nil {
+		return fmt.Errorf("error occurred while build rest config: %s", err)
+	}
+
+	clientset, err := clusterclient.NewForConfig(restcfg)
+	if err != nil {
+		return err
+	}
+
+	clusterList, err := clientset.ClusterV1().ManagedClusters().List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	for _, mcl := range clusterList.Items {
+		mcl.Finalizers = []string{}
+		_, err := clientset.ClusterV1().ManagedClusters().Update(context.TODO(), &mcl, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func WaitCRDDeleted(kubeconfigpath string, ctx string, name string) error {

@@ -4,6 +4,7 @@ package join
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync/atomic"
 	"time"
 
@@ -21,8 +22,10 @@ import (
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/kubectl/pkg/cmd/util"
+	"open-cluster-management.io/clusteradm/pkg/cmd/join/preflight"
 	"open-cluster-management.io/clusteradm/pkg/cmd/join/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
+	preflightinterface "open-cluster-management.io/clusteradm/pkg/helpers/preflight"
 	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 	"open-cluster-management.io/clusteradm/pkg/helpers/version"
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
@@ -90,6 +93,16 @@ func (o *Options) validate() error {
 	}
 	if len(o.registry) == 0 {
 		return fmt.Errorf("registry should not be empty")
+	}
+
+	// preflight check
+	if err := preflightinterface.RunChecks(
+		[]preflightinterface.Checker{
+			preflight.KlusterletApiserverCheck{
+				KlusterletApiserver: o.values.Klusterlet.APIServer,
+			},
+		}, os.Stderr); err != nil {
+		return err
 	}
 
 	return nil
@@ -226,7 +239,7 @@ func waitUntilRegistrationOperatorConditionIsTrue(f util.Factory, timeout int64)
 		})
 }
 
-//Wait until the klusterlet condition available=true, or timeout in $timeout seconds
+// Wait until the klusterlet condition available=true, or timeout in $timeout seconds
 func waitUntilKlusterletConditionIsTrue(f util.Factory, timeout int64) error {
 	client, err := f.KubernetesClientSet()
 	if err != nil {
@@ -273,7 +286,7 @@ func waitUntilKlusterletConditionIsTrue(f util.Factory, timeout int64) error {
 	)
 }
 
-//Create bootstrap with token but without CA
+// Create bootstrap with token but without CA
 func (o *Options) createExternalBootstrapConfig() clientcmdapiv1.Config {
 	return clientcmdapiv1.Config{
 		// Define a cluster stanza based on the bootstrap kubeconfig.

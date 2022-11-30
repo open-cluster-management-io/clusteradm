@@ -19,16 +19,17 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 )
 
-func WaitUntilCRDReady(apiExtensionsClient apiextensionsclient.Interface, crdName string) error {
+func WaitUntilCRDReady(apiExtensionsClient apiextensionsclient.Interface, crdName string, wait bool) error {
 	b := retry.DefaultBackoff
 	b.Duration = 200 * time.Millisecond
 
-	crdSpinner := printer.NewSpinner("Waiting for CRD to be ready...", time.Second)
-	crdSpinner.FinalMSG = "CRD successfully registered.\n"
-	crdSpinner.Start()
-	defer crdSpinner.Stop()
-	return helpers.WaitCRDToBeReady(
-		apiExtensionsClient, crdName, b)
+	if wait {
+		crdSpinner := printer.NewSpinner("Waiting for CRD to be ready...", time.Second)
+		crdSpinner.FinalMSG = "CRD successfully registered.\n"
+		crdSpinner.Start()
+		defer crdSpinner.Stop()
+	}
+	return helpers.WaitCRDToBeReady(apiExtensionsClient, crdName, b, wait)
 }
 
 func WaitUntilRegistrationOperatorReady(f util.Factory, timeout int64) error {

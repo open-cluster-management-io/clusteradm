@@ -131,8 +131,8 @@ func (o *Options) run() error {
 	}
 	output = append(output, out...)
 
-	if o.wait && !o.ClusteradmFlags.DryRun {
-		if err := wait.WaitUntilCRDReady(apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io"); err != nil {
+	if !o.ClusteradmFlags.DryRun {
+		if err := wait.WaitUntilCRDReady(apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", o.wait); err != nil {
 			return err
 		}
 	}

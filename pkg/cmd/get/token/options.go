@@ -15,6 +15,8 @@ type Options struct {
 	outputFile string
 	//If true the bootstrap token will be used instead of the service account token
 	useBootstrapToken bool
+	//output format
+	output string
 }
 
 //Values: The values used in the template

@@ -116,10 +116,12 @@ func getClusterInfoKubeConfig(kubeClient kubernetes.Interface) (*clientcmdapiv1.
 }
 
 //WaitCRDToBeReady waits if a crd is ready
-func WaitCRDToBeReady(apiExtensionsClient apiextensionsclient.Interface, name string, b wait.Backoff) error {
+func WaitCRDToBeReady(apiExtensionsClient apiextensionsclient.Interface, name string, b wait.Backoff, wait bool) error {
 	errGet := retry.OnError(b, func(err error) bool {
 		if err != nil {
-			fmt.Printf("Wait  for %s crd to be ready\n", name)
+			if wait {
+				fmt.Printf("Wait  for %s crd to be ready\n", name)
+			}
 			return true
 		}
 		return false
@@ -129,8 +131,10 @@ func WaitCRDToBeReady(apiExtensionsClient apiextensionsclient.Interface, name st
 				name,
 				metav1.GetOptions{})
 		if established := apiextensionshelpers.IsCRDConditionTrue(crd, apiextensionsv1.Established); !established {
-			fmt.Printf("Wait  for %s crd to be established\n", name)
-			return fmt.Errorf("Wait  for %s crd to be established", name)
+			if wait {
+				fmt.Printf("Wait for %s crd to be established\n", name)
+			}
+			return fmt.Errorf("Wait for %s crd to be established", name)
 		}
 
 		return err

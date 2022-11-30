@@ -4,11 +4,10 @@ package init
 import (
 	"fmt"
 
-	"open-cluster-management.io/clusteradm/pkg/helpers"
-
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
+	"open-cluster-management.io/clusteradm/pkg/helpers"
 )
 
 var example = `
@@ -56,5 +55,6 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		"If set, the generated join command be saved to the prescribed file.")
 	cmd.Flags().BoolVar(&o.wait, "wait", false,
 		"If set, the command will initialize the OCM control plan in foreground.")
+	cmd.Flags().StringVarP(&o.output, "output", "o", "text", "output foramt, should be json or text")
 	return cmd
 }

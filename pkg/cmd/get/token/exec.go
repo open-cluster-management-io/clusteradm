@@ -4,6 +4,7 @@ package token
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/stolostron/applier/pkg/apply"
@@ -11,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
+	clusteradmjson "open-cluster-management.io/clusteradm/pkg/helpers/json"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -129,7 +131,17 @@ func (o *Options) writeResult(token, host string, output []string) error {
 		fmt.Println("token doesn't exist")
 		return apply.WriteOutput(o.outputFile, output)
 	}
-	fmt.Printf("token=%s\n", token)
-	fmt.Printf("please log on spoke and run:\n%s join --hub-token %s --hub-apiserver %s --cluster-name <cluster_name>\n", helpers.GetExampleHeader(), token, host)
+	if o.output == "json" {
+		err := clusteradmjson.WriteJsonOutput(os.Stdout, clusteradmjson.HubInfo{
+			HubToken:     token,
+			HubApiserver: host,
+		})
+		if err != nil {
+			return err
+		}
+	} else {
+		fmt.Printf("token=%s\n", token)
+		fmt.Printf("please log on spoke and run:\n%s join --hub-token %s --hub-apiserver %s --cluster-name <cluster_name>\n", helpers.GetExampleHeader(), token, host)
+	}
 	return apply.WriteOutput(o.outputFile, output)
 }

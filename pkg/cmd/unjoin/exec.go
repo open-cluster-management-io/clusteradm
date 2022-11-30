@@ -68,7 +68,7 @@ func (o *Options) run() error {
 		}
 		err = klusterletClient.OperatorV1().Klusterlets().Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
 		if errors.IsNotFound(err) {
-			fmt.Fprintf(o.Streams.Out, "klusterlet is cleaned up already")
+			fmt.Fprintf(o.Streams.Out, "klusterlet is cleaned up already\n")
 			return nil
 		}
 		if err != nil {

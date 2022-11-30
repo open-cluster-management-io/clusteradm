@@ -13,6 +13,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/preflight"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
+	clusteradmjson "open-cluster-management.io/clusteradm/pkg/helpers/json"
 	version "open-cluster-management.io/clusteradm/pkg/helpers/version"
 	helperwait "open-cluster-management.io/clusteradm/pkg/helpers/wait"
 )
@@ -75,6 +76,11 @@ func (o *Options) validate() error {
 		return fmt.Errorf("registry should not be empty")
 	}
 
+	// If --wait is set, some information during initialize process will print to output, the output would not keep
+	// machine readable, so this behavior should be disabled
+	if o.wait && o.output != "text" {
+		return fmt.Errorf("output should be text if --wait is set")
+	}
 	return nil
 }
 
@@ -128,7 +134,7 @@ func (o *Options) run() error {
 	output = append(output, out...)
 
 	if !o.ClusteradmFlags.DryRun {
-		if err := helperwait.WaitUntilCRDReady(apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io"); err != nil {
+		if err := helperwait.WaitUntilCRDReady(apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", o.wait); err != nil {
 			return err
 		}
 	}
@@ -192,12 +198,22 @@ func (o *Options) run() error {
 		}
 	}
 
-	fmt.Printf("The multicluster hub control plane has been initialized successfully!\n\n"+
-		"You can now register cluster(s) to the hub control plane. Log onto those cluster(s) and run the following command:\n\n"+
-		"    %s --cluster-name <cluster_name>\n\n"+
-		"Replace <cluster_name> with a cluster name of your choice. For example, cluster1.\n\n",
-		cmd,
-	)
+	if o.output == "json" {
+		err := clusteradmjson.WriteJsonOutput(os.Stdout, clusteradmjson.HubInfo{
+			HubToken:     token,
+			HubApiserver: restConfig.Host,
+		})
+		if err != nil {
+			return err
+		}
+	} else {
+		fmt.Printf("The multicluster hub control plane has been initialized successfully!\n\n"+
+			"You can now register cluster(s) to the hub control plane. Log onto those cluster(s) and run the following command:\n\n"+
+			"    %s --cluster-name <cluster_name>\n\n"+
+			"Replace <cluster_name> with a cluster name of your choice. For example, cluster1.\n\n",
+			cmd,
+		)
+	}
 
 	return apply.WriteOutput(o.outputFile, output)
 }

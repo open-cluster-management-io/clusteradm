@@ -6,7 +6,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -14,8 +14,6 @@ import (
 	"strings"
 	"text/tabwriter"
 	"time"
-
-	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -25,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8snet "k8s.io/apimachinery/pkg/util/net"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -101,6 +100,9 @@ func (o *Options) run(streams genericclioptions.IOStreams) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed initializing proxy api client")
 	}
+
+	// TODO: fix this deprecated field AddOnConfiguration
+	// nolint:staticcheck
 	proxyConfig, err := proxyClient.ProxyV1alpha1().ManagedProxyConfigurations().
 		Get(context.TODO(), clusterAddon.Spec.AddOnConfiguration.CRName, metav1.GetOptions{})
 	if err != nil {
@@ -275,7 +277,7 @@ func (o *Options) visit(
 	}
 
 	end := time.Now()
-	data, _ := ioutil.ReadAll(resp.Body)
+	data, _ := io.ReadAll(resp.Body)
 	if "ok" == string(data) {
 		health = "True"
 		latency = end.Sub(start).String()

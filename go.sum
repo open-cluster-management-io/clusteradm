@@ -1672,8 +1672,8 @@ open-cluster-management.io/addon-framework v0.1.1-0.20211223101009-d6b1a7adae93/
 open-cluster-management.io/addon-framework v0.2.1-0.20220317063747-100a0230a883/go.mod h1:8QG1fHwPCEdyRrzY2Jji+qhMmJl+/HzTpuSDVmeG+7s=
 open-cluster-management.io/api v0.5.0/go.mod h1:9qiA5h/8kvPQnJEOlAPHVjRO9a1jCmDhGzvgMBvXEaE=
 open-cluster-management.io/api v0.5.1-0.20220112073018-2d280a97a052/go.mod h1:0IUTh8J+p4pv1THh1r9oO0luX9Z1FLDEAmvzW09qC0o=
-open-cluster-management.io/api v0.8.0 h1:hQLNyvvdx0G0iNxq80RWp93epNsUtsqJdLmGbXiYG5o=
-open-cluster-management.io/api v0.8.0/go.mod h1:+OEARSAl2jIhuLItUcS30UgLA3khmA9ihygLVxzEn+U=
+open-cluster-management.io/api v0.9.1-0.20221116150238-55691c2c5f04 h1:lXewKgs1MeWN1wPIlMGQxfQj83CgjkNXQKVJVYQEB5I=
+open-cluster-management.io/api v0.9.1-0.20221116150238-55691c2c5f04/go.mod h1:9KkJPh/zpDevXj2P+zkvSVjC2pq2PQ1JDNLLEes8TEc=
 open-cluster-management.io/cluster-proxy v0.1.2 h1:0WYhPEZT6Wlt0dyE35GCC7zcqPo2poaALzdmVbQp9Dg=
 open-cluster-management.io/cluster-proxy v0.1.2/go.mod h1:f4HVfparQqOJsPrh4fTA4uyWx5KJ7MG2AcuSRypedws=
 open-cluster-management.io/managed-serviceaccount v0.2.1-0.20220427065210-de6a7b7b5be8 h1:foP5RkSec9DkUA8sJ5FLna5We8VxJyu0179id5zNXgA=

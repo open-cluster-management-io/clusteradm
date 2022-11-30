@@ -4,7 +4,6 @@ package kubectl
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -172,6 +171,9 @@ func getProxyConfig(hubRestConfig *rest.Config, streams genericclioptions.IOStre
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed initializing proxy api client")
 	}
+
+	// TODO: fix this deprecated field AddOnConfiguration
+	// nolint:staticcheck
 	proxyConfig, err := proxyClient.ProxyV1alpha1().ManagedProxyConfigurations().
 		Get(context.TODO(), clusterAddon.Spec.AddOnConfiguration.CRName, metav1.GetOptions{})
 	if err != nil {
@@ -240,7 +242,7 @@ func genTmpKubeconfig(cluster string, msaToken string) (string, error) {
 	}
 
 	tmpFile := fmt.Sprintf("/tmp/%s-%s.kubeconfig", cluster, uuid.New().String())
-	if err := ioutil.WriteFile(tmpFile, kubeconfigContent, 0644); err != nil {
+	if err := os.WriteFile(tmpFile, kubeconfigContent, 0644); err != nil {
 		return "", err
 	}
 

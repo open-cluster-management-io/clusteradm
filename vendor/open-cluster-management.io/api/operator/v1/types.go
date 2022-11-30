@@ -57,10 +57,26 @@ type ClusterManagerSpec struct {
 	// RegistrationConfiguration contains the configuration of registration
 	// +optional
 	RegistrationConfiguration *RegistrationConfiguration `json:"registrationConfiguration,omitempty"`
+
+	// WorkConfiguration contains the configuration of work
+	// +optional
+	WorkConfiguration *WorkConfiguration `json:"workConfiguration,omitempty"`
 }
 
 type RegistrationConfiguration struct {
 	// FeatureGates represents the list of feature gates for registration
+	// If it is set empty, default feature gates will be used.
+	// If it is set, featuregate/Foo is an example of one item in FeatureGates:
+	//   1. If featuregate/Foo does not exist, registration-operator will discard it
+	//   2. If featuregate/Foo exists and is false by default. It is now possible to set featuregate/Foo=[false|true]
+	//   3. If featuregate/Foo exists and is true by default. If a cluster-admin upgrading from 1 to 2 wants to continue having featuregate/Foo=false,
+	//  	he can set featuregate/Foo=false before upgrading. Let's say the cluster-admin wants featuregate/Foo=false.
+	// +optional
+	FeatureGates []FeatureGate `json:"featureGates,omitempty"`
+}
+
+type WorkConfiguration struct {
+	// FeatureGates represents the list of feature gates for work
 	// If it is set empty, default feature gates will be used.
 	// If it is set, featuregate/Foo is an example of one item in FeatureGates:
 	//   1. If featuregate/Foo does not exist, registration-operator will discard it
@@ -162,11 +178,6 @@ const (
 	// InstallModeDefault is the default deploy mode.
 	// The cluster-manager will be deployed in the hub-cluster, the klusterlet will be deployed in the managed-cluster.
 	InstallModeDefault InstallMode = "Default"
-
-	// InstallModeDetached means deploying components outside.
-	// The cluster-manager will be deployed outside of the hub-cluster, the klusterlet will be deployed outside of the managed-cluster.
-	// DEPRECATED: please use Hosted instead.
-	InstallModeDetached InstallMode = "Detached"
 
 	// InstallModeHosted means deploying components outside.
 	// The cluster-manager will be deployed outside of the hub-cluster, the klusterlet will be deployed outside of the managed-cluster.
@@ -329,6 +340,10 @@ type KlusterletSpec struct {
 	// RegistrationConfiguration contains the configuration of registration
 	// +optional
 	RegistrationConfiguration *RegistrationConfiguration `json:"registrationConfiguration,omitempty"`
+
+	// WorkConfiguration contains the configuration of work
+	// +optional
+	WorkConfiguration *WorkConfiguration `json:"workConfiguration,omitempty"`
 
 	// HubApiServerHostAlias contains the host alias for hub api server.
 	// registration-agent and work-agent will use it to communicate with hub api server.

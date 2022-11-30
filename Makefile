@@ -101,3 +101,14 @@ clean-test:
 
 include ./test/integration-test.mk
 include ./test/e2e/e2e-test.mk
+
+# Update vendor
+.PHONY: vendor
+vendor:
+	go mod tidy
+	go mod vendor
+
+# Copy CRDs
+.PHONY: copy-crd
+copy-crd: vendor
+	bash -x build/copy-crds.sh

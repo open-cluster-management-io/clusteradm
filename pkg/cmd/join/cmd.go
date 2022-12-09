@@ -4,11 +4,10 @@ package join
 import (
 	"fmt"
 
-	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
-	"open-cluster-management.io/clusteradm/pkg/helpers"
-
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
+	"open-cluster-management.io/clusteradm/pkg/helpers"
 )
 
 var example = `
@@ -46,6 +45,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 
 	cmd.Flags().StringVar(&o.token, "hub-token", "", "The token to access the hub")
 	cmd.Flags().StringVar(&o.hubAPIServer, "hub-apiserver", "", "The api server url to the hub")
+	cmd.Flags().StringVar(&o.caFile, "ca-file", "", "the file path to hub ca, optional")
 	cmd.Flags().StringVar(&o.clusterName, "cluster-name", "", "The name of the joining cluster")
 	cmd.Flags().StringVar(&o.outputFile, "output-file", "", "The generated resources will be copied in the specified file")
 	cmd.Flags().StringVar(&o.registry, "image-registry", "quay.io/open-cluster-management", "The name of the image registry serving OCM images.")

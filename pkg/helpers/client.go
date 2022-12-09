@@ -21,9 +21,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/kubectl/pkg/cmd/util"
@@ -65,7 +67,7 @@ func GetClients(f util.Factory) (
 	return
 }
 
-//GetAPIServer gets the api server url
+// GetAPIServer gets the api server url
 func GetAPIServer(kubeClient kubernetes.Interface) (string, error) {
 	config, err := getClusterInfoKubeConfig(kubeClient)
 	if err != nil {
@@ -79,9 +81,10 @@ func GetAPIServer(kubeClient kubernetes.Interface) (string, error) {
 	return cluster.Server, nil
 }
 
-//GetCACert returns the CA cert.
-//First by looking in the cluster-info configmap of the kube-public ns and if not found,
-//it searches in the kube-root-ca.crt configmap.
+// GetCACert returns the CA cert.
+// First by looking in the cluster-info configmap of the kube-public ns and if not found,
+// it secondly searches in the kube-root-ca.crt configmap of the kube-public ns and if
+// also not found, it finally return empty value with no error.
 func GetCACert(kubeClient kubernetes.Interface) ([]byte, error) {
 	config, err := getClusterInfoKubeConfig(kubeClient)
 	if err == nil {
@@ -94,10 +97,13 @@ func GetCACert(kubeClient kubernetes.Interface) ([]byte, error) {
 	}
 	if errors.IsNotFound(err) {
 		cm, err := kubeClient.CoreV1().ConfigMaps("kube-public").Get(context.TODO(), "kube-root-ca.crt", metav1.GetOptions{})
-		if err != nil {
-			return nil, err
+		if err == nil {
+			return []byte(cm.Data["ca.crt"]), nil
 		}
-		return []byte(cm.Data["ca.crt"]), nil
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
 	}
 	return nil, err
 }
@@ -115,7 +121,7 @@ func getClusterInfoKubeConfig(kubeClient kubernetes.Interface) (*clientcmdapiv1.
 	return config, nil
 }
 
-//WaitCRDToBeReady waits if a crd is ready
+// WaitCRDToBeReady waits if a crd is ready
 func WaitCRDToBeReady(apiExtensionsClient apiextensionsclient.Interface, name string, b wait.Backoff, wait bool) error {
 	errGet := retry.OnError(b, func(err error) bool {
 		if err != nil {
@@ -142,9 +148,9 @@ func WaitCRDToBeReady(apiExtensionsClient apiextensionsclient.Interface, name st
 	return errGet
 }
 
-//GetToken returns the bootstrap token.
-//It searches first for the service-account token and then if it is not found
-//it looks for the bootstrap token in kube-system.
+// GetToken returns the bootstrap token.
+// It searches first for the service-account token and then if it is not found
+// it looks for the bootstrap token in kube-system.
 func GetToken(ctx context.Context, kubeClient kubernetes.Interface) (string, TokenType, error) {
 	token, err := GetBootstrapTokenFromSA(ctx, kubeClient)
 	if err != nil {
@@ -161,7 +167,7 @@ func GetToken(ctx context.Context, kubeClient kubernetes.Interface) (string, Tok
 	return token, ServiceAccountToken, nil
 }
 
-//GetBootstrapSecret returns the secret in kube-system
+// GetBootstrapSecret returns the secret in kube-system
 func GetBootstrapSecret(ctx context.Context, kubeClient kubernetes.Interface) (*corev1.Secret, error) {
 	var bootstrapSecret *corev1.Secret
 	l, err := kubeClient.CoreV1().
@@ -185,7 +191,7 @@ func GetBootstrapSecret(ctx context.Context, kubeClient kubernetes.Interface) (*
 	return bootstrapSecret, err
 }
 
-//GetBootstrapToken returns the token in kube-system
+// GetBootstrapToken returns the token in kube-system
 func GetBootstrapToken(ctx context.Context, kubeClient kubernetes.Interface) (string, error) {
 	bootstrapSecret, err := GetBootstrapSecret(ctx, kubeClient)
 	if err != nil {
@@ -194,7 +200,7 @@ func GetBootstrapToken(ctx context.Context, kubeClient kubernetes.Interface) (st
 	return fmt.Sprintf("%s.%s", string(bootstrapSecret.Data["token-id"]), string(bootstrapSecret.Data["token-secret"])), nil
 }
 
-//GetBootstrapSecretFromSA retrieves the service-account token secret
+// GetBootstrapSecretFromSA retrieves the service-account token secret
 func GetBootstrapTokenFromSA(ctx context.Context, kubeClient kubernetes.Interface) (string, error) {
 	tr, err := kubeClient.CoreV1().
 		ServiceAccounts(config.OpenClusterManagementNamespace).
@@ -210,8 +216,8 @@ func GetBootstrapTokenFromSA(ctx context.Context, kubeClient kubernetes.Interfac
 	return tr.Status.Token, nil
 }
 
-//IsClusterManagerInstalled checks if the hub is already initialized.
-//It checks if the crd is already present to find out that the hub is already initialized.
+// IsClusterManagerInstalled checks if the hub is already initialized.
+// It checks if the crd is already present to find out that the hub is already initialized.
 func IsClusterManagerInstalled(apiExtensionsClient apiextensionsclient.Interface) (bool, error) {
 	_, err := apiExtensionsClient.ApiextensionsV1().
 		CustomResourceDefinitions().
@@ -228,7 +234,7 @@ func IsClusterManagerInstalled(apiExtensionsClient apiextensionsclient.Interface
 }
 
 // IsKlusterlets checks if the Managed cluster is already initialized.
-//It checks if the crd is already present to find out that the managed cluster is already initialized.
+// It checks if the crd is already present to find out that the managed cluster is already initialized.
 func IsKlusterletsInstalled(apiExtensionsClient apiextensionsclient.Interface) (bool, error) {
 	_, err := apiExtensionsClient.ApiextensionsV1().
 		CustomResourceDefinitions().
@@ -264,4 +270,52 @@ func WatchUntil(
 		}
 	}
 	return nil
+}
+
+// CreateRESTConfigFromClientcmdapiv1Config
+func CreateRESTConfigFromClientcmdapiv1Config(clientcmdapiv1Config clientcmdapiv1.Config) (*rest.Config, error) {
+	clientcmdapiv1ConfigBytes, err := yaml.Marshal(clientcmdapiv1Config)
+	if err != nil {
+		return nil, err
+	}
+
+	apiConfig, err := clientcmd.Load(clientcmdapiv1ConfigBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	restConfig, err := clientcmd.NewDefaultClientConfig(*apiConfig, &clientcmd.ConfigOverrides{}).ClientConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	return restConfig, nil
+}
+
+// CreateClientFromClientcmdapiv1Config
+func CreateClientFromClientcmdapiv1Config(clientcmdapiv1Config clientcmdapiv1.Config) (*kubernetes.Clientset, error) {
+	restConfig, err := CreateRESTConfigFromClientcmdapiv1Config(clientcmdapiv1Config)
+	if err != nil {
+		return nil, err
+	}
+
+	kubeClient, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return nil, err
+	}
+	return kubeClient, nil
+}
+
+// CreateDiscoveryClientFromClientcmdapiv1Config
+func CreateDiscoveryClientFromClientcmdapiv1Config(clientcmdapiv1Config clientcmdapiv1.Config) (*discovery.DiscoveryClient, error) {
+	restConfig, err := CreateRESTConfigFromClientcmdapiv1Config(clientcmdapiv1Config)
+	if err != nil {
+		return nil, err
+	}
+
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(restConfig)
+	if err != nil {
+		return nil, err
+	}
+	return discoveryClient, nil
 }

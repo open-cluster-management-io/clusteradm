@@ -115,7 +115,7 @@ func TestHubApiServerCheck_Check(t *testing.T) {
 	tests := []struct {
 		name          string
 		fields        fields
-		wantWarnings  []error
+		wantWarnings  []string
 		wantErrorList []error
 	}{
 		{
@@ -124,7 +124,7 @@ func TestHubApiServerCheck_Check(t *testing.T) {
 				ClusterCtx: "",
 				ConfigPath: kubeconfigFilePath,
 			},
-			wantWarnings:  []error{errors.New("Hub Api Server is a domain name, maybe you should set HostAlias in klusterlet")},
+			wantWarnings:  []string{"Hub Api Server is a domain name, maybe you should set HostAlias in klusterlet"},
 			wantErrorList: nil,
 		},
 		{
@@ -144,7 +144,7 @@ func TestHubApiServerCheck_Check(t *testing.T) {
 				ClusterCtx: currentContext,
 				ConfigPath: kubeconfigFilePath,
 			},
-			wantWarnings:  []error{errors.New("Hub Api Server is a domain name, maybe you should set HostAlias in klusterlet")},
+			wantWarnings:  []string{"Hub Api Server is a domain name, maybe you should set HostAlias in klusterlet"},
 			wantErrorList: nil,
 		},
 		{
@@ -164,7 +164,7 @@ func TestHubApiServerCheck_Check(t *testing.T) {
 				ConfigPath: tt.fields.ConfigPath,
 			}
 			gotWarnings, gotErrorList := c.Check()
-			testinghelper.AssertErrors(t, gotWarnings, tt.wantWarnings)
+			testinghelper.AssertWarnings(t, gotWarnings, tt.wantWarnings)
 			testinghelper.AssertErrors(t, gotErrorList, tt.wantErrorList)
 		})
 	}
@@ -183,7 +183,7 @@ func TestClusterInfoCheck_Check(t *testing.T) {
 		fields        fields
 		actionIndex   int
 		action        string
-		wantWarnings  []error
+		wantWarnings  []string
 		wantErrorList []error
 	}{
 		{
@@ -225,7 +225,7 @@ func TestClusterInfoCheck_Check(t *testing.T) {
 			},
 			actionIndex:   1,
 			action:        "create",
-			wantWarnings:  []error{errors.New("no ConfigMap named cluster-info in the kube-public namespace, clusteradm will creates it")},
+			wantWarnings:  []string{"no ConfigMap named cluster-info in the kube-public namespace, clusteradm will creates it"},
 			wantErrorList: nil,
 		},
 	}
@@ -242,7 +242,7 @@ func TestClusterInfoCheck_Check(t *testing.T) {
 			}
 			gotWarnings, gotErrorList := c.Check()
 			testinghelper.AssertAction(t, client.Actions()[tt.actionIndex], tt.action)
-			testinghelper.AssertErrors(t, gotWarnings, tt.wantWarnings)
+			testinghelper.AssertWarnings(t, gotWarnings, tt.wantWarnings)
 			testinghelper.AssertErrors(t, gotErrorList, tt.wantErrorList)
 		})
 	}

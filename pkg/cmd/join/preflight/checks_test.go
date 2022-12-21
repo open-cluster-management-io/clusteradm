@@ -15,7 +15,7 @@ func TestKlusterletApiHostCheck_Check(t *testing.T) {
 	tests := []struct {
 		name          string
 		fields        fields
-		wantWarnings  []error
+		wantWarnings  []string
 		wantErrorList []error
 	}{
 		{
@@ -41,7 +41,7 @@ func TestKlusterletApiHostCheck_Check(t *testing.T) {
 				KlusterletApiserver: tt.fields.apihost,
 			}
 			gotWarnings, gotErrorList := c.Check()
-			testinghelper.AssertErrors(t, gotWarnings, tt.wantWarnings)
+			testinghelper.AssertWarnings(t, gotWarnings, tt.wantWarnings)
 			testinghelper.AssertErrors(t, gotErrorList, tt.wantErrorList)
 		})
 	}

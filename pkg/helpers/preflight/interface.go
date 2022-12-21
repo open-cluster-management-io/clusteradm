@@ -10,7 +10,7 @@ import (
 // Checker validates the state of the cluster to ensure
 // clusteradm will be successfully as often as possible.
 type Checker interface {
-	Check() (warnings, errorList []error)
+	Check() (warnings []string, errorList []error)
 	Name() string
 }
 

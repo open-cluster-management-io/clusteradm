@@ -13,7 +13,7 @@ type KlusterletApiserverCheck struct {
 	KlusterletApiserver string
 }
 
-func (c KlusterletApiserverCheck) Check() (warningList []error, errorList []error) {
+func (c KlusterletApiserverCheck) Check() (warningList []string, errorList []error) {
 	if !validAPIHost(c.KlusterletApiserver) {
 		return nil, []error{errors.New("ConfigMap/cluster-info.data.kubeconfig.clusters[0].cluster.server field in namespace kube-public should start with http:// or https://, please edit it first")}
 	}
@@ -28,7 +28,7 @@ type HubKubeconfigCheck struct {
 	Config *clientcmdapiv1.Config
 }
 
-func (c HubKubeconfigCheck) Check() (warningList []error, errorList []error) {
+func (c HubKubeconfigCheck) Check() (warningList []string, errorList []error) {
 	if c.Config == nil {
 		return nil, []error{errors.New("no hubconfig found")}
 	}

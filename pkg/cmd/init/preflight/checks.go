@@ -23,7 +23,7 @@ type HubApiServerCheck struct {
 	ConfigPath string // kubeconfig file path
 }
 
-func (c HubApiServerCheck) Check() (warnings []error, errorList []error) {
+func (c HubApiServerCheck) Check() (warnings []string, errorList []error) {
 	cluster, err := loadCurrentCluster(c.ClusterCtx, c.ConfigPath)
 	if err != nil {
 		return nil, []error{err}
@@ -37,7 +37,7 @@ func (c HubApiServerCheck) Check() (warnings []error, errorList []error) {
 		return nil, []error{err}
 	}
 	if net.ParseIP(host) == nil {
-		return []error{errors.New("Hub Api Server is a domain name, maybe you should set HostAlias in klusterlet")}, nil
+		return []string{"Hub Api Server is a domain name, maybe you should set HostAlias in klusterlet"}, nil
 	}
 	return nil, nil
 }
@@ -55,19 +55,19 @@ type ClusterInfoCheck struct {
 	Client       kubernetes.Interface
 }
 
-func (c ClusterInfoCheck) Check() (warnings []error, errorList []error) {
+func (c ClusterInfoCheck) Check() (warnings []string, errorList []error) {
 	cm, err := c.Client.CoreV1().ConfigMaps(c.Namespace).Get(context.Background(), c.ResourceName, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			resourceNotFound := errors.New("no ConfigMap named cluster-info in the kube-public namespace, clusteradm will creates it")
 			cluster, err := loadCurrentCluster(c.ClusterCtx, c.ConfigPath)
 			if err != nil {
-				return []error{resourceNotFound}, []error{err}
+				return []string{resourceNotFound.Error()}, []error{err}
 			}
 			if err := createClusterInfo(c.Client, cluster); err != nil {
-				return []error{resourceNotFound}, []error{err}
+				return []string{resourceNotFound.Error()}, []error{err}
 			}
-			return []error{resourceNotFound}, nil
+			return []string{resourceNotFound.Error()}, nil
 		}
 		return nil, []error{err}
 	}

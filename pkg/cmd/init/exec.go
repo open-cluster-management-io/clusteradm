@@ -14,6 +14,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	clusteradmjson "open-cluster-management.io/clusteradm/pkg/helpers/json"
+	preflightinterface "open-cluster-management.io/clusteradm/pkg/helpers/preflight"
 	version "open-cluster-management.io/clusteradm/pkg/helpers/version"
 	helperwait "open-cluster-management.io/clusteradm/pkg/helpers/wait"
 )
@@ -55,8 +56,8 @@ func (o *Options) validate() error {
 	if err != nil {
 		return err
 	}
-	if err := preflight.RunChecks(
-		[]preflight.Checker{
+	if err := preflightinterface.RunChecks(
+		[]preflightinterface.Checker{
 			preflight.HubApiServerCheck{
 				ClusterCtx: o.ClusteradmFlags.Context,
 				ConfigPath: "", // TODO(@Promacanthus)： user custom kubeconfig path from command line arguments.

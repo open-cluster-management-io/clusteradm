@@ -2,10 +2,7 @@
 package preflight
 
 import (
-	"bytes"
 	"context"
-	"fmt"
-	"io"
 	"net"
 	"net/url"
 
@@ -21,31 +18,12 @@ import (
 
 var BootstrapConfigMap = "cluster-info"
 
-type Error struct {
-	Msg string
-}
-
-func (e Error) Error() string {
-	return fmt.Sprintf("[preflight] Some fatal errors occurred:\n%s", e.Msg)
-}
-
-func (e *Error) Preflight() bool {
-	return true
-}
-
-// Checker validates the state of the cluster to ensure
-// clusteradm will be successfully as often as possible.
-type Checker interface {
-	Check() (warnings, errorList []error)
-	Name() string
-}
-
 type HubApiServerCheck struct {
 	ClusterCtx string // current-context in kubeconfig
 	ConfigPath string // kubeconfig file path
 }
 
-func (c HubApiServerCheck) Check() (warnings []error, errorList []error) {
+func (c HubApiServerCheck) Check() (warnings []string, errorList []error) {
 	cluster, err := loadCurrentCluster(c.ClusterCtx, c.ConfigPath)
 	if err != nil {
 		return nil, []error{err}
@@ -59,7 +37,7 @@ func (c HubApiServerCheck) Check() (warnings []error, errorList []error) {
 		return nil, []error{err}
 	}
 	if net.ParseIP(host) == nil {
-		return []error{errors.New("Hub Api Server is a domain name, maybe you should set HostAlias in klusterlet")}, nil
+		return []string{"Hub Api Server is a domain name, maybe you should set HostAlias in klusterlet"}, nil
 	}
 	return nil, nil
 }
@@ -77,19 +55,19 @@ type ClusterInfoCheck struct {
 	Client       kubernetes.Interface
 }
 
-func (c ClusterInfoCheck) Check() (warnings []error, errorList []error) {
+func (c ClusterInfoCheck) Check() (warnings []string, errorList []error) {
 	cm, err := c.Client.CoreV1().ConfigMaps(c.Namespace).Get(context.Background(), c.ResourceName, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			resourceNotFound := errors.New("no ConfigMap named cluster-info in the kube-public namespace, clusteradm will creates it")
 			cluster, err := loadCurrentCluster(c.ClusterCtx, c.ConfigPath)
 			if err != nil {
-				return []error{resourceNotFound}, []error{err}
+				return []string{resourceNotFound.Error()}, []error{err}
 			}
 			if err := createClusterInfo(c.Client, cluster); err != nil {
-				return []error{resourceNotFound}, []error{err}
+				return []string{resourceNotFound.Error()}, []error{err}
 			}
-			return []error{resourceNotFound}, nil
+			return []string{resourceNotFound.Error()}, nil
 		}
 		return nil, []error{err}
 	}
@@ -160,24 +138,4 @@ func createClusterInfo(client kubernetes.Interface, cluster *clientcmdapi.Cluste
 		},
 	}
 	return CreateOrUpdateConfigMap(client, clusterInfo)
-}
-
-// RunChecks runs each check, display it's check/errors,
-// and once all are processed will exist if any errors occured.
-func RunChecks(checks []Checker, ww io.Writer) error {
-	var errsBuffer bytes.Buffer
-	for _, check := range checks {
-		name := check.Name()
-		warnings, errs := check.Check()
-		for _, warning := range warnings {
-			_, _ = io.WriteString(ww, fmt.Sprintf("\t[WARNING %s]: %v\n", name, warning))
-		}
-		for _, err := range errs {
-			_, _ = errsBuffer.WriteString(fmt.Sprintf("\t[ERROR %s]: %v\n", name, err.Error()))
-		}
-	}
-	if errsBuffer.Len() > 0 {
-		return &Error{Msg: errsBuffer.String()}
-	}
-	return nil
 }

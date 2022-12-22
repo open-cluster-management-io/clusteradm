@@ -4,6 +4,7 @@ package join
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync/atomic"
 	"time"
 
@@ -17,26 +18,39 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/kubectl/pkg/cmd/util"
+	"open-cluster-management.io/clusteradm/pkg/cmd/join/preflight"
 	"open-cluster-management.io/clusteradm/pkg/cmd/join/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
+	preflightinterface "open-cluster-management.io/clusteradm/pkg/helpers/preflight"
 	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 	"open-cluster-management.io/clusteradm/pkg/helpers/version"
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+	if o.token == "" {
+		return fmt.Errorf("token is missing")
+	}
+	if o.hubAPIServer == "" {
+		return fmt.Errorf("hub-server is missing")
+	}
+	if o.clusterName == "" {
+		return fmt.Errorf("name is missing")
+	}
+	if len(o.registry) == 0 {
+		return fmt.Errorf("the OCM image registry should not be empty, like quay.io/open-cluster-management")
+	}
 	klog.V(1).InfoS("join options:", "dry-run", o.ClusteradmFlags.DryRun, "cluster", o.clusterName, "api-server", o.hubAPIServer, "output", o.outputFile)
 
 	o.values = Values{
 		ClusterName: o.clusterName,
 		Hub: Hub{
 			APIServer: o.hubAPIServer,
-			Registry:  o.registry,
 		},
+		Registry: o.registry,
 	}
 
 	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
@@ -58,6 +72,34 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		"'work image version'", versionBundle.Work,
 		"'operator image version'", versionBundle.Operator)
 
+	// if --ca-file is set, read ca data
+	if o.caFile != "" {
+		cabytes, err := os.ReadFile(o.caFile)
+		if err != nil {
+			return err
+		}
+		o.HubCADate = cabytes
+	}
+
+	// code logic of building hub client in join process:
+	// 1. use the token and insecure to fetch the ca data from cm in kube-public ns
+	// 2. if not found, assume using a authorized ca.
+	// 3. use the ca and token to build a secured client and call hub
+
+	//Create an unsecure bootstrap
+	bootstrapExternalConfigUnSecure := o.createExternalBootstrapConfig()
+	//create external client from the bootstrap
+	externalClientUnSecure, err := helpers.CreateClientFromClientcmdapiv1Config(bootstrapExternalConfigUnSecure)
+	if err != nil {
+		return err
+	}
+	//Create the kubeconfig for the internal client
+	o.HubConfig, err = o.createClientcmdapiv1Config(externalClientUnSecure, bootstrapExternalConfigUnSecure)
+	if err != nil {
+		return err
+	}
+
+	// get managed cluster externalServerURL
 	kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
 	if err != nil {
 		klog.Errorf("Failed building kube client: %v", err)
@@ -79,40 +121,29 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 }
 
 func (o *Options) validate() error {
-	if o.token == "" {
-		return fmt.Errorf("token is missing")
-	}
-	if o.values.Hub.APIServer == "" {
-		return fmt.Errorf("hub-server is missing")
-	}
-	if o.values.ClusterName == "" {
-		return fmt.Errorf("name is missing")
-	}
-	if len(o.registry) == 0 {
-		return fmt.Errorf("registry should not be empty")
+	// preflight check
+	if err := preflightinterface.RunChecks(
+		[]preflightinterface.Checker{
+			preflight.HubKubeconfigCheck{
+				Config: o.HubConfig,
+			},
+			preflight.KlusterletApiserverCheck{
+				KlusterletApiserver: o.values.Klusterlet.APIServer,
+			},
+		}, os.Stderr); err != nil {
+		return err
 	}
 
+	err := o.setKubeconfig()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func (o *Options) run() error {
 	output := make([]string, 0)
 	reader := scenario.GetScenarioResourcesReader()
-
-	//Create an unsecure bootstrap
-	bootstrapExternalConfigUnSecure := o.createExternalBootstrapConfig()
-
-	//create external client from the bootstrap
-	externalClientUnSecure, err := createExternalClientFromBootstrap(bootstrapExternalConfigUnSecure)
-	if err != nil {
-		return err
-	}
-
-	//Create the kubeconfig for the internal client
-	o.values.Hub.KubeConfig, err = o.createKubeConfig(externalClientUnSecure, bootstrapExternalConfigUnSecure)
-	if err != nil {
-		return err
-	}
 
 	kubeClient, apiExtensionsClient, dynamicClient, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
 	if err != nil {
@@ -226,7 +257,7 @@ func waitUntilRegistrationOperatorConditionIsTrue(f util.Factory, timeout int64)
 		})
 }
 
-//Wait until the klusterlet condition available=true, or timeout in $timeout seconds
+// Wait until the klusterlet condition available=true, or timeout in $timeout seconds
 func waitUntilKlusterletConditionIsTrue(f util.Factory, timeout int64) error {
 	client, err := f.KubernetesClientSet()
 	if err != nil {
@@ -273,7 +304,7 @@ func waitUntilKlusterletConditionIsTrue(f util.Factory, timeout int64) error {
 	)
 }
 
-//Create bootstrap with token but without CA
+// Create bootstrap with token but without CA
 func (o *Options) createExternalBootstrapConfig() clientcmdapiv1.Config {
 	return clientcmdapiv1.Config{
 		// Define a cluster stanza based on the bootstrap kubeconfig.
@@ -310,53 +341,49 @@ func (o *Options) createExternalBootstrapConfig() clientcmdapiv1.Config {
 	}
 }
 
-func createExternalClientFromBootstrap(bootstrapExternalConfigUnSecure clientcmdapiv1.Config) (*kubernetes.Clientset, error) {
-	bootstrapConfigBytesUnSecure, err := yaml.Marshal(bootstrapExternalConfigUnSecure)
-	if err != nil {
-		return nil, err
-	}
-
-	configUnSecure, err := clientcmd.Load(bootstrapConfigBytesUnSecure)
-	if err != nil {
-		return nil, err
-	}
-	restConfigUnSecure, err := clientcmd.NewDefaultClientConfig(*configUnSecure, &clientcmd.ConfigOverrides{}).ClientConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	clientUnSecure, err := kubernetes.NewForConfig(restConfigUnSecure)
-	if err != nil {
-		return nil, err
-	}
-	return clientUnSecure, nil
-}
-
-func (o *Options) createKubeConfig(externalClientUnSecure *kubernetes.Clientset,
-	bootstrapExternalConfigUnSecure clientcmdapiv1.Config) (string, error) {
-	ca, err := helpers.GetCACert(externalClientUnSecure)
-	if err != nil {
-		return "", err
-	}
-
-	hubApiserver := o.hubAPIServer
-	if o.forceHubInClusterEndpointLookup || len(hubApiserver) == 0 {
-		hubApiserver, err = helpers.GetAPIServer(externalClientUnSecure)
+func (o *Options) createClientcmdapiv1Config(externalClientUnSecure *kubernetes.Clientset,
+	bootstrapExternalConfigUnSecure clientcmdapiv1.Config) (*clientcmdapiv1.Config, error) {
+	var err error
+	// set hub in cluster endpoint
+	if o.forceHubInClusterEndpointLookup {
+		o.hubInClusterEndpoint, err = helpers.GetAPIServer(externalClientUnSecure)
 		if err != nil {
 			if !errors.IsNotFound(err) {
-				return "", err
+				return nil, err
 			}
 		}
 	}
 
 	bootstrapConfig := bootstrapExternalConfigUnSecure.DeepCopy()
 	bootstrapConfig.Clusters[0].Cluster.InsecureSkipTLSVerify = false
-	bootstrapConfig.Clusters[0].Cluster.CertificateAuthorityData = ca
-	bootstrapConfig.Clusters[0].Cluster.Server = hubApiserver
-	bootstrapConfigBytes, err := yaml.Marshal(bootstrapConfig)
-	if err != nil {
-		return "", err
+	bootstrapConfig.Clusters[0].Cluster.Server = o.hubAPIServer
+	if o.HubCADate != nil {
+		// directly set ca-data if --ca-file is set
+		bootstrapConfig.Clusters[0].Cluster.CertificateAuthorityData = o.HubCADate
+	} else {
+		// get ca data from externalClientUnsecure, ca may empty(cluster-info exists with no ca data)
+		ca, err := helpers.GetCACert(externalClientUnSecure)
+		if err != nil {
+			return nil, err
+		}
+		bootstrapConfig.Clusters[0].Cluster.CertificateAuthorityData = ca
 	}
 
-	return string(bootstrapConfigBytes), nil
+	return bootstrapConfig, nil
+}
+
+func (o *Options) setKubeconfig() error {
+	// replace apiserver if the flag is set, the apiserver value should not be set
+	// to in-cluster endpoint until preflight check is finished
+	if o.forceHubInClusterEndpointLookup {
+		o.HubConfig.Clusters[0].Cluster.Server = o.hubInClusterEndpoint
+	}
+
+	bootstrapConfigBytes, err := yaml.Marshal(o.HubConfig)
+	if err != nil {
+		return err
+	}
+
+	o.values.Hub.KubeConfig = string(bootstrapConfigBytes)
+	return nil
 }

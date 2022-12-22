@@ -11,10 +11,12 @@ import (
 )
 
 var example = `
-# Join a cluster to the hub
+# Join a cluster to the hub 
 %[1]s join --hub-token <tokenID.tokenSecret> --hub-apiserver <hub_apiserver_url> --cluster-name <cluster_name>
-# Join a cluster to the hub with hosted mode
-%[1]s join --hub-token <tokenID.tokenSecret> --hub-apiserver <hub_apiserver_url> --cluster-name <cluster_name> --mode hosted --managed-cluster-kubeconfig <path_to_kubeconfig>
+# join a cluster to the hub with hosted mode
+%[1]s join --hub-token <tokenID.tokenSecret> --hub-apiserver <hub_apiserver_url> --cluster-name <cluster_name> --mode hosted --managed-cluster-kubeconfig <managed-cluster-kubeconfig-file>
+# join a cluster to the hub while the hub provided no valid CA data in kube-public namespace
+%[1]s join --hub-token <tokenID.tokenSecret> --hub-apiserver <hub_apiserver_url> --cluster-name <cluster_name> --ca-file <ca-file>
 `
 
 // NewCmd ...

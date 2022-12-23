@@ -107,7 +107,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	}
 	klusterletApiserver, err := helpers.GetAPIServer(kubeClient)
 	if err != nil {
-		klog.Errorf("Failed looking for cluster endpoint for the registering klusterlet: %v", err)
+		klog.Warningf("Failed looking for cluster endpoint for the registering klusterlet: %v", err)
 		klusterletApiserver = ""
 	}
 	o.values.Klusterlet.APIServer = klusterletApiserver

@@ -14,6 +14,11 @@ type KlusterletApiserverCheck struct {
 }
 
 func (c KlusterletApiserverCheck) Check() (warningList []string, errorList []error) {
+	if c.KlusterletApiserver == "" {
+		return []string{
+			"No klusterlet apiserver set, so the managed cluster has no externally accessible url that hub cluster can visit.",
+		}, nil
+	}
 	if !validAPIHost(c.KlusterletApiserver) {
 		return nil, []error{errors.New("ConfigMap/cluster-info.data.kubeconfig.clusters[0].cluster.server field in namespace kube-public should start with http:// or https://, please edit it first")}
 	}

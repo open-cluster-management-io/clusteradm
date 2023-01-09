@@ -109,6 +109,9 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	if err != nil {
 		klog.Warningf("Failed looking for cluster endpoint for the registering klusterlet: %v", err)
 		klusterletApiserver = ""
+	} else if !preflight.ValidAPIHost(klusterletApiserver) {
+		klog.Warningf("ConfigMap/cluster-info.data.kubeconfig.clusters[0].cluster.server field [%s] in namespace kube-public should start with http:// or https://", klusterletApiserver)
+		klusterletApiserver = ""
 	}
 	o.values.Klusterlet.APIServer = klusterletApiserver
 
@@ -126,9 +129,6 @@ func (o *Options) validate() error {
 		[]preflightinterface.Checker{
 			preflight.HubKubeconfigCheck{
 				Config: o.HubConfig,
-			},
-			preflight.KlusterletApiserverCheck{
-				KlusterletApiserver: o.values.Klusterlet.APIServer,
 			},
 		}, os.Stderr); err != nil {
 		return err

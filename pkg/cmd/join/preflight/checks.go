@@ -9,26 +9,6 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 )
 
-type KlusterletApiserverCheck struct {
-	KlusterletApiserver string
-}
-
-func (c KlusterletApiserverCheck) Check() (warningList []string, errorList []error) {
-	if c.KlusterletApiserver == "" {
-		return []string{
-			"No klusterlet apiserver set, so the managed cluster has no externally accessible url that hub cluster can visit.",
-		}, nil
-	}
-	if !validAPIHost(c.KlusterletApiserver) {
-		return nil, []error{errors.New("ConfigMap/cluster-info.data.kubeconfig.clusters[0].cluster.server field in namespace kube-public should start with http:// or https://, please edit it first")}
-	}
-	return nil, nil
-}
-
-func (c KlusterletApiserverCheck) Name() string {
-	return "KlusterletApiserver check"
-}
-
 type HubKubeconfigCheck struct {
 	Config *clientcmdapiv1.Config
 }
@@ -43,7 +23,7 @@ func (c HubKubeconfigCheck) Check() (warningList []string, errorList []error) {
 	}
 
 	// validate apiserver foramt
-	if !validAPIHost(c.Config.Clusters[0].Cluster.Server) {
+	if !ValidAPIHost(c.Config.Clusters[0].Cluster.Server) {
 		return nil, []error{errors.New("--hub-apiserver should start with http:// or https://")}
 	}
 	// validate ca
@@ -70,7 +50,7 @@ func (c HubKubeconfigCheck) Name() string {
 }
 
 // utils
-func validAPIHost(host string) bool {
+func ValidAPIHost(host string) bool {
 	if strings.HasPrefix(host, "http://") || strings.HasPrefix(host, "https://") {
 		return true
 	}

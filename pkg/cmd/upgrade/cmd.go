@@ -13,7 +13,7 @@ import (
 func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "upgrade",
-		Short: "upgrade componenet",
+		Short: "upgrade component",
 	}
 
 	cmd.AddCommand(klusterlet.NewCmd(clusteradmFlags, streams))

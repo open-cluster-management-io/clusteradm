@@ -47,13 +47,134 @@ spec:
           spec:
             description: PolicySpec defines the desired state of Policy
             properties:
+              copyPolicyMetadata:
+                description: If set to true (default), all the policy's labels and
+                  annotations will be copied to the replicated policy. If set to false,
+                  only the policy framework specific policy labels and annotations
+                  will be copied to the replicated policy.
+                type: boolean
+              dependencies:
+                description: PolicyDependencies that apply to each template in this
+                  Policy
+                items:
+                  description: Each PolicyDependency defines an object reference which
+                    must be in a certain compliance state before the policy should
+                    be created.
+                  oneOf:
+                  - properties:
+                      kind:
+                        enum:
+                        - CertificatePolicy
+                        - ConfigurationPolicy
+                        - IamPolicy
+                      namespace:
+                        maxLength: 0
+                  - not:
+                      properties:
+                        kind:
+                          pattern: ^(?:(?:Certificate|Configuration|Iam)Policy)$
+                  properties:
+                    apiVersion:
+                      description: 'APIVersion defines the versioned schema of this
+                        representation of an object. Servers should convert recognized
+                        schemas to the latest internal value, and may reject unrecognized
+                        values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                      type: string
+                    compliance:
+                      description: The ComplianceState (at path .status.compliant)
+                        required before the policy should be created
+                      enum:
+                      - Compliant
+                      - Pending
+                      - NonCompliant
+                      type: string
+                    kind:
+                      description: 'Kind is a string value representing the REST resource
+                        this object represents. Servers may infer this from the endpoint
+                        the client submits requests to. Cannot be updated. In CamelCase.
+                        More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                      type: string
+                    name:
+                      description: The name of the object to be checked
+                      type: string
+                    namespace:
+                      description: The namespace of the object to be checked (optional)
+                      type: string
+                  required:
+                  - compliance
+                  - name
+                  type: object
+                type: array
               disabled:
+                description: This provides the ability to enable and disable your
+                  policies.
                 type: boolean
               policy-templates:
+                description: Used to create one or more policies to apply to a managed
+                  cluster
                 items:
                   description: PolicyTemplate template for custom security policy
                   properties:
+                    extraDependencies:
+                      description: Additional PolicyDependencies that only apply to
+                        this template
+                      items:
+                        description: Each PolicyDependency defines an object reference
+                          which must be in a certain compliance state before the policy
+                          should be created.
+                        oneOf:
+                        - properties:
+                            kind:
+                              enum:
+                              - CertificatePolicy
+                              - ConfigurationPolicy
+                              - IamPolicy
+                            namespace:
+                              maxLength: 0
+                        - not:
+                            properties:
+                              kind:
+                                pattern: ^(?:(?:Certificate|Configuration|Iam)Policy)$
+                        properties:
+                          apiVersion:
+                            description: 'APIVersion defines the versioned schema
+                              of this representation of an object. Servers should
+                              convert recognized schemas to the latest internal value,
+                              and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                            type: string
+                          compliance:
+                            description: The ComplianceState (at path .status.compliant)
+                              required before the policy should be created
+                            enum:
+                            - Compliant
+                            - Pending
+                            - NonCompliant
+                            type: string
+                          kind:
+                            description: 'Kind is a string value representing the
+                              REST resource this object represents. Servers may infer
+                              this from the endpoint the client submits requests to.
+                              Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                            type: string
+                          name:
+                            description: The name of the object to be checked
+                            type: string
+                          namespace:
+                            description: The namespace of the object to be checked
+                              (optional)
+                            type: string
+                        required:
+                        - compliance
+                        - name
+                        type: object
+                      type: array
+                    ignorePending:
+                      description: Ignore this template's Pending status when calculating
+                        the overall Policy status
+                      type: boolean
                     objectDefinition:
+                      description: A Kubernetes object defining the policy to apply
+                        to a managed cluster
                       type: object
                       x-kubernetes-preserve-unknown-fields: true
                   required:
@@ -61,7 +182,8 @@ spec:
                   type: object
                 type: array
               remediationAction:
-                description: RemediationAction describes weather to enforce or inform
+                description: This value (Enforce or Inform) will override the remediationAction
+                  on each template
                 enum:
                 - Inform
                 - inform
@@ -79,6 +201,7 @@ spec:
                 description: ComplianceState shows the state of enforcement
                 enum:
                 - Compliant
+                - Pending
                 - NonCompliant
                 type: string
               details:

@@ -63,6 +63,45 @@ func Test_loadCurrentCluster(t *testing.T) {
 	}
 }
 
+func Test_checkServer(t *testing.T) {
+	tests := []struct {
+		name         string
+		server       string
+		wantErrList  []string
+		wantWarnings []string
+	}{
+		{
+			name:         "IP address and port",
+			server:       "https://1.2.3.4:8443",
+			wantErrList:  nil,
+			wantWarnings: nil,
+		},
+		{
+			name:         "no port",
+			server:       "https://1.2.3.4",
+			wantErrList:  nil,
+			wantWarnings: nil,
+		},
+		{
+			name:         "domain name",
+			server:       "https://example.com:8443",
+			wantErrList:  nil,
+			wantWarnings: []string{"Hub Api Server is a domain name, maybe you should set HostAlias in klusterlet"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			warnings, errorList := checkServer(tt.server)
+			if warnings != nil && !reflect.DeepEqual(warnings, tt.wantWarnings) {
+				t.Errorf("check() warnings = %v, wantWarnings %v", warnings, tt.wantWarnings)
+			}
+			if errorList != nil && !reflect.DeepEqual(errorList, tt.wantErrList) {
+				t.Errorf("check() errorList = %v, wantErrList %v", errorList, tt.wantErrList)
+			}
+		})
+	}
+}
+
 func Test_createClusterInfo(t *testing.T) {
 	type args struct {
 		cluster *clientcmdapi.Cluster

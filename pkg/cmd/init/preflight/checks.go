@@ -23,23 +23,32 @@ type HubApiServerCheck struct {
 	ConfigPath string // kubeconfig file path
 }
 
-func (c HubApiServerCheck) Check() (warnings []string, errorList []error) {
-	cluster, err := loadCurrentCluster(c.ClusterCtx, c.ConfigPath)
-	if err != nil {
-		return nil, []error{err}
-	}
-	u, err := url.Parse(cluster.Server)
+func checkServer(server string) (warnings []string, errorList []error) {
+	u, err := url.Parse(server)
 	if err != nil {
 		return nil, []error{err}
 	}
 	host, _, err := net.SplitHostPort(u.Host)
 	if err != nil {
-		return nil, []error{err}
+		missingPortInAddressErr := net.AddrError{Err: "missing port in address", Addr: u.Host}
+		if err.Error() == missingPortInAddressErr.Error() {
+			host = u.Host
+		} else {
+			return nil, []error{err}
+		}
 	}
 	if net.ParseIP(host) == nil {
 		return []string{"Hub Api Server is a domain name, maybe you should set HostAlias in klusterlet"}, nil
 	}
 	return nil, nil
+}
+
+func (c HubApiServerCheck) Check() (warnings []string, errorList []error) {
+	cluster, err := loadCurrentCluster(c.ClusterCtx, c.ConfigPath)
+	if err != nil {
+		return nil, []error{err}
+	}
+	return checkServer(cluster.Server)
 }
 
 func (c HubApiServerCheck) Name() string {

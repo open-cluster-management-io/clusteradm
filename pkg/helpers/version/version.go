@@ -15,7 +15,7 @@ type VersionBundle struct {
 	PolicyAddon  string
 }
 
-var defaultBundleVersion = "0.9.1"
+var defaultBundleVersion = "0.10.0"
 
 func GetDefaultBundleVersion() string {
 	return defaultBundleVersion
@@ -92,6 +92,15 @@ func GetVersionBundle(version string) (VersionBundle, error) {
 		Operator:     "v0.9.1",
 		AppAddon:     "v0.9.0",
 		PolicyAddon:  "v0.9.0",
+	}
+
+	versionBundleList["0.10.0"] = VersionBundle{
+		Registration: "v0.10.0",
+		Placement:    "v0.10.0",
+		Work:         "v0.10.0",
+		Operator:     "v0.10.0",
+		AppAddon:     "v0.10.0",
+		PolicyAddon:  "v0.10.0",
 	}
 
 	// default

@@ -100,6 +100,16 @@ Accept the CSRs on the hub to approve the spoke clusters to join the hub.
 
 `clusteradm accept --clusters <cluster1>, <cluster2>,....`
 
+### unjoin
+
+Uninstall the agent on the spoke
+
+`clusteradm unjoin --cluster-name c1`
+
+### clean
+
+Clean up the multicluster hub control plane and other initialized resources on the hub cluster
+
 ### install hub-addon
 
 Install specific built-in add-on(s) to the hub cluster.

@@ -46,7 +46,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().StringVar(&o.registry, "image-registry", "quay.io/open-cluster-management",
 		"The name of the image registry serving OCM images, which will be applied to all the deploying OCM components.")
 	cmd.Flags().StringVar(&o.bundleVersion, "bundle-version", "default",
-		`the version of predefined compatible image versions. e.g. v0.6.0, defaulted to the latest release version. also, we can set "latest" to install latest develop version`)
+		"The version of predefined compatible image versions (e.g. v0.6.0). Defaults to the latest released version. You can also set \"latest\" to install the latest development version.")
 	cmd.Flags().BoolVar(&o.wait, "wait", false,
 		"If set, the command will initialize the OCM control plan in foreground.")
 	return cmd

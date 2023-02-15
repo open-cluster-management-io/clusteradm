@@ -86,6 +86,12 @@ Initialize the hub by deploying the hub side resources to manage clusters.
 
 it returns the command line to launch on the spoke to join the hub.
 
+### get token
+
+Get the latest token to import a new managed cluster.
+
+`clusteradm get token --context ${CTX_HUB_CLUSTER}`
+
 ### join
 
 Install the agent on the spoke.
@@ -109,6 +115,8 @@ Uninstall the agent on the spoke
 ### clean
 
 Clean up the multicluster hub control plane and other initialized resources on the hub cluster
+
+`clusteradm clean --context ${CTX_HUB_CLUSTER}`
 
 ### install hub-addon
 

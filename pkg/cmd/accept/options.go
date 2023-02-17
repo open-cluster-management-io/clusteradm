@@ -21,7 +21,7 @@ type Options struct {
 	Streams genericclioptions.IOStreams
 }
 
-//Values: The values used in the template
+// Values used in the template
 type Values struct {
 	Clusters []string
 }

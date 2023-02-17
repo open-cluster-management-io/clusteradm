@@ -17,7 +17,6 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
 )
 
-//TODO add to a common folder
 //nolint:deadcode,varcheck
 const (
 	klusterletName                 = "klusterlet"

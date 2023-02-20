@@ -13,8 +13,6 @@ import (
 	apiextensionshelpers "k8s.io/apiextensions-apiserver/pkg/apihelpers"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	"k8s.io/utils/pointer"
-
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,6 +27,7 @@ import (
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/kubectl/pkg/cmd/util"
+	"k8s.io/utils/pointer"
 	"open-cluster-management.io/clusteradm/pkg/config"
 )
 
@@ -318,4 +317,21 @@ func CreateDiscoveryClientFromClientcmdapiv1Config(clientcmdapiv1Config clientcm
 		return nil, err
 	}
 	return discoveryClient, nil
+}
+
+// ValidateKubeconfigFile validate a given kubeconfig
+func ValidateKubeconfigFile(kubeconfig string) error {
+	restConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return err
+	}
+	kubeclient, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return err
+	}
+	_, err = kubeclient.Discovery().RESTClient().Get().AbsPath("/healthz").DoRaw(context.Background())
+	if err != nil {
+		return err
+	}
+	return nil
 }

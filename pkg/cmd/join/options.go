@@ -21,6 +21,11 @@ type Options struct {
 	caFile string
 	//the name under the cluster must be imported
 	clusterName string
+	// klusterlet deploy mode, supported values are "hosted" and "default"
+	mode string
+	// managed cluster kubeconfig file, used in hosted mode
+	managedKubeconfigFile string
+
 	//Pulling image registry of OCM
 	registry string
 	// version of predefined compatible image versions
@@ -57,6 +62,8 @@ type Values struct {
 	Registry string
 	//bundle version
 	BundleVersion BundleVersion
+	// managed kubeconfig
+	ManagedKubeconfig string
 }
 
 // Hub: The hub values for the template
@@ -70,7 +77,11 @@ type Hub struct {
 // Klusterlet is for templating klusterlet configuration
 type Klusterlet struct {
 	//APIServer: The API Server external URL
-	APIServer string
+	APIServer           string
+	Mode                string
+	Name                string
+	AgentNamespace      string
+	KlusterletNamespace string
 }
 
 type BundleVersion struct {

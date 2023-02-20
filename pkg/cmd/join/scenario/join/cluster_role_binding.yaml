@@ -10,4 +10,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: klusterlet
-  namespace: open-cluster-management
+  namespace: open-cluster-management 

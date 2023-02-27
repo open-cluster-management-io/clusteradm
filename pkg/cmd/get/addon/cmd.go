@@ -24,7 +24,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 
 	cmd := &cobra.Command{
 		Use:          "addon",
-		Short:        "get enabled addon on specified managed cluster",
+		Short:        "get enabled addon",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRunE: func(c *cobra.Command, args []string) error {
@@ -49,6 +49,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 
 	cmd.Flags().StringSliceVar(&o.clusters, "clusters", []string{},
 		"Names of the managed cluster to display (comma separated)")
+	o.printer.AddFlag(cmd.Flags())
 
 	return cmd
 }

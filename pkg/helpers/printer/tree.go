@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/disiqueira/gotree"
 	"github.com/fatih/color"
 	appsv1 "k8s.io/api/apps/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -14,30 +13,23 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 	workapiv1 "open-cluster-management.io/api/work/v1"
 )
 
-func PrintWorkDetail(n gotree.Tree, work *workapiv1.ManifestWork) {
-	condByRs := make(map[string][]workapiv1.ManifestCondition)
+func WorkDetails(keyPrefix string, work *workapiv1.ManifestWork) map[string]any {
+	details := map[string]any{}
 	for _, cond := range work.Status.ResourceStatus.Manifests {
-		cond := cond
-		groupResource := schema.GroupResource{Group: cond.ResourceMeta.Group, Resource: cond.ResourceMeta.Resource}.String()
-		condByRs[groupResource] = append(condByRs[groupResource], cond)
-	}
-	for gr, rss := range condByRs {
-		rsNode := n.Add(gr)
-		for _, rs := range rss {
-			identifier := rs.ResourceMeta.Name
-			if len(rs.ResourceMeta.Namespace) > 0 {
-				identifier = rs.ResourceMeta.Namespace + "/" + identifier
-			}
-			rsNode.Add(fmt.Sprintf("%s (%s)", identifier, getManifestResourceStatus(&rs)))
+		identifier := cond.ResourceMeta.Name
+		if len(cond.ResourceMeta.Namespace) > 0 {
+			identifier = cond.ResourceMeta.Namespace + "/" + identifier
 		}
+		key := fmt.Sprintf("%s.%s.%s", keyPrefix, cond.ResourceMeta.Resource, identifier)
+		details[key] = getManifestResourceStatus(&cond)
 	}
+	return details
 }
 
 func getManifestResourceStatus(manifestCond *workapiv1.ManifestCondition) string {

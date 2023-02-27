@@ -2,8 +2,11 @@
 package addon
 
 import (
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/printers"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
+	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 )
 
 type Options struct {
@@ -15,11 +18,29 @@ type Options struct {
 	addons []string
 
 	Streams genericclioptions.IOStreams
+
+	printer *printer.PrinterOption
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
 		Streams:         streams,
+		printer:         printer.NewPrinterOption(pntOpt),
 	}
+}
+
+var pntOpt = printers.PrintOptions{
+	NoHeaders:     false,
+	WithNamespace: false,
+	WithKind:      false,
+	Wide:          false,
+	ShowLabels:    false,
+	Kind: schema.GroupKind{
+		Group: "add.open-cluster-management.io",
+		Kind:  "ClusterManagementAddon",
+	},
+	ColumnLabels:     []string{},
+	SortBy:           "",
+	AllowMissingKeys: true,
 }

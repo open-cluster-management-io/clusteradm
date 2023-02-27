@@ -49,7 +49,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 
 	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun)
 	o.values = Values{
-		ClusterName: k.ClusterName,
+		ClusterName: k.Spec.ClusterName,
 		Hub: Hub{
 			Registry: o.registry,
 		},

@@ -4,8 +4,9 @@ package addon
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/runtime"
+	workapiv1 "open-cluster-management.io/api/work/v1"
 
-	"github.com/disiqueira/gotree"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -20,7 +21,7 @@ import (
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
-
+	o.printer.Competele()
 	klog.V(1).InfoS("addon options:", "dry-run", o.ClusteradmFlags.DryRun, "clusters", o.clusters)
 	o.addons = args
 
@@ -29,6 +30,11 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 
 func (o *Options) validate() (err error) {
 	err = o.ClusteradmFlags.ValidateHub()
+	if err != nil {
+		return err
+	}
+
+	err = o.printer.Validate()
 	if err != nil {
 		return err
 	}
@@ -70,28 +76,23 @@ func (o *Options) run() (err error) {
 		clusters = sets.NewString(o.clusters...)
 	}
 
-	klog.V(3).InfoS("values:", "clusters", clusters)
+	cmaList, err := addonClient.AddonV1alpha1().ClusterManagementAddOns().List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
 
-	return o.printAddonTree(clusters.List(), addonClient, workClient)
-}
-
-func (o *Options) printAddonTree(
-	clusters []string,
-	addonClient addonclient.Interface,
-	workClient workclient.Interface) error {
 	addonList, err := addonClient.AddonV1alpha1().
 		ManagedClusterAddOns(metav1.NamespaceAll).
 		List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
-	addonByCluster := make(map[string][]*addonv1alpha1.ManagedClusterAddOn)
+	mcaByName := make(map[string][]addonv1alpha1.ManagedClusterAddOn)
 	for _, addon := range addonList.Items {
-		if shouldShow(o.addons, &addon) {
-			clusterName := addon.Namespace
-			addon := addon
-			addonByCluster[clusterName] = append(addonByCluster[clusterName], &addon)
+		if _, ok := mcaByName[addon.Name]; !ok {
+			mcaByName[addon.Name] = []addonv1alpha1.ManagedClusterAddOn{}
 		}
+		mcaByName[addon.Name] = append(mcaByName[addon.Name], addon)
 	}
 
 	workList, err := workClient.WorkV1().
@@ -103,30 +104,73 @@ func (o *Options) printAddonTree(
 		return err
 	}
 
-	root := gotree.New("<ManagedCluster>")
-	for _, clusterName := range clusters {
-		addonRoot := root.Add(color.New(color.FgBlue).Sprintf(clusterName))
-		addons, ok := addonByCluster[clusterName]
-		if !ok {
-			continue
-		}
-		for _, addon := range addons {
-			for _, work := range workList.Items {
-				if clusterName == work.Namespace && work.Labels["open-cluster-management.io/addon-name"] == addon.Name {
-					addonNode := addonRoot.Add(color.New(color.Bold).Sprintf("%s", addon.Name))
-					statusNode := addonNode.Add("<Status>")
-					printAddonStatus(statusNode, addon)
-					workNode := addonNode.Add("<ManifestWork>")
-					printer.PrintWorkDetail(workNode, &work)
+	klog.V(3).InfoS("values:", "clusters", clusters)
+
+	o.printer.WithTreeConverter(o.convertToTreeFunc(clusters.List(), mcaByName, workList.Items)).WithTableConverter(o.converToTableFunc(mcaByName))
+
+	return o.printer.Print(o.Streams, cmaList)
+}
+
+func (o *Options) convertToTreeFunc(
+	clusters []string,
+	mcaByName map[string][]addonv1alpha1.ManagedClusterAddOn,
+	works []workapiv1.ManifestWork,
+) func(obj runtime.Object, tree *printer.TreePrinter) *printer.TreePrinter {
+	return func(obj runtime.Object, tree *printer.TreePrinter) *printer.TreePrinter {
+		if cmaList, ok := obj.(*addonv1alpha1.ClusterManagementAddOnList); ok {
+			for _, cma := range cmaList.Items {
+				if !shouldShow(o.addons, cma.Name) {
+					continue
+				}
+				for _, addon := range mcaByName[cma.Name] {
+					if !contains(clusters, addon.Namespace) {
+						continue
+					}
+					conds := addonCondition(addon)
+					tree.AddFileds(cma.Name, &conds)
+					for _, work := range works {
+						if contains(clusters, work.Namespace) && work.Labels["open-cluster-management.io/addon-name"] == addon.Name {
+							workStatus := printer.WorkDetails(fmt.Sprintf(".%s.ManifestWork", addon.Namespace), &work)
+							tree.AddFileds(cma.Name, &workStatus)
+						}
+					}
 				}
 			}
 		}
+		return tree
 	}
-	fmt.Fprint(o.Streams.Out, root.Print())
-	return nil
 }
 
-func printAddonStatus(n gotree.Tree, addon *addonv1alpha1.ManagedClusterAddOn) {
+func (o *Options) converToTableFunc(mcaByName map[string][]addonv1alpha1.ManagedClusterAddOn) func(obj runtime.Object) *metav1.Table {
+	return func(obj runtime.Object) *metav1.Table {
+		klog.V(3).InfoS("values:", "addons", mcaByName)
+		table := &metav1.Table{
+			ColumnDefinitions: []metav1.TableColumnDefinition{
+				{Name: "Name", Type: "string"},
+				{Name: "InstalledClusters", Type: "integer"},
+			},
+			Rows: []metav1.TableRow{},
+		}
+
+		if cmaList, ok := obj.(*addonv1alpha1.ClusterManagementAddOnList); ok {
+			for _, cma := range cmaList.Items {
+				if !shouldShow(o.addons, cma.Name) {
+					continue
+				}
+				row := metav1.TableRow{
+					Cells:  []interface{}{cma.Name, len(mcaByName[cma.Name])},
+					Object: runtime.RawExtension{Object: &cma},
+				}
+
+				table.Rows = append(table.Rows, row)
+			}
+		}
+		return table
+	}
+}
+
+func addonCondition(addon addonv1alpha1.ManagedClusterAddOn) map[string]any {
+	conds := map[string]any{}
 	testingConds := []string{
 		"Available",
 		"ManifestApplied",
@@ -143,15 +187,16 @@ func printAddonStatus(n gotree.Tree, addon *addonv1alpha1.ManagedClusterAddOn) {
 	}
 	for _, condType := range testingConds {
 		cond := meta.FindStatusCondition(addon.Status.Conditions, condType)
-		n.Add(fmt.Sprintf("%s -> %s", condType, sanitize(cond)))
+		conds[fmt.Sprintf(".%s.Status.%s", addon.Namespace, condType)] = fmt.Sprintf("%s -> %s", condType, sanitize(cond))
 	}
+	return conds
 }
 
-func shouldShow(selectingAddons []string, addon *addonv1alpha1.ManagedClusterAddOn) bool {
+func shouldShow(selectingAddons []string, addonName string) bool {
 	if len(selectingAddons) == 0 { // empty list means all
 		return true
 	}
-	return contains(selectingAddons, addon.Name)
+	return contains(selectingAddons, addonName)
 }
 
 func contains(values []string, target string) bool {

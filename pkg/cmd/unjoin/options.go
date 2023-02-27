@@ -3,6 +3,7 @@ package unjoin
 
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	operatorv1 "open-cluster-management.io/api/operator/v1"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
@@ -23,6 +24,10 @@ type Options struct {
 type Values struct {
 	//ClusterName: the name of the joined cluster on the hub
 	ClusterName string
+	// DeployMode, KlusterletName and AgentNamespace would be auto filled
+	DeployMode     operatorv1.InstallMode
+	KlusterletName string
+	AgentNamespace string
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {

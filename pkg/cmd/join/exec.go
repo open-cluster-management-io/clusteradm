@@ -128,7 +128,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 
 	// code logic of building hub client in join process:
 	// 1. use the token and insecure to fetch the ca data from cm in kube-public ns
-	// 2. if not found, assume using a authorized ca.
+	// 2. if not found, assume using an authorized ca.
 	// 3. use the ca and token to build a secured client and call hub
 
 	//Create an unsecure bootstrap

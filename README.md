@@ -85,20 +85,24 @@ Initialize the hub by deploying the hub side resources to manage clusters.
 `clusteradm init [--use-bootstrap-token]`
 
 it returns the command line to launch on the spoke to join the hub.
+> NOTE: Do not run init command against a [multicluster-controlplane](https://github.com/open-cluster-management-io/multicluster-controlplane) instance. It is already an initialized hub on start. Instead, use `clusteradm get token --use-bootstrap-token` to get the join command.
 
 ### get token
 
 Get the latest token to import a new managed cluster.
 
 `clusteradm get token --context ${CTX_HUB_CLUSTER}`
-
 ### join
 
 Install the agent on the spoke.
 
-`clusteradm join --hub-token <token> --hub-apiserver <hub_apiserver_url> --cluster-name c1`
+`clusteradm join --hub-token <token> --hub-apiserver <hub_apiserver_url> --cluster-name c1 [--ca-file <path-to-ca-file>] [--force-internal-endpoint-lookup]`
 
 it returns the command line to launch on the hub the accept the spoke onboarding.
+
+> NOTE: The `--ca-file` flag is used to provide a valid CA for hub. The ca data is fetched from cluster-info configmap in kube-public namespace of the hub cluster, then from kube-root-ca.crt configmap in kube-public namespace if the cluster-info configmap does not exist.
+
+> NOTE: If you're trying to join a hub cluster which is initialized from a kind cluster, please set the `--force-internal-endpoint-lookup` flag.
 
 ### accept
 
@@ -111,6 +115,7 @@ Accept the CSRs on the hub to approve the spoke clusters to join the hub.
 Uninstall the agent on the spoke
 
 `clusteradm unjoin --cluster-name c1`
+> Note: the applied resources on managed cluster would be checked and prompt a warning if still exist any.
 
 ### clean
 

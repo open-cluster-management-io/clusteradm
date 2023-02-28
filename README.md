@@ -100,7 +100,7 @@ Install the agent on the spoke.
 
 it returns the command line to launch on the hub the accept the spoke onboarding.
 
-> NOTE: The `--ca-file` flag is used to provide a valid CA for hub. The ca data is fetch from cluster-info configmap in kube-public namespace of the hub cluster if it is not set, then from kube-root-ca.crt configmap in kube-public if cluster-info configmap also not exist.
+> NOTE: The `--ca-file` flag is used to provide a valid CA for hub. The ca data is fetched from cluster-info configmap in kube-public namespace of the hub cluster, then from kube-root-ca.crt configmap in kube-public namespace if the cluster-info configmap does not exist.
 
 > NOTE: If you're trying to join a hub cluster which is initialized from a kind cluster, please set the `--force-internal-endpoint-lookup` flag.
 

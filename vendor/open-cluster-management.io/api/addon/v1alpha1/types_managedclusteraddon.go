@@ -118,10 +118,24 @@ type ManagedClusterAddOnStatus struct {
 	// +optional
 	AddOnConfiguration ConfigCoordinates `json:"addOnConfiguration,omitempty"`
 
+	// SupportedConfigs is a list of configuration types that are allowed to override the add-on configurations defined
+	// in ClusterManagementAddOn spec.
+	// The default is an empty list, which means the add-on configurations can not be overridden.
+	// +optional
+	// +listType=map
+	// +listMapKey=group
+	// +listMapKey=resource
+	SupportedConfigs []ConfigGroupResource `json:"supportedConfigs,omitempty"`
+
 	// configReferences is a list of current add-on configuration references.
 	// This will be overridden by the clustermanagementaddon configuration references.
 	// +optional
 	ConfigReferences []ConfigReference `json:"configReferences,omitempty"`
+
+	// namespace is the namespace on the managedcluster to put registration secret or lease for the addon. It is
+	// required when registrtion is set or healthcheck mode is Lease.
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
 
 	// registrations is the conifigurations for the addon agent to register to hub. It should be set by each addon controller
 	// on hub to define how the addon agent on managedcluster is registered. With the registration defined,
@@ -216,3 +230,57 @@ type ManagedClusterAddOnList struct {
 
 	Items []ManagedClusterAddOn `json:"items"`
 }
+
+const (
+	// Label and annotation keys set on ManagedClusterAddon.
+
+	// AddonLabelKey is the label key to set addon name. It is to set on the resources on the hub relating
+	// to an addon
+	AddonLabelKey = "open-cluster-management.io/addon-name"
+
+	// DisableAddonAutomaticInstallationAnnotationKey is the annotation key for disabling the functionality of
+	// installing addon automatically. it should be set on ManagedClusterAddon resource only.
+	DisableAddonAutomaticInstallationAnnotationKey = "addon.open-cluster-management.io/disable-automatic-installation"
+
+	// AddonNamespaceLabelKey is the label key to set namespace of ManagedClusterAddon.
+	AddonNamespaceLabelKey = "open-cluster-management.io/addon-namespace"
+
+	// Label and annotation keys set on manifests of addon agent.
+
+	// AddonPreDeleteHookLabelKey is the label key to identify that a resource manifest is used as pre-delete hook for an addon
+	// and should be created and deleted before the specified ManagedClusterAddon is deleted.
+	// Deprecated, and will be removed in the future release, please use annotation AddonPreDeleteHookAnnotationKey from v0.10.0.
+	AddonPreDeleteHookLabelKey = "open-cluster-management.io/addon-pre-delete"
+
+	// AddonPreDeleteHookAnnotationKey is the annotation key to identify that a resource manifest is used as pre-delete hook for an addon
+	// and should be created and deleted before the specified ManagedClusterAddon is deleted.
+	AddonPreDeleteHookAnnotationKey = "addon.open-cluster-management.io/addon-pre-delete"
+
+	// HostingClusterNameAnnotationKey is the annotation key for indicating the hosting cluster name, it should be set
+	// on ManagedClusterAddon resource only.
+	HostingClusterNameAnnotationKey = "addon.open-cluster-management.io/hosting-cluster-name"
+
+	// DeletionOrphanAnnotationKey is an annotation for the manifest of addon indicating that it will not be cleaned up
+	// after the addon is deleted.
+	DeletionOrphanAnnotationKey = "addon.open-cluster-management.io/deletion-orphan"
+
+	// HostedManifestLocationLabelKey is the label key to identify where a resource manifest of addon agent
+	// with this label should be deployed in Hosted mode.
+	// Deprecated, will be removed in the future release, please use annotation HostedManifestLocationAnnotationKey from v0.10.0.
+	HostedManifestLocationLabelKey = "addon.open-cluster-management.io/hosted-manifest-location"
+
+	// HostedManifestLocationAnnotationKey is the annotation key to identify where a resource manifest of addon agent
+	// with this annotation should be deployed in Hosted mode.
+	HostedManifestLocationAnnotationKey = "addon.open-cluster-management.io/hosted-manifest-location"
+
+	// HostedManifestLocationManagedValue is a value of the annotation HostedManifestLocationAnnotationKey,
+	// indicates the manifest will be deployed on the managed cluster in Hosted mode,
+	// it is the default value of a manifest in Hosted mode.
+	HostedManifestLocationManagedValue = "managed"
+	// HostedManifestLocationHostingValue is a value of the annotation HostedManifestLocationAnnotationKey,
+	// indicates the manifest will be deployed on the hosting cluster in Hosted mode.
+	HostedManifestLocationHostingValue = "hosting"
+	// HostedManifestLocationNoneValue is a value of the annotation HostedManifestLocationAnnotationKey,,
+	// indicates the manifest will not be deployed in Hosted mode.
+	HostedManifestLocationNoneValue = "none"
+)

@@ -137,9 +137,10 @@ func (o *Options) removeBootStrapSecret(client kubernetes.Interface) error {
 	if err != nil && !errors.IsNotFound(err) {
 		errs = append(errs, err)
 	}
+	listOpts := metav1.ListOptions{LabelSelector: "app=cluster-manager"}
 	err = client.CoreV1().
 		Secrets("kube-system").
-		Delete(context.Background(), "bootstrap-token-"+o.Values.Hub.TokenID, metav1.DeleteOptions{})
+		DeleteCollection(context.Background(), metav1.DeleteOptions{}, listOpts)
 	if err != nil && !errors.IsNotFound(err) {
 		errs = append(errs, err)
 	}

@@ -7,11 +7,14 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterclient "open-cluster-management.io/api/client/cluster/clientset/versioned"
+	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 	clusterv1 "open-cluster-management.io/api/cluster/v1"
+	operatorv1 "open-cluster-management.io/api/operator/v1"
 )
 
 const (
 	ManagedClusterResourceName = "managedclusters"
+	KlusterletResourceName     = "klusterlets"
 	ClusterClaimResourceName   = "clusterclaims"
 )
 
@@ -28,6 +31,20 @@ func CheckForHub(client clusterclient.Interface) error {
 
 	}
 	flag := findResource(list, ManagedClusterResourceName)
+	if flag {
+		return nil
+	}
+	return fmt.Errorf(msg)
+}
+
+func CheckForKlusterletCRD(client operatorclient.Interface) error {
+	msg := "klusterlet crd not found"
+
+	list, err := client.Discovery().ServerResourcesForGroupVersion(operatorv1.GroupVersion.String())
+	if err != nil {
+		return err
+	}
+	flag := findResource(list, KlusterletResourceName)
 	if flag {
 		return nil
 	}

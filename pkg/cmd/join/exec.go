@@ -180,6 +180,9 @@ func (o *Options) validate() error {
 				InternalEndpoint:      o.forceHubInClusterEndpointLookup,
 				ManagedKubeconfigFile: o.managedKubeconfigFile,
 			},
+			preflight.ClusterNameCheck{
+				ClusterName: o.values.ClusterName,
+			},
 		}, os.Stderr); err != nil {
 		return err
 	}

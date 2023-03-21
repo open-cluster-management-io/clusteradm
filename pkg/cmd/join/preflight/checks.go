@@ -3,6 +3,7 @@ package preflight
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -87,6 +88,23 @@ func (c DeployModeCheck) Check() (warningList []string, errorList []error) {
 
 func (c DeployModeCheck) Name() string {
 	return "DeployMode Check"
+}
+
+type ClusterNameCheck struct {
+	ClusterName string
+}
+
+func (c ClusterNameCheck) Check() (warningList []string, errorList []error) {
+	re := regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
+	matched := re.MatchString(c.ClusterName)
+	if !matched {
+		return nil, []error{errors.New("validate ClusterName failed: should match `^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`")}
+	}
+	return nil, nil
+}
+
+func (c ClusterNameCheck) Name() string {
+	return "ClusterName Check"
 }
 
 // utils

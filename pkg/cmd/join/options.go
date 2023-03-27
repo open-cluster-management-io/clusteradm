@@ -4,6 +4,7 @@ package join
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
+	operatorv1 "open-cluster-management.io/api/operator/v1"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
@@ -64,6 +65,12 @@ type Values struct {
 	BundleVersion BundleVersion
 	// managed kubeconfig
 	ManagedKubeconfig string
+
+	// Features is the slice of feature for registration
+	RegistrationFeatures []operatorv1.FeatureGate
+
+	// Features is the slice of feature for work
+	WorkFeatures []operatorv1.FeatureGate
 }
 
 // Hub: The hub values for the template

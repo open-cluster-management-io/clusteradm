@@ -4,6 +4,8 @@ package init
 import (
 	"context"
 	"fmt"
+	ocmfeature "open-cluster-management.io/api/feature"
+	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -27,6 +29,8 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 			TokenSecret: helpers.RandStringRunes_az09(16),
 			Registry:    o.registry,
 		},
+		RegistrationFeatures: genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubRegistrationFeatureGates),
+		WorkFeatures:         genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubWorkFeatureGates),
 	}
 
 	versionBundle, err := version.GetVersionBundle(o.bundleVersion)

@@ -4,6 +4,8 @@ package join
 import (
 	"context"
 	"fmt"
+	ocmfeature "open-cluster-management.io/api/feature"
+	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -54,7 +56,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		return fmt.Errorf("hub-server is missing")
 	}
 	if o.clusterName == "" {
-		return fmt.Errorf("name is missing")
+		return fmt.Errorf("cluster-name is missing")
 	}
 	if len(o.registry) == 0 {
 		return fmt.Errorf("the OCM image registry should not be empty, like quay.io/open-cluster-management")
@@ -95,7 +97,9 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 			AgentNamespace:      agentNamespace,
 			KlusterletNamespace: klusterletNamespace,
 		},
-		ManagedKubeconfig: o.managedKubeconfigFile,
+		ManagedKubeconfig:    o.managedKubeconfigFile,
+		RegistrationFeatures: genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeRegistrationFeatureGates),
+		WorkFeatures:         genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeWorkFeatureGates),
 	}
 
 	versionBundle, err := version.GetVersionBundle(o.bundleVersion)

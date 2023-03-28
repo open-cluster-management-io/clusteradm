@@ -3,6 +3,7 @@ package init
 
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	operatorv1 "open-cluster-management.io/api/operator/v1"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
@@ -46,6 +47,12 @@ type Values struct {
 	Hub Hub `json:"hub"`
 	//bundle version
 	BundleVersion BundleVersion
+
+	// Features is the slice of feature for registration
+	RegistrationFeatures []operatorv1.FeatureGate
+
+	// Features is the slice of feature for work
+	WorkFeatures []operatorv1.FeatureGate
 }
 
 // Hub: The hub values for the template

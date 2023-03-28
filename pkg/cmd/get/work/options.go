@@ -13,7 +13,7 @@ type Options struct {
 	//ClusteradmFlags: The generic options from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 	//A list of comma separated cluster names
-	cluster string
+	ClusterOption *genericclioptionsclusteradm.ClusterOption
 
 	workName string
 
@@ -27,6 +27,7 @@ func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, st
 		ClusteradmFlags: clusteradmFlags,
 		Streams:         streams,
 		printer:         printer.NewPrinterOption(pntOpt),
+		ClusterOption:   genericclioptionsclusteradm.NewClusterOption(),
 	}
 }
 

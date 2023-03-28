@@ -12,8 +12,7 @@ import (
 type Options struct {
 	//ClusteradmFlags: The generic options from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
-	// A list of cluster to show
-	clusters []string
+	ClusterOptions  *genericclioptionsclusteradm.ClusterOption
 	// A list of addon name to show
 	addons []string
 
@@ -25,6 +24,7 @@ type Options struct {
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
+		ClusterOptions:  genericclioptionsclusteradm.NewClusterOption().AllowUnset(),
 		Streams:         streams,
 		printer:         printer.NewPrinterOption(pntOpt),
 	}

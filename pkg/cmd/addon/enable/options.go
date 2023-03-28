@@ -9,12 +9,12 @@ import (
 type Options struct {
 	//ClusteradmFlags: The generic options from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
+	// ClusterOptions is the option for setting clusters
+	ClusterOptions *genericclioptionsclusteradm.ClusterOption
 	//A list of comma separated addon names
 	Names []string
 	//The specified namespace for addon to install
 	Namespace string
-	//A list of comma separated cluster names
-	Clusters []string
 	//The file to output the resources will be sent to the file.
 	OutputFile string
 	//Annotations to add to the addon
@@ -27,5 +27,6 @@ func NewOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, st
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
 		Streams:         streams,
+		ClusterOptions:  genericclioptionsclusteradm.NewClusterOption(),
 	}
 }

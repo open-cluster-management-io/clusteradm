@@ -31,28 +31,16 @@ const (
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
-	klog.V(1).InfoS("accept options:", "dry-run", o.ClusteradmFlags.DryRun, "clusters", o.Clusters, "wait", o.Wait)
-	alreadyProvidedCluster := make(map[string]bool)
-	clusters := make([]string, 0)
-	if o.Clusters != "" {
-		cs := strings.Split(o.Clusters, ",")
-		for _, c := range cs {
-			if _, ok := alreadyProvidedCluster[c]; !ok {
-				alreadyProvidedCluster[c] = true
-				clusters = append(clusters, strings.TrimSpace(c))
-			}
-		}
-		o.Values.Clusters = clusters
-	} else {
-		return fmt.Errorf("values or name are missing")
-	}
-	klog.V(3).InfoS("values:", "clusters", o.Values.Clusters)
+	o.Values.Clusters = o.ClusterOptions.AllClusters().List()
+	klog.V(1).InfoS("accept options:", "dry-run", o.ClusteradmFlags.DryRun, "clusters", o.Values.Clusters, "wait", o.Wait)
 	return nil
 }
 
 func (o *Options) Validate() error {
-	err := o.ClusteradmFlags.ValidateHub()
-	if err != nil {
+	if err := o.ClusteradmFlags.ValidateHub(); err != nil {
+		return err
+	}
+	if err := o.ClusterOptions.Validate(); err != nil {
 		return err
 	}
 

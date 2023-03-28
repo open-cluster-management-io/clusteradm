@@ -4,6 +4,7 @@ package work
 import (
 	"context"
 	"fmt"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -28,14 +29,14 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	return nil
 }
 
-func (o *Options) validate() (err error) {
-	err = o.ClusteradmFlags.ValidateHub()
-	if err != nil {
+func (o *Options) validate() error {
+
+	if err := o.ClusteradmFlags.ValidateHub(); err != nil {
 		return err
 	}
 
-	if len(o.Cluster) == 0 {
-		return fmt.Errorf("the name of the cluster must be specified")
+	if err := o.ClusterOptions.Validate(); err != nil {
+		return err
 	}
 
 	return nil
@@ -51,11 +52,19 @@ func (o *Options) run() error {
 		return err
 	}
 
-	return o.deleteWork(workClient)
+	var errs []error
+	for cluster := range o.ClusterOptions.AllClusters() {
+		err := o.deleteWork(workClient, cluster)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return utilerrors.NewAggregate(errs)
 }
 
-func (o *Options) deleteWork(workClient *workclientset.Clientset) error {
-	_, err := workClient.WorkV1().ManifestWorks(o.Cluster).Get(context.TODO(), o.Workname, metav1.GetOptions{})
+func (o *Options) deleteWork(workClient *workclientset.Clientset, cluster string) error {
+	_, err := workClient.WorkV1().ManifestWorks(cluster).Get(context.TODO(), o.Workname, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			fmt.Fprintf(o.Streams.Out, "work %s not found or is already deleted\n", o.Workname)
@@ -76,7 +85,7 @@ func (o *Options) deleteWork(workClient *workclientset.Clientset) error {
 		// watch until clusterset is removed
 		e := helpers.WatchUntil(
 			func() (watch.Interface, error) {
-				return workClient.WorkV1().ManifestWorks(o.Cluster).Watch(context.TODO(), metav1.ListOptions{})
+				return workClient.WorkV1().ManifestWorks(cluster).Watch(context.TODO(), metav1.ListOptions{})
 			},
 			func(event watch.Event) bool {
 				return event.Type == watch.Deleted
@@ -86,14 +95,14 @@ func (o *Options) deleteWork(workClient *workclientset.Clientset) error {
 
 	}(errChannel)
 
-	err = workClient.WorkV1().ManifestWorks(o.Cluster).Delete(context.TODO(), o.Workname, metav1.DeleteOptions{})
+	err = workClient.WorkV1().ManifestWorks(cluster).Delete(context.TODO(), o.Workname, metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	}
 
 	if o.Force {
 		// check whether work is already deleted, if not, remove the finalizer
-		work, err := workClient.WorkV1().ManifestWorks(o.Cluster).Get(context.TODO(), o.Workname, metav1.GetOptions{})
+		work, err := workClient.WorkV1().ManifestWorks(cluster).Get(context.TODO(), o.Workname, metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			fmt.Fprintf(o.Streams.Out, "work %s is deleted\n", o.Workname)
 			return nil
@@ -108,7 +117,7 @@ func (o *Options) deleteWork(workClient *workclientset.Clientset) error {
 		if len(work.ObjectMeta.Finalizers) != 0 {
 			work.ObjectMeta.Finalizers = work.ObjectMeta.Finalizers[:0]
 
-			_, err = workClient.WorkV1().ManifestWorks(o.Cluster).Update(context.TODO(), work, metav1.UpdateOptions{})
+			_, err = workClient.WorkV1().ManifestWorks(cluster).Update(context.TODO(), work, metav1.UpdateOptions{})
 			if err != nil {
 				return err
 			}
@@ -121,6 +130,6 @@ func (o *Options) deleteWork(workClient *workclientset.Clientset) error {
 		return err
 	}
 
-	fmt.Fprintf(o.Streams.Out, "work %s in cluster %s is deleted\n", o.Workname, o.Cluster)
+	fmt.Fprintf(o.Streams.Out, "work %s in cluster %s is deleted\n", o.Workname, cluster)
 	return nil
 }

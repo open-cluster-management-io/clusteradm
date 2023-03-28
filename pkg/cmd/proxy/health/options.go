@@ -10,8 +10,8 @@ import (
 type Options struct {
 	//ClusteradmFlags: The generic options from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
+	ClusterOption   *genericclioptionsclusteradm.ClusterOption
 
-	clusters                 []string
 	inClusterProxyCertLookup bool
 	proxyClientCACertPath    string
 	proxyClientCertPath      string
@@ -27,5 +27,6 @@ type Options struct {
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
+		ClusterOption:   genericclioptionsclusteradm.NewClusterOption().AllowUnset(),
 	}
 }

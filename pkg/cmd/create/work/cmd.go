@@ -59,7 +59,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		},
 	}
 
-	cmd.Flags().StringVar(&o.Cluster, "clusters", "", "Names of the managed cluster to apply work")
+	o.ClusterOption.AddFlags(cmd.Flags())
 	cmd.Flags().StringVar(&o.Placement, "placement", "", "Specify an existing placement with format <namespace>/<name>")
 	cmd.Flags().BoolVar(&o.Overwrite, "overwrite", false, "Overwrite the existing work if it exists already")
 	o.FileNameFlags.AddFlags(cmd.Flags())

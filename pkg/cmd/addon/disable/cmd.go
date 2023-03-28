@@ -66,9 +66,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		},
 	}
 
+	o.ClusterOptions.AddFlags(cmd.Flags())
 	cmd.Flags().StringSliceVar(&o.Names, "names", []string{}, "Names of the add-on to deploy (comma separated)")
-	cmd.Flags().StringSliceVar(&o.Clusters, "clusters", []string{}, "Names of the managed cluster to deploy the add-on to (comma separated)")
-	cmd.Flags().BoolVar(&o.Allclusters, "all-clusters", false, "Make all managed clusters to disable the add-on")
 
 	return cmd
 }

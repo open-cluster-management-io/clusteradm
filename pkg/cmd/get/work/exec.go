@@ -30,17 +30,14 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 }
 
 func (o *Options) validate() (err error) {
-	err = o.ClusteradmFlags.ValidateHub()
-	if err != nil {
+	if err := o.ClusteradmFlags.ValidateHub(); err != nil {
 		return err
 	}
 
-	if len(o.cluster) == 0 {
-		return fmt.Errorf("cluster name must be specified")
+	if err := o.ClusterOption.Validate(); err != nil {
+		return err
 	}
-
-	err = o.printer.Validate()
-	if err != nil {
+	if err := o.printer.Validate(); err != nil {
 		return err
 	}
 
@@ -61,21 +58,24 @@ func (o *Options) run() (err error) {
 		return err
 	}
 
-	_, err = clusterClient.ClusterV1().ManagedClusters().Get(context.TODO(), o.cluster, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
+	clusters := o.ClusterOption.AllClusters()
 
-	var workList *workapiv1.ManifestWorkList
-	if len(o.workName) == 0 {
-		workList, err = workClient.WorkV1().ManifestWorks(o.cluster).List(context.TODO(), metav1.ListOptions{})
-	} else {
-		workList, err = workClient.WorkV1().ManifestWorks(o.cluster).List(context.TODO(), metav1.ListOptions{
-			FieldSelector: fmt.Sprintf("metadata.name=%s", o.workName),
-		})
-	}
-	if err != nil {
-		return err
+	workList := &workapiv1.ManifestWorkList{Items: []workapiv1.ManifestWork{}}
+	for cluster := range clusters {
+		_, err = clusterClient.ClusterV1().ManagedClusters().Get(context.TODO(), cluster, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+
+		listOpts := metav1.ListOptions{}
+		if len(o.workName) > 0 {
+			listOpts.FieldSelector = fmt.Sprintf("metadata.name=%s", o.workName)
+		}
+		works, err := workClient.WorkV1().ManifestWorks(cluster).List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			return err
+		}
+		workList.Items = append(workList.Items, works.Items...)
 	}
 
 	o.printer.WithTreeConverter(o.convertToTree).WithTableConverter(o.converToTable)

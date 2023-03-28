@@ -69,13 +69,13 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 			if err != nil {
 				return err
 			}
-			_, err = clusterClient.ManagedClusters().Get(context.TODO(), o.cluster, metav1.GetOptions{})
+			_, err = clusterClient.ManagedClusters().Get(context.TODO(), o.ClusterOption.Cluster, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
 
 			// Get managedServiceAccount
-			managedServiceAccountToken, err := getManagedServiceAccountToken(hubRestConfig, o.managedServiceAccount, o.cluster)
+			managedServiceAccountToken, err := getManagedServiceAccountToken(hubRestConfig, o.managedServiceAccount, o.ClusterOption.Cluster)
 			if err != nil {
 				return err
 			}
@@ -102,7 +102,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 			// Run a http-proxy-server in goroutine
 			hps, err := newHttpProxyServer(
 				cmd.Context(),
-				o.cluster,
+				o.ClusterOption.Cluster,
 				int32(8090), // TODO make it configurable or random later
 				proxyCertificates,
 			)
@@ -115,7 +115,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 			}
 
 			// Configure a customized kubeconfig amd write into /tmp dir with a random name
-			tmpKubeconfigFilePath, err := genTmpKubeconfig(o.cluster, managedServiceAccountToken)
+			tmpKubeconfigFilePath, err := genTmpKubeconfig(o.ClusterOption.Cluster, managedServiceAccountToken)
 			if err != nil {
 				return err
 			}
@@ -133,7 +133,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		},
 	}
 
-	cmd.Flags().StringVar(&o.cluster, "cluster", "", "The name of the managed cluster")
+	o.ClusterOption.AddFlags(cmd.Flags())
 	cmd.Flags().StringVar(&o.managedServiceAccount, "sa", "", "The name of the managedServiceAccount")
 	cmd.Flags().StringVar(&o.kubectlArgs, "args", "", "The arguments to pass to kubectl")
 

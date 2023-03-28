@@ -23,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8snet "k8s.io/apimachinery/pkg/util/net"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -60,6 +59,9 @@ func (o *Options) validate() error {
 		if len(o.proxyClientKeyPath) == 0 {
 			return errors.New("--proxy-key must be set when in-cluster lookup is disabled")
 		}
+	}
+	if err := o.ClusterOption.Validate(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -152,10 +154,10 @@ func (o *Options) run(streams genericclioptions.IOStreams) error {
 		return errors.Wrapf(err, "failed starting konnectivity proxy")
 	}
 
-	probingClusters := sets.NewString(o.clusters...)
+	probingClusters := o.ClusterOption.AllClusters()
 	w := newWriter(streams)
 	for _, cluster := range managedClusterList.Items {
-		if len(o.clusters) == 0 || probingClusters.Has(cluster.Name) {
+		if probingClusters.Len() == 0 || probingClusters.Has(cluster.Name) {
 			if err := o.visit(&w, hubRestConfig, addonClient, tunnel.DialContext, cluster.Name); err != nil {
 				klog.Errorf("An error occurred when requesting: %v", err)
 			}

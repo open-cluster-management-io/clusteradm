@@ -11,9 +11,9 @@ type Options struct {
 	//ClusteradmFlags: The generic options from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 
-	Streams genericclioptions.IOStreams
+	ClusterOptions *genericclioptionsclusteradm.ClusterOption
 
-	Cluster string
+	Streams genericclioptions.IOStreams
 
 	Workname string
 
@@ -24,5 +24,6 @@ func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, st
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
 		Streams:         streams,
+		ClusterOptions:  genericclioptionsclusteradm.NewClusterOption(),
 	}
 }

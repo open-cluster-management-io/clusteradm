@@ -22,20 +22,22 @@ import (
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	o.printer.Competele()
-	klog.V(1).InfoS("addon options:", "dry-run", o.ClusteradmFlags.DryRun, "clusters", o.clusters)
+	klog.V(1).InfoS("addon options:", "dry-run", o.ClusteradmFlags.DryRun, "clusters", o.ClusterOptions.AllClusters().List())
 	o.addons = args
 
 	return nil
 }
 
-func (o *Options) validate() (err error) {
-	err = o.ClusteradmFlags.ValidateHub()
-	if err != nil {
+func (o *Options) validate() error {
+	if err := o.ClusteradmFlags.ValidateHub(); err != nil {
 		return err
 	}
 
-	err = o.printer.Validate()
-	if err != nil {
+	if err := o.printer.Validate(); err != nil {
+		return err
+	}
+
+	if err := o.ClusterOptions.Validate(); err != nil {
 		return err
 	}
 
@@ -61,7 +63,7 @@ func (o *Options) run() (err error) {
 	}
 
 	var clusters sets.String
-	if len(o.clusters) == 0 {
+	if o.ClusterOptions.AllClusters().Len() == 0 {
 		clusters = sets.NewString()
 		mcllist, err := clusterClient.ClusterV1().ManagedClusters().List(context.TODO(),
 			metav1.ListOptions{})
@@ -73,7 +75,7 @@ func (o *Options) run() (err error) {
 			clusters.Insert(item.ObjectMeta.Name)
 		}
 	} else {
-		clusters = sets.NewString(o.clusters...)
+		clusters = o.ClusterOptions.AllClusters()
 	}
 
 	cmaList, err := addonClient.AddonV1alpha1().ClusterManagementAddOns().List(context.TODO(), metav1.ListOptions{})

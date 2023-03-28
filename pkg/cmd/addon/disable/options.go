@@ -9,14 +9,11 @@ import (
 type Options struct {
 	//ClusteradmFlags: The generic options from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
+	ClusterOptions  *genericclioptionsclusteradm.ClusterOption
 	//A list of comma separated addon names
 	Names []string
 	//The specified namespace for addon to disable
 	Namespace string
-	//A list of comma separated cluster names
-	Clusters []string
-	//A bool value shows whether specified add-on will be disable in all managed clusters.
-	Allclusters bool
 
 	Streams genericclioptions.IOStreams
 }
@@ -25,5 +22,6 @@ func NewOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, st
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
 		Streams:         streams,
+		ClusterOptions:  genericclioptionsclusteradm.NewClusterOption().AllowUnset(),
 	}
 }

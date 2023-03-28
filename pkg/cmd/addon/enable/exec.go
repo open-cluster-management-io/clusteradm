@@ -46,7 +46,7 @@ func NewClusterAddonInfo(cn string, o *Options, an string) (ClusterAddonInfo, er
 }
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
-	klog.V(1).InfoS("enable options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.Names, "clusters", o.Clusters, "output-file", o.OutputFile)
+	klog.V(1).InfoS("enable options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.Names, "clusters", o.ClusterOptions.AllClusters().List(), "output-file", o.OutputFile)
 
 	return nil
 }
@@ -61,8 +61,8 @@ func (o *Options) Validate() (err error) {
 		return fmt.Errorf("names is missing")
 	}
 
-	if len(o.Clusters) == 0 {
-		return fmt.Errorf("clusters is missing")
+	if err := o.ClusterOptions.Validate(); err != nil {
+		return err
 	}
 
 	return nil
@@ -70,7 +70,7 @@ func (o *Options) Validate() (err error) {
 
 func (o *Options) Run() error {
 	addons := sets.NewString(o.Names...)
-	clusters := sets.NewString(o.Clusters...)
+	clusters := o.ClusterOptions.AllClusters()
 
 	klog.V(3).InfoS("values:", "addon", addons, "clusters", clusters)
 

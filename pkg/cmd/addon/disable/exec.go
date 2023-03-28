@@ -18,28 +18,24 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 )
 
-func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
-	klog.V(1).InfoS("disable options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.Names, "clusters", o.Clusters, "all-clusters", o.Allclusters)
+func (o *Options) complete(cmd *cobra.Command, args []string) error {
+	klog.V(1).InfoS("disable options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.Names, "clusters", o.ClusterOptions.AllClusters())
 
 	return nil
 }
 
-func (o *Options) Validate() (err error) {
-	err = o.ClusteradmFlags.ValidateHub()
-	if err != nil {
+func (o *Options) Validate() error {
+
+	if err := o.ClusteradmFlags.ValidateHub(); err != nil {
+		return err
+	}
+
+	if err := o.ClusterOptions.Validate(); err != nil {
 		return err
 	}
 
 	if len(o.Names) == 0 {
 		return fmt.Errorf("names is missing")
-	}
-
-	if !o.Allclusters && len(o.Clusters) == 0 {
-		return fmt.Errorf("clusters is missing")
-	}
-
-	if o.Allclusters && len(o.Clusters) != 0 {
-		return fmt.Errorf("flag --all-clusters and --clusters can not be set together")
 	}
 
 	return nil
@@ -68,7 +64,7 @@ func (o *Options) Run() (err error) {
 	addons := sets.NewString(o.Names...)
 
 	var clusters sets.String
-	if o.Allclusters {
+	if o.ClusterOptions.AllClusters().Len() == 0 {
 		clusters = sets.NewString()
 		mcllist, err := clusterClient.ClusterV1().ManagedClusters().List(context.TODO(),
 			metav1.ListOptions{})
@@ -79,7 +75,7 @@ func (o *Options) Run() (err error) {
 			clusters.Insert(item.ObjectMeta.Name)
 		}
 	} else {
-		clusters = sets.NewString(o.Clusters...)
+		clusters = o.ClusterOptions.AllClusters()
 	}
 
 	klog.V(3).InfoS("addon to be disabled with cluster values:", "addon", addons.List(), "clusters", clusters.List())

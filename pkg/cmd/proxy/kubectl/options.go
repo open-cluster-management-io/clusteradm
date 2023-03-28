@@ -11,7 +11,7 @@ type Options struct {
 	//ClusteradmFlags: The generic options from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 
-	cluster               string
+	ClusterOption         *genericclioptionsclusteradm.ClusterOption
 	managedServiceAccount string
 	kubectlArgs           string
 }
@@ -19,12 +19,13 @@ type Options struct {
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
+		ClusterOption:   genericclioptionsclusteradm.NewClusterOption(),
 	}
 }
 
 func (o *Options) validate() error {
-	if o.cluster == "" {
-		return errors.Errorf("cluster is required")
+	if err := o.ClusterOption.Validate(); err != nil {
+		return err
 	}
 	if o.managedServiceAccount == "" {
 		return errors.Errorf("managedServiceAccount is required")

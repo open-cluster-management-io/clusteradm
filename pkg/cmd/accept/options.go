@@ -10,7 +10,7 @@ type Options struct {
 	//ClusteradmFlags: The generic options from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 	//A list of comma separated cluster names
-	Clusters string
+	ClusterOptions *genericclioptionsclusteradm.ClusterOption
 	//Wait to wait for managedcluster and CSR
 	Wait bool
 	//If true the csr will approve directly and check of requester will skip.
@@ -29,6 +29,7 @@ type Values struct {
 func NewOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
+		ClusterOptions:  genericclioptionsclusteradm.NewClusterOption(),
 		Streams:         streams,
 	}
 }

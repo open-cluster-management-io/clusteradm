@@ -43,7 +43,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		},
 	}
 
-	cmd.Flags().StringVar(&o.Cluster, "cluster", "", "Name of the managed cluster applied work")
+	o.ClusterOptions.AddFlags(cmd.Flags())
 	cmd.Flags().BoolVar(&o.Force, "force", false, "set force flag to enable force delete")
 
 	return cmd

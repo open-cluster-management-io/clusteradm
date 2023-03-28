@@ -47,9 +47,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		},
 	}
 
-	cmd.Flags().StringVar(&o.cluster, "cluster", "", "Names of the managed cluster")
-
 	o.printer.AddFlag(cmd.Flags())
+	o.ClusterOption.AddFlags(cmd.Flags())
 
 	return cmd
 }

@@ -33,16 +33,20 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	return nil
 }
 
-func (o *Options) validate() (err error) {
-	err = o.ClusteradmFlags.ValidateHub()
-	if err != nil {
+func (o *Options) validate() error {
+
+	if err := o.ClusteradmFlags.ValidateHub(); err != nil {
+		return err
+	}
+	if err := o.ClusterOption.Validate(); err != nil {
 		return err
 	}
 
-	if len(o.Cluster) == 0 && len(o.Placement) == 0 {
+	clusters := o.ClusterOption.AllClusters()
+	if clusters.Len() == 0 && len(o.Placement) == 0 {
 		return fmt.Errorf("--clusters or --placement must be specified")
 	}
-	if len(o.Cluster) > 0 && len(o.Placement) > 0 {
+	if clusters.Len() > 0 && len(o.Placement) > 0 {
 		return fmt.Errorf("--clusters and --placement can only specify one")
 	}
 	if len(o.Placement) > 0 && len(strings.Split(o.Placement, "/")) != 2 {
@@ -150,8 +154,9 @@ func (o *Options) getClusters(workClient workclientset.Interface, clusterClient 
 	}
 
 	// if define --clusters, return that as addedClusters and no deletedClusters
-	if len(o.Cluster) > 0 {
-		return sets.NewString().Insert(o.Cluster), nil, nil
+	clusters := o.ClusterOption.AllClusters()
+	if clusters.Len() > 0 {
+		return clusters, nil, nil
 	}
 
 	placement, err := o.getPlacement(clusterClient)

@@ -10,9 +10,9 @@ type Options struct {
 	//ClusteradmFlags: The generic options from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 
-	Streams genericclioptions.IOStreams
+	ClusterOption *genericclioptionsclusteradm.ClusterOption
 
-	Cluster string
+	Streams genericclioptions.IOStreams
 
 	Placement string
 
@@ -27,7 +27,7 @@ func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, st
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
 		Streams:         streams,
-		Cluster:         "",
+		ClusterOption:   genericclioptionsclusteradm.NewClusterOption().AllowUnset(),
 		FileNameFlags: genericclioptions.FileNameFlags{
 			Filenames: &[]string{},
 			Recursive: boolPtr(true),

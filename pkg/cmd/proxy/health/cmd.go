@@ -59,8 +59,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		"Konnectivity proxy server's entry hostname")
 	cmd.Flags().IntVar(&o.proxyServerPort, "proxy-server-port", 8090,
 		"Konnectivity proxy server's entry port")
-	cmd.Flags().StringArrayVarP(&o.clusters, "clusters", "c", nil,
-		"The names of the clusters to probe")
+	o.ClusterOption.AddFlags(cmd.Flags())
 
 	return cmd
 }

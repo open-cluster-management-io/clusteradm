@@ -14,6 +14,7 @@ type Options struct {
 	ClusterOption         *genericclioptionsclusteradm.ClusterOption
 	managedServiceAccount string
 	kubectlArgs           string
+	interactiveMode       bool
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags) *Options {

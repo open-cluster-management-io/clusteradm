@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"strings"
 
+	"bufio"
+
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -122,13 +124,44 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 			defer os.Remove(tmpKubeconfigFilePath)
 			klog.V(4).Infof("kubeconfig file path is %s", tmpKubeconfigFilePath)
 
-			// Using kubectl to access the managed cluster using the above customized kubeconfig
-			// We are using combinedoutput, so err msg should include in result, no need to handle err
-			result, _ := runKubectlCommand(tmpKubeconfigFilePath, o.kubectlArgs)
-			if _, err = streams.Out.Write(result); err != nil {
-				return errors.Wrap(err, "streams out write failed")
-			}
+			if o.interactiveMode {
+				if _, err = streams.Out.Write([]byte("Please enter the kubectl command and use \"exit\" to quit the interactive mode\n")); err != nil {
+					return errors.Wrap(err, "streams out write failed")
+				}
 
+				for {
+					// user input kubectl commands and use "exit" to quit the interactive mode
+					if _, err = streams.Out.Write([]byte("kubectl> ")); err != nil {
+						return errors.Wrap(err, "streams out write failed")
+					}
+					reader := bufio.NewReader(os.Stdin)
+					input, err := reader.ReadString('\n')
+					if err != nil {
+						return errors.Wrap(err, "read input failed")
+					}
+					input = strings.TrimRight(input, "\n")
+					if input == "exit" {
+						if _, err = streams.Out.Write([]byte("Exit from interactive mode")); err != nil {
+							return errors.Wrap(err, "streams out write failed")
+						}
+						break
+					}
+
+					// Using kubectl to access the managed cluster using the above customized kubeconfig
+					// We are using combinedoutput, so err msg should include in result, no need to handle err
+					result, _ := runKubectlCommand(tmpKubeconfigFilePath, strings.TrimRight(input, "\n"))
+					if _, err = streams.Out.Write(result); err != nil {
+						return errors.Wrap(err, "streams out write failed, exist the interactive mode.")
+					}
+				}
+			} else {
+				// Using kubectl to access the managed cluster using the above customized kubeconfig
+				// We are using combinedoutput, so err msg should include in result, no need to handle err.
+				result, _ := runKubectlCommand(tmpKubeconfigFilePath, o.kubectlArgs)
+				if _, err = streams.Out.Write(result); err != nil {
+					return errors.Wrap(err, "streams out write failed")
+				}
+			}
 			return nil
 		},
 	}
@@ -136,6 +169,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	o.ClusterOption.AddFlags(cmd.Flags())
 	cmd.Flags().StringVar(&o.managedServiceAccount, "sa", "", "The name of the managedServiceAccount")
 	cmd.Flags().StringVar(&o.kubectlArgs, "args", "", "The arguments to pass to kubectl")
+	cmd.Flags().BoolVarP(&o.interactiveMode, "interactive-mode", "i", false, "Enter the interactive mode")
 
 	return cmd
 }

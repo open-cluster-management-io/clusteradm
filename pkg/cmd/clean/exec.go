@@ -79,7 +79,7 @@ func (o *Options) Run() error {
 		return nil
 	}
 	b := retry.DefaultBackoff
-	b.Duration = 1 * time.Second
+	b.Duration = 3 * time.Second
 
 	err = WaitResourceToBeDelete(context.Background(), clusterManagerClient, o.ClusterManageName, b)
 	if err != nil {

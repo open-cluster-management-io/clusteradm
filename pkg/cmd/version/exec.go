@@ -3,6 +3,7 @@ package version
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 	clusteradm "open-cluster-management.io/clusteradm"
@@ -18,7 +19,7 @@ func (o *Options) validate() error {
 }
 
 func (o *Options) run() (err error) {
-	fmt.Printf("client\t\tversion\t:%s\n", clusteradm.GetVersion())
+	fmt.Printf("client\t\tversion\t:%s\n", strings.Trim(clusteradm.GetVersion(), "\n"))
 	discoveryClient, err := o.ClusteradmFlags.KubectlFactory.ToDiscoveryClient()
 	if err != nil {
 		return err

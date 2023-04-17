@@ -19,7 +19,7 @@ import (
 	kubectlutil "k8s.io/kubectl/pkg/util"
 )
 
-const yamlSeparator = "\n---"
+const yamlSeparator = "\n---\n"
 
 type ResourceReader struct {
 	builder *resource.Builder
@@ -29,7 +29,7 @@ type ResourceReader struct {
 
 func NewResourceReader(builder *resource.Builder, dryRun bool, streams genericclioptions.IOStreams) *ResourceReader {
 	return &ResourceReader{
-		builder: builder,
+		builder: builder.Unstructured().ContinueOnError(),
 		dryRun:  dryRun,
 		streams: streams,
 	}
@@ -47,8 +47,7 @@ func (r *ResourceReader) Apply(fs embed.FS, config interface{}, files ...string)
 		rawObjects = append(rawObjects, []byte(yamlSeparator)...)
 	}
 
-	rb := r.builder.Unstructured().
-		ContinueOnError().
+	rb := r.builder.
 		Stream(bytes.NewReader(rawObjects), "local").
 		Flatten().
 		Do()
@@ -62,9 +61,10 @@ func (r *ResourceReader) Apply(fs embed.FS, config interface{}, files ...string)
 		if err := r.applyOneObject(object); err != nil {
 			errs = append(errs, err)
 		}
-		if r.dryRun {
-			fmt.Fprintf(r.streams.Out, "%s", object.String())
-		}
+	}
+
+	if r.dryRun {
+		fmt.Fprintf(r.streams.Out, string(rawObjects))
 	}
 	return utilerrors.NewAggregate(errs)
 }

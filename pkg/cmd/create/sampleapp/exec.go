@@ -6,19 +6,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"os"
 	"path/filepath"
 	"runtime"
 
 	"github.com/spf13/cobra"
-	"github.com/stolostron/applier/pkg/apply"
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	"open-cluster-management.io/clusteradm/pkg/cmd/create/sampleapp/scenario"
-	"open-cluster-management.io/clusteradm/pkg/helpers"
 )
 
 const (
@@ -40,6 +36,9 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	} else {
 		o.SampleAppName = args[0]
 	}
+
+	f := o.ClusteradmFlags.KubectlFactory
+	o.builder = f.NewBuilder()
 
 	return nil
 }
@@ -65,19 +64,10 @@ func (o *Options) Run() (err error) {
 		return err
 	}
 
-	kubeClient, apiExtensionsClient, dynamicClient, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
-	if err != nil {
-		return err
-	}
-
-	return o.runWithClient(clusterClient, kubeClient, apiExtensionsClient, dynamicClient, o.ClusteradmFlags.DryRun)
+	return o.runWithClient(clusterClient, o.ClusteradmFlags.DryRun)
 }
 
-func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
-	kubeClient kubernetes.Interface,
-	apiExtensionsClient apiextensionsclient.Interface,
-	dynamicClient dynamic.Interface,
-	dryRun bool) error {
+func (o *Options) runWithClient(clusterClient clusterclientset.Interface, dryRun bool) error {
 
 	// Label all managed clusters with clusterset and placement labels
 	err := o.checkManagedClusterBinding(clusterClient, dryRun)
@@ -86,21 +76,12 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 	}
 
 	// Apply sample application manifest to hub cluster
-	output, err := o.deployApp(kubeClient, apiExtensionsClient, dynamicClient, dryRun)
+	err = o.deployApp()
 	if err != nil {
 		return err
 	}
 
-	// Print generated manifest to console if runtime is flaged as DryRun
-	if dryRun {
-		var dryRunOutput string
-		for _, s := range output {
-			dryRunOutput += fmt.Sprintf("%s\n---\n", s)
-		}
-		fmt.Print(dryRunOutput)
-	}
-
-	return apply.WriteOutput(o.OutputFile, output)
+	return nil
 }
 
 func (o *Options) checkManagedClusterBinding(clusterClient clusterclientset.Interface, dryRun bool) error {
@@ -133,29 +114,23 @@ func (o *Options) checkManagedClusterBinding(clusterClient clusterclientset.Inte
 	return nil
 }
 
-func (o *Options) deployApp(kubeClient kubernetes.Interface,
-	apiExtensionsClient apiextensionsclient.Interface,
-	dynamicClient dynamic.Interface,
-	dryRun bool) ([]string, error) {
-
+func (o *Options) deployApp() error {
 	// Prepare deployment tools
-	reader := scenario.GetScenarioResourcesReader()
-	applierBuilder := apply.NewApplierBuilder()
-	applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
+	r := reader.NewResourceReader(o.builder, o.ClusteradmFlags.DryRun, o.Streams)
 
 	// Retrieve sample application manifests
 	_, currentFilePath, _, ok := runtime.Caller(0)
 	if !ok {
-		return nil, errors.New("Error retrieving current file path")
+		return errors.New("Error retrieving current file path")
 	}
 	appDir := filepath.Join(filepath.Dir(currentFilePath), pathToAppManifests)
 	files, err := filePathWalkDir(appDir)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Apply manifests
-	return applier.ApplyCustomResources(reader, o, dryRun, "", files...)
+	return r.Apply(scenario.Files, o, files...)
 }
 
 func filePathWalkDir(root string) ([]string, error) {

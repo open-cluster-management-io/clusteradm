@@ -3,6 +3,7 @@ package token
 
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/resource"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
@@ -17,6 +18,10 @@ type Options struct {
 	useBootstrapToken bool
 	//output format
 	output string
+
+	builder *resource.Builder
+
+	Streams genericclioptions.IOStreams
 }
 
 // Values: The values used in the template
@@ -36,5 +41,6 @@ type Hub struct {
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
+		Streams:         streams,
 	}
 }

@@ -23,8 +23,11 @@ const (
 	// itself to avoid impact to users.
 	ClusterClaim featuregate.Feature = "ClusterClaim"
 
-	// AddonManagement will start new controllers in the spoke-agent to manage the managed cluster addons
+	// AddonManagement is a feature gate on hub controller and spoke-agent. When it is enabled on the
+	//spoke agent, it will start a new controllers to manage the managed cluster addons
 	// registration and maintains the status of managed cluster addons through watching their leases.
+	// When it is enabled on hub controller, it will start a new controller to process addon automatic
+	// installation and rolling out.
 	AddonManagement featuregate.Feature = "AddonManagement"
 
 	// DefaultClusterSet will make registration hub controller to maintain a default clusterset and a global clusterset.
@@ -51,6 +54,15 @@ const (
 	// When using the ManifestWork Executor feature, enabling this can reduce the number of subject access review
 	// requests sent by the work agent to the managed cluster api server.
 	ExecutorValidatingCaches featuregate.Feature = "ExecutorValidatingCaches"
+
+	// ManagedClusterAutoApproval will approve a managed cluster registraion request automatically.
+	// A registraion request to be automatically approved must be initiated by specific users, these users are
+	// specifed with "--cluster-auto-approval-users" flag in the registration hub controller.
+	ManagedClusterAutoApproval featuregate.Feature = "ManagedClusterAutoApproval"
+
+	// ManifestWorkReplicaSet will start new controller in the Hub that can be used to deploy manifestWorks to group
+	// of clusters selected by a placement. For more info check ManifestWorkReplicaSet APIs
+	ManifestWorkReplicaSet featuregate.Feature = "ManifestWorkReplicaSet"
 )
 
 // DefaultSpokeRegistrationFeatureGates consists of all known ocm-registration
@@ -68,12 +80,18 @@ var DefaultSpokeRegistrationFeatureGates = map[featuregate.Feature]featuregate.F
 var DefaultHubRegistrationFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	DefaultClusterSet:          {Default: false, PreRelease: featuregate.Alpha},
 	V1beta1CSRAPICompatibility: {Default: false, PreRelease: featuregate.Alpha},
+	ManagedClusterAutoApproval: {Default: false, PreRelease: featuregate.Alpha},
+}
+
+var DefaultHubAddonManagerFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
+	AddonManagement: {Default: false, PreRelease: featuregate.Alpha},
 }
 
 // DefaultHubWorkFeatureGates consists of all known acm work wehbook feature keys.
 // To add a new feature, define a key for it above and add it here.
 var DefaultHubWorkFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
-	NilExecutorValidating: {Default: false, PreRelease: featuregate.Alpha},
+	NilExecutorValidating:  {Default: false, PreRelease: featuregate.Alpha},
+	ManifestWorkReplicaSet: {Default: false, PreRelease: featuregate.Alpha},
 }
 
 // DefaultSpokeWorkFeatureGates consists of all known ocm work feature keys for work agent.

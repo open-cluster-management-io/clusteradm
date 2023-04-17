@@ -16,9 +16,6 @@ import (
 	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
 
 	"open-cluster-management.io/clusteradm/pkg/cmd/addon/enable"
-	"open-cluster-management.io/clusteradm/pkg/cmd/addon/enable/scenario"
-
-	"github.com/stolostron/applier/pkg/apply"
 )
 
 var _ = ginkgo.Describe("addon disable", func() {
@@ -57,10 +54,6 @@ var _ = ginkgo.Describe("addon disable", func() {
 	streams := genericclioptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr}
 
 	assertEnableAddon := func(addons []string, clusters []string, o *enable.Options) {
-
-		reader := scenario.GetScenarioResourcesReader()
-		applierBuilder := apply.NewApplierBuilder()
-		applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
 		ns := o.Namespace
 
 		for _, addon := range addons {
@@ -69,7 +62,7 @@ var _ = ginkgo.Describe("addon disable", func() {
 
 				cai, err := enable.NewClusterAddonInfo(clus, o, addon)
 				gomega.Expect(err).ToNot(gomega.HaveOccurred(), "enable addon error")
-				_, err = applier.ApplyCustomResources(reader, cai, false, "", "addons/addon.yaml")
+				err = enable.ApplyAddon(addonClient, cai)
 				gomega.Expect(err).ToNot(gomega.HaveOccurred(), "enable addon error")
 				fmt.Fprintf(streams.Out, "Deploying %s add-on to namespaces %s of managed cluster: %s.\n", addon, ns, clus)
 			}

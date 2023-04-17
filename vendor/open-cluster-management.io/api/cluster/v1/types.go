@@ -132,12 +132,12 @@ const (
 
 const (
 	// ManagedClusterTaintUnavailable is the key of the taint added to a managed cluster when it is not available.
-	// To be specific, the cluster has a condtion 'ManagedClusterConditionAvailable' with status of 'False';
+	// To be specific, the cluster has a condition 'ManagedClusterConditionAvailable' with status of 'False';
 	ManagedClusterTaintUnavailable string = "cluster.open-cluster-management.io/unavailable"
 	// ManagedClusterTaintUnreachable is the key of the taint added to a managed cluster when it is not reachable.
 	// To be specific,
 	// 1) The cluster has no condition 'ManagedClusterConditionAvailable';
-	// 2) Or the status of condtion 'ManagedClusterConditionAvailable' is 'Unknown';
+	// 2) Or the status of condition 'ManagedClusterConditionAvailable' is 'Unknown';
 	ManagedClusterTaintUnreachable string = "cluster.open-cluster-management.io/unreachable"
 )
 
@@ -229,3 +229,8 @@ type ManagedClusterList struct {
 	// Items is a list of managed clusters.
 	Items []ManagedCluster `json:"items"`
 }
+
+const (
+	// ClusterNameLabelKey is the key of a label to set ManagedCluster name.
+	ClusterNameLabelKey = "open-cluster-management.io/cluster-name"
+)

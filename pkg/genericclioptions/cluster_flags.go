@@ -27,8 +27,8 @@ func (c *ClusterOption) AddFlags(flags *pflag.FlagSet) {
 	flags.StringSliceVar(&c.Clusters, "clusters", []string{}, "A list of the managed clusters.")
 }
 
-func (c *ClusterOption) AllClusters() sets.String {
-	output := sets.NewString(c.Clusters...)
+func (c *ClusterOption) AllClusters() sets.Set[string] {
+	output := sets.New[string](c.Clusters...)
 	if len(c.Cluster) != 0 {
 		output.Insert(c.Cluster)
 	}

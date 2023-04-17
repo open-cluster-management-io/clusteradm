@@ -63,9 +63,9 @@ func (o *Options) Run() (err error) {
 
 	addons := sets.NewString(o.Names...)
 
-	var clusters sets.String
+	var clusters sets.Set[string]
 	if o.ClusterOptions.AllClusters().Len() == 0 {
-		clusters = sets.NewString()
+		clusters = sets.New[string]()
 		mcllist, err := clusterClient.ClusterV1().ManagedClusters().List(context.TODO(),
 			metav1.ListOptions{})
 		if err != nil {
@@ -78,9 +78,9 @@ func (o *Options) Run() (err error) {
 		clusters = o.ClusterOptions.AllClusters()
 	}
 
-	klog.V(3).InfoS("addon to be disabled with cluster values:", "addon", addons.List(), "clusters", clusters.List())
+	klog.V(3).InfoS("addon to be disabled with cluster values:", "addon", addons.List(), "clusters", clusters.UnsortedList())
 
-	return o.runWithClient(clusterClient, addonClient, kubeClient, apiExtensionsClient, dynamicClient, o.ClusteradmFlags.DryRun, addons.List(), clusters.List())
+	return o.runWithClient(clusterClient, addonClient, kubeClient, apiExtensionsClient, dynamicClient, o.ClusteradmFlags.DryRun, addons.List(), clusters.UnsortedList())
 }
 
 func (o *Options) runWithClient(clusterClient clusterclientset.Interface,

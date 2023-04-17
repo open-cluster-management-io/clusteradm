@@ -8,8 +8,6 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -29,8 +27,6 @@ const (
 var testEnv *envtest.Environment
 var restConfig *rest.Config
 var kubeClient kubernetes.Interface
-var apiExtensionsClient apiextensionsclient.Interface
-var dynamicClient dynamic.Interface
 var clusterClient clusterv1client.Interface
 var addonClient addonv1alpha1client.Interface
 
@@ -56,10 +52,6 @@ var _ = ginkgo.BeforeSuite(func() {
 	gomega.Expect(cfg).ToNot(gomega.BeNil())
 
 	kubeClient, err = kubernetes.NewForConfig(cfg)
-	gomega.Expect(err).NotTo(gomega.HaveOccurred())
-	apiExtensionsClient, err = apiextensionsclient.NewForConfig(cfg)
-	gomega.Expect(err).NotTo(gomega.HaveOccurred())
-	dynamicClient, err = dynamic.NewForConfig(cfg)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	clusterClient, err = clusterv1client.NewForConfig(cfg)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())

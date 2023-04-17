@@ -4,8 +4,6 @@ package join
 import (
 	"context"
 	"fmt"
-	ocmfeature "open-cluster-management.io/api/feature"
-	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -13,7 +11,6 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
-	"github.com/stolostron/applier/pkg/apply"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -24,11 +21,14 @@ import (
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/kubectl/pkg/cmd/util"
+	ocmfeature "open-cluster-management.io/api/feature"
 	"open-cluster-management.io/clusteradm/pkg/cmd/join/preflight"
 	"open-cluster-management.io/clusteradm/pkg/cmd/join/scenario"
+	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	preflightinterface "open-cluster-management.io/clusteradm/pkg/helpers/preflight"
 	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
+	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"open-cluster-management.io/clusteradm/pkg/helpers/version"
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
 )
@@ -164,6 +164,9 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	}
 	o.values.Klusterlet.APIServer = klusterletApiserver
 
+	f := o.ClusteradmFlags.KubectlFactory
+	o.builder = f.NewBuilder()
+
 	klog.V(3).InfoS("values:",
 		"clusterName", o.values.ClusterName,
 		"hubAPIServer", o.values.Hub.APIServer,
@@ -209,10 +212,7 @@ func (o *Options) validate() error {
 }
 
 func (o *Options) run() error {
-	output := make([]string, 0)
-	reader := scenario.GetScenarioResourcesReader()
-
-	kubeClient, apiExtensionsClient, dynamicClient, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
+	_, apiExtensionsClient, _, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
 	if err != nil {
 		return err
 	}
@@ -221,9 +221,6 @@ func (o *Options) run() error {
 	if err != nil {
 		return err
 	}
-
-	applierBuilder := apply.NewApplierBuilder()
-	applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
 
 	files := []string{}
 	// If Deployment/klusterlet is not deployed, deploy it
@@ -247,19 +244,17 @@ func (o *Options) run() error {
 		)
 	}
 
-	out, err := applier.ApplyDirectly(reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
+	r := reader.NewResourceReader(o.builder, o.ClusteradmFlags.DryRun, o.Streams)
+	err = r.Apply(scenario.Files, o.values, files...)
 	if err != nil {
 		return err
 	}
-	output = append(output, out...)
 
 	if !available {
-		operator := "join/operator.yaml"
-		out, err = applier.ApplyDeployments(reader, o.values, o.ClusteradmFlags.DryRun, "", operator)
+		err = r.Apply(scenario.Files, o.values, "join/operator.yaml")
 		if err != nil {
 			return err
 		}
-		output = append(output, out...)
 	}
 
 	if !o.ClusteradmFlags.DryRun {
@@ -268,12 +263,10 @@ func (o *Options) run() error {
 		}
 	}
 
-	cr := "join/klusterlets.cr.yaml"
-	out, err = applier.ApplyCustomResources(reader, o.values, o.ClusteradmFlags.DryRun, "", cr)
+	err = r.Apply(scenario.Files, o.values, "join/klusterlets.cr.yaml")
 	if err != nil {
 		return err
 	}
-	output = append(output, out...)
 
 	klusterletNamespace := o.values.Klusterlet.KlusterletNamespace
 	agentNamespace := o.values.Klusterlet.AgentNamespace
@@ -299,10 +292,10 @@ func (o *Options) run() error {
 		}
 	}
 
-	fmt.Printf("Please log onto the hub cluster and run the following command:\n\n"+
+	fmt.Fprintf(o.Streams.Out, "Please log onto the hub cluster and run the following command:\n\n"+
 		"    %s accept --clusters %s\n\n", helpers.GetExampleHeader(), o.values.ClusterName)
 
-	return apply.WriteOutput(o.outputFile, output)
+	return nil
 
 }
 

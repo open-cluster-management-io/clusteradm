@@ -19,7 +19,6 @@ import (
 	"github.com/stolostron/applier/pkg/apply"
 	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
 	"open-cluster-management.io/clusteradm/pkg/cmd/addon/enable"
-	enableScenario "open-cluster-management.io/clusteradm/pkg/cmd/addon/enable/scenario"
 	installScenario "open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
 )
 
@@ -151,11 +150,6 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 	}
 
 	assertEnableAddon := func(addon string, clusters []string, addonNamespace string, addonFilePath string) {
-
-		reader := enableScenario.GetScenarioResourcesReader()
-		applierBuilder := apply.NewApplierBuilder()
-		applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
-
 		for _, clus := range clusters {
 
 			ginkgo.By(fmt.Sprintf("Enabling %s addon on %s cluster in %s namespce", addon, clus, addonNamespace))
@@ -163,10 +157,11 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 			eo := enable.Options{
 				Namespace: addonNamespace,
 			}
+
 			cai, err := enable.NewClusterAddonInfo(clus, &eo, addon)
 			gomega.Expect(err).ToNot(gomega.HaveOccurred(), "enable addon error")
 
-			_, err = applier.ApplyCustomResources(reader, cai, false, "", addonFilePath)
+			err = enable.ApplyAddon(addonClient, cai)
 			gomega.Expect(err).ToNot(gomega.HaveOccurred(), "enable addon error")
 
 			fmt.Fprintf(streams.Out, "Deploying %s add-on to namespace %s of managed cluster: %s.\n", addon, addonNamespace, clus)

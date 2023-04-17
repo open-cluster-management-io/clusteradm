@@ -22,7 +22,7 @@ import (
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	o.printer.Competele()
-	klog.V(1).InfoS("addon options:", "dry-run", o.ClusteradmFlags.DryRun, "clusters", o.ClusterOptions.AllClusters().List())
+	klog.V(1).InfoS("addon options:", "dry-run", o.ClusteradmFlags.DryRun, "clusters", o.ClusterOptions.AllClusters().UnsortedList())
 	o.addons = args
 
 	return nil
@@ -62,9 +62,9 @@ func (o *Options) run() (err error) {
 		return err
 	}
 
-	var clusters sets.String
+	var clusters sets.Set[string]
 	if o.ClusterOptions.AllClusters().Len() == 0 {
-		clusters = sets.NewString()
+		clusters = sets.New[string]()
 		mcllist, err := clusterClient.ClusterV1().ManagedClusters().List(context.TODO(),
 			metav1.ListOptions{})
 		if err != nil {
@@ -108,7 +108,7 @@ func (o *Options) run() (err error) {
 
 	klog.V(3).InfoS("values:", "clusters", clusters)
 
-	o.printer.WithTreeConverter(o.convertToTreeFunc(clusters.List(), mcaByName, workList.Items)).WithTableConverter(o.converToTableFunc(mcaByName))
+	o.printer.WithTreeConverter(o.convertToTreeFunc(clusters.UnsortedList(), mcaByName, workList.Items)).WithTableConverter(o.converToTableFunc(mcaByName))
 
 	return o.printer.Print(o.Streams, cmaList)
 }

@@ -3,13 +3,7 @@ package scenario
 
 import (
 	"embed"
-
-	"github.com/stolostron/applier/pkg/asset"
 )
 
 //go:embed sampleapp
-var files embed.FS
-
-func GetScenarioResourcesReader() *asset.ScenarioResourcesReader {
-	return asset.NewScenarioResourcesReader(&files)
-}
+var Files embed.FS

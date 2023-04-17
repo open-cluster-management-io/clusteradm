@@ -3,6 +3,7 @@ package join
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"strings"
@@ -205,7 +206,7 @@ func (o *Options) validate() error {
 		if err != nil {
 			return err
 		}
-		o.values.ManagedKubeconfig = string(managedConfig)
+		o.values.ManagedKubeconfig = base64.StdEncoding.EncodeToString(managedConfig)
 	}
 
 	return nil
@@ -292,9 +293,22 @@ func (o *Options) run() error {
 		}
 	}
 
+	if len(o.outputFile) > 0 {
+		sh, err := os.OpenFile(o.outputFile, os.O_CREATE|os.O_WRONLY, 0755)
+		if err != nil {
+			return err
+		}
+		_, err = fmt.Fprintf(sh, "%s", string(r.RawAppliedResources()))
+		if err != nil {
+			return err
+		}
+		if err := sh.Close(); err != nil {
+			return err
+		}
+	}
+
 	fmt.Fprintf(o.Streams.Out, "Please log onto the hub cluster and run the following command:\n\n"+
 		"    %s accept --clusters %s\n\n", helpers.GetExampleHeader(), o.values.ClusterName)
-
 	return nil
 
 }
@@ -508,6 +522,6 @@ func (o *Options) setKubeconfig() error {
 		return err
 	}
 
-	o.values.Hub.KubeConfig = string(bootstrapConfigBytes)
+	o.values.Hub.KubeConfig = base64.StdEncoding.EncodeToString(bootstrapConfigBytes)
 	return nil
 }

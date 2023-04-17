@@ -14,8 +14,9 @@ var SpokeMutableFeatureGate = featuregate.NewFeatureGate()
 func init() {
 	utilruntime.Must(HubMutableFeatureGate.Add(ocmfeature.DefaultHubWorkFeatureGates))
 	utilruntime.Must(HubMutableFeatureGate.Add(ocmfeature.DefaultHubRegistrationFeatureGates))
+	utilruntime.Must(HubMutableFeatureGate.Add(ocmfeature.DefaultHubAddonManagerFeatureGates))
 	utilruntime.Must(SpokeMutableFeatureGate.Add(ocmfeature.DefaultSpokeRegistrationFeatureGates))
-	utilruntime.Must(SpokeMutableFeatureGate.Add(ocmfeature.DefaultHubWorkFeatureGates))
+	utilruntime.Must(SpokeMutableFeatureGate.Add(ocmfeature.DefaultSpokeWorkFeatureGates))
 
 	// Update default features
 	utilruntime.Must(HubMutableFeatureGate.SetFromMap(map[string]bool{string(ocmfeature.DefaultClusterSet): true}))

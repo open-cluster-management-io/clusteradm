@@ -14,18 +14,22 @@ spec:
   {{ if .Klusterlet.APIServer }}
   - url: {{ .Klusterlet.APIServer }}
   {{ end }}
+  {{if .RegistrationFeatures}}
   registrationConfiguration:
     featureGates:
-    {{- range .RegistrationFeatures }}
+    {{range .RegistrationFeatures }}
     - feature: {{ .Feature }}
       mode: {{ .Mode }}
-    {{- end}}
+    {{end}}
+  {{end}}
+  {{if .WorkFeatures}}
   workConfiguration:
     featureGates:
-    {{- range .WorkFeatures }}
+    {{range .WorkFeatures }}
     - feature: {{ .Feature }}
       mode: {{ .Mode }}
-    {{- end}}
+    {{end}}
+  {{end}}
     # Uncomment the following configuration lines to add hostAliases for hub api server, 
     # if the server field in your hub cluster kubeconfig is a domain name instead of an ipv4 address.
     # For example, https://xxx.yyy.zzz.

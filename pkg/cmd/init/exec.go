@@ -17,7 +17,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	clusteradmjson "open-cluster-management.io/clusteradm/pkg/helpers/json"
 	preflightinterface "open-cluster-management.io/clusteradm/pkg/helpers/preflight"
-	version "open-cluster-management.io/clusteradm/pkg/helpers/version"
+	"open-cluster-management.io/clusteradm/pkg/helpers/version"
 	helperwait "open-cluster-management.io/clusteradm/pkg/helpers/wait"
 )
 
@@ -193,6 +193,20 @@ func (o *Options) run() error {
 			return err
 		}
 		_, err = fmt.Fprintf(sh, "%s --cluster-name $1", cmd)
+		if err != nil {
+			return err
+		}
+		if err := sh.Close(); err != nil {
+			return err
+		}
+	}
+
+	if len(o.outputFile) > 0 {
+		sh, err := os.OpenFile(o.outputFile, os.O_CREATE|os.O_WRONLY, 0755)
+		if err != nil {
+			return err
+		}
+		_, err = fmt.Fprintf(sh, "%s", string(r.RawAppliedResources()))
 		if err != nil {
 			return err
 		}

@@ -185,7 +185,7 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 			assertInstallAddon(appMgrAddonName, installAddonNamespace, installAddonDir)
 			assertEnableAddon(appMgrAddonName, clusters, enableAddonNamespace, enableAddonFile)
 
-			err = o.runWithClient(clusterClient, kubeClient, apiExtensionsClient, dynamicClient, dryRun)
+			err = o.runWithClient(clusterClient, dryRun)
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 			gomega.Eventually(func() error {

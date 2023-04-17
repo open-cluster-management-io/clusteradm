@@ -25,6 +25,7 @@ type ResourceReader struct {
 	builder *resource.Builder
 	dryRun  bool
 	streams genericclioptions.IOStreams
+	raw     []byte
 }
 
 func NewResourceReader(builder *resource.Builder, dryRun bool, streams genericclioptions.IOStreams) *ResourceReader {
@@ -32,7 +33,12 @@ func NewResourceReader(builder *resource.Builder, dryRun bool, streams genericcl
 		builder: builder.Unstructured().ContinueOnError(),
 		dryRun:  dryRun,
 		streams: streams,
+		raw:     []byte{},
 	}
+}
+
+func (r *ResourceReader) RawAppliedResources() []byte {
+	return r.raw
 }
 
 func (r *ResourceReader) Apply(fs embed.FS, config interface{}, files ...string) error {
@@ -64,8 +70,9 @@ func (r *ResourceReader) Apply(fs embed.FS, config interface{}, files ...string)
 	}
 
 	if r.dryRun {
-		fmt.Fprintf(r.streams.Out, string(rawObjects))
+		fmt.Fprintf(r.streams.Out, "%s", string(rawObjects))
 	}
+	r.raw = append(r.raw, rawObjects...)
 	return utilerrors.NewAggregate(errs)
 }
 
@@ -92,11 +99,13 @@ func (r *ResourceReader) applyOneObject(info *resource.Info) error {
 			if err != nil {
 				return cmdutil.AddSourceToErr("creating", info.Source, err)
 			}
-			info.Refresh(obj, true)
+			if err := info.Refresh(obj, true); err != nil {
+				return err
+			}
 		}
 	}
 
-	modified, err := kubectlutil.GetModifiedConfiguration(info.Object, true, unstructured.UnstructuredJSONScheme)
+	modified, err := kubectlutil.GetModifiedConfiguration(info.Object, false, unstructured.UnstructuredJSONScheme)
 	if err != nil {
 		return cmdutil.AddSourceToErr(fmt.Sprintf("retrieving modified configuration from:\n%s\nfor:", info.String()), info.Source, err)
 	}
@@ -108,7 +117,9 @@ func (r *ResourceReader) applyOneObject(info *resource.Info) error {
 			return cmdutil.AddSourceToErr(fmt.Sprintf("applying patch:\n%s\nto:\n%v\nfor:", patchBytes, info), info.Source, err)
 		}
 
-		info.Refresh(patchedObject, true)
+		if err := info.Refresh(patchedObject, true); err != nil {
+			return err
+		}
 	}
 
 	return nil

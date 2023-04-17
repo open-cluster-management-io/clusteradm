@@ -7,24 +7,32 @@ spec:
   registrationImagePullSpec: {{ .Hub.Registry }}/registration:{{ .BundleVersion.RegistrationImageVersion }}
   workImagePullSpec: {{ .Hub.Registry }}/work:{{ .BundleVersion.WorkImageVersion }}
   placementImagePullSpec: {{ .Hub.Registry }}/placement:{{ .BundleVersion.PlacementImageVersion }}
+  {{if .BundleVersion.AddonManagerImageVersion}}
   addOnManagerImagePullSpec: {{ .Hub.Registry }}/addon-manager:{{ .BundleVersion.AddonManagerImageVersion }}
+  {{end}}
   deployOption:
     mode: Default
+  {{if .RegistrationFeatures}}
   registrationConfiguration:
     featureGates:
-    {{- range .RegistrationFeatures }}
+    {{range .RegistrationFeatures }}
     - feature: {{ .Feature }}
       mode: {{ .Mode }}
-    {{- end}}
+    {{end}}
+  {{end}}
+  {{if .WorkFeatures}}
   workConfiguration:
     featureGates:
-    {{- range .WorkFeatures }}
+    {{range .WorkFeatures }}
     - feature: {{ .Feature }}
       mode: {{ .Mode }}
-    {{- end}}
+    {{end}}
+  {{end}}
+  {{if .AddonFeatures}}
   addOnManagerConfiguration:
     featureGates:
-    { { - range .AddonFeatures } }
-    - feature: { { .Feature } }
-      mode: { { .Mode } }
-    { { - end } }
+    {{range .AddonFeatures }}
+    - feature: {{ .Feature }}
+      mode: {{ .Mode }}
+    {{end}}
+  {{end}}

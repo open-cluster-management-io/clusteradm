@@ -7,16 +7,13 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/stolostron/applier/pkg/apply"
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
+	addonv1alpha1 "open-cluster-management.io/api/addon/v1alpha1"
+	addonclientset "open-cluster-management.io/api/client/addon/clientset/versioned"
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
-	"open-cluster-management.io/clusteradm/pkg/cmd/addon/enable/scenario"
-	"open-cluster-management.io/clusteradm/pkg/helpers"
 )
 
 type ClusterAddonInfo struct {
@@ -26,27 +23,31 @@ type ClusterAddonInfo struct {
 	Annotations map[string]string
 }
 
-func NewClusterAddonInfo(cn string, o *Options, an string) (ClusterAddonInfo, error) {
+func NewClusterAddonInfo(cn string, o *Options, an string) (*addonv1alpha1.ManagedClusterAddOn, error) {
 	// Parse provided annotations
 	annos := map[string]string{}
 	for _, annoString := range o.Annotate {
 		annoSlice := strings.Split(annoString, "=")
 		if len(annoSlice) != 2 {
-			return ClusterAddonInfo{},
+			return nil,
 				fmt.Errorf("error parsing annotation '%s'. Expected to be of the form: key=value", annoString)
 		}
 		annos[annoSlice[0]] = annoSlice[1]
 	}
-	return ClusterAddonInfo{
-		ClusterName: cn,
-		NameSpace:   o.Namespace,
-		AddonName:   an,
-		Annotations: annos,
+	return &addonv1alpha1.ManagedClusterAddOn{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        an,
+			Namespace:   cn,
+			Annotations: annos,
+		},
+		Spec: addonv1alpha1.ManagedClusterAddOnSpec{
+			InstallNamespace: o.Namespace,
+		},
 	}, nil
 }
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
-	klog.V(1).InfoS("enable options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.Names, "clusters", o.ClusterOptions.AllClusters().List(), "output-file", o.OutputFile)
+	klog.V(1).InfoS("enable options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.Names, "clusters", o.ClusterOptions.AllClusters(), "output-file", o.OutputFile)
 
 	return nil
 }
@@ -83,19 +84,16 @@ func (o *Options) Run() error {
 		return err
 	}
 
-	kubeClient, apiExtensionsClient, dynamicClient, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
+	addonClient, err := addonclientset.NewForConfig(restConfig)
 	if err != nil {
 		return err
 	}
 
-	return o.runWithClient(clusterClient, kubeClient, apiExtensionsClient, dynamicClient, o.ClusteradmFlags.DryRun, addons.List(), clusters.List())
+	return o.runWithClient(clusterClient, addonClient, addons.List(), clusters.UnsortedList())
 }
 
 func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
-	kubeClient kubernetes.Interface,
-	apiExtensionsClient apiextensionsclient.Interface,
-	dynamicClient dynamic.Interface,
-	dryRun bool,
+	addonClient addonclientset.Interface,
 	addons []string,
 	clusters []string) error {
 
@@ -108,27 +106,36 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 		}
 	}
 
-	output := make([]string, 0)
-	reader := scenario.GetScenarioResourcesReader()
-
-	applierBuilder := apply.NewApplierBuilder()
-	applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
-
 	for _, addon := range addons {
 		for _, clusterName := range clusters {
 			cai, err := NewClusterAddonInfo(clusterName, o, addon)
 			if err != nil {
 				return err
 			}
-			out, err := applier.ApplyCustomResources(reader, cai, dryRun, "", "addons/addon.yaml")
+			err = ApplyAddon(addonClient, cai)
 			if err != nil {
 				return err
 			}
-			output = append(output, out...)
 
 			fmt.Fprintf(o.Streams.Out, "Deploying %s add-on to namespaces %s of managed cluster: %s.\n", addon, o.Namespace, clusterName)
 		}
 	}
 
-	return apply.WriteOutput(o.OutputFile, output)
+	return nil
+}
+
+func ApplyAddon(addonClient addonclientset.Interface, addon *addonv1alpha1.ManagedClusterAddOn) error {
+	originalAddon, err := addonClient.AddonV1alpha1().ManagedClusterAddOns(addon.Namespace).Get(context.TODO(), addon.Name, metav1.GetOptions{})
+	if errors.IsNotFound(err) {
+		_, err := addonClient.AddonV1alpha1().ManagedClusterAddOns(addon.Namespace).Create(context.TODO(), addon, metav1.CreateOptions{})
+		return err
+	}
+	if err != nil {
+		return err
+	}
+
+	originalAddon.Annotations = addon.Annotations
+	originalAddon.Spec.InstallNamespace = addon.Spec.InstallNamespace
+	_, err = addonClient.AddonV1alpha1().ManagedClusterAddOns(addon.Namespace).Update(context.TODO(), originalAddon, metav1.UpdateOptions{})
+	return err
 }

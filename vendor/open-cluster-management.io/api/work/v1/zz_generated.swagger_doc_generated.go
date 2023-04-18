@@ -53,8 +53,9 @@ func (AppliedManifestWorkSpec) SwaggerDoc() map[string]string {
 }
 
 var map_AppliedManifestWorkStatus = map[string]string{
-	"":                 "AppliedManifestWorkStatus represents the current status of AppliedManifestWork",
-	"appliedResources": "AppliedResources represents a list of resources defined within the manifestwork that are applied. Only resources with valid GroupVersionResource, namespace, and name are suitable. An item in this slice is deleted when there is no mapped manifest in manifestwork.Spec or by finalizer. The resource relating to the item will also be removed from managed cluster. The deleted resource may still be present until the finalizers for that resource are finished. However, the resource will not be undeleted, so it can be removed from this list and eventual consistency is preserved.",
+	"":                  "AppliedManifestWorkStatus represents the current status of AppliedManifestWork",
+	"appliedResources":  "AppliedResources represents a list of resources defined within the manifestwork that are applied. Only resources with valid GroupVersionResource, namespace, and name are suitable. An item in this slice is deleted when there is no mapped manifest in manifestwork.Spec or by finalizer. The resource relating to the item will also be removed from managed cluster. The deleted resource may still be present until the finalizers for that resource are finished. However, the resource will not be undeleted, so it can be removed from this list and eventual consistency is preserved.",
+	"evictionStartTime": "EvictionStartTime represents the current appliedmanifestwork will be evicted after a grace period. An appliedmanifestwork will be evicted from the managed cluster in the following two scenarios:\n  - the manifestwork of the current appliedmanifestwork is missing on the hub, or\n  - the appliedmanifestwork hub hash does not match the current hub hash of the work agent.",
 }
 
 func (AppliedManifestWorkStatus) SwaggerDoc() map[string]string {
@@ -133,7 +134,7 @@ var map_ManifestConfigOption = map[string]string{
 	"":                   "ManifestConfigOption represents the configurations of a manifest defined in workload field.",
 	"resourceIdentifier": "ResourceIdentifier represents the group, resource, name and namespace of a resoure. iff this refers to a resource not created by this manifest work, the related rules will not be executed.",
 	"feedbackRules":      "FeedbackRules defines what resource status field should be returned. If it is not set or empty, no feedback rules will be honored.",
-	"updateStrategy":     "UpdateStrategy defines the strategy to update this manifest. UpdateStrategy is Update if it is not set, optional",
+	"updateStrategy":     "UpdateStrategy defines the strategy to update this manifest. UpdateStrategy is Update if it is not set.",
 }
 
 func (ManifestConfigOption) SwaggerDoc() map[string]string {

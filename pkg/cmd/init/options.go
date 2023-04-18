@@ -3,6 +3,7 @@ package init
 
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/resource"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
@@ -28,6 +29,10 @@ type Options struct {
 	wait bool
 	//
 	output string
+
+	builder *resource.Builder
+
+	Streams genericclioptions.IOStreams
 }
 
 type BundleVersion struct {
@@ -39,6 +44,8 @@ type BundleVersion struct {
 	WorkImageVersion string
 	// operator image version
 	OperatorImageVersion string
+	// addon manager image version
+	AddonManagerImageVersion string
 }
 
 // Values: The values used in the template
@@ -53,6 +60,9 @@ type Values struct {
 
 	// Features is the slice of feature for work
 	WorkFeatures []operatorv1.FeatureGate
+
+	// Features is the slice of feature for addon manager
+	AddonFeatures []operatorv1.FeatureGate
 }
 
 // Hub: The hub values for the template
@@ -68,5 +78,6 @@ type Hub struct {
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
+		Streams:         streams,
 	}
 }

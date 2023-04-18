@@ -4,15 +4,12 @@ package token
 import (
 	"context"
 	"fmt"
-	"os"
-
 	"github.com/spf13/cobra"
-	"github.com/stolostron/applier/pkg/apply"
-	"github.com/stolostron/applier/pkg/asset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	clusteradmjson "open-cluster-management.io/clusteradm/pkg/helpers/json"
+	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -22,6 +19,8 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 			TokenSecret: helpers.RandStringRunes_az09(16),
 		},
 	}
+	f := o.ClusteradmFlags.KubectlFactory
+	o.builder = f.NewBuilder()
 	return nil
 }
 
@@ -35,16 +34,12 @@ func (o *Options) validate() (err error) {
 }
 
 func (o *Options) run() error {
-	output := make([]string, 0)
-	reader := scenario.GetScenarioResourcesReader()
-
-	kubeClient, apiExtensionsClient, dynamicClient, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
+	kubeClient, _, _, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
 	if err != nil {
 		return err
 	}
 
-	applierBuilder := apply.NewApplierBuilder()
-	applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
+	r := reader.NewResourceReader(o.builder, o.ClusteradmFlags.DryRun, o.Streams)
 
 	//Retrieve token from service-account/bootstrap-token
 	// and if not found create it
@@ -56,8 +51,7 @@ func (o *Options) run() error {
 	}
 	switch {
 	case errors.IsNotFound(err):
-		out, err := o.applyToken(applier, reader)
-		output = append(output, out...)
+		err := o.applyToken(r)
 		if err != nil {
 			return err
 		}
@@ -69,11 +63,11 @@ func (o *Options) run() error {
 	files := []string{
 		"init/bootstrap_cluster_role.yaml",
 	}
-	out, err := applier.ApplyDirectly(reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
+
+	err = r.Apply(scenario.Files, o.values, files...)
 	if err != nil {
 		return err
 	}
-	output = append(output, out...)
 
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
@@ -81,7 +75,7 @@ func (o *Options) run() error {
 	}
 	// if dry-run then there is nothing else to do
 	if o.ClusteradmFlags.DryRun {
-		return o.writeResult(token, restConfig.Host, output)
+		return o.writeResult(token, restConfig.Host)
 	}
 
 	//if bootstrap token then read the token
@@ -90,7 +84,7 @@ func (o *Options) run() error {
 		if err != nil {
 			return err
 		}
-		return o.writeResult(token, restConfig.Host, output)
+		return o.writeResult(token, restConfig.Host)
 	}
 
 	//read the token
@@ -99,10 +93,10 @@ func (o *Options) run() error {
 		return err
 	}
 
-	return o.writeResult(token, restConfig.Host, output)
+	return o.writeResult(token, restConfig.Host)
 }
 
-func (o *Options) applyToken(applier apply.Applier, reader *asset.ScenarioResourcesReader) ([]string, error) {
+func (o *Options) applyToken(applier *reader.ResourceReader) error {
 	files := []string{
 		"init/namespace.yaml",
 	}
@@ -119,20 +113,16 @@ func (o *Options) applyToken(applier apply.Applier, reader *asset.ScenarioResour
 			"init/bootstrap_sa_cluster_role_binding.yaml",
 		)
 	}
-	out, err := applier.ApplyDirectly(reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
-	if err != nil {
-		return nil, err
-	}
-	return out, err
+	return applier.Apply(scenario.Files, o.values, files...)
 }
 
-func (o *Options) writeResult(token, host string, output []string) error {
+func (o *Options) writeResult(token, host string) error {
 	if len(token) == 0 {
-		fmt.Println("token doesn't exist")
-		return apply.WriteOutput(o.outputFile, output)
+		fmt.Println(o.Streams.Out, "token doesn't exist")
+		return nil
 	}
 	if o.output == "json" {
-		err := clusteradmjson.WriteJsonOutput(os.Stdout, clusteradmjson.HubInfo{
+		err := clusteradmjson.WriteJsonOutput(o.Streams.Out, clusteradmjson.HubInfo{
 			HubToken:     token,
 			HubApiserver: host,
 		})
@@ -140,8 +130,8 @@ func (o *Options) writeResult(token, host string, output []string) error {
 			return err
 		}
 	} else {
-		fmt.Printf("token=%s\n", token)
-		fmt.Printf("please log on spoke and run:\n%s join --hub-token %s --hub-apiserver %s --cluster-name <cluster_name>\n", helpers.GetExampleHeader(), token, host)
+		fmt.Fprintf(o.Streams.Out, "token=%s\n", token)
+		fmt.Fprintf(o.Streams.Out, "please log on spoke and run:\n%s join --hub-token %s --hub-apiserver %s --cluster-name <cluster_name>\n", helpers.GetExampleHeader(), token, host)
 	}
-	return apply.WriteOutput(o.outputFile, output)
+	return nil
 }

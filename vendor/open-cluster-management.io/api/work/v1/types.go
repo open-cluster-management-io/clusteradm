@@ -26,6 +26,12 @@ type ManifestWork struct {
 	Status ManifestWorkStatus `json:"status,omitempty"`
 }
 
+const (
+	// ManifestConfigSpecHashAnnotationKey is the annotation key to identify the configurations
+	// used by the manifestwork.
+	ManifestConfigSpecHashAnnotationKey = "open-cluster-management.io/config-spec-hash"
+)
+
 // ManifestWorkSpec represents a desired configuration of manifests to be deployed on the managed cluster.
 type ManifestWorkSpec struct {
 	// Workload represents the manifest workload to be deployed on a managed cluster.
@@ -92,9 +98,9 @@ type ManifestConfigOption struct {
 	FeedbackRules []FeedbackRule `json:"feedbackRules,omitempty"`
 
 	// UpdateStrategy defines the strategy to update this manifest. UpdateStrategy is Update
-	// if it is not set,
-	// optional
-	UpdateStrategy *UpdateStrategy `json:"updateStrategy"`
+	// if it is not set.
+	// +optional
+	UpdateStrategy *UpdateStrategy `json:"updateStrategy,omitempty"`
 }
 
 // ManifestWorkExecutor is the executor that applies the resources to the managed cluster. i.e. the
@@ -545,6 +551,13 @@ type AppliedManifestWorkStatus struct {
 	// However, the resource will not be undeleted, so it can be removed from this list and eventual consistency is preserved.
 	// +optional
 	AppliedResources []AppliedManifestResourceMeta `json:"appliedResources,omitempty"`
+
+	// EvictionStartTime represents the current appliedmanifestwork will be evicted after a grace period.
+	// An appliedmanifestwork will be evicted from the managed cluster in the following two scenarios:
+	//   - the manifestwork of the current appliedmanifestwork is missing on the hub, or
+	//   - the appliedmanifestwork hub hash does not match the current hub hash of the work agent.
+	// +optional
+	EvictionStartTime *metav1.Time `json:"evictionStartTime,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

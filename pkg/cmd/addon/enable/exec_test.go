@@ -65,7 +65,7 @@ var _ = ginkgo.Describe("addon enable", func() {
 			addons := []string{appMgrAddonName}
 			clusters := []string{cluster1Name, cluster1Name, cluster1Name}
 
-			err := o.runWithClient(clusterClient, kubeClient, apiExtensionsClient, dynamicClient, false, addons, clusters)
+			err := o.runWithClient(clusterClient, addonClient, addons, clusters)
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 			gomega.Eventually(func() error {
@@ -89,7 +89,7 @@ var _ = ginkgo.Describe("addon enable", func() {
 			addons := []string{appMgrAddonName}
 			clusters := []string{cluster1Name, cluster2Name, cluster1Name}
 
-			err := o.runWithClient(clusterClient, kubeClient, apiExtensionsClient, dynamicClient, false, addons, clusters)
+			err := o.runWithClient(clusterClient, addonClient, addons, clusters)
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 			gomega.Eventually(func() error {
@@ -118,7 +118,7 @@ var _ = ginkgo.Describe("addon enable", func() {
 			addons := []string{appMgrAddonName}
 			clusters := []string{clusterName}
 
-			err := o.runWithClient(clusterClient, kubeClient, apiExtensionsClient, dynamicClient, false, addons, clusters)
+			err := o.runWithClient(clusterClient, addonClient, addons, clusters)
 			gomega.Expect(err).To(gomega.HaveOccurred())
 		})
 

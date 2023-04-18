@@ -31,7 +31,7 @@ const (
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
-	o.Values.Clusters = o.ClusterOptions.AllClusters().List()
+	o.Values.Clusters = o.ClusterOptions.AllClusters().UnsortedList()
 	klog.V(1).InfoS("accept options:", "dry-run", o.ClusteradmFlags.DryRun, "clusters", o.Values.Clusters, "wait", o.Wait)
 	return nil
 }

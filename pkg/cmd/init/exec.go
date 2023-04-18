@@ -6,10 +6,10 @@ import (
 	"fmt"
 	ocmfeature "open-cluster-management.io/api/feature"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
+	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/stolostron/applier/pkg/apply"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/preflight"
@@ -17,7 +17,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	clusteradmjson "open-cluster-management.io/clusteradm/pkg/helpers/json"
 	preflightinterface "open-cluster-management.io/clusteradm/pkg/helpers/preflight"
-	version "open-cluster-management.io/clusteradm/pkg/helpers/version"
+	"open-cluster-management.io/clusteradm/pkg/helpers/version"
 	helperwait "open-cluster-management.io/clusteradm/pkg/helpers/wait"
 )
 
@@ -31,6 +31,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		},
 		RegistrationFeatures: genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubRegistrationFeatureGates),
 		WorkFeatures:         genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubWorkFeatureGates),
+		AddonFeatures:        genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubAddonManagerFeatureGates),
 	}
 
 	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
@@ -45,7 +46,11 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		PlacementImageVersion:    versionBundle.Placement,
 		WorkImageVersion:         versionBundle.Work,
 		OperatorImageVersion:     versionBundle.Operator,
+		AddonManagerImageVersion: versionBundle.AddonManager,
 	}
+
+	f := o.ClusteradmFlags.KubectlFactory
+	o.builder = f.NewBuilder()
 
 	return nil
 }
@@ -91,16 +96,11 @@ func (o *Options) validate() error {
 
 func (o *Options) run() error {
 	token := fmt.Sprintf("%s.%s", o.values.Hub.TokenID, o.values.Hub.TokenSecret)
-	output := make([]string, 0)
-	reader := scenario.GetScenarioResourcesReader()
 
-	kubeClient, apiExtensionsClient, dynamicClient, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
+	kubeClient, apiExtensionsClient, _, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
 	if err != nil {
 		return err
 	}
-
-	applierBuilder := apply.NewApplierBuilder()
-	applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
 
 	files := []string{
 		"init/namespace.yaml",
@@ -126,17 +126,16 @@ func (o *Options) run() error {
 		"init/clustermanager_sa.yaml",
 	)
 
-	out, err := applier.ApplyDirectly(reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
+	r := reader.NewResourceReader(o.builder, o.ClusteradmFlags.DryRun, o.Streams)
+	err = r.Apply(scenario.Files, o.values, files...)
 	if err != nil {
 		return err
 	}
-	output = append(output, out...)
 
-	out, err = applier.ApplyDeployments(reader, o.values, o.ClusteradmFlags.DryRun, "", "init/operator.yaml")
+	err = r.Apply(scenario.Files, o.values, "init/operator.yaml")
 	if err != nil {
 		return err
 	}
-	output = append(output, out...)
 
 	if !o.ClusteradmFlags.DryRun {
 		if err := helperwait.WaitUntilCRDReady(apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", o.wait); err != nil {
@@ -151,11 +150,10 @@ func (o *Options) run() error {
 		}
 	}
 
-	out, err = applier.ApplyCustomResources(reader, o.values, o.ClusteradmFlags.DryRun, "", "init/clustermanager.cr.yaml")
+	err = r.Apply(scenario.Files, o.values, "init/clustermanager.cr.yaml")
 	if err != nil {
 		return err
 	}
-	output = append(output, out...)
 
 	if o.wait && !o.ClusteradmFlags.DryRun {
 		if err := helperwait.WaitUntilClusterManagerRegistrationReady(
@@ -203,8 +201,22 @@ func (o *Options) run() error {
 		}
 	}
 
+	if len(o.outputFile) > 0 {
+		sh, err := os.OpenFile(o.outputFile, os.O_CREATE|os.O_WRONLY, 0755)
+		if err != nil {
+			return err
+		}
+		_, err = fmt.Fprintf(sh, "%s", string(r.RawAppliedResources()))
+		if err != nil {
+			return err
+		}
+		if err := sh.Close(); err != nil {
+			return err
+		}
+	}
+
 	if o.output == "json" {
-		err := clusteradmjson.WriteJsonOutput(os.Stdout, clusteradmjson.HubInfo{
+		err := clusteradmjson.WriteJsonOutput(o.Streams.Out, clusteradmjson.HubInfo{
 			HubToken:     token,
 			HubApiserver: restConfig.Host,
 		})
@@ -212,7 +224,7 @@ func (o *Options) run() error {
 			return err
 		}
 	} else {
-		fmt.Printf("The multicluster hub control plane has been initialized successfully!\n\n"+
+		fmt.Fprintf(o.Streams.Out, "The multicluster hub control plane has been initialized successfully!\n\n"+
 			"You can now register cluster(s) to the hub control plane. Log onto those cluster(s) and run the following command:\n\n"+
 			"    %s --cluster-name <cluster_name>\n\n"+
 			"Replace <cluster_name> with a cluster name of your choice. For example, cluster1.\n\n",
@@ -220,5 +232,5 @@ func (o *Options) run() error {
 		)
 	}
 
-	return apply.WriteOutput(o.outputFile, output)
+	return nil
 }

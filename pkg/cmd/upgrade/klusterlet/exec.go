@@ -4,9 +4,9 @@ package klusterlet
 import (
 	"context"
 	"fmt"
+	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 
 	"github.com/spf13/cobra"
-	"github.com/stolostron/applier/pkg/apply"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
@@ -69,6 +69,9 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		OperatorImageVersion:     versionBundle.Operator,
 	}
 
+	f := o.ClusteradmFlags.KubectlFactory
+	o.builder = f.NewBuilder()
+
 	return nil
 }
 
@@ -97,16 +100,12 @@ func (o *Options) validate() error {
 }
 
 func (o *Options) run() error {
-	output := make([]string, 0)
-	join_reader := join_scenario.GetScenarioResourcesReader()
+	r := reader.NewResourceReader(o.builder, o.ClusteradmFlags.DryRun, o.Streams)
 
-	kubeClient, apiExtensionsClient, dynamicClient, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
+	_, apiExtensionsClient, _, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
 	if err != nil {
 		return err
 	}
-
-	applierBuilder := apply.NewApplierBuilder()
-	applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
 
 	files := []string{
 		"join/namespace_agent.yaml",
@@ -118,17 +117,15 @@ func (o *Options) run() error {
 		"join/service_account.yaml",
 	}
 
-	out, err := applier.ApplyDirectly(join_reader, o.values, o.ClusteradmFlags.DryRun, "", files...)
+	err = r.Apply(join_scenario.Files, o.values, files...)
 	if err != nil {
 		return err
 	}
-	output = append(output, out...)
 
-	out, err = applier.ApplyDeployments(join_reader, o.values, o.ClusteradmFlags.DryRun, "", "join/operator.yaml")
+	err = r.Apply(join_scenario.Files, o.values, "join/operator.yaml")
 	if err != nil {
 		return err
 	}
-	output = append(output, out...)
 
 	if !o.ClusteradmFlags.DryRun {
 		if err := wait.WaitUntilCRDReady(apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", o.wait); err != nil {
@@ -143,13 +140,12 @@ func (o *Options) run() error {
 		}
 	}
 
-	out, err = applier.ApplyCustomResources(join_reader, o.values, o.ClusteradmFlags.DryRun, "", "join/klusterlets.cr.yaml")
+	err = r.Apply(join_scenario.Files, o.values, "join/klusterlets.cr.yaml")
 	if err != nil {
 		return err
 	}
-	output = append(output, out...)
 
 	fmt.Fprint(o.Streams.Out, "upgraded completed successfully\n")
 
-	return apply.WriteOutput("", output)
+	return nil
 }

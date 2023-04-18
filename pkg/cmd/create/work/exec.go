@@ -132,13 +132,13 @@ func (o *Options) getPlacement(clusterClient *clusterclientset.Clientset) (*clus
 	return placement, nil
 }
 
-func (o *Options) getWorkDepolyClusters(workClient workclientset.Interface) (sets.String, error) {
+func (o *Options) getWorkDepolyClusters(workClient workclientset.Interface) (sets.Set[string], error) {
 	works, err := workClient.WorkV1().ManifestWorks("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	depolyClusters := sets.NewString()
+	depolyClusters := sets.New[string]()
 	for _, work := range works.Items {
 		if work.Name == o.Workname {
 			depolyClusters.Insert(work.Namespace)
@@ -147,7 +147,7 @@ func (o *Options) getWorkDepolyClusters(workClient workclientset.Interface) (set
 	return depolyClusters, nil
 }
 
-func (o *Options) getClusters(workClient workclientset.Interface, clusterClient *clusterclientset.Clientset) (sets.String, sets.String, error) {
+func (o *Options) getClusters(workClient workclientset.Interface, clusterClient *clusterclientset.Clientset) (sets.Set[string], sets.Set[string], error) {
 	existingDeployClusters, err := o.getWorkDepolyClusters(workClient)
 	if err != nil {
 		return nil, nil, err
@@ -173,7 +173,7 @@ func (o *Options) getClusters(workClient workclientset.Interface, clusterClient 
 	return addedClusters, deletedClusters, nil
 }
 
-func (o *Options) applyWork(workClient workclientset.Interface, manifests []workapiv1.Manifest, addedClusters, deletedClusters sets.String) error {
+func (o *Options) applyWork(workClient workclientset.Interface, manifests []workapiv1.Manifest, addedClusters, deletedClusters sets.Set[string]) error {
 	for clusterName := range deletedClusters {
 		if o.Overwrite {
 			if err := workClient.WorkV1().ManifestWorks(clusterName).Delete(context.TODO(), o.Workname, metav1.DeleteOptions{}); err != nil {

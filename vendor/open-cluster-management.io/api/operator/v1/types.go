@@ -44,6 +44,11 @@ type ClusterManagerSpec struct {
 	// +kubebuilder:default=quay.io/open-cluster-management/placement
 	PlacementImagePullSpec string `json:"placementImagePullSpec,omitempty"`
 
+	// AddOnManagerImagePullSpec represents the desired image configuration of addon manager controller/webhook installed on hub.
+	// +optional
+	// +kubebuilder:default=quay.io/open-cluster-management/addon-manager
+	AddOnManagerImagePullSpec string `json:"addOnManagerImagePullSpec,omitempty"`
+
 	// NodePlacement enables explicit control over the scheduling of the deployed pods.
 	// +optional
 	NodePlacement NodePlacement `json:"nodePlacement,omitempty"`
@@ -61,6 +66,10 @@ type ClusterManagerSpec struct {
 	// WorkConfiguration contains the configuration of work
 	// +optional
 	WorkConfiguration *WorkConfiguration `json:"workConfiguration,omitempty"`
+
+	// AddOnManagerConfiguration contains the configuration of addon manager
+	// +optional
+	AddOnManagerConfiguration *AddOnManagerConfiguration `json:"addOnManagerConfiguration,omitempty"`
 }
 
 type RegistrationConfiguration struct {
@@ -77,6 +86,18 @@ type RegistrationConfiguration struct {
 
 type WorkConfiguration struct {
 	// FeatureGates represents the list of feature gates for work
+	// If it is set empty, default feature gates will be used.
+	// If it is set, featuregate/Foo is an example of one item in FeatureGates:
+	//   1. If featuregate/Foo does not exist, registration-operator will discard it
+	//   2. If featuregate/Foo exists and is false by default. It is now possible to set featuregate/Foo=[false|true]
+	//   3. If featuregate/Foo exists and is true by default. If a cluster-admin upgrading from 1 to 2 wants to continue having featuregate/Foo=false,
+	//  	he can set featuregate/Foo=false before upgrading. Let's say the cluster-admin wants featuregate/Foo=false.
+	// +optional
+	FeatureGates []FeatureGate `json:"featureGates,omitempty"`
+}
+
+type AddOnManagerConfiguration struct {
+	// FeatureGates represents the list of feature gates for addon manager
 	// If it is set empty, default feature gates will be used.
 	// If it is set, featuregate/Foo is an example of one item in FeatureGates:
 	//   1. If featuregate/Foo does not exist, registration-operator will discard it
@@ -322,6 +343,8 @@ type KlusterletSpec struct {
 	// ClusterName is the name of the managed cluster to be created on hub.
 	// The Klusterlet agent generates a random name if it is not set, or discovers the appropriate cluster name on OpenShift.
 	// +optional
+	// +kubebuilder:validation:MaxLength=63
+	// +kubebuilder:validation:Pattern=^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
 	ClusterName string `json:"clusterName,omitempty"`
 
 	// ExternalServerURLs represents the a list of apiserver urls and ca bundles that is accessible externally

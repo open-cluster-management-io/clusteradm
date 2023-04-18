@@ -4,6 +4,8 @@ package sampleapp
 import (
 	"context"
 	"fmt"
+	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"os"
 	"path/filepath"
 
@@ -16,7 +18,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/stolostron/applier/pkg/apply"
 	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
 	"open-cluster-management.io/clusteradm/pkg/cmd/addon/enable"
 	installScenario "open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
@@ -132,9 +133,8 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 		_, err = kubeClient.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
 		gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
-		reader := installScenario.GetScenarioResourcesReader()
-		applierBuilder := apply.NewApplierBuilder()
-		applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
+		f := cmdutil.NewFactory(TestClientGetter{cfg: restConfig})
+		r := reader.NewResourceReader(f.NewBuilder(), false, genericclioptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr})
 
 		mydir, err := os.Getwd()
 		gomega.Expect(err).ToNot(gomega.HaveOccurred(), "install addon error")
@@ -143,7 +143,7 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 		files, err := addonPathWalkDir(appDir)
 		gomega.Expect(err).ToNot(gomega.HaveOccurred(), "install addon error")
 
-		_, err = applier.ApplyCustomResources(reader, ao.values, false, "", files...)
+		err = r.Apply(installScenario.Files, ao.values, files...)
 		gomega.Expect(err).ToNot(gomega.HaveOccurred(), "install addon error")
 
 		fmt.Fprintf(streams.Out, "Installing built-in %s add-on to namespace %s.\n", addon, addonNamespace)

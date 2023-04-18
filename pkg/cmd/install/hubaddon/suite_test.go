@@ -2,14 +2,17 @@
 package hubaddon
 
 import (
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/discovery/cached/memory"
+	"k8s.io/client-go/restmapper"
+	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"testing"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
@@ -27,8 +30,6 @@ const (
 var testEnv *envtest.Environment
 var restConfig *rest.Config
 var kubeClient kubernetes.Interface
-var apiExtensionsClient apiextensionsclient.Interface
-var dynamicClient dynamic.Interface
 var clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 
 func TestIntegrationInstallAddons(t *testing.T) {
@@ -48,17 +49,11 @@ var _ = ginkgo.BeforeSuite(func() {
 
 	kubeClient, err = kubernetes.NewForConfig(cfg)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
-	apiExtensionsClient, err = apiextensionsclient.NewForConfig(cfg)
-	gomega.Expect(err).NotTo(gomega.HaveOccurred())
-	dynamicClient, err = dynamic.NewForConfig(cfg)
-	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	restConfig = cfg
 
 	// add clusteradm flags
-	kubeConfigFlags := genericclioptions.NewConfigFlags(true).WithDeprecatedPasswordFlag()
-	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(kubeConfigFlags)
-	f := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+	f := cmdutil.NewFactory(TestClientGetter{cfg: cfg})
 	clusteradmFlags = genericclioptionsclusteradm.NewClusteradmFlags(f)
 })
 
@@ -68,3 +63,27 @@ var _ = ginkgo.AfterSuite(func() {
 	err := testEnv.Stop()
 	gomega.Expect(err).ToNot(gomega.HaveOccurred())
 })
+
+type TestClientGetter struct {
+	cfg *rest.Config
+}
+
+func (t TestClientGetter) ToRESTConfig() (*rest.Config, error) {
+	return t.cfg, nil
+}
+
+func (t TestClientGetter) ToDiscoveryClient() (discovery.CachedDiscoveryInterface, error) {
+	discoveryClient, _ := discovery.NewDiscoveryClientForConfig(t.cfg)
+	return memory.NewMemCacheClient(discoveryClient), nil
+}
+
+// ToRESTMapper returns a restmapper
+func (t TestClientGetter) ToRESTMapper() (meta.RESTMapper, error) {
+	client, _ := t.ToDiscoveryClient()
+	return restmapper.NewDeferredDiscoveryRESTMapper(client), nil
+}
+
+// ToRawKubeConfigLoader return kubeconfig loader as-is
+func (t TestClientGetter) ToRawKubeConfigLoader() clientcmd.ClientConfig {
+	return clientcmd.NewDefaultClientConfig(clientcmdapi.Config{}, nil)
+}

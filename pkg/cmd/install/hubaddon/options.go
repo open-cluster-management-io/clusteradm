@@ -3,6 +3,7 @@ package hubaddon
 
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/resource"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
@@ -15,6 +16,9 @@ type Options struct {
 	outputFile    string
 	values        Values
 	bundleVersion string
+	builder       *resource.Builder
+
+	Streams genericclioptions.IOStreams
 }
 
 type BundleVersion struct {
@@ -36,5 +40,6 @@ type Values struct {
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
+		Streams:         streams,
 	}
 }

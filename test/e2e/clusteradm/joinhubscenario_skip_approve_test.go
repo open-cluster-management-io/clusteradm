@@ -3,16 +3,19 @@ package clusteradme2e
 
 import (
 	"context"
+	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+	"os"
 	"time"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
-	"github.com/stolostron/applier/pkg/apply"
 	authv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/utils/pointer"
 	"open-cluster-management.io/clusteradm/pkg/config"
-	scenario "open-cluster-management.io/clusteradm/test/e2e/clusteradm/scenario"
+	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
+	"open-cluster-management.io/clusteradm/test/e2e/clusteradm/scenario"
 )
 
 var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", func() {
@@ -41,11 +44,15 @@ var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", func() {
 				"init/bootstrap_cluster_role.yaml",
 				"init/bootstrap_sa_cluster_role_binding_manual_token.yaml",
 			)
-			reader := scenario.GetScenarioResourcesReader()
-			applierBuilder := &apply.ApplierBuilder{}
+
+			kubeConfigFlags := &genericclioptions.ConfigFlags{
+				KubeConfig: pointer.String(e2e.Kubeconfigpath),
+				Context:    pointer.String(e2e.Cluster().Hub().Context()),
+			}
+			resourceBuilder := cmdutil.NewFactory(kubeConfigFlags).NewBuilder()
+			r := reader.NewResourceReader(resourceBuilder, false, genericclioptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr})
 			var values = make(map[string]interface{})
-			applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
-			_, err = applier.ApplyDirectly(reader, values, false, "", files...)
+			err = r.Apply(scenario.Files, values, files...)
 			gomega.Expect(err).To(gomega.BeNil())
 
 			var token string

@@ -3,7 +3,6 @@ package clustermanager
 
 import (
 	"fmt"
-	join_scenario "open-cluster-management.io/clusteradm/pkg/cmd/join/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 
 	"github.com/spf13/cobra"
@@ -11,7 +10,7 @@ import (
 	"k8s.io/klog/v2"
 	init_scenario "open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
-	version "open-cluster-management.io/clusteradm/pkg/helpers/version"
+	"open-cluster-management.io/clusteradm/pkg/helpers/version"
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
 )
 
@@ -89,12 +88,12 @@ func (o *Options) run() error {
 		"init/clustermanager_sa.yaml",
 	}
 
-	err = r.Apply(join_scenario.Files, o.values, files...)
+	err = r.Apply(init_scenario.Files, o.values, files...)
 	if err != nil {
 		return err
 	}
 
-	err = r.Apply(init_scenario.Files, o.values, "join/operator.yaml")
+	err = r.Apply(init_scenario.Files, o.values, "init/operator.yaml")
 	if err != nil {
 		return err
 	}

@@ -11,7 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
-	clusterapiv1beta1 "open-cluster-management.io/api/cluster/v1beta1"
+	clusterapiv1beta2 "open-cluster-management.io/api/cluster/v1beta2"
 	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 )
 
@@ -50,7 +50,7 @@ func (o *Options) validate(args []string) (err error) {
 }
 
 func (o *Options) run() (err error) {
-	clustersets, err := o.Client.ClusterV1beta1().ManagedClusterSets().List(context.TODO(), metav1.ListOptions{})
+	clustersets, err := o.Client.ClusterV1beta2().ManagedClusterSets().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func (o *Options) run() (err error) {
 
 func (o *Options) convertToTree(obj runtime.Object, tree *printer.TreePrinter) *printer.TreePrinter {
 	bindingMap := map[string][]string{}
-	bindings, err := o.Client.ClusterV1beta1().ManagedClusterSetBindings(metav1.NamespaceAll).List(context.TODO(), metav1.ListOptions{})
+	bindings, err := o.Client.ClusterV1beta2().ManagedClusterSetBindings(metav1.NamespaceAll).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
@@ -74,7 +74,7 @@ func (o *Options) convertToTree(obj runtime.Object, tree *printer.TreePrinter) *
 		bindingMap[binding.Spec.ClusterSet] = append(bindingMap[binding.Spec.ClusterSet], binding.Namespace)
 	}
 
-	if csList, ok := obj.(*clusterapiv1beta1.ManagedClusterSetList); ok {
+	if csList, ok := obj.(*clusterapiv1beta2.ManagedClusterSetList); ok {
 		for _, clusterset := range csList.Items {
 			boundNs, status := getFileds(clusterset, bindingMap[clusterset.Name])
 			mp := make(map[string]interface{})
@@ -89,7 +89,7 @@ func (o *Options) convertToTree(obj runtime.Object, tree *printer.TreePrinter) *
 
 func (o *Options) converToTable(obj runtime.Object) *metav1.Table {
 	bindingMap := map[string][]string{}
-	bindings, err := o.Client.ClusterV1beta1().ManagedClusterSetBindings(metav1.NamespaceAll).List(context.TODO(), metav1.ListOptions{})
+	bindings, err := o.Client.ClusterV1beta2().ManagedClusterSetBindings(metav1.NamespaceAll).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
@@ -110,7 +110,7 @@ func (o *Options) converToTable(obj runtime.Object) *metav1.Table {
 		Rows: []metav1.TableRow{},
 	}
 
-	if csList, ok := obj.(*clusterapiv1beta1.ManagedClusterSetList); ok {
+	if csList, ok := obj.(*clusterapiv1beta2.ManagedClusterSetList); ok {
 		for _, clusterset := range csList.Items {
 			boundNs, status := getFileds(clusterset, bindingMap[clusterset.Name])
 			row := metav1.TableRow{
@@ -125,10 +125,10 @@ func (o *Options) converToTable(obj runtime.Object) *metav1.Table {
 	return table
 }
 
-func getFileds(clusterset clusterapiv1beta1.ManagedClusterSet, bindings []string) (boundNs, status string) {
+func getFileds(clusterset clusterapiv1beta2.ManagedClusterSet, bindings []string) (boundNs, status string) {
 	boundNs = strings.Join(bindings, ",")
 
-	emptyCond := meta.FindStatusCondition(clusterset.Status.Conditions, clusterapiv1beta1.ManagedClusterSetConditionEmpty)
+	emptyCond := meta.FindStatusCondition(clusterset.Status.Conditions, clusterapiv1beta2.ManagedClusterSetConditionEmpty)
 	if emptyCond != nil {
 		status = string(emptyCond.Message)
 	}

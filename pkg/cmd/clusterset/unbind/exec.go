@@ -48,12 +48,12 @@ func (o *Options) Run() (err error) {
 		return err
 	}
 
-	_, err = clusterClient.ClusterV1beta1().ManagedClusterSets().Get(context.TODO(), o.Clusterset, metav1.GetOptions{})
+	_, err = clusterClient.ClusterV1beta2().ManagedClusterSets().Get(context.TODO(), o.Clusterset, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
-	err = clusterClient.ClusterV1beta1().ManagedClusterSetBindings(o.Namespace).Delete(context.TODO(), o.Clusterset, metav1.DeleteOptions{})
+	err = clusterClient.ClusterV1beta2().ManagedClusterSetBindings(o.Namespace).Delete(context.TODO(), o.Clusterset, metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	}

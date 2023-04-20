@@ -19,10 +19,10 @@ var example = `
 %[1]s create placement test --count 2
 
 # Create a placement with clustersets.
-%[1]s create placement test --clusterset set1
+%[1]s create placement test --clustersets set1
 
 # Create a placement with clustersets prioritizers
-%[1]s create placement test --prioritizers BuiltIn:Steady:3,Builtin:ResourceAllocatableCPU:2
+%[1]s create placement test --prioritizers BuiltIn:Steady:3,BuiltIn:ResourceAllocatableCPU:2
 `
 
 // NewCmd...
@@ -57,7 +57,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 
 	cmd.Flags().BoolVar(&o.Overwrite, "overwrite", false, "Overwrite the existing work if it exists already")
 	cmd.Flags().StringVar(&o.Namespace, "namespace", "default", "Namespace to bind to a clusterset")
-	cmd.Flags().StringSliceVar(&o.ClusterSelector, "label-selector", o.ClusterSelector, "Label selector to select clusters")
+	cmd.Flags().StringSliceVar(&o.ClusterSelector, "label-selectors", o.ClusterSelector, "Label selectors to select clusters")
 	cmd.Flags().StringSliceVar(&o.ClusterSets, "clustersets", o.ClusterSets, "Cluster Sets where clusters are selected")
 	cmd.Flags().StringSliceVar(&o.Prioritizers, "prioritizers", o.Prioritizers, "Prioritizers to sort and filter clusters")
 	cmd.Flags().Int32Var(&o.NumOfClusters, "count", o.NumOfClusters, "Number of clusters to select")

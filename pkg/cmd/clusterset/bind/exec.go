@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
-	clusterapiv1beta1 "open-cluster-management.io/api/cluster/v1beta1"
+	clusterapiv1beta2 "open-cluster-management.io/api/cluster/v1beta2"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -49,22 +49,22 @@ func (o *Options) Run() (err error) {
 		return err
 	}
 
-	_, err = clusterClient.ClusterV1beta1().ManagedClusterSets().Get(context.TODO(), o.Clusterset, metav1.GetOptions{})
+	_, err = clusterClient.ClusterV1beta2().ManagedClusterSets().Get(context.TODO(), o.Clusterset, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
-	binding := &clusterapiv1beta1.ManagedClusterSetBinding{
+	binding := &clusterapiv1beta2.ManagedClusterSetBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      o.Clusterset,
 			Namespace: o.Namespace,
 		},
-		Spec: clusterapiv1beta1.ManagedClusterSetBindingSpec{
+		Spec: clusterapiv1beta2.ManagedClusterSetBindingSpec{
 			ClusterSet: o.Clusterset,
 		},
 	}
 
-	_, err = clusterClient.ClusterV1beta1().ManagedClusterSetBindings(o.Namespace).Create(context.TODO(), binding, metav1.CreateOptions{})
+	_, err = clusterClient.ClusterV1beta2().ManagedClusterSetBindings(o.Namespace).Create(context.TODO(), binding, metav1.CreateOptions{})
 	if errors.IsAlreadyExists(err) {
 		fmt.Fprintf(o.Streams.Out, "Clusterset %s is already bound to Namespace %s\n", o.Clusterset, o.Namespace)
 		return nil

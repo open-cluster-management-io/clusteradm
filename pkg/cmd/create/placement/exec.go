@@ -141,13 +141,14 @@ func parsePrioritizer(s string) (*clusterv1beta1.PrioritizerConfig, error) {
 		}, nil
 	}
 
-	return nil, fmt.Errorf("unkown prioritizer type %s for %s", ps[1], s)
+	return nil, fmt.Errorf("unkown prioritizer type %s for %s", ps[0], s)
 }
 
 func (o *Options) applyPlacement(clusterClient clusterclientset.Interface, placement *clusterv1beta1.Placement) error {
 	placementOrigin, err := clusterClient.ClusterV1beta1().Placements(o.Namespace).Get(context.TODO(), placement.Name, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
-		_, err = clusterClient.ClusterV1beta1().Placements(o.Namespace).Create(context.TODO(), placement, metav1.CreateOptions{})
+		_, createErr := clusterClient.ClusterV1beta1().Placements(o.Namespace).Create(context.TODO(), placement, metav1.CreateOptions{})
+		return createErr
 	}
 	if err != nil {
 		return err

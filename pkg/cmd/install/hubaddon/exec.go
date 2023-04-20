@@ -3,17 +3,14 @@ package hubaddon
 
 import (
 	"fmt"
+	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 
-	"github.com/stolostron/applier/pkg/apply"
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
 	"open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
-	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/version"
 )
 
@@ -24,7 +21,8 @@ const (
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	klog.V(1).InfoS("addon options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.names, "output-file", o.outputFile)
-
+	f := o.ClusteradmFlags.KubectlFactory
+	o.builder = f.NewBuilder()
 	return nil
 }
 
@@ -79,24 +77,12 @@ func (o *Options) run() error {
 
 	klog.V(3).InfoS("values:", "addon", o.values.hubAddons)
 
-	kubeClient, apiExtensionsClient, dynamicClient, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
-	if err != nil {
-		return err
-	}
-
-	return o.runWithClient(kubeClient, apiExtensionsClient, dynamicClient, o.ClusteradmFlags.DryRun)
+	return o.runWithClient()
 }
 
-func (o *Options) runWithClient(kubeClient kubernetes.Interface,
-	apiExtensionsClient apiextensionsclient.Interface,
-	dynamicClient dynamic.Interface,
-	dryRun bool) error {
+func (o *Options) runWithClient() error {
 
-	output := make([]string, 0)
-	reader := scenario.GetScenarioResourcesReader()
-
-	applierBuilder := apply.NewApplierBuilder()
-	applier := applierBuilder.WithClient(kubeClient, apiExtensionsClient, dynamicClient).Build()
+	r := reader.NewResourceReader(o.builder, o.ClusteradmFlags.DryRun, o.Streams)
 
 	for _, addon := range o.values.hubAddons {
 		switch addon {
@@ -118,11 +104,10 @@ func (o *Options) runWithClient(kubeClient kubernetes.Interface,
 				"addon/appmgr/service_operator.yaml",
 			}
 
-			out, err := applier.ApplyDirectly(reader, o.values, dryRun, "", files...)
+			err := r.Apply(scenario.Files, o.values, files...)
 			if err != nil {
 				return err
 			}
-			output = append(output, out...)
 
 			deployments := []string{
 				"addon/appmgr/deployment_channel.yaml",
@@ -130,14 +115,12 @@ func (o *Options) runWithClient(kubeClient kubernetes.Interface,
 				"addon/appmgr/deployment_placementrule.yaml",
 				"addon/appmgr/deployment_appsubsummary.yaml",
 			}
-
-			out, err = applier.ApplyDeployments(reader, o.values, dryRun, "", deployments...)
+			err = r.Apply(scenario.Files, o.values, deployments...)
 			if err != nil {
 				return err
 			}
-			output = append(output, out...)
 
-			fmt.Printf("Installing built-in %s add-on to the Hub cluster...\n", appMgrAddonName)
+			fmt.Fprintf(o.Streams.Out, "Installing built-in %s add-on to the Hub cluster...\n", appMgrAddonName)
 
 		// Install the Policy Framework Addon
 		case policyFrameworkAddonName:
@@ -159,26 +142,38 @@ func (o *Options) runWithClient(kubeClient kubernetes.Interface,
 				"addon/appmgr/crd_placementrule.yaml",
 			}
 
-			out, err := applier.ApplyDirectly(reader, o.values, dryRun, "", files...)
+			err := r.Apply(scenario.Files, o.values, files...)
 			if err != nil {
 				return err
 			}
-			output = append(output, out...)
 
 			deployments := []string{
 				"addon/policy/addon-controller_deployment.yaml",
 				"addon/policy/propagator_deployment.yaml",
 			}
 
-			out, err = applier.ApplyDeployments(reader, o.values, dryRun, "", deployments...)
+			err = r.Apply(scenario.Files, o.values, deployments...)
 			if err != nil {
 				return err
 			}
-			output = append(output, out...)
 
-			fmt.Printf("Installing built-in %s add-on to the Hub cluster...\n", policyFrameworkAddonName)
+			fmt.Fprintf(o.Streams.Out, "Installing built-in %s add-on to the Hub cluster...\n", policyFrameworkAddonName)
 		}
 	}
 
-	return apply.WriteOutput(o.outputFile, output)
+	if len(o.outputFile) > 0 {
+		sh, err := os.OpenFile(o.outputFile, os.O_CREATE|os.O_WRONLY, 0755)
+		if err != nil {
+			return err
+		}
+		_, err = fmt.Fprintf(sh, "%s", string(r.RawAppliedResources()))
+		if err != nil {
+			return err
+		}
+		if err := sh.Close(); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

@@ -5,15 +5,6 @@ github.com/Azure/go-ansiterm/winterm
 # github.com/MakeNowJust/heredoc v1.0.0
 ## explicit; go 1.12
 github.com/MakeNowJust/heredoc
-# github.com/Masterminds/goutils v1.1.1
-## explicit
-github.com/Masterminds/goutils
-# github.com/Masterminds/semver v1.5.0
-## explicit
-github.com/Masterminds/semver
-# github.com/Masterminds/sprig v2.22.0+incompatible
-## explicit
-github.com/Masterminds/sprig
 # github.com/beorn7/perks v1.0.1
 ## explicit; go 1.11
 github.com/beorn7/perks/quantile
@@ -84,9 +75,6 @@ github.com/go-openapi/swag
 ## explicit; go 1.15
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
-# github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
-## explicit
-github.com/golang/groupcache/lru
 # github.com/golang/protobuf v1.5.2
 ## explicit; go 1.9
 github.com/golang/protobuf/jsonpb
@@ -125,9 +113,6 @@ github.com/google/uuid
 # github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
 ## explicit
 github.com/gregjones/httpcache
-# github.com/huandu/xstrings v1.3.2
-## explicit; go 1.12
-github.com/huandu/xstrings
 # github.com/imdario/mergo v0.3.12
 ## explicit; go 1.13
 github.com/imdario/mergo
@@ -162,15 +147,9 @@ github.com/mattn/go-isatty
 # github.com/matttproud/golang_protobuf_extensions v1.0.2
 ## explicit; go 1.9
 github.com/matttproud/golang_protobuf_extensions/pbutil
-# github.com/mitchellh/copystructure v1.2.0
-## explicit; go 1.15
-github.com/mitchellh/copystructure
 # github.com/mitchellh/go-wordwrap v1.0.1
 ## explicit; go 1.14
 github.com/mitchellh/go-wordwrap
-# github.com/mitchellh/reflectwalk v1.0.2
-## explicit
-github.com/mitchellh/reflectwalk
 # github.com/moby/spdystream v0.2.0
 ## explicit; go 1.13
 github.com/moby/spdystream
@@ -288,12 +267,7 @@ github.com/openshift/api/user/v1
 # github.com/openshift/library-go v0.0.0-20230411150541-a704a5774e20
 ## explicit; go 1.19
 github.com/openshift/library-go/pkg/assets
-github.com/openshift/library-go/pkg/operator/events
-github.com/openshift/library-go/pkg/operator/resource/resourceapply
-github.com/openshift/library-go/pkg/operator/resource/resourcehelper
-github.com/openshift/library-go/pkg/operator/resource/resourcemerge
 github.com/openshift/library-go/pkg/operator/resource/resourceread
-github.com/openshift/library-go/pkg/operator/v1helpers
 # github.com/peterbourgon/diskv v2.0.1+incompatible
 ## explicit
 github.com/peterbourgon/diskv
@@ -328,11 +302,6 @@ github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 ## explicit; go 1.12
 github.com/spf13/pflag
-# github.com/stolostron/applier v1.0.2-0.20220802003824-ca5e63261fa1
-## explicit; go 1.18
-github.com/stolostron/applier/pkg/apply
-github.com/stolostron/applier/pkg/asset
-github.com/stolostron/applier/pkg/helpers
 # github.com/xlab/treeprint v1.1.0
 ## explicit; go 1.13
 github.com/xlab/treeprint
@@ -344,10 +313,6 @@ go.starlark.net/resolve
 go.starlark.net/starlark
 go.starlark.net/starlarkstruct
 go.starlark.net/syntax
-# golang.org/x/crypto v0.1.0
-## explicit; go 1.17
-golang.org/x/crypto/pbkdf2
-golang.org/x/crypto/scrypt
 # golang.org/x/net v0.7.0
 ## explicit; go 1.17
 golang.org/x/net/context
@@ -617,7 +582,6 @@ k8s.io/apimachinery/pkg/util/remotecommand
 k8s.io/apimachinery/pkg/util/runtime
 k8s.io/apimachinery/pkg/util/sets
 k8s.io/apimachinery/pkg/util/strategicpatch
-k8s.io/apimachinery/pkg/util/uuid
 k8s.io/apimachinery/pkg/util/validation
 k8s.io/apimachinery/pkg/util/validation/field
 k8s.io/apimachinery/pkg/util/wait
@@ -686,72 +650,6 @@ k8s.io/client-go/discovery/cached/disk
 k8s.io/client-go/discovery/cached/memory
 k8s.io/client-go/discovery/fake
 k8s.io/client-go/dynamic
-k8s.io/client-go/informers
-k8s.io/client-go/informers/admissionregistration
-k8s.io/client-go/informers/admissionregistration/v1
-k8s.io/client-go/informers/admissionregistration/v1alpha1
-k8s.io/client-go/informers/admissionregistration/v1beta1
-k8s.io/client-go/informers/apiserverinternal
-k8s.io/client-go/informers/apiserverinternal/v1alpha1
-k8s.io/client-go/informers/apps
-k8s.io/client-go/informers/apps/v1
-k8s.io/client-go/informers/apps/v1beta1
-k8s.io/client-go/informers/apps/v1beta2
-k8s.io/client-go/informers/autoscaling
-k8s.io/client-go/informers/autoscaling/v1
-k8s.io/client-go/informers/autoscaling/v2
-k8s.io/client-go/informers/autoscaling/v2beta1
-k8s.io/client-go/informers/autoscaling/v2beta2
-k8s.io/client-go/informers/batch
-k8s.io/client-go/informers/batch/v1
-k8s.io/client-go/informers/batch/v1beta1
-k8s.io/client-go/informers/certificates
-k8s.io/client-go/informers/certificates/v1
-k8s.io/client-go/informers/certificates/v1beta1
-k8s.io/client-go/informers/coordination
-k8s.io/client-go/informers/coordination/v1
-k8s.io/client-go/informers/coordination/v1beta1
-k8s.io/client-go/informers/core
-k8s.io/client-go/informers/core/v1
-k8s.io/client-go/informers/discovery
-k8s.io/client-go/informers/discovery/v1
-k8s.io/client-go/informers/discovery/v1beta1
-k8s.io/client-go/informers/events
-k8s.io/client-go/informers/events/v1
-k8s.io/client-go/informers/events/v1beta1
-k8s.io/client-go/informers/extensions
-k8s.io/client-go/informers/extensions/v1beta1
-k8s.io/client-go/informers/flowcontrol
-k8s.io/client-go/informers/flowcontrol/v1alpha1
-k8s.io/client-go/informers/flowcontrol/v1beta1
-k8s.io/client-go/informers/flowcontrol/v1beta2
-k8s.io/client-go/informers/flowcontrol/v1beta3
-k8s.io/client-go/informers/internalinterfaces
-k8s.io/client-go/informers/networking
-k8s.io/client-go/informers/networking/v1
-k8s.io/client-go/informers/networking/v1alpha1
-k8s.io/client-go/informers/networking/v1beta1
-k8s.io/client-go/informers/node
-k8s.io/client-go/informers/node/v1
-k8s.io/client-go/informers/node/v1alpha1
-k8s.io/client-go/informers/node/v1beta1
-k8s.io/client-go/informers/policy
-k8s.io/client-go/informers/policy/v1
-k8s.io/client-go/informers/policy/v1beta1
-k8s.io/client-go/informers/rbac
-k8s.io/client-go/informers/rbac/v1
-k8s.io/client-go/informers/rbac/v1alpha1
-k8s.io/client-go/informers/rbac/v1beta1
-k8s.io/client-go/informers/resource
-k8s.io/client-go/informers/resource/v1alpha1
-k8s.io/client-go/informers/scheduling
-k8s.io/client-go/informers/scheduling/v1
-k8s.io/client-go/informers/scheduling/v1alpha1
-k8s.io/client-go/informers/scheduling/v1beta1
-k8s.io/client-go/informers/storage
-k8s.io/client-go/informers/storage/v1
-k8s.io/client-go/informers/storage/v1alpha1
-k8s.io/client-go/informers/storage/v1beta1
 k8s.io/client-go/kubernetes
 k8s.io/client-go/kubernetes/fake
 k8s.io/client-go/kubernetes/scheme
@@ -855,51 +753,6 @@ k8s.io/client-go/kubernetes/typed/storage/v1alpha1
 k8s.io/client-go/kubernetes/typed/storage/v1alpha1/fake
 k8s.io/client-go/kubernetes/typed/storage/v1beta1
 k8s.io/client-go/kubernetes/typed/storage/v1beta1/fake
-k8s.io/client-go/listers/admissionregistration/v1
-k8s.io/client-go/listers/admissionregistration/v1alpha1
-k8s.io/client-go/listers/admissionregistration/v1beta1
-k8s.io/client-go/listers/apiserverinternal/v1alpha1
-k8s.io/client-go/listers/apps/v1
-k8s.io/client-go/listers/apps/v1beta1
-k8s.io/client-go/listers/apps/v1beta2
-k8s.io/client-go/listers/autoscaling/v1
-k8s.io/client-go/listers/autoscaling/v2
-k8s.io/client-go/listers/autoscaling/v2beta1
-k8s.io/client-go/listers/autoscaling/v2beta2
-k8s.io/client-go/listers/batch/v1
-k8s.io/client-go/listers/batch/v1beta1
-k8s.io/client-go/listers/certificates/v1
-k8s.io/client-go/listers/certificates/v1beta1
-k8s.io/client-go/listers/coordination/v1
-k8s.io/client-go/listers/coordination/v1beta1
-k8s.io/client-go/listers/core/v1
-k8s.io/client-go/listers/discovery/v1
-k8s.io/client-go/listers/discovery/v1beta1
-k8s.io/client-go/listers/events/v1
-k8s.io/client-go/listers/events/v1beta1
-k8s.io/client-go/listers/extensions/v1beta1
-k8s.io/client-go/listers/flowcontrol/v1alpha1
-k8s.io/client-go/listers/flowcontrol/v1beta1
-k8s.io/client-go/listers/flowcontrol/v1beta2
-k8s.io/client-go/listers/flowcontrol/v1beta3
-k8s.io/client-go/listers/networking/v1
-k8s.io/client-go/listers/networking/v1alpha1
-k8s.io/client-go/listers/networking/v1beta1
-k8s.io/client-go/listers/node/v1
-k8s.io/client-go/listers/node/v1alpha1
-k8s.io/client-go/listers/node/v1beta1
-k8s.io/client-go/listers/policy/v1
-k8s.io/client-go/listers/policy/v1beta1
-k8s.io/client-go/listers/rbac/v1
-k8s.io/client-go/listers/rbac/v1alpha1
-k8s.io/client-go/listers/rbac/v1beta1
-k8s.io/client-go/listers/resource/v1alpha1
-k8s.io/client-go/listers/scheduling/v1
-k8s.io/client-go/listers/scheduling/v1alpha1
-k8s.io/client-go/listers/scheduling/v1beta1
-k8s.io/client-go/listers/storage/v1
-k8s.io/client-go/listers/storage/v1alpha1
-k8s.io/client-go/listers/storage/v1beta1
 k8s.io/client-go/metadata
 k8s.io/client-go/openapi
 k8s.io/client-go/openapi/cached
@@ -935,8 +788,6 @@ k8s.io/client-go/tools/clientcmd/api/latest
 k8s.io/client-go/tools/clientcmd/api/v1
 k8s.io/client-go/tools/metrics
 k8s.io/client-go/tools/pager
-k8s.io/client-go/tools/record
-k8s.io/client-go/tools/record/util
 k8s.io/client-go/tools/reference
 k8s.io/client-go/tools/remotecommand
 k8s.io/client-go/tools/watch
@@ -970,13 +821,6 @@ k8s.io/klog/v2/internal/clock
 k8s.io/klog/v2/internal/dbg
 k8s.io/klog/v2/internal/serialize
 k8s.io/klog/v2/internal/severity
-# k8s.io/kube-aggregator v0.26.1
-## explicit; go 1.19
-k8s.io/kube-aggregator/pkg/apis/apiregistration
-k8s.io/kube-aggregator/pkg/apis/apiregistration/v1
-k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1
-k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/scheme
-k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/typed/apiregistration/v1
 # k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280
 ## explicit; go 1.18
 k8s.io/kube-openapi/pkg/builder3/util
@@ -1118,9 +962,6 @@ sigs.k8s.io/json/internal/golang/encoding/json
 # sigs.k8s.io/kube-storage-version-migrator v0.0.5
 ## explicit; go 1.13
 sigs.k8s.io/kube-storage-version-migrator/pkg/apis/migration/v1alpha1
-sigs.k8s.io/kube-storage-version-migrator/pkg/clients/clientset
-sigs.k8s.io/kube-storage-version-migrator/pkg/clients/clientset/scheme
-sigs.k8s.io/kube-storage-version-migrator/pkg/clients/clientset/typed/migration/v1alpha1
 # sigs.k8s.io/kustomize/api v0.12.1
 ## explicit; go 1.18
 sigs.k8s.io/kustomize/api/filters/annotations

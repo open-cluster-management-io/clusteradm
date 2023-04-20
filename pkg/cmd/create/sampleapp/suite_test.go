@@ -2,6 +2,12 @@
 package sampleapp
 
 import (
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/discovery/cached/memory"
+	"k8s.io/client-go/restmapper"
+	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"path/filepath"
 	"testing"
 
@@ -77,3 +83,27 @@ var _ = ginkgo.AfterSuite(func() {
 	err := testEnv.Stop()
 	gomega.Expect(err).ToNot(gomega.HaveOccurred())
 })
+
+type TestClientGetter struct {
+	cfg *rest.Config
+}
+
+func (t TestClientGetter) ToRESTConfig() (*rest.Config, error) {
+	return t.cfg, nil
+}
+
+func (t TestClientGetter) ToDiscoveryClient() (discovery.CachedDiscoveryInterface, error) {
+	discoveryClient, _ := discovery.NewDiscoveryClientForConfig(t.cfg)
+	return memory.NewMemCacheClient(discoveryClient), nil
+}
+
+// ToRESTMapper returns a restmapper
+func (t TestClientGetter) ToRESTMapper() (meta.RESTMapper, error) {
+	client, _ := t.ToDiscoveryClient()
+	return restmapper.NewDeferredDiscoveryRESTMapper(client), nil
+}
+
+// ToRawKubeConfigLoader return kubeconfig loader as-is
+func (t TestClientGetter) ToRawKubeConfigLoader() clientcmd.ClientConfig {
+	return clientcmd.NewDefaultClientConfig(clientcmdapi.Config{}, nil)
+}

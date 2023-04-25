@@ -29,8 +29,8 @@ func WaitNamespaceDeleted(kubeconfigpath string, ctx string, namespace string) e
 		return err
 	}
 
-	return wait.PollImmediateInfinite(1*time.Second, func() (bool, error) {
-		_, err = clientset.CoreV1().Namespaces().Get(context.TODO(), namespace, metav1.GetOptions{})
+	return wait.PollUntilContextCancel(context.TODO(), 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		_, err = clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return true, nil
 		}
@@ -93,8 +93,8 @@ func WaitCRDDeleted(kubeconfigpath string, ctx string, name string) error {
 		return err
 	}
 
-	return wait.PollImmediateInfinite(1*time.Second, func() (bool, error) {
-		_, err = client.ApiextensionsV1().CustomResourceDefinitions().Get(context.TODO(), name, metav1.GetOptions{})
+	return wait.PollUntilContextCancel(context.TODO(), 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		_, err = client.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, name, metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return true, nil
 		}

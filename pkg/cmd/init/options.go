@@ -23,6 +23,11 @@ type Options struct {
 	registry string
 	//version of predefined compatible image versions
 	bundleVersion string
+
+	//If set, deploy the singleton controlplane
+	singleton       bool
+	singletonValues singletonValues
+
 	//If set, will be persisting the generated join command to a local file
 	outputJoinCommandFile string
 	//If set, the command will hold until the OCM control plane initialized
@@ -46,6 +51,8 @@ type BundleVersion struct {
 	OperatorImageVersion string
 	// addon manager image version
 	AddonManagerImageVersion string
+	// multicluster controlplane image version
+	ControlplaneImageVersion string
 }
 
 // Values: The values used in the template
@@ -76,6 +83,36 @@ type Hub struct {
 	TokenSecret string `json:"tokenSecret"`
 	// Registry is the name of the image registry to pull.
 	Registry string `json:"registry"`
+}
+
+type singletonValues struct {
+	controlplaneName string
+
+	autoApprovalBootstrapUsers     string
+	enableSelfManagement           bool
+	enableDelegatingAuthentication bool
+
+	// apiserver options
+	apiserverExternalHostname string
+	apiserverCA               string
+	apiserverCAKey            string
+
+	// etcd options
+	etcdMode          string
+	etcdServers       []string
+	etcdCA            string
+	etcdClientCert    string
+	etcdClientCertKey string
+
+	// pvc options
+	pvcStorageClassName string
+
+	// expose service options
+	routeEnabled           bool
+	loadBalancerEnabled    bool
+	loadBalancerBaseDomain string
+	nodeportEnabled        bool
+	nodeportValue          int16
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {

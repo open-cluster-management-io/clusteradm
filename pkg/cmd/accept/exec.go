@@ -75,7 +75,7 @@ func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient 
 				errs = append(errs, fmt.Errorf("no csr is approved yet for cluster %s", clusterName))
 			}
 		} else {
-			err := wait.PollImmediate(1*time.Second, time.Duration(o.ClusteradmFlags.Timeout)*time.Second, func() (bool, error) {
+			err := wait.PollUntilContextTimeout(context.TODO(), 1*time.Second, time.Duration(o.ClusteradmFlags.Timeout)*time.Second, true, func(ctx context.Context) (bool, error) {
 				approved, err := o.accept(kubeClient, clusterClient, clusterName, true)
 				if !approved {
 					return false, nil

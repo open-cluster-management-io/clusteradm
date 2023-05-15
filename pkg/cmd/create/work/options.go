@@ -21,6 +21,8 @@ type Options struct {
 	FileNameFlags genericclioptions.FileNameFlags
 
 	Overwrite bool
+
+	UseReplicaSet bool
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {

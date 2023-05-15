@@ -7,8 +7,10 @@ import (
 	"time"
 )
 
+var r *rand.Rand
+
 func init() {
-	rand.Seed(time.Now().UnixNano())
+	r = rand.New(rand.NewSource(time.Now().UnixNano()))
 }
 
 var letterRunes_az09 = []rune("abcdefghijklmnopqrstuvwxyz0123456789")
@@ -20,7 +22,7 @@ func RandStringRunes_az09(n int) string {
 func randStringRunes(n int, runes []rune) string {
 	b := make([]rune, n)
 	for i := range b {
-		b[i] = runes[rand.Intn(len(runes))]
+		b[i] = runes[r.Intn(len(runes))]
 	}
 	return string(b)
 }

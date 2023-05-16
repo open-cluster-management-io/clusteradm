@@ -62,6 +62,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	o.ClusterOption.AddFlags(cmd.Flags())
 	cmd.Flags().StringVar(&o.Placement, "placement", "", "Specify an existing placement with format <namespace>/<name>")
 	cmd.Flags().BoolVar(&o.Overwrite, "overwrite", false, "Overwrite the existing work if it exists already")
+	cmd.Flags().BoolVarP(&o.UseReplicaSet, "replicaset", "r", false, "Create Manifestwork for the associated placement's cluster using ManifestWorkReplicaSet")
 	o.FileNameFlags.AddFlags(cmd.Flags())
 
 	return cmd

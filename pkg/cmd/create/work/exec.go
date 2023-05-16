@@ -17,6 +17,7 @@ import (
 	workclientset "open-cluster-management.io/api/client/work/clientset/versioned"
 	clusterv1beta1 "open-cluster-management.io/api/cluster/v1beta1"
 	workapiv1 "open-cluster-management.io/api/work/v1"
+	workapiv1alpha1 "open-cluster-management.io/api/work/v1alpha1"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -52,6 +53,9 @@ func (o *Options) validate() error {
 	if len(o.Placement) > 0 && len(strings.Split(o.Placement, "/")) != 2 {
 		return fmt.Errorf("the name of the placement %s must be in the format of <namespace>/<name>", o.Placement)
 	}
+	if o.UseReplicaSet && len(o.Placement) == 0 {
+		return fmt.Errorf("--placement must be specified when enable --replicaset")
+	}
 	if len(*o.FileNameFlags.Filenames) == 0 {
 		return fmt.Errorf("manifest files must be specified")
 	}
@@ -59,7 +63,7 @@ func (o *Options) validate() error {
 	return nil
 }
 
-func (o *Options) run() (err error) {
+func (o *Options) run() error {
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
@@ -83,12 +87,17 @@ func (o *Options) run() (err error) {
 		return err
 	}
 
-	err = o.applyWork(workClient, manifests, addedClusters, deletedClusters)
-	if err != nil {
-		return err
+	if o.UseReplicaSet {
+		if err := o.applyWorkSet(workClient, clusterClient, manifests); err != nil {
+			return err
+		}
+	} else {
+		if err := o.applyWork(workClient, manifests, addedClusters, deletedClusters); err != nil {
+			return err
+		}
 	}
 
-	return
+	return nil
 }
 
 func (o *Options) readManifests() ([]workapiv1.Manifest, error) {
@@ -171,6 +180,55 @@ func (o *Options) getClusters(workClient workclientset.Interface, clusterClient 
 	}
 
 	return addedClusters, deletedClusters, nil
+}
+
+func (o *Options) applyWorkSet(workClient workclientset.Interface, clusterClient *clusterclientset.Clientset, manifests []workapiv1.Manifest) error {
+	placement, err := o.getPlacement(clusterClient)
+	if err != nil {
+		return err
+	}
+
+	workSet, err := workClient.WorkV1alpha1().ManifestWorkReplicaSets(placement.Namespace).Get(context.TODO(), o.Workname, metav1.GetOptions{})
+
+	switch {
+	case errors.IsNotFound(err):
+		workSet = &workapiv1alpha1.ManifestWorkReplicaSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      o.Workname,
+				Namespace: placement.Namespace,
+			},
+			Spec: workapiv1alpha1.ManifestWorkReplicaSetSpec{
+				ManifestWorkTemplate: workapiv1.ManifestWorkSpec{
+					Workload: workapiv1.ManifestsTemplate{
+						Manifests: manifests,
+					},
+				},
+				PlacementRefs: []workapiv1alpha1.LocalPlacementReference{
+					{Name: placement.Name},
+				},
+			},
+		}
+		if _, err := workClient.WorkV1alpha1().ManifestWorkReplicaSets(placement.Namespace).Create(context.TODO(), workSet, metav1.CreateOptions{}); err != nil {
+			return err
+		}
+		fmt.Fprintf(o.Streams.Out, "create manifestworkreplicaset %s in namespace %s\n", o.Workname, placement.Namespace)
+		return nil
+	case err != nil:
+		return err
+	}
+
+	if !o.Overwrite {
+		fmt.Fprintf(o.Streams.Out, "manifestworkreplicaset %s in namespace %s already exists\n", o.Workname, placement.Namespace)
+	} else {
+		workSet.Spec.ManifestWorkTemplate.Workload.Manifests = manifests
+		workSet.Spec.PlacementRefs = []workapiv1alpha1.LocalPlacementReference{{Name: placement.Name}}
+		if _, err := workClient.WorkV1alpha1().ManifestWorkReplicaSets(placement.Namespace).Update(context.TODO(), workSet, metav1.UpdateOptions{}); err != nil {
+			return err
+		}
+		fmt.Fprintf(o.Streams.Out, "update manifestworkreplicaset %s in namespace %s\n", o.Workname, placement.Namespace)
+	}
+
+	return nil
 }
 
 func (o *Options) applyWork(workClient workclientset.Interface, manifests []workapiv1.Manifest, addedClusters, deletedClusters sets.Set[string]) error {

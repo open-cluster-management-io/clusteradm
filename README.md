@@ -129,6 +129,8 @@ Install specific built-in add-on(s) to the hub cluster.
 
 `clusteradm install hub-addon --names application-manager`
 
+`clusteradm install hub-addon --names argocd-pull-manager`
+
 `clusteradm install hub-addon --names governance-policy-framework`
 
 ### enable addons

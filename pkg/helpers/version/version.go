@@ -7,13 +7,14 @@ import (
 )
 
 type VersionBundle struct {
-	Registration string
-	Placement    string
-	Work         string
-	Operator     string
-	AppAddon     string
-	PolicyAddon  string
-	AddonManager string
+	Registration    string
+	Placement       string
+	Work            string
+	Operator        string
+	AppAddon        string
+	ArgoCDPullAddon string
+	PolicyAddon     string
+	AddonManager    string
 }
 
 var defaultBundleVersion = "0.10.0"
@@ -31,13 +32,14 @@ func GetVersionBundle(version string) (VersionBundle, error) {
 
 	// latest
 	versionBundleList["latest"] = VersionBundle{
-		Registration: "latest",
-		Placement:    "latest",
-		Work:         "latest",
-		Operator:     "latest",
-		AddonManager: "latest",
-		AppAddon:     "latest",
-		PolicyAddon:  "latest",
+		Registration:    "latest",
+		Placement:       "latest",
+		Work:            "latest",
+		Operator:        "latest",
+		AddonManager:    "latest",
+		AppAddon:        "latest",
+		ArgoCDPullAddon: "latest",
+		PolicyAddon:     "latest",
 	}
 
 	// predefined bundle version
@@ -97,12 +99,13 @@ func GetVersionBundle(version string) (VersionBundle, error) {
 	}
 
 	versionBundleList["0.10.0"] = VersionBundle{
-		Registration: "v0.10.0",
-		Placement:    "v0.10.0",
-		Work:         "v0.10.0",
-		Operator:     "v0.10.0",
-		AppAddon:     "v0.10.0",
-		PolicyAddon:  "v0.10.0",
+		Registration:    "v0.10.0",
+		Placement:       "v0.10.0",
+		Work:            "v0.10.0",
+		Operator:        "v0.10.0",
+		AppAddon:        "v0.10.0",
+		ArgoCDPullAddon: "v0.10.0",
+		PolicyAddon:     "v0.10.0",
 	}
 
 	// default

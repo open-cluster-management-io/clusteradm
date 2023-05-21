@@ -3,12 +3,13 @@ package hubaddon
 
 import (
 	"context"
+	"os"
+
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"os"
 )
 
 const (
@@ -19,6 +20,7 @@ const (
 	invalidAddon           = "no-such-addon"
 	channelDeployment      = "multicluster-operators-channel"
 	subscriptionDeployment = "multicluster-operators-subscription"
+	argocdPullDeployment   = "argocd-pull-integration"
 	propagatorDeployment   = "governance-policy-propagator"
 	policyAddonDeployment  = "governance-policy-addon-controller"
 )
@@ -129,6 +131,32 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 
 			gomega.Eventually(func() error {
 				_, err := kubeClient.AppsV1().Deployments(ocmNamespace).Get(context.Background(), subscriptionDeployment, metav1.GetOptions{})
+				if err != nil {
+					return err
+				}
+				return nil
+			}, eventuallyTimeout, eventuallyInterval).ShouldNot(gomega.HaveOccurred())
+		})
+
+		ginkgo.It("Should deploy the built in argocd pull integration add-on deployment in open-cluster-management namespace successfully", func() {
+			o := Options{
+				ClusteradmFlags: clusteradmFlags,
+				values: Values{
+					Namespace: ocmNamespace,
+					hubAddons: []string{argocdPullAddonName},
+					BundleVersion: BundleVersion{
+						ArgoCDPullAddon: ocmVersion,
+					},
+				},
+				builder: clusteradmFlags.KubectlFactory.NewBuilder(),
+				Streams: genericclioptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr},
+			}
+
+			err := o.runWithClient()
+			gomega.Expect(err).ToNot(gomega.HaveOccurred())
+
+			gomega.Eventually(func() error {
+				_, err := kubeClient.AppsV1().Deployments(ocmNamespace).Get(context.Background(), argocdPullDeployment, metav1.GetOptions{})
 				if err != nil {
 					return err
 				}

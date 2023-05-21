@@ -24,6 +24,8 @@ type Options struct {
 type BundleVersion struct {
 	// app image version
 	AppAddon string
+	// argocd pull image version
+	ArgoCDPullAddon string
 	// policy image version
 	PolicyAddon string
 }

@@ -1,0 +1,47 @@
+# Copyright Contributors to the Open Cluster Management project
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: argocd-pull-integration
+  name: argocd-pull-integration
+  namespace: open-cluster-management
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: argocd-pull-integration
+  template:
+    metadata:
+      labels:
+        app: argocd-pull-integration
+    spec:
+      containers:
+      - name: argocd-pull-integration
+        args:
+        - --health-probe-bind-address=:8081
+        - --metrics-bind-address=127.0.0.1:8080
+        - --leader-elect
+        command:
+        - /manager
+        image: quay.io/open-cluster-management/argocd-pull-integration:{{ .BundleVersion.ArgoCDPullAddon }}
+        livenessProbe:
+          exec:
+            command:
+            - ls
+          initialDelaySeconds: 15
+          periodSeconds: 15
+        readinessProbe:
+          exec:
+            command:
+            - ls
+          initialDelaySeconds: 15
+          periodSeconds: 15
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+      serviceAccountName: argocd-pull-integration

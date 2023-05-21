@@ -3,9 +3,10 @@ package hubaddon
 
 import (
 	"fmt"
-	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"os"
 	"strings"
+
+	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
@@ -16,6 +17,7 @@ import (
 
 const (
 	appMgrAddonName          = "application-manager"
+	argocdPullAddonName      = "argocd-pull-manager"
 	policyFrameworkAddonName = "governance-policy-framework"
 )
 
@@ -41,6 +43,8 @@ func (o *Options) validate() (err error) {
 		switch n {
 		case appMgrAddonName:
 			continue
+		case argocdPullAddonName:
+			continue
 		case policyFrameworkAddonName:
 			continue
 		default:
@@ -56,8 +60,9 @@ func (o *Options) validate() (err error) {
 	}
 
 	o.values.BundleVersion = BundleVersion{
-		AppAddon:    versionBundle.AppAddon,
-		PolicyAddon: versionBundle.PolicyAddon,
+		AppAddon:        versionBundle.AppAddon,
+		ArgoCDPullAddon: versionBundle.ArgoCDPullAddon,
+		PolicyAddon:     versionBundle.PolicyAddon,
 	}
 
 	return nil
@@ -121,6 +126,29 @@ func (o *Options) runWithClient() error {
 			}
 
 			fmt.Fprintf(o.Streams.Out, "Installing built-in %s add-on to the Hub cluster...\n", appMgrAddonName)
+
+			// Install the ArgoCD Pull Integration Addon
+		case argocdPullAddonName:
+			files := []string{
+				"addon/argocdpull/clusterrole.yaml",
+				"addon/argocdpull/clusterrolebinding.yaml",
+				"addon/argocdpull/serviceaccount.yaml",
+			}
+
+			err := r.Apply(scenario.Files, o.values, files...)
+			if err != nil {
+				return err
+			}
+
+			deployments := []string{
+				"addon/argocdpull/deployment.yaml",
+			}
+			err = r.Apply(scenario.Files, o.values, deployments...)
+			if err != nil {
+				return err
+			}
+
+			fmt.Fprintf(o.Streams.Out, "Installing built-in %s add-on to the Hub cluster...\n", argocdPullAddonName)
 
 		// Install the Policy Framework Addon
 		case policyFrameworkAddonName:

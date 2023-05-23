@@ -55,6 +55,9 @@ type Values struct {
 	//bundle version
 	BundleVersion BundleVersion
 
+	// if enable auto approve
+	AutoApprove bool
+
 	// Features is the slice of feature for registration
 	RegistrationFeatures []operatorv1.FeatureGate
 

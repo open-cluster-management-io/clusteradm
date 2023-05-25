@@ -7,6 +7,7 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:scope="Namespaced",shortName={"mca","mcas"}
 // +kubebuilder:printcolumn:name="Available",type=string,JSONPath=`.status.conditions[?(@.type=="Available")].status`
 // +kubebuilder:printcolumn:name="Degraded",type=string,JSONPath=`.status.conditions[?(@.type=="Degraded")].status`
 // +kubebuilder:printcolumn:name="Progressing",type=string,JSONPath=`.status.conditions[?(@.type=="Progressing")].status`
@@ -336,6 +337,10 @@ const (
 	// ManagedClusterAddOnHostingClusterValidity is a condition type representing whether the hosting cluster is
 	// valid in Hosted mode.
 	ManagedClusterAddOnHostingClusterValidity = "HostingClusterValidity"
+
+	// ManagedClusterAddOnRegistrationApplied is a condition type representing whether the registration of
+	// the addon agent is configured.
+	ManagedClusterAddOnRegistrationApplied = "RegistrationApplied"
 )
 
 // the reasons of condition ManagedClusterAddOnConditionAvailable
@@ -440,4 +445,19 @@ const (
 	// ProgressingReasonConfigurationUnsupported is the reason of condition Progressing indicating the addon configuration
 	// is not supported.
 	ProgressingReasonConfigurationUnsupported = "ConfigurationUnsupported"
+)
+
+// the reasons of condition ManagedClusterAddOnRegistrationApplied
+const (
+	// RegistrationAppliedNilRegistration is the reason of condition RegistrationApplied indicating that there is no
+	// registration option.
+	RegistrationAppliedNilRegistration = "NilRegistration"
+
+	// RegistrationAppliedSetPermissionFailed is the reason of condition RegistrationApplied indicating that it is
+	// failed to set up rbac for the addon agent.
+	RegistrationAppliedSetPermissionFailed = "SetPermissionFailed"
+
+	// RegistrationAppliedSetPermissionApplied is the reason of condition RegistrationApplied indicating that it is
+	// successful to set up rbac for the addon agent.
+	RegistrationAppliedSetPermissionApplied = "SetPermissionApplied"
 )

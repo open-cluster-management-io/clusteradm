@@ -29,6 +29,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 			TokenSecret: helpers.RandStringRunes_az09(16),
 			Registry:    o.registry,
 		},
+		AutoApprove:          genericclioptionsclusteradm.HubMutableFeatureGate.Enabled(ocmfeature.ManagedClusterAutoApproval),
 		RegistrationFeatures: genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubRegistrationFeatureGates),
 		WorkFeatures:         genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubWorkFeatureGates),
 		AddonFeatures:        genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubAddonManagerFeatureGates),

@@ -14,6 +14,11 @@ spec:
     mode: Default
   {{if .RegistrationFeatures}}
   registrationConfiguration:
+    {{if .AutoApprove}}
+    autoApproveUsers:
+    - system:bootstrap:bootstrap-token-{{ .Hub.TokenID }}
+    - system:serviceaccount:open-cluster-management:cluster-bootstrap
+    {{end}}
     featureGates:
     {{range .RegistrationFeatures }}
     - feature: {{ .Feature }}

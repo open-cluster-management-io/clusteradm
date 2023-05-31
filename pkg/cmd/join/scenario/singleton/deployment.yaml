@@ -1,0 +1,48 @@
+# Copyright Contributors to the Open Cluster Management project
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: multicluster-controlplane-agent
+  namespace: {{.AgentNamespace}}
+  labels:
+    app: multicluster-controlplane-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: multicluster-controlplane-agent
+  template:
+    metadata:
+      labels:
+        app: multicluster-controlplane-agent
+    spec:
+      serviceAccountName: multicluster-controlplane-agent-sa
+      containers:
+      - name: agent
+        image: {{.Registry}}/multicluster-controlplane:{{.BundleVersion.SingletonAgentImageVersion}}
+        imagePullPolicy: IfNotPresent
+        args:
+          - "/multicluster-controlplane"
+          - "agent"
+          - "--cluster-name={{.ClusterName}}"
+          - "--bootstrap-kubeconfig=/spoke/bootstrap/kubeconfig"
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          privileged: false
+          runAsNonRoot: true
+        volumeMounts:
+        - name: bootstrap-kubeconfig
+          mountPath: "/spoke/bootstrap"
+          readOnly: true
+        - name: hub-kubeconfig
+          mountPath: "/spoke/hub-kubeconfig"
+      volumes:
+      - name: bootstrap-kubeconfig
+        secret:
+          secretName: bootstrap-hub-kubeconfig
+      - name: hub-kubeconfig
+        emptyDir:
+          medium: Memory

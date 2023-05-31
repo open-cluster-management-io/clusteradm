@@ -23,15 +23,19 @@ type Options struct {
 	caFile string
 	//the name under the cluster must be imported
 	clusterName string
-	// klusterlet deploy mode, supported values are "hosted" and "default"
+
+	// OCM agent deploy mode, default to "default".
 	mode string
 	// managed cluster kubeconfig file, used in hosted mode
 	managedKubeconfigFile string
-
 	//Pulling image registry of OCM
 	registry string
 	// version of predefined compatible image versions
 	bundleVersion string
+
+	// if set, deploy the singleton agent rather than klusterlet
+	singleton bool
+
 	//The file to output the resources will be sent to the file.
 	outputFile string
 	//Runs the cluster joining in foreground
@@ -60,6 +64,8 @@ type Options struct {
 type Values struct {
 	//ClusterName: the name of the joined cluster on the hub
 	ClusterName string
+	//AgentNamespace: the namespace to deploy the agent
+	AgentNamespace string
 	//Hub: Hub information
 	Hub Hub
 	//Klusterlet is the klusterlet related configuration
@@ -92,7 +98,6 @@ type Klusterlet struct {
 	APIServer           string
 	Mode                string
 	Name                string
-	AgentNamespace      string
 	KlusterletNamespace string
 }
 
@@ -105,6 +110,8 @@ type BundleVersion struct {
 	WorkImageVersion string
 	// operator image version
 	OperatorImageVersion string
+	// singleton agent image version
+	SingletonAgentImageVersion string
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {

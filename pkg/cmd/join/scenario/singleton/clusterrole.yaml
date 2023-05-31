@@ -1,0 +1,56 @@
+# Copyright Contributors to the Open Cluster Management project
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: open-cluster-management:multicluster-controlplane-agent
+rules:
+# Allow agent to manage crds
+- apiGroups: ["apiextensions.k8s.io"]
+  resources: ["customresourcedefinitions"]
+  verbs: ["create", "get", "list", "update", "watch", "patch", "delete"]
+# Allow agent to get/list/watch nodes
+# list nodes to calculates the capacity and allocatable resources of the managed cluster
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get", "list", "watch"]
+# Allow agent to list clusterclaims
+- apiGroups: ["cluster.open-cluster-management.io"]
+  resources: ["clusterclaims"]
+  verbs: ["get", "list", "watch"]
+# Allow agent to create/update/patch/delete namespaces, get/list/watch are contained in admin role already
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["create", "update", "patch", "delete"]
+# Allow agent to manage role/rolebinding/clusterrole/clusterrolebinding
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["clusterrolebindings", "rolebindings"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["clusterroles", "roles"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "escalate", "bind"]
+# Allow OCM addons to setup metrics collection with Prometheus
+# when it is created.
+- apiGroups: ["monitoring.coreos.com"]
+  resources: ["servicemonitors"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+# Allow agent to manage oauth clients
+- apiGroups: ["oauth.openshift.io"]
+  resources: ["oauthclients"]
+  verbs: ["get", "list", "watch", "create", "patch","update", "delete"]
+# Allow agent to manage appliedmanifestworks
+- apiGroups: ["work.open-cluster-management.io"]
+  resources: ["appliedmanifestworks"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["work.open-cluster-management.io"]
+  resources: ["appliedmanifestworks/status"]
+  verbs: ["patch", "update"]
+- apiGroups: ["work.open-cluster-management.io"]
+  resources: ["appliedmanifestworks/finalizers"]
+  verbs: ["update"]
+# Allow agent to check executor permissions
+- apiGroups: ["authorization.k8s.io"]
+  resources: ["subjectaccessreviews"]
+  verbs: ["create"]
+- apiGroups: [""]
+  resources: ["serviceaccounts"]
+  verbs: ["impersonate"]

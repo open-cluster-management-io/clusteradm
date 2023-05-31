@@ -5,5 +5,5 @@ import (
 	"embed"
 )
 
-//go:embed join
+//go:embed join singleton bootstrap_hub_kubeconfig.yaml
 var Files embed.FS

@@ -10,6 +10,7 @@ on:
 jobs:
   fossa-scan:
     runs-on: ubuntu-latest
+    if: github.repository_owner == 'open-cluster-management-io'
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3

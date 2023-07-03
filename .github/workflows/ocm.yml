@@ -1,0 +1,20 @@
+# Copyright Contributors to the Open Cluster Management project
+
+name: OCM
+on:
+    repository_dispatch:
+        types: [ocm_changes]
+
+jobs:
+    e2e-test:
+        runs-on: ubuntu-latest
+        steps:
+        - run: echo ${{ github.event.client_payload.ref }}
+        - run: echo ${{ github.event.client_payload.sha }}
+        - uses: actions/checkout@v3
+        - name: Set up Go
+          uses: actions/setup-go@v3
+          with:
+            go-version: 1.19
+        - name: E2E Tests
+          run: make test-e2e

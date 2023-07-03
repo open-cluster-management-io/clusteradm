@@ -1,4 +1,5 @@
 # Copyright Contributors to the Open Cluster Management project
+# Copied from: https://github.com/open-cluster-management-io/ocm/blob/main/deploy/klusterlet/config/rbac/cluster_role.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -46,4 +47,4 @@ rules:
 # Allow the registration-operator to update the appliedmanifestworks finalizer.
 - apiGroups: ["work.open-cluster-management.io"]
   resources: ["appliedmanifestworks"]
-  verbs: ["list", "update"]
+  verbs: ["list", "update", "patch"]

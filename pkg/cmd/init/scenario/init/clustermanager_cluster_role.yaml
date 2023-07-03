@@ -1,4 +1,5 @@
 # Copyright Contributors to the Open Cluster Management project
+# Copied from https://github.com/open-cluster-management-io/ocm/blob/main/deploy/cluster-manager/config/rbac/cluster_role.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -10,7 +11,7 @@ rules:
   verbs: ["create", "get", "list", "update", "watch", "patch", "delete", "deletecollection"]
 - apiGroups: [""]
   resources: ["secrets"]
-  verbs: ["get", "list", "watch", "update", "patch", "delete"]
+  verbs: ["list", "watch", "update", "patch", "delete"]
   resourceNames:
     - "signer-secret"
     - "registration-webhook-serving-cert"
@@ -21,9 +22,10 @@ rules:
     - "placement-controller-sa-kubeconfig"
     - "work-controller-sa-kubeconfig"
     - "external-hub-kubeconfig"
+# addon manager needs this to sign the customized type csr
 - apiGroups: [""]
   resources: ["secrets"]
-  verbs: ["create"]
+  verbs: ["create", "get"]
 - apiGroups: ["coordination.k8s.io"]
   resources: ["leases"]
   verbs: ["create", "get", "list", "update", "watch", "patch", "delete"]
@@ -67,7 +69,7 @@ rules:
 # Allow the nuclues to manage clustermanager apis.
 - apiGroups: ["operator.open-cluster-management.io"]
   resources: ["clustermanagers"]
-  verbs: ["get", "list", "watch", "update", "delete"]
+  verbs: ["get", "list", "watch", "update", "delete", "patch"]
 - apiGroups: ["operator.open-cluster-management.io"]
   resources: ["clustermanagers/status"]
   verbs: ["update", "patch"]
@@ -83,8 +85,11 @@ rules:
   resources: ["managedclusteraddons/status", "clustermanagementaddons/status"]
   verbs: ["patch", "update"]
 - apiGroups: ["addon.open-cluster-management.io"]
-  resources: ["managedclusteraddons/finalizers", "clustermanagementaddons/finalizers"]
+  resources: [managedclusteraddons/finalizers, "clustermanagementaddons/finalizers"]
   verbs: ["update"]
+- apiGroups: ["addon.open-cluster-management.io"]
+  resources: [addondeploymentconfigs, "addontemplates"]
+  verbs: ["get", "list", "watch"]
 - apiGroups: ["authentication.k8s.io"]
   resources: ["tokenreviews"]
   verbs: ["create"]
@@ -96,8 +101,7 @@ rules:
   verbs: ["update"]
 - apiGroups: ["certificates.k8s.io"]
   resources: ["signers"]
-  resourceNames: ["kubernetes.io/kube-apiserver-client"]
-  verbs: ["approve"]
+  verbs: ["approve", "sign"]
 - apiGroups: ["cluster.open-cluster-management.io"]
   resources: ["managedclusters"]
   verbs: ["get", "list", "watch", "update", "patch"]
@@ -117,7 +121,7 @@ rules:
   resources: ["managedclusters/clientcertificates"]
   verbs: ["renew"]
 - apiGroups: ["register.open-cluster-management.io"]
-  resources: ["managedclusters/accept" ]
+  resources: ["managedclusters/accept"]
   verbs: ["update"]
 - apiGroups: ["work.open-cluster-management.io"]
   resources: ["manifestworkreplicasets"]

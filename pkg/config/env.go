@@ -13,4 +13,5 @@ const (
 	BootstrapSecretPrefix             = "bootstrap-token-"
 	HubClusterNamespace               = "open-cluster-management-hub"
 	ManagedClusterNamespace           = "open-cluster-management-agent"
+	ManagedProxyConfigurationName     = "cluster-proxy"
 )

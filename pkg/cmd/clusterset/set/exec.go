@@ -47,7 +47,7 @@ func (o *Options) Run() (err error) {
 		return err
 	}
 
-	_, err = clusterClient.ClusterV1beta1().ManagedClusterSets().Get(context.TODO(), o.Clusterset, metav1.GetOptions{})
+	_, err = clusterClient.ClusterV1beta2().ManagedClusterSets().Get(context.TODO(), o.Clusterset, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}

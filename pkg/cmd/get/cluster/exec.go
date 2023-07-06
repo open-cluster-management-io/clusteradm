@@ -50,7 +50,7 @@ func (o *Options) run() (err error) {
 
 	listOpt := metav1.ListOptions{}
 	if len(o.Clusterset) != 0 {
-		_, err := clusterClient.ClusterV1beta1().ManagedClusterSets().Get(context.TODO(), o.Clusterset, metav1.GetOptions{})
+		_, err := clusterClient.ClusterV1beta2().ManagedClusterSets().Get(context.TODO(), o.Clusterset, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}

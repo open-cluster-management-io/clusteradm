@@ -64,7 +64,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 	}
 
 	// check existing
-	_, err := clusterClient.ClusterV1beta1().ManagedClusterSets().Get(context.TODO(), clusterset, metav1.GetOptions{})
+	_, err := clusterClient.ClusterV1beta2().ManagedClusterSets().Get(context.TODO(), clusterset, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			fmt.Fprintf(o.Streams.Out, "Clusterset %s not found or is already deleted\n", clusterset)
@@ -74,7 +74,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 	}
 
 	// check binding
-	list, err := clusterClient.ClusterV1beta1().ManagedClusterSetBindings(metav1.NamespaceAll).List(context.TODO(), metav1.ListOptions{
+	list, err := clusterClient.ClusterV1beta2().ManagedClusterSetBindings(metav1.NamespaceAll).List(context.TODO(), metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("metadata.name=%s", clusterset),
 	})
 	// if exist, return
@@ -97,7 +97,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 		// watch until clusterset is removed
 		e := helpers.WatchUntil(
 			func() (watch.Interface, error) {
-				return clusterClient.ClusterV1beta1().ManagedClusterSets().Watch(context.TODO(), metav1.ListOptions{
+				return clusterClient.ClusterV1beta2().ManagedClusterSets().Watch(context.TODO(), metav1.ListOptions{
 					FieldSelector: fmt.Sprintf("metadata.name=%s", clusterset),
 				})
 			},
@@ -110,7 +110,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 	}(errChannel)
 
 	// delete
-	err = clusterClient.ClusterV1beta1().ManagedClusterSets().Delete(context.TODO(), clusterset, metav1.DeleteOptions{})
+	err = clusterClient.ClusterV1beta2().ManagedClusterSets().Delete(context.TODO(), clusterset, metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}

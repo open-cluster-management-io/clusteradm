@@ -9,6 +9,7 @@ import (
 	clusterclient "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 	clusterv1 "open-cluster-management.io/api/cluster/v1"
+	clusterv1alpha1 "open-cluster-management.io/api/cluster/v1alpha1"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 )
 
@@ -54,14 +55,14 @@ func CheckForKlusterletCRD(client operatorclient.Interface) error {
 func CheckForManagedCluster(client clusterclient.Interface) error {
 	msg := "managed cluster oriented command should not running against non-managed cluster"
 
-	list, err := client.Discovery().ServerResourcesForGroupVersion(clusterv1.GroupVersion.String())
+	list, err := client.Discovery().ServerResourcesForGroupVersion(clusterv1alpha1.GroupVersion.String())
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return fmt.Errorf(msg)
 
 		}
-		return fmt.Errorf("failed to list GroupVersion: %s", clusterv1.GroupVersion.String())
 
+		return fmt.Errorf("failed to list GroupVersion: %s", clusterv1alpha1.GroupVersion.String())
 	}
 	flag := findResource(list, ClusterClaimResourceName)
 	if flag {

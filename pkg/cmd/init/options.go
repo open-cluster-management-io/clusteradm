@@ -6,6 +6,7 @@ import (
 	"k8s.io/cli-runtime/pkg/resource"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
+	"open-cluster-management.io/clusteradm/pkg/helpers/helm"
 )
 
 // Options is holding all the command-line options
@@ -25,8 +26,9 @@ type Options struct {
 	bundleVersion string
 
 	//If set, deploy the singleton controlplane
-	singleton       bool
-	singletonValues singletonValues
+	singleton     bool
+	SingletonName string
+	Helm          *helm.Helm
 
 	//If set, will be persisting the generated join command to a local file
 	outputJoinCommandFile string
@@ -51,8 +53,6 @@ type BundleVersion struct {
 	OperatorImageVersion string
 	// addon manager image version
 	AddonManagerImageVersion string
-	// multicluster controlplane image version
-	ControlplaneImageVersion string
 }
 
 // Values: The values used in the template
@@ -85,39 +85,10 @@ type Hub struct {
 	Registry string `json:"registry"`
 }
 
-type singletonValues struct {
-	controlplaneName string
-
-	autoApprovalBootstrapUsers     string
-	enableSelfManagement           bool
-	enableDelegatingAuthentication bool
-
-	// apiserver options
-	apiserverExternalHostname string
-	apiserverCA               string
-	apiserverCAKey            string
-
-	// etcd options
-	etcdMode          string
-	etcdServers       []string
-	etcdCA            string
-	etcdClientCert    string
-	etcdClientCertKey string
-
-	// pvc options
-	pvcStorageClassName string
-
-	// expose service options
-	routeEnabled           bool
-	loadBalancerEnabled    bool
-	loadBalancerBaseDomain string
-	nodeportEnabled        bool
-	nodeportValue          int16
-}
-
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
 		Streams:         streams,
+		Helm:            helm.NewHelm(),
 	}
 }

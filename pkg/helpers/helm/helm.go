@@ -14,6 +14,7 @@ import (
 
 	"github.com/gofrs/flock"
 	"github.com/pkg/errors"
+	"github.com/spf13/pflag"
 
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -25,17 +26,45 @@ import (
 	"helm.sh/helm/v3/pkg/repo"
 )
 
-func NewHelmWithNamespace(ns string) *Helm {
-	h := &Helm{
-		settings: cli.New(),
-	}
-	h.settings.SetNamespace(ns)
-
-	return h
-}
+const HelmFlagSetAnnotation = "HelmSet"
 
 type Helm struct {
 	settings *cli.EnvSettings
+	values   *values.Options
+}
+
+func NewHelm() *Helm {
+	h := &Helm{
+		settings: cli.New(),
+		values: &values.Options{
+			Values:     []string{},
+			FileValues: []string{},
+		},
+	}
+	return h
+}
+
+func (h *Helm) WithNamespace(ns string) {
+	h.settings.SetNamespace(ns)
+}
+
+func (h *Helm) AddFlags(fs *pflag.FlagSet) {
+	fs.StringArrayVarP(&h.values.ValueFiles, "values", "f", []string{}, "specify values in a YAML file")
+	fs.StringArrayVar(&h.values.Values, "set-string", []string{}, "set string for chart")
+	fs.StringArrayVar(&h.values.Values, "set", []string{}, "set values for chart")
+	fs.StringArrayVar(&h.values.FileValues, "set-file", []string{}, "set file for chart")
+	fs.StringArrayVar(&h.values.JSONValues, "set-json", []string{}, "set json for chart")
+	fs.StringArrayVar(&h.values.LiteralValues, "set-literal", []string{}, "set literal for chart")
+	_ = fs.SetAnnotation("values", "HelmSet", []string{})
+	_ = fs.SetAnnotation("set-string", "HelmSet", []string{})
+	_ = fs.SetAnnotation("set", "HelmSet", []string{})
+	_ = fs.SetAnnotation("set-file", "HelmSet", []string{})
+	_ = fs.SetAnnotation("set-json", "HelmSet", []string{})
+	_ = fs.SetAnnotation("set-literal", "HelmSet", []string{})
+}
+
+func (h *Helm) SetValue(key, value string) {
+	h.values.Values = append(h.values.Values, fmt.Sprintf("%s=%s", key, value))
 }
 
 // PrepareChart prepares the chart for installation
@@ -122,7 +151,7 @@ func (h *Helm) PrepareChart(repoName, repoUrl string) error {
 }
 
 // InstallChart installs the chart
-func (h *Helm) InstallChart(name, repo, chart string, valueOpts *values.Options) {
+func (h *Helm) InstallChart(name, repo, chart string) {
 	actionConfig := new(action.Configuration)
 	if err := actionConfig.Init(h.settings.RESTClientGetter(), h.settings.Namespace(), os.Getenv("HELM_DRIVER"), debug); err != nil {
 		log.Fatal(err)
@@ -141,7 +170,7 @@ func (h *Helm) InstallChart(name, repo, chart string, valueOpts *values.Options)
 	debug("CHART PATH: %s\n", cp)
 
 	p := getter.All(h.settings)
-	vals, err := valueOpts.MergeValues(p)
+	vals, err := h.values.MergeValues(p)
 	if err != nil {
 		log.Fatal(err)
 	}

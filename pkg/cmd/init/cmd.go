@@ -48,10 +48,6 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	genericclioptionsclusteradm.HubMutableFeatureGate.AddFlag(cmd.Flags())
 	cmd.Flags().StringVar(&o.outputFile, "output-file", "", "The generated resources will be copied in the specified file")
 	cmd.Flags().BoolVar(&o.force, "force", false, "If set then the hub will be reinitialized")
-	cmd.Flags().StringVar(&o.registry, "image-registry", "quay.io/open-cluster-management",
-		"The name of the image registry serving OCM images, which will be applied to all the deploying OCM components.")
-	cmd.Flags().StringVar(&o.bundleVersion, "bundle-version", "default",
-		"The version of predefined compatible image versions (e.g. v0.6.0). Defaults to the latest released version. You can also set \"latest\" to install the latest development version.")
 	cmd.Flags().StringVar(&o.outputJoinCommandFile, "output-join-command-file", "",
 		"If set, the generated join command be saved to the prescribed file.")
 	cmd.Flags().BoolVar(&o.wait, "wait", false,
@@ -61,55 +57,21 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 
 	//clusterManagetSet contains the flags for deploy cluster-manager
 	clusterManagerSet := pflag.NewFlagSet("clusterManagerSet", pflag.ExitOnError)
+	cmd.Flags().StringVar(&o.registry, "image-registry", "quay.io/open-cluster-management",
+		"The name of the image registry serving OCM images, which will be applied to all the deploying OCM components.")
+	cmd.Flags().StringVar(&o.bundleVersion, "bundle-version", "default",
+		"The version of predefined compatible image versions (e.g. v0.6.0). Defaults to the latest released version. You can also set \"latest\" to install the latest development version.")
 	clusterManagerSet.BoolVar(&o.useBootstrapToken, "use-bootstrap-token", false, "If set then the bootstrap token will used instead of a service account token")
+	_ = clusterManagerSet.SetAnnotation("image-registry", "clusterManagerSet", []string{})
+	_ = clusterManagerSet.SetAnnotation("bundle-version", "clusterManagerSet", []string{})
 	_ = clusterManagerSet.SetAnnotation("use-bootstrap-token", "clusterManagerSet", []string{})
 	cmd.Flags().AddFlagSet(clusterManagerSet)
 
-	//singletonSet contains the flags for deploy singleton controlplane
 	singletonSet := pflag.NewFlagSet("singletonSet", pflag.ExitOnError)
-	singletonSet.StringVar(&o.singletonValues.controlplaneName, "name", "open-cluster-management-hub", "")
-
-	singletonSet.StringVar(&o.singletonValues.autoApprovalBootstrapUsers, "auto-approval-bootstrap-users", "", "")
-	singletonSet.BoolVar(&o.singletonValues.enableSelfManagement, "enable-self-management", false, "")
-	singletonSet.BoolVar(&o.singletonValues.enableDelegatingAuthentication, "enable-delegating-authentication", false, "")
-	//apiserver options
-	singletonSet.StringVar(&o.singletonValues.apiserverExternalHostname, "apiserver-external-hostname", "", "")
-	singletonSet.StringVar(&o.singletonValues.apiserverCA, "apiserver-ca", "", "")
-	singletonSet.StringVar(&o.singletonValues.apiserverCAKey, "apiserver-ca-key", "", "")
-	//etcd options
-	singletonSet.StringVar(&o.singletonValues.etcdMode, "etcd-mode", "embed", "")
-	singletonSet.StringSliceVar(&o.singletonValues.etcdServers, "etcd-servers", []string{"http://127.0.0.1:2379"}, "")
-	singletonSet.StringVar(&o.singletonValues.etcdCA, "etcd-ca", "", "")
-	singletonSet.StringVar(&o.singletonValues.etcdClientCert, "etcd-client-cert", "", "")
-	singletonSet.StringVar(&o.singletonValues.etcdClientCertKey, "etcd-client-cert-key", "", "")
-	//pvc options
-	singletonSet.StringVar(&o.singletonValues.pvcStorageClassName, "pvc-storageclass-name", "gp2", "")
-	//expose service options
-	singletonSet.BoolVar(&o.singletonValues.routeEnabled, "route-enabled", true, "")
-	singletonSet.BoolVar(&o.singletonValues.loadBalancerEnabled, "load-balancer-enabled", false, "")
-	singletonSet.StringVar(&o.singletonValues.loadBalancerBaseDomain, "load-balancer-base-domain", "", "")
-	singletonSet.BoolVar(&o.singletonValues.nodeportEnabled, "nodeport-enabled", false, "")
-	singletonSet.Int16Var(&o.singletonValues.nodeportValue, "nodeport-value", 30443, "")
-	//set annotions
-	_ = singletonSet.SetAnnotation("name", "singletonSet", []string{})
-	_ = singletonSet.SetAnnotation("auto-approval-bootstrap-users", "singletonSet", []string{})
-	_ = singletonSet.SetAnnotation("enable-self-management", "singletonSet", []string{})
-	_ = singletonSet.SetAnnotation("enable-delegating-authentication", "singletonSet", []string{})
-	_ = singletonSet.SetAnnotation("apiserver-external-hostname", "singletonSet", []string{})
-	_ = singletonSet.SetAnnotation("apiserver-ca", "singletonSet", []string{})
-	_ = singletonSet.SetAnnotation("apiserver-ca-key", "singletonSet", []string{})
-	_ = singletonSet.SetAnnotation("etcd-mode", "singletonSet", []string{})
-	_ = singletonSet.SetAnnotation("etcd-servers", "singletonSet", []string{})
-	_ = singletonSet.SetAnnotation("etcd-ca", "singletonSet", []string{})
-	_ = singletonSet.SetAnnotation("etcd-client-cert", "singletonSet", []string{})
-	_ = singletonSet.SetAnnotation("etcd-client-cert-key", "singletonSet", []string{})
-	_ = singletonSet.SetAnnotation("pvc-storageclass-name", "singletonSet", []string{})
-	_ = singletonSet.SetAnnotation("route-enabled", "singletonSet", []string{})
-	_ = singletonSet.SetAnnotation("load-balancer-enabled", "singletonSet", []string{})
-	_ = singletonSet.SetAnnotation("load-balancer-base-domain", "singletonSet", []string{})
-	_ = singletonSet.SetAnnotation("nodeport-enabled", "singletonSet", []string{})
-	_ = singletonSet.SetAnnotation("nodeport-value", "singletonSet", []string{})
-
+	singletonSet.StringVar(&o.SingletonName, "singleton-name", "singleton-controlplane", "The name of the singleton control plane")
+	_ = clusterManagerSet.SetAnnotation("singleton-name", "singletonSet", []string{})
+	o.Helm.AddFlags(singletonSet)
 	cmd.Flags().AddFlagSet(singletonSet)
+
 	return cmd
 }

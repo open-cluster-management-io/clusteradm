@@ -5,12 +5,10 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"helm.sh/helm/v3/pkg/cli/values"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,9 +42,11 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	cmd.Flags().Visit(func(flag *pflag.Flag) {
 		fmt.Fprintf(o.Streams.Out, "flag %s has been set\n", flag.Name)
 		if flag.Changed {
+			_, hs := flag.Annotations[helm.HelmFlagSetAnnotation]
 			_, ss := flag.Annotations["singletonSet"]
 			_, cs := flag.Annotations["clusterManagerSet"]
-			if !o.singleton && flag.Annotations != nil && ss {
+			// Falgs in helm set or singleton set can be set together
+			if !o.singleton && flag.Annotations != nil && (ss || hs) {
 				fmt.Fprintf(o.Streams.Out, "flag %s is only supported when deploy singleton controlplane\n", flag.Name)
 			}
 			if o.singleton && flag.Annotations != nil && cs {
@@ -67,6 +67,8 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 			WorkFeatures:         genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubWorkFeatureGates),
 			AddonFeatures:        genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubAddonManagerFeatureGates),
 		}
+	} else {
+		o.Helm.WithNamespace(o.SingletonName)
 	}
 
 	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
@@ -82,7 +84,6 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		WorkImageVersion:         versionBundle.Work,
 		OperatorImageVersion:     versionBundle.Operator,
 		AddonManagerImageVersion: versionBundle.AddonManager,
-		ControlplaneImageVersion: versionBundle.MulticlusterControlplane,
 	}
 
 	f := o.ClusteradmFlags.KubectlFactory
@@ -108,7 +109,7 @@ func (o *Options) validate() error {
 	if o.singleton {
 		checks = append(checks,
 			preflight.SingletonControlplaneCheck{
-				ControlplaneName: o.singletonValues.controlplaneName,
+				ControlplaneName: o.SingletonName,
 			})
 	} else {
 		checks = append(checks,
@@ -289,12 +290,12 @@ func (o *Options) run() error {
 
 func (o *Options) deploySingletonControlplane(kubeClient kubernetes.Interface) error {
 	// create namespace
-	_, err := kubeClient.CoreV1().Namespaces().Get(context.TODO(), o.singletonValues.controlplaneName, metav1.GetOptions{})
+	_, err := kubeClient.CoreV1().Namespaces().Get(context.TODO(), o.SingletonName, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			_, err = kubeClient.CoreV1().Namespaces().Create(context.TODO(), &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: o.singletonValues.controlplaneName,
+					Name: o.SingletonName,
 				},
 			}, metav1.CreateOptions{})
 			if err != nil {
@@ -305,83 +306,22 @@ func (o *Options) deploySingletonControlplane(kubeClient kubernetes.Interface) e
 		}
 	}
 
-	h := helm.NewHelmWithNamespace(o.singletonValues.controlplaneName)
-	err = h.PrepareChart(repoName, url)
+	err = o.Helm.PrepareChart(repoName, url)
 	if err != nil {
 		return err
 	}
 
-	// set values
-	valueOpts := &values.Options{
-		Values:     []string{},
-		FileValues: []string{},
-	}
-
-	if o.registry != "quay.io/open-cluster-management" {
-		valueOpts.Values = append(valueOpts.Values, fmt.Sprintf("image=%s", o.registry+"/multicluster-controlplane:"+o.values.BundleVersion.ControlplaneImageVersion))
-	}
-
-	if o.singletonValues.autoApprovalBootstrapUsers != "" {
-		valueOpts.Values = append(valueOpts.Values, fmt.Sprintf("autoApprovalBootstrapUsers=%s", o.singletonValues.autoApprovalBootstrapUsers))
-	}
-	if o.singletonValues.enableSelfManagement {
-		valueOpts.Values = append(valueOpts.Values, fmt.Sprintf("enableSelfManagement=%t", o.singletonValues.enableSelfManagement))
-	}
-	if o.singletonValues.enableDelegatingAuthentication {
-		valueOpts.Values = append(valueOpts.Values, fmt.Sprintf("enableDelegatingAuthentication=%t", o.singletonValues.enableDelegatingAuthentication))
-	}
-
-	if o.singletonValues.apiserverExternalHostname != "" {
-		valueOpts.Values = append(valueOpts.Values, fmt.Sprintf("apiserver.externalHostname=%s", o.singletonValues.apiserverExternalHostname))
-	}
-	if o.singletonValues.apiserverCA != "" && o.singletonValues.apiserverCAKey != "" {
-		valueOpts.FileValues = append(valueOpts.FileValues, fmt.Sprintf("apiserver.ca=%s", o.singletonValues.apiserverCA))
-		valueOpts.FileValues = append(valueOpts.FileValues, fmt.Sprintf("apiserver.cakey=%s", o.singletonValues.apiserverCAKey))
-	}
-
-	if o.singletonValues.etcdMode == "embed" || o.singletonValues.etcdMode == "external" {
-		valueOpts.Values = append(valueOpts.Values, fmt.Sprintf("etcd.mode=%s", o.singletonValues.etcdMode))
-	}
-	if o.singletonValues.etcdServers != nil {
-		valueOpts.Values = append(valueOpts.Values, fmt.Sprintf("etcd.servers={%s}", strings.Join(o.singletonValues.etcdServers, ",")))
-	}
-	if o.singletonValues.etcdCA != "" && o.singletonValues.etcdClientCert != "" && o.singletonValues.etcdClientCertKey != "" {
-		valueOpts.FileValues = append(valueOpts.FileValues, fmt.Sprintf("etcd.ca=%s", o.singletonValues.etcdCA))
-		valueOpts.FileValues = append(valueOpts.FileValues, fmt.Sprintf("etcd.cert=%s", o.singletonValues.etcdClientCert))
-		valueOpts.FileValues = append(valueOpts.FileValues, fmt.Sprintf("etcd.certkey=%s", o.singletonValues.etcdClientCertKey))
-	}
-
-	if o.singletonValues.pvcStorageClassName != "" {
-		valueOpts.Values = append(valueOpts.Values, fmt.Sprintf("pvc.storageClassName=%s", o.singletonValues.pvcStorageClassName))
-	}
-
-	if o.singletonValues.routeEnabled {
-		valueOpts.Values = append(valueOpts.Values, "route.enabled=true")
-	} else {
-		valueOpts.Values = append(valueOpts.Values, "route.enabled=false")
-		if o.singletonValues.loadBalancerEnabled {
-			valueOpts.Values = append(valueOpts.Values, "loadbalancer.enabled=true")
-			if o.singletonValues.loadBalancerBaseDomain != "" {
-				valueOpts.Values = append(valueOpts.Values, fmt.Sprintf("loadbalancer.baseDomain=%s", o.singletonValues.loadBalancerBaseDomain))
-			}
-		} else if o.singletonValues.nodeportEnabled {
-			valueOpts.Values = append(valueOpts.Values, "nodeport.enabled=true")
-			if o.singletonValues.nodeportValue != 0 {
-				valueOpts.Values = append(valueOpts.Values, fmt.Sprintf("nodeport.port=%d", o.singletonValues.nodeportValue))
-			}
-		}
-	}
-
 	if o.ClusteradmFlags.DryRun {
-		valueOpts.Values = append(valueOpts.Values, "dryRun=true")
+		o.Helm.SetValue("dryRun", "true")
 	}
-	h.InstallChart(releaseName, repoName, chartName, valueOpts)
+
+	o.Helm.InstallChart(releaseName, repoName, chartName)
 
 	// fetch the kubeconfig and get the token
 	if o.wait && !o.ClusteradmFlags.DryRun {
 		if err := helperwait.WaitUntilMulticlusterControlplaneReady(
 			o.ClusteradmFlags.KubectlFactory,
-			o.singletonValues.controlplaneName,
+			o.SingletonName,
 			int64(o.ClusteradmFlags.Timeout)); err != nil {
 			return err
 		}
@@ -390,18 +330,18 @@ func (o *Options) deploySingletonControlplane(kubeClient kubernetes.Interface) e
 		b.Duration = 3 * time.Second
 		if err := helperwait.WaitUntilMulticlusterControlplaneKubeconfigReady(
 			o.ClusteradmFlags.KubectlFactory,
-			o.singletonValues.controlplaneName,
+			o.SingletonName,
 			b); err != nil {
 			return err
 		}
 
 		// if kubeconfig is ready, get kubeconfig from secret, write to file or outpout to stdout
-		conf, err := kubeClient.CoreV1().Secrets(o.singletonValues.controlplaneName).Get(context.Background(), "multicluster-controlplane-kubeconfig", metav1.GetOptions{})
+		conf, err := kubeClient.CoreV1().Secrets(o.SingletonName).Get(context.Background(), "multicluster-controlplane-kubeconfig", metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 		kubeconfigRaw := conf.Data["kubeconfig"]
-		kubeconfigfile := fmt.Sprintf("%s.kubeconfig", o.singletonValues.controlplaneName)
+		kubeconfigfile := fmt.Sprintf("%s.kubeconfig", o.SingletonName)
 		if err := os.WriteFile(kubeconfigfile, kubeconfigRaw, 0600); err != nil {
 			return err
 		}

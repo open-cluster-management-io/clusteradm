@@ -5,6 +5,7 @@ package helpers
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/ghodss/yaml"
@@ -175,9 +176,15 @@ func GetBootstrapSecret(ctx context.Context, kubeClient kubernetes.Interface) (*
 	if err != nil {
 		return nil, err
 	}
+	//sort items by creationTimestamp
+	sort.Slice(l.Items, func(i, j int) bool {
+		return l.Items[j].CreationTimestamp.Before(&l.Items[i].CreationTimestamp)
+	})
+	// find newest bootstrap secret
 	for _, s := range l.Items {
 		if strings.HasPrefix(s.Name, config.BootstrapSecretPrefix) {
 			bootstrapSecret = &s
+			break
 		}
 	}
 	if bootstrapSecret == nil {

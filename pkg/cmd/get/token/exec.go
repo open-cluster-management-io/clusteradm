@@ -4,6 +4,7 @@ package token
 import (
 	"context"
 	"fmt"
+
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"

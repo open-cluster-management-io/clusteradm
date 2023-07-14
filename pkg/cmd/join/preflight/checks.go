@@ -35,7 +35,7 @@ func (c HubKubeconfigCheck) Check() (warningList []string, errorList []error) {
 	}
 	// validate ca
 	if c.Config.Clusters[0].Cluster.CertificateAuthorityData == nil {
-		return nil, []error{errors.New("no ca detected, creating hub kubeconfig without ca")}
+		return []string{"no ca detected, creating hub kubeconfig without ca"}, nil
 	}
 
 	// validate kubeconfig

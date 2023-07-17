@@ -110,6 +110,9 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 			klusterletName += "-hosted-" + helpers.RandStringRunes_az09(6)
 			agentNamespace = klusterletName
 			klusterletNamespace = AgentNamespacePrefix + agentNamespace
+
+			// update AgentNamespace
+			o.values.AgentNamespace = agentNamespace
 		}
 
 		o.values.Klusterlet = Klusterlet{

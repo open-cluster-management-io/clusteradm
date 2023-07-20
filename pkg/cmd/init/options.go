@@ -6,6 +6,7 @@ import (
 	"k8s.io/cli-runtime/pkg/resource"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
+	"open-cluster-management.io/clusteradm/pkg/helpers/helm"
 )
 
 // Options is holding all the command-line options
@@ -23,6 +24,12 @@ type Options struct {
 	registry string
 	//version of predefined compatible image versions
 	bundleVersion string
+
+	//If set, deploy the singleton controlplane
+	singleton     bool
+	SingletonName string
+	Helm          *helm.Helm
+
 	//If set, will be persisting the generated join command to a local file
 	outputJoinCommandFile string
 	//If set, the command will hold until the OCM control plane initialized
@@ -82,5 +89,6 @@ func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, st
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
 		Streams:         streams,
+		Helm:            helm.NewHelm(),
 	}
 }

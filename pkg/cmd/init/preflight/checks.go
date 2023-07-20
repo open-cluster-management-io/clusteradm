@@ -5,6 +5,7 @@ import (
 	"context"
 	"net"
 	"net/url"
+	"regexp"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -17,6 +18,23 @@ import (
 )
 
 var BootstrapConfigMap = "cluster-info"
+
+type SingletonControlplaneCheck struct {
+	ControlplaneName string
+}
+
+func (c SingletonControlplaneCheck) Check() (warnings []string, errorList []error) {
+	re := regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
+	matched := re.MatchString(c.ControlplaneName)
+	if !matched {
+		return nil, []error{errors.New("validate ControlplaneName failed: should match `^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`")}
+	}
+	return nil, nil
+}
+
+func (c SingletonControlplaneCheck) Name() string {
+	return "SingletonControlplane check"
+}
 
 type HubApiServerCheck struct {
 	ClusterCtx string // current-context in kubeconfig

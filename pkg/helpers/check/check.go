@@ -28,7 +28,7 @@ func CheckForHub(client clusterclient.Interface) error {
 			return fmt.Errorf(msg)
 
 		}
-		return fmt.Errorf("failed to list GroupVersion: %s", clusterv1.GroupVersion.String())
+		return fmt.Errorf("failed to list GroupVersion %s: %s", clusterv1.GroupVersion.String(), err)
 
 	}
 	flag := findResource(list, ManagedClusterResourceName)

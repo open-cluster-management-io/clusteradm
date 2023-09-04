@@ -27,6 +27,7 @@ import (
 	"open-cluster-management.io/cluster-proxy/pkg/common"
 	clusterproxyclient "open-cluster-management.io/cluster-proxy/pkg/generated/clientset/versioned"
 	"open-cluster-management.io/cluster-proxy/pkg/util"
+	"open-cluster-management.io/clusteradm/pkg/config"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	msaClientv1alpha1 "open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned"
 )
@@ -180,7 +181,7 @@ func getProxyConfig(hubRestConfig *rest.Config, streams genericclioptions.IOStre
 		return nil, errors.Wrapf(err, "failed initializing addon api client")
 	}
 
-	clusterAddon, err := addonClient.AddonV1alpha1().ClusterManagementAddOns().Get(
+	_, err = addonClient.AddonV1alpha1().ClusterManagementAddOns().Get(
 		context.TODO(),
 		"cluster-proxy",
 		metav1.GetOptions{})
@@ -206,10 +207,8 @@ func getProxyConfig(hubRestConfig *rest.Config, streams genericclioptions.IOStre
 		return nil, errors.Wrapf(err, "failed initializing proxy api client")
 	}
 
-	// TODO: fix this deprecated field AddOnConfiguration
-	// nolint:staticcheck
 	proxyConfig, err := proxyClient.ProxyV1alpha1().ManagedProxyConfigurations().
-		Get(context.TODO(), clusterAddon.Spec.AddOnConfiguration.CRName, metav1.GetOptions{})
+		Get(context.TODO(), config.ManagedProxyConfigurationName, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed getting managedproxyconfiguration for cluster-proxy")
 	}

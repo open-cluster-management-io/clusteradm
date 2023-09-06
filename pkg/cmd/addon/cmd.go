@@ -4,6 +4,7 @@ package addon
 import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"open-cluster-management.io/clusteradm/pkg/cmd/addon/create"
 	"open-cluster-management.io/clusteradm/pkg/cmd/addon/disable"
 	"open-cluster-management.io/clusteradm/pkg/cmd/addon/enable"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
@@ -19,6 +20,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 
 	cmd.AddCommand(enable.NewCmd(clusteradmFlags, streams))
 	cmd.AddCommand(disable.NewCmd(clusteradmFlags, streams))
+	cmd.AddCommand(create.NewCmd(clusteradmFlags, streams))
 
 	return cmd
 }

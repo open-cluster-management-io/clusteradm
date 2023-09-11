@@ -23,6 +23,7 @@ import (
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/kubectl/pkg/cmd/util"
+	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 	ocmfeature "open-cluster-management.io/api/feature"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 	"open-cluster-management.io/clusteradm/pkg/cmd/join/preflight"
@@ -241,6 +242,16 @@ func (o *Options) run() error {
 		return err
 	}
 
+	config, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
+	if err != nil {
+		return err
+	}
+
+	operatorClient, err := operatorclient.NewForConfig(config)
+	if err != nil {
+		return err
+	}
+
 	r := reader.NewResourceReader(o.builder, o.ClusteradmFlags.DryRun, o.Streams)
 
 	_, err = kubeClient.CoreV1().Namespaces().Get(context.TODO(), o.values.AgentNamespace, metav1.GetOptions{})
@@ -261,7 +272,7 @@ func (o *Options) run() error {
 		return err
 	}
 
-	if err = o.applyKlusterlet(r, kubeClient, apiExtensionsClient); err != nil {
+	if err = o.applyKlusterlet(r, operatorClient, apiExtensionsClient); err != nil {
 		return err
 	}
 
@@ -285,7 +296,7 @@ func (o *Options) run() error {
 
 }
 
-func (o *Options) applyKlusterlet(r *reader.ResourceReader, kubeClient kubernetes.Interface, apiExtensionsClient apiextensionsclient.Interface) error {
+func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient operatorclient.Interface, apiExtensionsClient apiextensionsclient.Interface) error {
 	available, err := checkIfRegistrationOperatorAvailable(o.ClusteradmFlags.KubectlFactory)
 	if err != nil {
 		return err
@@ -335,9 +346,6 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, kubeClient kubernete
 		return err
 	}
 
-	klusterletNamespace := o.values.Klusterlet.KlusterletNamespace
-	agentNamespace := o.values.AgentNamespace
-
 	if !available && o.wait && !o.ClusteradmFlags.DryRun {
 		err = waitUntilRegistrationOperatorConditionIsTrue(o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout))
 		if err != nil {
@@ -347,12 +355,12 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, kubeClient kubernete
 
 	if o.wait && !o.ClusteradmFlags.DryRun {
 		if o.mode == string(operatorv1.InstallModeHosted) {
-			err = waitUntilKlusterletConditionIsTrue(o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout), agentNamespace)
+			err = waitUntilKlusterletConditionIsTrue(operatorClient, int64(o.ClusteradmFlags.Timeout), o.values.Klusterlet.Name)
 			if err != nil {
 				return err
 			}
 		} else {
-			err = waitUntilKlusterletConditionIsTrue(o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout), klusterletNamespace)
+			err = waitUntilKlusterletConditionIsTrue(operatorClient, int64(o.ClusteradmFlags.Timeout), o.values.Klusterlet.Name)
 			if err != nil {
 				return err
 			}
@@ -444,12 +452,7 @@ func waitUntilRegistrationOperatorConditionIsTrue(f util.Factory, timeout int64)
 }
 
 // Wait until the klusterlet condition available=true, or timeout in $timeout seconds
-func waitUntilKlusterletConditionIsTrue(f util.Factory, timeout int64, agentNamespace string) error {
-	client, err := f.KubernetesClientSet()
-	if err != nil {
-		return err
-	}
-
+func waitUntilKlusterletConditionIsTrue(client operatorclient.Interface, timeout int64, klusterletName string) error {
 	phase := &atomic.Value{}
 	phase.Store("")
 	klusterletSpinner := printer.NewSpinnerWithStatus(
@@ -464,28 +467,20 @@ func waitUntilKlusterletConditionIsTrue(f util.Factory, timeout int64, agentName
 
 	return helpers.WatchUntil(
 		func() (watch.Interface, error) {
-			return client.CoreV1().Pods(agentNamespace).
+			return client.OperatorV1().Klusterlets().
 				Watch(context.TODO(), metav1.ListOptions{
 					TimeoutSeconds: &timeout,
-					LabelSelector:  "app=klusterlet-registration-agent",
+					FieldSelector:  fmt.Sprintf("metadata.name=%s", klusterletName),
 				})
 		},
 		func(event watch.Event) bool {
-			pod, ok := event.Object.(*corev1.Pod)
+			klusterlet, ok := event.Object.(*operatorv1.Klusterlet)
 			if !ok {
 				return false
 			}
-			phase.Store(printer.GetSpinnerPodStatus(pod))
-			conds := make([]metav1.Condition, len(pod.Status.Conditions))
-			for i := range pod.Status.Conditions {
-				conds[i] = metav1.Condition{
-					Type:    string(pod.Status.Conditions[i].Type),
-					Status:  metav1.ConditionStatus(pod.Status.Conditions[i].Status),
-					Reason:  pod.Status.Conditions[i].Reason,
-					Message: pod.Status.Conditions[i].Message,
-				}
-			}
-			return meta.IsStatusConditionTrue(conds, "Ready")
+			phase.Store(printer.GetSpinnerKlusterletStatus(klusterlet))
+			return meta.IsStatusConditionFalse(klusterlet.Status.Conditions, "RegistrationDesiredDegraded") &&
+				meta.IsStatusConditionFalse(klusterlet.Status.Conditions, "WorkDesiredDegraded")
 		},
 	)
 }

@@ -9,6 +9,8 @@ import (
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	operatorv1 "open-cluster-management.io/api/operator/v1"
 )
 
 var suffixColor = color.New(color.Bold, color.FgGreen)
@@ -96,6 +98,23 @@ func GetSpinnerPodStatus(pod *corev1.Pod) string {
 		if containerStatus.State.Waiting != nil {
 			reason = containerStatus.State.Waiting.Reason
 		}
+	}
+	return reason
+}
+
+func GetSpinnerKlusterletStatus(kl *operatorv1.Klusterlet) string {
+	reason := ""
+	if cond := meta.FindStatusCondition(kl.Status.Conditions, "RegistrationDesiredDegraded"); cond != nil {
+		return cond.Reason
+	}
+	if cond := meta.FindStatusCondition(kl.Status.Conditions, "WorkDesiredDegraded"); cond != nil {
+		return cond.Reason
+	}
+	if cond := meta.FindStatusCondition(kl.Status.Conditions, "Available"); cond != nil {
+		return cond.Reason
+	}
+	if cond := meta.FindStatusCondition(kl.Status.Conditions, "Applied"); cond != nil {
+		return cond.Reason
 	}
 	return reason
 }

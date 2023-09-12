@@ -23,7 +23,9 @@ import (
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/kubectl/pkg/cmd/util"
+	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 	ocmfeature "open-cluster-management.io/api/feature"
+	operatorv1 "open-cluster-management.io/api/operator/v1"
 	"open-cluster-management.io/clusteradm/pkg/cmd/join/preflight"
 	"open-cluster-management.io/clusteradm/pkg/cmd/join/scenario"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
@@ -37,9 +39,6 @@ import (
 
 const (
 	AgentNamespacePrefix = "open-cluster-management-"
-
-	InstallModeDefault = "Default"
-	InstallModeHosted  = "Hosted"
 
 	OperatorNamesapce   = "open-cluster-management"
 	DefaultOperatorName = "klusterlet"
@@ -88,42 +87,45 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		Registry:       o.registry,
 		AgentNamespace: agentNamespace,
 	}
+	// deploy klusterlet
+	// operatorNamespace is the namespace to deploy klsuterlet;
+	// agentNamespace is the namesapce to deploy the agents(registration agent, work agent, etc.);
+	// klusterletNamespace is the namespace created on the managed cluster for each klusterlet.
+	//
+	// The operatorNamespace is fixed to "open-cluster-management".
+	// In default mode, agentNamespace is "open-cluster-management-agent", klusterletNamespace refers to agentNamespace, all of these three namesapces are on the managed cluster;
+	// In hosted mode, operatorNamespace is on the management cluster, agentNamesapce is "<cluster name>-<6-bit random string>" on the management cluster, and the klusterletNamespace is "open-cluster-management-<agentNamespace>" on the managed cluster.
 
-	if o.singleton { // deploy singleton agent
-		if o.mode != InstallModeDefault {
-			return fmt.Errorf("only default mode is supported while deploy singleton agent, hosted mode will be supported in the future")
-		}
-	} else { // deploy klusterlet
-		// operatorNamespace is the namespace to deploy klsuterlet;
-		// agentNamespace is the namesapce to deploy the agents(registration agent, work agent, etc.);
-		// klusterletNamespace is the namespace created on the managed cluster for each klusterlet.
-		//
-		// The operatorNamespace is fixed to "open-cluster-management".
-		// In default mode, agentNamespace is "open-cluster-management-agent", klusterletNamespace refers to agentNamespace, all of these three namesapces are on the managed cluster;
-		// In hosted mode, operatorNamespace is on the management cluster, agentNamesapce is "<cluster name>-<6-bit random string>" on the management cluster, and the klusterletNamespace is "open-cluster-management-<agentNamespace>" on the managed cluster.
+	// values for default mode
+	klusterletName := DefaultOperatorName
+	klusterletNamespace := agentNamespace
+	if o.mode == string(operatorv1.InstallModeHosted) {
+		// add hash suffix to avoid conflict
+		klusterletName += "-hosted-" + helpers.RandStringRunes_az09(6)
+		agentNamespace = klusterletName
+		klusterletNamespace = AgentNamespacePrefix + agentNamespace
 
-		// values for default mode
-		klusterletName := DefaultOperatorName
-		klusterletNamespace := agentNamespace
-		if o.mode == InstallModeHosted {
-			// add hash suffix to avoid conflict
-			klusterletName += "-hosted-" + helpers.RandStringRunes_az09(6)
-			agentNamespace = klusterletName
-			klusterletNamespace = AgentNamespacePrefix + agentNamespace
-
-			// update AgentNamespace
-			o.values.AgentNamespace = agentNamespace
-		}
-
-		o.values.Klusterlet = Klusterlet{
-			Mode:                o.mode,
-			Name:                klusterletName,
-			KlusterletNamespace: klusterletNamespace,
-		}
-		o.values.ManagedKubeconfig = o.managedKubeconfigFile
-		o.values.RegistrationFeatures = genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeRegistrationFeatureGates)
-		o.values.WorkFeatures = genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeWorkFeatureGates)
+		// update AgentNamespace
+		o.values.AgentNamespace = agentNamespace
 	}
+
+	o.values.Klusterlet = Klusterlet{
+		Name:                klusterletName,
+		KlusterletNamespace: klusterletNamespace,
+	}
+	o.values.ManagedKubeconfig = o.managedKubeconfigFile
+	o.values.RegistrationFeatures = genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeRegistrationFeatureGates)
+	o.values.WorkFeatures = genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeWorkFeatureGates)
+
+	// set mode based on mode and singleton
+	if o.mode == string(operatorv1.InstallModeHosted) && o.singleton {
+		o.values.Klusterlet.Mode = string(operatorv1.InstallModeSingletonHosted)
+	} else if o.singleton {
+		o.values.Klusterlet.Mode = string(operatorv1.InstallModeSingleton)
+	} else {
+		o.values.Klusterlet.Mode = o.mode
+	}
+
 	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
 
 	if err != nil {
@@ -132,18 +134,17 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	}
 
 	o.values.BundleVersion = BundleVersion{
-		RegistrationImageVersion:   versionBundle.Registration,
-		PlacementImageVersion:      versionBundle.Placement,
-		WorkImageVersion:           versionBundle.Work,
-		OperatorImageVersion:       versionBundle.Operator,
-		SingletonAgentImageVersion: versionBundle.MulticlusterControlplane,
+		RegistrationImageVersion: versionBundle.Registration,
+		PlacementImageVersion:    versionBundle.Placement,
+		WorkImageVersion:         versionBundle.Work,
+		OperatorImageVersion:     versionBundle.Operator,
 	}
 	klog.V(3).InfoS("Image version:",
 		"'registration image version'", versionBundle.Registration,
 		"'placement image version'", versionBundle.Placement,
 		"'work image version'", versionBundle.Work,
 		"'operator image version'", versionBundle.Operator,
-		"'singleton agent image version'", versionBundle.MulticlusterControlplane)
+		"'singleton agent image version'", versionBundle.Operator)
 
 	// if --ca-file is set, read ca data
 	if o.caFile != "" {
@@ -224,7 +225,7 @@ func (o *Options) validate() error {
 	}
 
 	// get ManagedKubeconfig from given file
-	if o.mode == InstallModeHosted {
+	if o.mode == string(operatorv1.InstallModeHosted) {
 		managedConfig, err := os.ReadFile(o.managedKubeconfigFile)
 		if err != nil {
 			return err
@@ -241,37 +242,38 @@ func (o *Options) run() error {
 		return err
 	}
 
+	config, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
+	if err != nil {
+		return err
+	}
+
+	operatorClient, err := operatorclient.NewForConfig(config)
+	if err != nil {
+		return err
+	}
+
 	r := reader.NewResourceReader(o.builder, o.ClusteradmFlags.DryRun, o.Streams)
 
 	_, err = kubeClient.CoreV1().Namespaces().Get(context.TODO(), o.values.AgentNamespace, metav1.GetOptions{})
-	if err != nil {
-		if errors.IsNotFound(err) {
-			_, err = kubeClient.CoreV1().Namespaces().Create(context.TODO(), &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: o.values.AgentNamespace,
-					Annotations: map[string]string{
-						"workload.openshift.io/allowed": "management",
-					},
+
+	if errors.IsNotFound(err) {
+		_, err = kubeClient.CoreV1().Namespaces().Create(context.TODO(), &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: o.values.AgentNamespace,
+				Annotations: map[string]string{
+					"workload.openshift.io/allowed": "management",
 				},
-			}, metav1.CreateOptions{})
-			if err != nil {
-				return err
-			}
-		} else {
+			},
+		}, metav1.CreateOptions{})
+		if err != nil {
 			return err
 		}
+	} else if err != nil {
+		return err
 	}
 
-	if o.singleton {
-		err = o.applySingletonAgent(r, kubeClient)
-		if err != nil {
-			return err
-		}
-	} else {
-		err = o.applyKlusterlet(r, kubeClient, apiExtensionsClient)
-		if err != nil {
-			return err
-		}
+	if err = o.applyKlusterlet(r, operatorClient, apiExtensionsClient); err != nil {
+		return err
 	}
 
 	if len(o.outputFile) > 0 {
@@ -294,39 +296,13 @@ func (o *Options) run() error {
 
 }
 
-func (o *Options) applySingletonAgent(r *reader.ResourceReader, kubeClient kubernetes.Interface) error {
-	files := []string{
-		"bootstrap_hub_kubeconfig.yaml",
-		"singleton/clusterrole.yaml",
-		"singleton/clusterrolebinding-admin.yaml",
-		"singleton/clusterrolebinding.yaml",
-		"singleton/role.yaml",
-		"singleton/rolebinding.yaml",
-		"singleton/serviceaccount.yaml",
-		"singleton/deployment.yaml",
-	}
-
-	err := r.Apply(scenario.Files, o.values, files...)
-	if err != nil {
-		return err
-	}
-
-	if o.wait && !o.ClusteradmFlags.DryRun {
-		err = waitUntilSingletonAgentConditionIsTrue(o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout), o.values.AgentNamespace)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (o *Options) applyKlusterlet(r *reader.ResourceReader, kubeClient kubernetes.Interface, apiExtensionsClient apiextensionsclient.Interface) error {
+func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient operatorclient.Interface, apiExtensionsClient apiextensionsclient.Interface) error {
 	available, err := checkIfRegistrationOperatorAvailable(o.ClusteradmFlags.KubectlFactory)
 	if err != nil {
 		return err
 	}
 
-	files := []string{}
+	var files []string
 	// If Deployment/klusterlet is not deployed, deploy it
 	if !available {
 		files = append(files,
@@ -341,7 +317,7 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, kubeClient kubernete
 		"bootstrap_hub_kubeconfig.yaml",
 	)
 
-	if o.mode == InstallModeHosted {
+	if o.mode == string(operatorv1.InstallModeHosted) {
 		files = append(files,
 			"join/hosted/external_managed_kubeconfig.yaml",
 		)
@@ -370,9 +346,6 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, kubeClient kubernete
 		return err
 	}
 
-	klusterletNamespace := o.values.Klusterlet.KlusterletNamespace
-	agentNamespace := o.values.AgentNamespace
-
 	if !available && o.wait && !o.ClusteradmFlags.DryRun {
 		err = waitUntilRegistrationOperatorConditionIsTrue(o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout))
 		if err != nil {
@@ -381,13 +354,13 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, kubeClient kubernete
 	}
 
 	if o.wait && !o.ClusteradmFlags.DryRun {
-		if o.mode == InstallModeHosted {
-			err = waitUntilKlusterletConditionIsTrue(o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout), agentNamespace)
+		if o.mode == string(operatorv1.InstallModeHosted) {
+			err = waitUntilKlusterletConditionIsTrue(operatorClient, int64(o.ClusteradmFlags.Timeout), o.values.Klusterlet.Name)
 			if err != nil {
 				return err
 			}
 		} else {
-			err = waitUntilKlusterletConditionIsTrue(o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout), klusterletNamespace)
+			err = waitUntilKlusterletConditionIsTrue(operatorClient, int64(o.ClusteradmFlags.Timeout), o.values.Klusterlet.Name)
 			if err != nil {
 				return err
 			}
@@ -479,12 +452,7 @@ func waitUntilRegistrationOperatorConditionIsTrue(f util.Factory, timeout int64)
 }
 
 // Wait until the klusterlet condition available=true, or timeout in $timeout seconds
-func waitUntilKlusterletConditionIsTrue(f util.Factory, timeout int64, agentNamespace string) error {
-	client, err := f.KubernetesClientSet()
-	if err != nil {
-		return err
-	}
-
+func waitUntilKlusterletConditionIsTrue(client operatorclient.Interface, timeout int64, klusterletName string) error {
 	phase := &atomic.Value{}
 	phase.Store("")
 	klusterletSpinner := printer.NewSpinnerWithStatus(
@@ -499,74 +467,20 @@ func waitUntilKlusterletConditionIsTrue(f util.Factory, timeout int64, agentName
 
 	return helpers.WatchUntil(
 		func() (watch.Interface, error) {
-			return client.CoreV1().Pods(agentNamespace).
+			return client.OperatorV1().Klusterlets().
 				Watch(context.TODO(), metav1.ListOptions{
 					TimeoutSeconds: &timeout,
-					LabelSelector:  "app=klusterlet-registration-agent",
+					FieldSelector:  fmt.Sprintf("metadata.name=%s", klusterletName),
 				})
 		},
 		func(event watch.Event) bool {
-			pod, ok := event.Object.(*corev1.Pod)
+			klusterlet, ok := event.Object.(*operatorv1.Klusterlet)
 			if !ok {
 				return false
 			}
-			phase.Store(printer.GetSpinnerPodStatus(pod))
-			conds := make([]metav1.Condition, len(pod.Status.Conditions))
-			for i := range pod.Status.Conditions {
-				conds[i] = metav1.Condition{
-					Type:    string(pod.Status.Conditions[i].Type),
-					Status:  metav1.ConditionStatus(pod.Status.Conditions[i].Status),
-					Reason:  pod.Status.Conditions[i].Reason,
-					Message: pod.Status.Conditions[i].Message,
-				}
-			}
-			return meta.IsStatusConditionTrue(conds, "Ready")
-		},
-	)
-}
-
-func waitUntilSingletonAgentConditionIsTrue(f util.Factory, timeout int64, agentNamespace string) error {
-	client, err := f.KubernetesClientSet()
-	if err != nil {
-		return err
-	}
-
-	phase := &atomic.Value{}
-	phase.Store("")
-	agentSpinner := printer.NewSpinnerWithStatus(
-		"Waiting for controlplane agent to become ready...",
-		time.Millisecond*500,
-		"Controlplane agent is now available.\n",
-		func() string {
-			return phase.Load().(string)
-		})
-	agentSpinner.Start()
-	defer agentSpinner.Stop()
-
-	return helpers.WatchUntil(
-		func() (watch.Interface, error) {
-			return client.CoreV1().Pods(agentNamespace).
-				Watch(context.TODO(), metav1.ListOptions{
-					TimeoutSeconds: &timeout,
-					LabelSelector:  "app=multicluster-controlplane-agent",
-				})
-		},
-		func(event watch.Event) bool {
-			pod, ok := event.Object.(*corev1.Pod)
-			if !ok {
-				return false
-			}
-			phase.Store(printer.GetSpinnerPodStatus(pod))
-			conds := make([]metav1.Condition, len(pod.Status.Conditions))
-			for i := range pod.Status.Conditions {
-				conds[i] = metav1.Condition{
-					Type:    string(pod.Status.Conditions[i].Type),
-					Status:  metav1.ConditionStatus(pod.Status.Conditions[i].Status),
-					Reason:  pod.Status.Conditions[i].Reason,
-					Message: pod.Status.Conditions[i].Message,
-				}
-			}
-			return meta.IsStatusConditionTrue(conds, "Ready")
+			phase.Store(printer.GetSpinnerKlusterletStatus(klusterlet))
+			return meta.IsStatusConditionFalse(klusterlet.Status.Conditions, "RegistrationDesiredDegraded") &&
+				meta.IsStatusConditionFalse(klusterlet.Status.Conditions, "WorkDesiredDegraded")
 		},
 	)
 }
@@ -589,7 +503,7 @@ func (o *Options) createExternalBootstrapConfig() clientcmdapiv1.Config {
 			{
 				Name: "bootstrap",
 				AuthInfo: clientcmdapiv1.AuthInfo{
-					Token: string(o.token),
+					Token: o.token,
 				},
 			},
 		},

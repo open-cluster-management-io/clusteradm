@@ -110,8 +110,6 @@ type BundleVersion struct {
 	WorkImageVersion string
 	// operator image version
 	OperatorImageVersion string
-	// singleton agent image version
-	SingletonAgentImageVersion string
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {

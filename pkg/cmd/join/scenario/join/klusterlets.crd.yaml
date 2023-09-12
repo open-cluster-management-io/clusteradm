@@ -50,20 +50,22 @@ spec:
                 description: DeployOption contains the options of deploying a klusterlet
                 properties:
                   mode:
-                    description: 'Mode can be Default or Hosted. It is Default mode
-                      if not specified In Default mode, all klusterlet related resources
-                      are deployed on the managed cluster. In Hosted mode, only crd
-                      and configurations are installed on the spoke/managed cluster.
-                      Controllers run in another cluster (defined as management-cluster)
+                    description: 'Mode can be Default, Hosted, Singleton or SingletonHosted.
+                      It is Default mode if not specified In Default mode, all klusterlet
+                      related resources are deployed on the managed cluster. In Hosted
+                      mode, only crd and configurations are installed on the spoke/managed
+                      cluster. Controllers run in another cluster (defined as management-cluster)
                       and connect to the mangaged cluster with the kubeconfig in secret
                       of "external-managed-kubeconfig"(a kubeconfig of managed-cluster
-                      with cluster-admin permission). Note: Do not modify the Mode
-                      field once it''s applied.'
+                      with cluster-admin permission). In Singleton mode, registration/work
+                      agent is started as a single deployment. In SingletonHosted
+                      mode, agent is started as a single deployment in hosted mode.
+                      Note: Do not modify the Mode field once it''s applied.'
                     type: string
                 type: object
               externalServerURLs:
-                description: ExternalServerURLs represents the a list of apiserver
-                  urls and ca bundles that is accessible externally If it is set empty,
+                description: ExternalServerURLs represents a list of apiserver urls
+                  and ca bundles that is accessible externally If it is set empty,
                   managed cluster has no externally accessible url that hub cluster
                   can visit.
                 items:
@@ -99,6 +101,11 @@ spec:
                 - hostname
                 - ip
                 type: object
+              imagePullSpec:
+                description: ImagePullSpec represents the desired image configuration
+                  of agent, it takes effect only when singleton mode is set. quay.io/open-cluster-management.io/registration-operator:latest
+                  will be used if unspecified
+                type: string
               namespace:
                 description: Namespace is the namespace to deploy the agent on the
                   managed cluster. The namespace must have a prefix of "open-cluster-management-",
@@ -123,8 +130,8 @@ spec:
                       on. The default is an empty list.
                     type: object
                   tolerations:
-                    description: Tolerations is attached by pods to tolerate any taint
-                      that matches the triple <key,value,effect> using the matching
+                    description: Tolerations are attached by pods to tolerate any
+                      taint that matches the triple <key,value,effect> using the matching
                       operator <operator>. The default is an empty list.
                     items:
                       description: The pod this Toleration is attached to tolerates
@@ -179,6 +186,13 @@ spec:
                       set.
                     format: int32
                     type: integer
+                  clusterAnnotations:
+                    additionalProperties:
+                      type: string
+                    description: ClusterAnnotations is annotations with the reserve
+                      prefix "agent.open-cluster-management.io" set on ManagedCluster
+                      when creating only, other actors can update it afterwards.
+                    type: object
                   featureGates:
                     description: 'FeatureGates represents the list of feature gates
                       for registration If it is set empty, default feature gates will

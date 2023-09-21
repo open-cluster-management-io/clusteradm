@@ -107,6 +107,14 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 	}
 
 	for _, addon := range addons {
+		_, err := addonClient.AddonV1alpha1().ClusterManagementAddOns().Get(context.TODO(), addon, metav1.GetOptions{})
+		if err != nil {
+			if errors.IsNotFound(err) {
+				return fmt.Errorf("enabling the unknown addon %s is not supported", addon)
+			}
+			return err
+		}
+
 		for _, clusterName := range clusters {
 			cai, err := NewClusterAddonInfo(clusterName, o, addon)
 			if err != nil {
@@ -117,7 +125,8 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 				return err
 			}
 
-			fmt.Fprintf(o.Streams.Out, "Deploying %s add-on to namespaces %s of managed cluster: %s.\n", addon, o.Namespace, clusterName)
+			_, _ = fmt.Fprintf(o.Streams.Out, "Deploying %s add-on to namespaces %s of managed cluster: %s.\n",
+				addon, o.Namespace, clusterName)
 		}
 	}
 

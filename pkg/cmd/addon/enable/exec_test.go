@@ -9,10 +9,12 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
+	addonapiv1alpha1 "open-cluster-management.io/api/addon/v1alpha1"
 	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
 )
 
@@ -28,6 +30,16 @@ var _ = ginkgo.Describe("addon enable", func() {
 		suffix = rand.String(5)
 		cluster1Name = fmt.Sprintf("cluster-%s", suffix)
 		cluster2Name = fmt.Sprintf("cluster-%s", rand.String(5))
+	})
+	ginkgo.AfterEach(func() {
+		ginkgo.By("Delete cluster management add-on")
+		err = addonClient.AddonV1alpha1().ClusterManagementAddOns().Delete(
+			context.Background(), appMgrAddonName, metav1.DeleteOptions{})
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				gomega.Expect(err).ToNot(gomega.HaveOccurred())
+			}
+		}
 	})
 
 	assertCreatingClusters := func(clusterName string) {
@@ -51,11 +63,31 @@ var _ = ginkgo.Describe("addon enable", func() {
 		gomega.Expect(err).ToNot(gomega.HaveOccurred())
 	}
 
+	assertCreatingClusterManagementAddOn := func(cmaName string) {
+		ginkgo.By(fmt.Sprintf("Create %s ClusterManagementAddOn", cmaName))
+
+		cma := &addonapiv1alpha1.ClusterManagementAddOn{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: cmaName,
+			},
+			Spec: addonapiv1alpha1.ClusterManagementAddOnSpec{
+				InstallStrategy: addonapiv1alpha1.InstallStrategy{
+					Type: addonapiv1alpha1.AddonInstallStrategyManual,
+				},
+			},
+		}
+
+		_, err = addonClient.AddonV1alpha1().ClusterManagementAddOns().Create(
+			context.Background(), cma, metav1.CreateOptions{})
+		gomega.Expect(err).ToNot(gomega.HaveOccurred())
+	}
+
 	streams := genericclioptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr}
 
 	ginkgo.Context("runWithClient", func() {
 		ginkgo.It("Should create an application-manager ManagedClusterAddOn in ManagedCluster namespace successfully", func() {
 			assertCreatingClusters(cluster1Name)
+			assertCreatingClusterManagementAddOn(appMgrAddonName)
 
 			o := Options{
 				Namespace: "open-cluster-management-agent-addon",
@@ -80,6 +112,7 @@ var _ = ginkgo.Describe("addon enable", func() {
 		ginkgo.It("Should create application-manager ManagedClusterAddOns in each ManagedCluster namespace successfully", func() {
 			assertCreatingClusters(cluster1Name)
 			assertCreatingClusters(cluster2Name)
+			assertCreatingClusterManagementAddOn(appMgrAddonName)
 
 			o := Options{
 				Namespace: "open-cluster-management-agent-addon",
@@ -110,6 +143,8 @@ var _ = ginkgo.Describe("addon enable", func() {
 		})
 
 		ginkgo.It("Should not create a ManagedClusterAddOn because ManagedCluster doesn't exist", func() {
+			assertCreatingClusterManagementAddOn(appMgrAddonName)
+
 			clusterName := "no-such-cluster"
 			o := Options{
 				Streams: streams,
@@ -117,6 +152,21 @@ var _ = ginkgo.Describe("addon enable", func() {
 
 			addons := []string{appMgrAddonName}
 			clusters := []string{clusterName}
+
+			err := o.runWithClient(clusterClient, addonClient, addons, clusters)
+			gomega.Expect(err).To(gomega.HaveOccurred())
+		})
+
+		ginkgo.It("Should not create a ManagedClusterAddOn because ClusterManagementAddOn doesn't exist", func() {
+			assertCreatingClusters(cluster1Name)
+
+			o := Options{
+				Namespace: "open-cluster-management-agent-addon",
+				Streams:   streams,
+			}
+
+			addons := []string{appMgrAddonName}
+			clusters := []string{cluster1Name, cluster1Name, cluster1Name}
 
 			err := o.runWithClient(clusterClient, addonClient, addons, clusters)
 			gomega.Expect(err).To(gomega.HaveOccurred())

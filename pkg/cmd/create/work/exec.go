@@ -174,7 +174,7 @@ func (o *Options) getClusters(workClient workclientset.Interface, clusterClient 
 	}
 
 	pdtracker := clusterv1beta1.NewPlacementDecisionClustersTracker(placement, placementDecisionGetter{clusterClient: clusterClient}, existingDeployClusters)
-	addedClusters, deletedClusters, err := pdtracker.Get()
+	addedClusters, deletedClusters, err := pdtracker.GetClusterChanges()
 	if err != nil {
 		return nil, nil, err
 	}

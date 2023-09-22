@@ -2,8 +2,16 @@
 package clusteradme2e
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
+
+	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = ginkgo.Describe("test clusteradm with addon create", func() {
@@ -13,7 +21,7 @@ var _ = ginkgo.Describe("test clusteradm with addon create", func() {
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	})
 
-	ginkgo.Context("join hub scenario with bootstrap token", func() {
+	ginkgo.Context("create template type addon", func() {
 		var err error
 
 		ginkgo.It("should managedclusters join and accepted successfully", func() {
@@ -45,12 +53,32 @@ var _ = ginkgo.Describe("test clusteradm with addon create", func() {
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm accept error")
 
+			ginkgo.By("create configmap-reader clusterrole")
+			_, err = kubeClient.RbacV1().ClusterRoles().Create(context.TODO(), &rbacv1.ClusterRole{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "configmap-reader",
+				},
+				Rules: []rbacv1.PolicyRule{
+					{
+						Verbs:     []string{"get", "list", "watch"},
+						APIGroups: []string{""},
+						Resources: []string{"configmaps"},
+					},
+				},
+			}, metav1.CreateOptions{})
+			if !errors.IsAlreadyExists(err) {
+				gomega.Expect(err).NotTo(gomega.HaveOccurred(), "create configmap-reader clusterrole error")
+			}
+
 			ginkgo.By("hub create addon")
 			err = e2e.Clusteradm().Addon(
 				"create",
 				"test-nginx",
 				"-f",
 				"scenario/addon/nginx.yaml",
+				"--hub-registration",
+				"--cluster-role-bind",
+				"configmap-reader",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
@@ -64,6 +92,19 @@ var _ = ginkgo.Describe("test clusteradm with addon create", func() {
 				e2e.Cluster().ManagedCluster1().Name(),
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+			gomega.Eventually(func() error {
+				mca, err := addonClient.AddonV1alpha1().ManagedClusterAddOns(e2e.Cluster().ManagedCluster1().Name()).Get(
+					context.TODO(), "test-nginx", metav1.GetOptions{})
+				if err != nil {
+					return err
+				}
+
+				if meta.IsStatusConditionTrue(mca.Status.Conditions, "Available") {
+					return nil
+				}
+				return fmt.Errorf("addon is not available")
+			}, 60, 1).ShouldNot(gomega.HaveOccurred())
 
 			ginkgo.By("hub disable addon")
 			err = e2e.Clusteradm().Addon(

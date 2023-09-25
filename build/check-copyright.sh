@@ -69,7 +69,7 @@ do
             || $FILE == *"Dockerfile.prow" \
             || $FILE == *"Makefile.prow"  \
             || $FILE == *".gitignore"  \
-            || ($FILE == *".md" && $FILE != *"pull_request_template.md") ]]; then
+            || $FILE == *".md"  ]]; then
 
         COMMUNITY_HEADER_AS_COMMENT="$COMMENT_START$COMMUNITY_COPY_HEADER_STRING$COMMENT_END"
 

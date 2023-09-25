@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -50,10 +49,8 @@ func newAddonTemplate(o *Options) (*addonv1alpha1.AddOnTemplate, error) {
 			addon.Spec.Registration[0].KubeClient.HubPermissions = append(addon.Spec.Registration[0].KubeClient.HubPermissions,
 				addonv1alpha1.HubPermissionConfig{
 					Type: addonv1alpha1.HubPermissionsBindingCurrentCluster,
-					RoleRef: rbacv1.RoleRef{
-						APIGroup: "rbac.authorization.k8s.io",
-						Kind:     "ClusterRole",
-						Name:     o.ClusterRoleBindingRef,
+					CurrentCluster: &addonv1alpha1.CurrentClusterBindingConfig{
+						ClusterRoleName: o.ClusterRoleBindingRef,
 					},
 				})
 		}

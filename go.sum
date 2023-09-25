@@ -1601,8 +1601,8 @@ modernc.org/strutil v1.0.0/go.mod h1:lstksw84oURvj9y3tn8lGvRxyRC1S2+g5uuIzNfIOBs
 modernc.org/xc v1.0.0/go.mod h1:mRNCo0bvLjGhHO9WsyuKVU4q0ceiDDDoEeWDJHrNx8I=
 open-cluster-management.io/addon-framework v0.1.1-0.20211223101009-d6b1a7adae93/go.mod h1:reAEgSFo9UX+TzfGjhHMWKmrOC4hJYxBHeubqllDbhk=
 open-cluster-management.io/api v0.5.0/go.mod h1:9qiA5h/8kvPQnJEOlAPHVjRO9a1jCmDhGzvgMBvXEaE=
-open-cluster-management.io/api v0.11.1-0.20230905055724-cf1ead467a83 h1:3zbT3sT/tEAQbpjIk6uRiTQGknQ3kQlfd11ElVuXyyQ=
-open-cluster-management.io/api v0.11.1-0.20230905055724-cf1ead467a83/go.mod h1:nsQ/G5JpfjQUg7dHpblyywWC6BRqklNaF6fIswVCHyY=
+open-cluster-management.io/api v0.11.1-0.20230922032831-30631603ee3c h1:WKvsKZtnWuIANBDvsbhsAMAUCHD+7s1CHzuEDZIAugU=
+open-cluster-management.io/api v0.11.1-0.20230922032831-30631603ee3c/go.mod h1:/CZhelEH+30/pX7vXGSZOzLMX0zvjthYOkT/5ZTzVTQ=
 open-cluster-management.io/cluster-proxy v0.1.2 h1:0WYhPEZT6Wlt0dyE35GCC7zcqPo2poaALzdmVbQp9Dg=
 open-cluster-management.io/cluster-proxy v0.1.2/go.mod h1:f4HVfparQqOJsPrh4fTA4uyWx5KJ7MG2AcuSRypedws=
 open-cluster-management.io/managed-serviceaccount v0.2.1-0.20220427065210-de6a7b7b5be8 h1:foP5RkSec9DkUA8sJ5FLna5We8VxJyu0179id5zNXgA=

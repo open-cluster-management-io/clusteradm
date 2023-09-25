@@ -28,7 +28,7 @@ require (
 	k8s.io/klog/v2 v2.90.1
 	k8s.io/kubectl v0.27.1
 	k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5
-	open-cluster-management.io/api v0.11.1-0.20230905055724-cf1ead467a83
+	open-cluster-management.io/api v0.11.1-0.20230922032831-30631603ee3c
 	open-cluster-management.io/cluster-proxy v0.1.2
 	open-cluster-management.io/managed-serviceaccount v0.2.1-0.20220427065210-de6a7b7b5be8
 	sigs.k8s.io/apiserver-network-proxy v0.1.2

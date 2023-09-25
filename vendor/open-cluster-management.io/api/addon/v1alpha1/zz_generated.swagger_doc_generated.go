@@ -113,6 +113,14 @@ func (AddOnTemplateSpec) SwaggerDoc() map[string]string {
 	return map_AddOnTemplateSpec
 }
 
+var map_CurrentClusterBindingConfig = map[string]string{
+	"clusterRoleName": "ClusterRoleName is the name of the clusterrole the addon agent is bound. A rolebinding will be created referring to this cluster role in each cluster namespace. The user must make sure the clusterrole exists on the hub cluster.",
+}
+
+func (CurrentClusterBindingConfig) SwaggerDoc() map[string]string {
+	return map_CurrentClusterBindingConfig
+}
+
 var map_CustomSignerRegistrationConfig = map[string]string{
 	"signerName": "signerName is the name of signer that addon agent will use to create csr.",
 	"subject":    "Subject is the user subject of the addon agent to be registered to the hub. If it is not set, the addon agent will have the default subject \"subject\": {\n  \"user\": \"system:open-cluster-management:cluster:{clusterName}:addon:{addonName}:agent:{agentName}\",\n  \"groups: [\"system:open-cluster-management:cluster:{clusterName}:addon:{addonName}\",\n            \"system:open-cluster-management:addon:{addonName}\", \"system:authenticated\"]\n}",
@@ -126,7 +134,7 @@ func (CustomSignerRegistrationConfig) SwaggerDoc() map[string]string {
 var map_HubPermissionConfig = map[string]string{
 	"":                "HubPermissionConfig configures the permission of the addon agent to access the hub cluster. Will create a RoleBinding in the same namespace as the managedClusterAddon to bind the user provided ClusterRole/Role to the \"system:open-cluster-management:cluster:<cluster-name>:addon:<addon-name>\" Group.",
 	"type":            "Type of the permissions setting. It defines how to bind the roleRef on the hub cluster. It can be: - CurrentCluster: Bind the roleRef to the namespace with the same name as the managedCluster. - SingleNamespace: Bind the roleRef to the namespace specified by SingleNamespaceBindingConfig.",
-	"roleRef":         "RoleRef is an reference to the permission resource. it could be a role or a cluster role, the user must make sure it exist on the hub cluster.",
+	"currentCluster":  "CurrentCluster contains the configuration of CurrentCluster type binding. It is required when the type is CurrentCluster.",
 	"singleNamespace": "SingleNamespace contains the configuration of SingleNamespace type binding. It is required when the type is SingleNamespace",
 }
 
@@ -160,6 +168,15 @@ var map_SigningCARef = map[string]string{
 
 func (SigningCARef) SwaggerDoc() map[string]string {
 	return map_SigningCARef
+}
+
+var map_SingleNamespaceBindingConfig = map[string]string{
+	"namespace": "Namespace is the namespace the addon agent has permissions to bind to. A rolebinding will be created in this namespace referring to the RoleRef.",
+	"roleRef":   "RoleRef is an reference to the permission resource. it could be a role or a cluster role, the user must make sure it exist on the hub cluster.",
+}
+
+func (SingleNamespaceBindingConfig) SwaggerDoc() map[string]string {
+	return map_SingleNamespaceBindingConfig
 }
 
 var map_AddOnMeta = map[string]string{
@@ -318,35 +335,6 @@ var map_PlacementStrategy = map[string]string{
 
 func (PlacementStrategy) SwaggerDoc() map[string]string {
 	return map_PlacementStrategy
-}
-
-var map_RollingUpdate = map[string]string{
-	"":               "RollingUpdate represents the behavior to rolling update add-on configurations on the selected clusters.",
-	"maxConcurrency": "The maximum concurrently updating number of clusters. Value can be an absolute number (ex: 5) or a percentage of desired addons (ex: 10%). Absolute number is calculated from percentage by rounding up. Defaults to 25%. Example: when this is set to 30%, once the addon configs change, the addon on 30% of the selected clusters will adopt the new configs. When the addons with new configs are healthy, the addon on the remaining clusters will be further updated.",
-}
-
-func (RollingUpdate) SwaggerDoc() map[string]string {
-	return map_RollingUpdate
-}
-
-var map_RollingUpdateWithCanary = map[string]string{
-	"":          "RollingUpdateWithCanary represents the canary placement and behavior to rolling update add-on configurations on the selected clusters.",
-	"placement": "Canary placement reference.",
-}
-
-func (RollingUpdateWithCanary) SwaggerDoc() map[string]string {
-	return map_RollingUpdateWithCanary
-}
-
-var map_RolloutStrategy = map[string]string{
-	"":                        "RolloutStrategy represents the rollout strategy of the add-on configuration.",
-	"type":                    "Type is the type of the rollout strategy, it supports UpdateAll, RollingUpdate and RollingUpdateWithCanary: - UpdateAll: when configs change, apply the new configs to all the selected clusters at once.\n  This is the default strategy.\n- RollingUpdate: when configs change, apply the new configs to all the selected clusters with\n  the concurrence rate defined in MaxConcurrency.\n- RollingUpdateWithCanary: when configs change, wait and check if add-ons on the canary placement\n  selected clusters have applied the new configs and are healthy, then apply the new configs to\n  all the selected clusters with the concurrence rate defined in MaxConcurrency.\n\n  The field lastKnownGoodConfig in the status record the last successfully applied\n  spec hash of canary placement. If the config spec hash changes after the canary is passed and\n  before the rollout is done, the current rollout will continue, then roll out to the latest change.\n\n  For example, the addon configs have spec hash A. The canary is passed and the lastKnownGoodConfig\n  would be A, and all the selected clusters are rolling out to A.\n  Then the config spec hash changes to B. At this time, the clusters will continue rolling out to A.\n  When the rollout is done and canary passed B, the lastKnownGoodConfig would be B and\n  all the clusters will start rolling out to B.\n\n  The canary placement does not have to be a subset of the install placement, and it is more like a\n  reference for finding and checking canary clusters before upgrading all. To trigger the rollout\n  on the canary clusters, you can define another rollout strategy with the type RollingUpdate, or even\n  manually upgrade the addons on those clusters.",
-	"rollingUpdate":           "Rolling update with placement config params. Present only if the type is RollingUpdate.",
-	"rollingUpdateWithCanary": "Rolling update with placement config params. Present only if the type is RollingUpdateWithCanary.",
-}
-
-func (RolloutStrategy) SwaggerDoc() map[string]string {
-	return map_RolloutStrategy
 }
 
 var map_ConfigReference = map[string]string{

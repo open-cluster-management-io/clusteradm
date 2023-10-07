@@ -4,6 +4,8 @@ name: OCM
 on:
     repository_dispatch:
         types: [ocm_changes]
+env:
+  GO_VERSION: '1.20'
 
 jobs:
     e2e-test:
@@ -15,6 +17,6 @@ jobs:
         - name: Set up Go
           uses: actions/setup-go@v3
           with:
-            go-version: 1.19
+            go-version: ${{ env.GO_VERSION }}
         - name: E2E Tests
           run: make test-e2e

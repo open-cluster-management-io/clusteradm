@@ -50,25 +50,6 @@ var _ = ginkgo.Describe("test clusteradm with service account", func() {
 
 			originalToken = e2e.CommandResult().RawCommand()
 
-			ginkgo.By("managedcluster2 join hub")
-			err = e2e.Clusteradm().Join(
-				"--context", e2e.Cluster().ManagedCluster2().Context(),
-				"--hub-token", e2e.CommandResult().Token(), "--hub-apiserver", e2e.CommandResult().Host(),
-				"--cluster-name", e2e.Cluster().ManagedCluster2().Name(),
-				"--wait",
-				"--bundle-version=latest",
-				"--force-internal-endpoint-lookup",
-			)
-			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "managedcluster2 join error")
-
-			ginkgo.By("hub accept managedcluster2")
-			err = e2e.Clusteradm().Accept(
-				"--clusters", e2e.Cluster().ManagedCluster2().Name(),
-				"--wait",
-				"--context", e2e.Cluster().Hub().Context(),
-			)
-			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm accept error")
-
 			ginkgo.By("delete token")
 			err = e2e.Clusteradm().Delete(
 				"token",

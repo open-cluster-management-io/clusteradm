@@ -4,6 +4,7 @@ package clusteradme2e
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
@@ -12,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 var _ = ginkgo.Describe("test clusteradm with addon create", func() {
@@ -104,7 +106,7 @@ var _ = ginkgo.Describe("test clusteradm with addon create", func() {
 					return nil
 				}
 				return fmt.Errorf("addon is not available")
-			}, 60, 1).ShouldNot(gomega.HaveOccurred())
+			}, 60*time.Second, 1*time.Second).ShouldNot(gomega.HaveOccurred())
 
 			ginkgo.By("hub disable addon")
 			err = e2e.Clusteradm().Addon(
@@ -116,6 +118,27 @@ var _ = ginkgo.Describe("test clusteradm with addon create", func() {
 				e2e.Cluster().ManagedCluster1().Name(),
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+			// check the addon was deleted, otherwise the next test CleanEnv may fail due to
+			// the applied manifest work is not deleted
+			ginkgo.By("check the addon was deleted")
+			gomega.Eventually(func() error {
+				mws, err := dynamicClient.Resource(schema.GroupVersionResource{
+					Group:    "work.open-cluster-management.io",
+					Version:  "v1",
+					Resource: "manifestworks",
+				}).Namespace(e2e.Cluster().ManagedCluster1().Name()).List(context.TODO(),
+					metav1.ListOptions{
+						LabelSelector: "open-cluster-management.io/addon-name=test-nginx",
+					})
+				if err != nil {
+					return err
+				}
+				if len(mws.Items) == 0 {
+					return nil
+				}
+				return fmt.Errorf("addon test-nginx manifestwork is not deleted yet")
+			}, 60*time.Second, 1*time.Second).ShouldNot(gomega.HaveOccurred())
 		})
 	})
 })

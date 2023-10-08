@@ -17,7 +17,6 @@ func (cc *clusterConfig) Context() string {
 type clusterValues struct {
 	hub  *clusterConfig
 	mcl1 *clusterConfig
-	mcl2 *clusterConfig
 }
 
 func (cv *clusterValues) Hub() *clusterConfig {
@@ -26,10 +25,6 @@ func (cv *clusterValues) Hub() *clusterConfig {
 
 func (cv *clusterValues) ManagedCluster1() *clusterConfig {
 	return cv.mcl1
-}
-
-func (cv *clusterValues) ManagedCluster2() *clusterConfig {
-	return cv.mcl2
 }
 
 type values struct {

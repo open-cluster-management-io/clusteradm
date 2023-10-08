@@ -28,8 +28,6 @@ func NewTestE2eConfig(
 	hubctx string,
 	mcl1 string,
 	mcl1ctx string,
-	mcl2 string,
-	mcl2ctx string,
 ) *TestE2eConfig {
 
 	ctx := clusterValues{
@@ -40,10 +38,6 @@ func NewTestE2eConfig(
 		mcl1: &clusterConfig{
 			name:    mcl1,
 			context: mcl1ctx,
-		},
-		mcl2: &clusterConfig{
-			name:    mcl2,
-			context: mcl2ctx,
 		},
 	}
 

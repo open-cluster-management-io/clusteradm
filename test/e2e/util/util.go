@@ -44,12 +44,7 @@ func initE2E() (*TestE2eConfig, error) {
 	if v := os.Getenv("MANAGED_CLUSTER1_CTX"); v == "" {
 		os.Setenv("MANAGED_CLUSTER1_CTX", "kind-"+os.Getenv("MANAGED_CLUSTER1_NAME"))
 	}
-	if v := os.Getenv("MANAGED_CLUSTER2_NAME"); v == "" {
-		os.Setenv("MANAGED_CLUSTER2_NAME", projectName+"-e2e-test-c2")
-	}
-	if v := os.Getenv("MANAGED_CLUSTER2_CTX"); v == "" {
-		os.Setenv("MANAGED_CLUSTER2_CTX", "kind-"+os.Getenv("MANAGED_CLUSTER2_NAME"))
-	}
+
 	if v := os.Getenv("KUBECONFIG"); v == "" {
 		home, err := os.UserHomeDir()
 		if err != nil {
@@ -62,7 +57,6 @@ func initE2E() (*TestE2eConfig, error) {
 		os.Getenv("KUBECONFIG"),
 		os.Getenv("HUB_NAME"), os.Getenv("HUB_CTX"),
 		os.Getenv("MANAGED_CLUSTER1_NAME"), os.Getenv("MANAGED_CLUSTER1_CTX"),
-		os.Getenv("MANAGED_CLUSTER2_NAME"), os.Getenv("MANAGED_CLUSTER2_CTX"),
 	)
 
 	// clearenv set the e2e environment from initial state to empty
@@ -78,20 +72,6 @@ func initE2E() (*TestE2eConfig, error) {
 			return err
 		}
 		err = WaitNamespaceDeleted(e2eConf.Kubeconfigpath, e2eConf.Cluster().ManagedCluster1().Context(), config.ManagedClusterNamespace)
-		if err != nil {
-			return err
-		}
-
-		fmt.Println("unjoin managedcluster2...")
-		err = e2eConf.Clusteradm().Unjoin(
-			"--context", e2eConf.Cluster().ManagedCluster2().Context(),
-			"--cluster-name", e2eConf.Cluster().ManagedCluster2().Name(),
-			"--purge-operator=false",
-		)
-		if err != nil {
-			return err
-		}
-		err = WaitNamespaceDeleted(e2eConf.Kubeconfigpath, e2eConf.Cluster().ManagedCluster2().Context(), config.ManagedClusterNamespace)
 		if err != nil {
 			return err
 		}
@@ -165,16 +145,6 @@ func (tec *TestE2eConfig) ResetEnv() error {
 		"--clusters", tec.Cluster().ManagedCluster1().Name(),
 		"--wait",
 		"--context", tec.Cluster().Hub().Context(),
-	)
-	if err != nil {
-		return err
-	}
-
-	// ensure managed cluster2 is not join-accepted
-	fmt.Println("ensure managed cluster2 is unjoined...")
-	err = tec.Clusteradm().Unjoin(
-		"--context", tec.Cluster().ManagedCluster2().Context(),
-		"--cluster-name", tec.Cluster().ManagedCluster2().Name(),
 	)
 	if err != nil {
 		return err

@@ -52,7 +52,8 @@ err := e2e.Clusteradm().<Subcommand-Method>.Run()
 ### reset e2e environment
 
 #### 1. ResetEnv
-First, we define an initial e2e environment state: 1 hub, 2 managed(cluster1, cluster2), hub is initialized, cluster1 is join and accepted, cluster2 is just created.
+First, we define an initial e2e environment state: 1 hub, 1 managed cluster(cluster1), hub is initialized, cluster1 is
+joined and accepted.
 
 You need to call `ResetEnv` method to reset the e2e environment to initial state after each test senario which made a change on the test environment.
 ```go
@@ -76,10 +77,10 @@ Now we will show you how to write tests for clusteradm command.
 
 1.  First, what you need to do is: Call `e2e.ResetEnv()` in `ginkgo.AfterEach` to make sure the environment is reset to initial state after your test code have made changes to the environment,.
 
-    And if you just want an empty environment, call `e2e.ClearEnv()` in  `ginkgo.AfterEach` to make sure the applied resources are removed before youe test cases start.
+    And if you just want an empty environment, call `e2e.ClearEnv()` in  `ginkgo.AfterEach` to make sure the applied resources are removed before your test cases start.
 
 
-    *Actually, we've started the e2e environment for you, which includes 3 clusters(1 hub, 2 managed clusters). Hub is initialized and managed cluster1 is joined&accepted to hub.*
+    *Actually, we've started the e2e environment for you, which includes 2 clusters(1 hub, 1 managed cluster). Hub is initialized and managed cluster1 is joined&accepted to hub.*
 
 
 
@@ -89,7 +90,7 @@ Now we will show you how to write tests for clusteradm command.
     ```
     The command will be executed, then you just need to focus on the err. 
 
-    But if the output of a command such as `init` or `get token` needs to be reuse? 
+    But if the output of a command such as `init` or `get token` needs to be reused? 
     Don't worry, the output has been automatically resolved and stored in e2e instance. while you want to use this, just call:
     ```
     e2e.CommandResult().Token()

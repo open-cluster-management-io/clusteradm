@@ -108,8 +108,10 @@ func (o *Options) run() error {
 		}
 	}
 
-	if isAppliedManifestWorkExist(appliedWorkClient) {
-		fmt.Fprintf(o.Streams.Out, "appliedManifestWork still exist on the managed cluster, you should manually clean those works, uninstall kluster will cause those works out of control.")
+	amws := isAppliedManifestWorkExist(appliedWorkClient)
+	if len(amws) != 0 {
+		fmt.Fprintf(o.Streams.Out, "appliedManifestWorks %v still exist on the managed cluster,"+
+			"you should manually clean them, uninstall kluster will cause those works out of control.", amws)
 		return nil
 	}
 
@@ -118,7 +120,7 @@ func (o *Options) run() error {
 		return err
 	}
 
-	//Delete the other applied resources
+	// Delete the other applied resources
 	if o.purgeOperator {
 		list, err := klusterletClient.OperatorV1().Klusterlets().List(context.Background(), metav1.ListOptions{})
 		if err != nil && !errors.IsNotFound(err) {
@@ -158,19 +160,20 @@ func (o *Options) getKlusterlet(kubeClient kubernetes.Interface, klusterletClien
 	return errors.NewNotFound(operatorv1.Resource("klusterlet"), o.values.ClusterName)
 }
 
-func isAppliedManifestWorkExist(client appliedworkclient.Interface) bool {
+func isAppliedManifestWorkExist(client appliedworkclient.Interface) []string {
 	obj, err := client.WorkV1().AppliedManifestWorks().List(context.Background(), metav1.ListOptions{})
 	if errors.IsNotFound(err) {
-		return false
+		return nil
 	}
 	if err != nil {
 		klog.Warningf("can not list applied manifest works: %v, ypu should check and delete the applied manifest works manully.", err)
-		return false
+		return nil
 	}
-	if len(obj.Items) > 0 {
-		return true
+	var amws []string
+	for _, amw := range obj.Items {
+		amws = append(amws, amw.Name)
 	}
-	return false
+	return amws
 }
 
 func (o *Options) purgeKlusterlet(kubeClient kubernetes.Interface, klusterletClient klusterletclient.Interface) error {

@@ -18,6 +18,8 @@ type Options struct {
 
 	Values Values
 
+	Requesters []string
+
 	Streams genericclioptions.IOStreams
 }
 

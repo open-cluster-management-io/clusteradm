@@ -50,5 +50,6 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	o.ClusterOptions.AddFlags(cmd.Flags())
 	cmd.Flags().BoolVar(&o.Wait, "wait", false, "If set, wait for the managedcluster and CSR in foreground.")
 	cmd.Flags().BoolVar(&o.SkipApproveCheck, "skip-approve-check", false, "If set, then skip check and approve csr directly.")
+	cmd.Flags().StringSliceVar(&o.Requesters, "requesters", o.Requesters, "Common Names of agents to be approved.")
 	return cmd
 }

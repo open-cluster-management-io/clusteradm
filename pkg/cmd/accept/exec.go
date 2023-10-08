@@ -3,6 +3,8 @@ package accept
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"strings"
 	"time"
@@ -116,6 +118,8 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 
 	// Check if csr has the correct requester
 	var passedCSRs []certificatesv1.CertificateSigningRequest
+	csrRequesterMapper := map[string]string{}
+	requesters := sets.New[string]()
 	if o.SkipApproveCheck {
 		passedCSRs = csrs.Items
 	} else {
@@ -132,12 +136,43 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 				continue
 			}
 			passedCSRs = append(passedCSRs, item)
+
+			// parse the common name in the request
+			cn, err := parseCSRCommonName(item.Spec.Request)
+			if err != nil {
+				fmt.Fprintf(o.Streams.ErrOut, "csr %s is not valid: %v", item.Name, err)
+				continue
+			}
+			requesters.Insert(cn)
+			csrRequesterMapper[item.Name] = cn
 		}
 	}
+
+	// if there are multiple csr with different common name, it is possible that multiple agents is registered with the
+	// same cluster name. We should stop here and let user specify a certain requester or enable skip-approve-check.
+	requiredRequesters := sets.New[string](o.Requesters...)
+	if len(requesters) > 1 {
+		if requiredRequesters.Len() == 0 || !o.SkipApproveCheck {
+			fmt.Fprintf(o.Streams.Out, "There are CSRs of different requesters: %s, approve is skipped "+
+				"please specify the certain requesters with --requesters or set --skip-approve-check if "+
+				"all CSRs need to be approved", strings.Join(requesters.UnsortedList(), ","))
+			return false, nil
+		}
+	} else {
+		// always approve if there is only one requester
+		requiredRequesters = requiredRequesters.Union(requesters)
+	}
+
+	filteredRequesters := requesters.Intersection(requiredRequesters)
 
 	// approve all csrs that are not approved.
 	var csrToApprove []certificatesv1.CertificateSigningRequest
 	for _, passedCSR := range passedCSRs {
+		cn := csrRequesterMapper[passedCSR.Name]
+		if !o.SkipApproveCheck && !filteredRequesters.Has(cn) {
+			fmt.Fprintf(o.Streams.Out, "CSR %s with requester %s is not in the approve list\n", passedCSR.Name, cn)
+			continue
+		}
 		//Check if already approved or denied
 		approved, denied := GetCertApprovalCondition(&passedCSR.Status)
 		//if already denied, then nothing to do
@@ -227,4 +262,18 @@ func GetCertApprovalCondition(status *certificatesv1.CertificateSigningRequestSt
 		}
 	}
 	return
+}
+
+func parseCSRCommonName(csr []byte) (string, error) {
+	block, _ := pem.Decode(csr)
+	if block == nil || block.Type != "CERTIFICATE REQUEST" {
+		return "", fmt.Errorf("CSR was not recognized: PEM block type is not CERTIFICATE REQUEST")
+	}
+
+	x509cr, err := x509.ParseCertificateRequest(block.Bytes)
+	if err != nil {
+		return "", fmt.Errorf("CSR was not recognized: %v", err)
+	}
+
+	return x509cr.Subject.CommonName, nil
 }

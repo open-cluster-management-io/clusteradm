@@ -8,6 +8,9 @@ on:
 
 name: Create Release
 
+env:
+  GO_VERSION: '1.20'
+
 jobs:
   build:
     name: Create Release
@@ -18,7 +21,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19
+          go-version: ${{ env.GO_VERSION }}
       - name: Check version
         run: |
           cat VERSION.txt | grep ${{ github.ref_name }}
@@ -30,7 +33,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          body_path: CHANGELOG.md
           files: |
             bin/clusteradm_darwin_amd64.tar.gz
             bin/clusteradm_darwin_arm64.tar.gz
@@ -39,5 +41,6 @@ jobs:
             bin/clusteradm_linux_ppc64le.tar.gz
             bin/clusteradm_linux_s390x.tar.gz
             bin/clusteradm_windows_amd64.zip
-          draft: false
+          draft: true
           prerelease: false
+          generate_release_notes: true

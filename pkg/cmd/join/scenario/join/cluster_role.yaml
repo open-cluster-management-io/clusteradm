@@ -17,7 +17,7 @@ rules:
   verbs: ["create"]
 - apiGroups: [""]
   resources: ["namespaces"]
-  verbs: ["create", "get", "list", "watch", "delete"]
+  verbs: ["create", "get", "list", "update", "watch", "delete"]
 - apiGroups: [""]
   resources: ["nodes"]
   verbs: ["get", "list", "watch"]

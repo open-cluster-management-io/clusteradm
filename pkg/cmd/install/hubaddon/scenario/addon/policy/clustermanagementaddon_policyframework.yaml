@@ -1,0 +1,12 @@
+# Copyright Contributors to the Open Cluster Management project
+apiVersion: addon.open-cluster-management.io/v1alpha1
+kind: ClusterManagementAddOn
+metadata:
+  name: governance-policy-framework
+spec:
+  addOnMeta:
+    description: Distributes policies and collects policy evaluation results.
+    displayName: Governance Policy Framework Addon
+  supportedConfigs:
+    - group: addon.open-cluster-management.io
+      resource: addondeploymentconfigs

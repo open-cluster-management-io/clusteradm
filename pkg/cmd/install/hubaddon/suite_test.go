@@ -2,13 +2,15 @@
 package hubaddon
 
 import (
+	"path/filepath"
+	"testing"
+
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-	"testing"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
@@ -41,7 +43,11 @@ var _ = ginkgo.BeforeSuite(func() {
 	ginkgo.By("bootstrapping test environment")
 
 	// start a kube-apiserver
-	testEnv = &envtest.Environment{}
+	testEnv = &envtest.Environment{
+		CRDDirectoryPaths: []string{
+			filepath.Join("..", "..", "..", "..", "vendor", "open-cluster-management.io", "api", "addon", "v1alpha1"),
+		},
+	}
 
 	cfg, err := testEnv.Start()
 	gomega.Expect(err).ToNot(gomega.HaveOccurred())

@@ -3,9 +3,10 @@ package hubaddon
 
 import (
 	"fmt"
-	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"os"
 	"strings"
+
+	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"

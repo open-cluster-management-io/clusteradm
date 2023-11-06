@@ -3,9 +3,10 @@ package hubaddon
 
 import (
 	"fmt"
-	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"os"
 	"strings"
+
+	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
@@ -89,6 +90,7 @@ func (o *Options) runWithClient() error {
 		// Install the Application Management Addon
 		case appMgrAddonName:
 			files := []string{
+				"addon/appmgr/clustermanagementaddon_appmgr.yaml",
 				"addon/appmgr/clusterrole_agent.yaml",
 				"addon/appmgr/clusterrole_binding.yaml",
 				"addon/appmgr/clusterrole.yaml",
@@ -139,6 +141,8 @@ func (o *Options) runWithClient() error {
 				"addon/policy/propagator_role.yaml",
 				"addon/policy/propagator_rolebinding.yaml",
 				"addon/policy/propagator_serviceaccount.yaml",
+				"addon/policy/clustermanagementaddon_configpolicy.yaml",
+				"addon/policy/clustermanagementaddon_policyframework.yaml",
 				"addon/appmgr/crd_placementrule.yaml",
 			}
 

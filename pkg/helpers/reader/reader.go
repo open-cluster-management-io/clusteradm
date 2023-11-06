@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
+
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift/library-go/pkg/assets"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -88,6 +89,11 @@ func (r *ResourceReader) applyOneObject(info *resource.Info) error {
 	helper := resource.NewHelper(info.Client, info.Mapping).
 		DryRun(r.dryRun)
 
+	modified, err := kubectlutil.GetModifiedConfiguration(info.Object, false, unstructured.UnstructuredJSONScheme)
+	if err != nil {
+		return cmdutil.AddSourceToErr(fmt.Sprintf("retrieving modified configuration from:\n%s\nfor:", info.String()), info.Source, err)
+	}
+
 	if err := info.Get(); err != nil {
 		if !errors.IsNotFound(err) {
 			return cmdutil.AddSourceToErr(fmt.Sprintf("retrieving current configuration of:\n%s\nfrom server for:", info.String()), info.Source, err)
@@ -103,11 +109,6 @@ func (r *ResourceReader) applyOneObject(info *resource.Info) error {
 				return err
 			}
 		}
-	}
-
-	modified, err := kubectlutil.GetModifiedConfiguration(info.Object, false, unstructured.UnstructuredJSONScheme)
-	if err != nil {
-		return cmdutil.AddSourceToErr(fmt.Sprintf("retrieving modified configuration from:\n%s\nfor:", info.String()), info.Source, err)
 	}
 
 	if !r.dryRun {

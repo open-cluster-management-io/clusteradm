@@ -59,6 +59,9 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().BoolVar(&o.forceHubInClusterEndpointLookup, "force-internal-endpoint-lookup", false,
 		"If true, the installed klusterlet agent will be starting the cluster registration process by "+
 			"looking for the internal endpoint from the public cluster-info in the hub cluster instead of from --hub-apiserver.")
+	cmd.Flags().BoolVar(&o.forceManagedInClusterEndpointLookup, "force-internal-endpoint-lookup-managed", false,
+		"If true, the klusterlet accesses the managed cluster by using the internal endpoint from the public cluster-info"+
+			" in the managed cluster instead of from --managed-cluster-kubeconfig directly.")
 	cmd.Flags().BoolVar(&o.wait, "wait", false, "If true, running the cluster registration in foreground.")
 	cmd.Flags().StringVarP(&o.mode, "mode", "m", "default", "mode to deploy klusterlet, can be default or hosted")
 	cmd.Flags().StringVar(&o.managedKubeconfigFile, "managed-cluster-kubeconfig", "", "To specify the directory to external managed cluster kubeconfig in hosted mode")

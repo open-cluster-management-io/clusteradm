@@ -20,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/kubectl/pkg/cmd/util"
@@ -174,11 +175,25 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	}
 
 	// get managed cluster externalServerURL
-	kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
-	if err != nil {
-		klog.Errorf("Failed building kube client: %v", err)
-		return err
+	var kubeClient *kubernetes.Clientset
+	switch o.mode {
+	case string(operatorv1.InstallModeHosted):
+		restConfig, err := clientcmd.BuildConfigFromFlags("", o.managedKubeconfigFile)
+		if err != nil {
+			return err
+		}
+		kubeClient, err = kubernetes.NewForConfig(restConfig)
+		if err != nil {
+			return err
+		}
+	default:
+		kubeClient, err = o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
+		if err != nil {
+			klog.Errorf("Failed building kube client: %v", err)
+			return err
+		}
 	}
+
 	klusterletApiserver, err := helpers.GetAPIServer(kubeClient)
 	if err != nil {
 		klog.Warningf("Failed looking for cluster endpoint for the registering klusterlet: %v", err)
@@ -229,6 +244,32 @@ func (o *Options) validate() error {
 		managedConfig, err := os.ReadFile(o.managedKubeconfigFile)
 		if err != nil {
 			return err
+		}
+
+		// replace the server address with the internal endpoint
+		if o.forceManagedInClusterEndpointLookup {
+			config := &clientcmdapiv1.Config{}
+			err = yaml.Unmarshal(managedConfig, config)
+			if err != nil {
+				return err
+			}
+			restConfig, err := clientcmd.BuildConfigFromFlags("", o.managedKubeconfigFile)
+			if err != nil {
+				return err
+			}
+			kubeClient, err := kubernetes.NewForConfig(restConfig)
+			if err != nil {
+				return err
+			}
+			inClusterEndpoint, err := helpers.GetAPIServer(kubeClient)
+			if err != nil {
+				return err
+			}
+			config.Clusters[0].Cluster.Server = inClusterEndpoint
+			managedConfig, err = yaml.Marshal(config)
+			if err != nil {
+				return err
+			}
 		}
 		o.values.ManagedKubeconfig = base64.StdEncoding.EncodeToString(managedConfig)
 	}

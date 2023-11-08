@@ -66,6 +66,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().StringVarP(&o.mode, "mode", "m", "default", "mode to deploy klusterlet, can be default or hosted")
 	cmd.Flags().StringVar(&o.managedKubeconfigFile, "managed-cluster-kubeconfig", "", "To specify the directory to external managed cluster kubeconfig in hosted mode")
 	cmd.Flags().BoolVar(&o.singleton, "singleton", false, "If true, deploy singleton mode of klusterlet to have registration and work agents run in a single pod. This is an alpha stage flag.")
+	cmd.Flags().StringVar(&o.proxyURL, "proxy-url", "", "the URL of a forward proxy server that will be used by agents to connect to the hub cluster.")
+	cmd.Flags().StringVar(&o.proxyCAFile, "proxy-ca-file", "", "the file path to proxy ca, optional")
 
 	return cmd
 }

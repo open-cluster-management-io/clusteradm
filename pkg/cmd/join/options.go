@@ -57,6 +57,12 @@ type Options struct {
 	// hub config
 	HubConfig *clientcmdapiv1.Config
 
+	// The URL of a forward proxy server which will be used by agnets on the managed cluster
+	// to connect to the hub cluster (optional)
+	proxyURL string
+	//The proxy server ca-file(optional)
+	proxyCAFile string
+
 	//Values below are used to fill in yaml files
 	values Values
 

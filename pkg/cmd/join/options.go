@@ -44,7 +44,12 @@ type Options struct {
 	// the external endpoint from --hub-apiserver instead of looking for the internal
 	// endpoint from the public cluster-info.
 	forceHubInClusterEndpointLookup bool
-	hubInClusterEndpoint            string
+	// By default, the klusterlet running in the hosting cluster will access the managed
+	// cluster registered in the hosted mode by using the external endpoint from
+	// --managed-cluster-kubeconfig instead of looking for the internal endpoint from the
+	// public cluster-info.
+	forceManagedInClusterEndpointLookup bool
+	hubInClusterEndpoint                string
 
 	//Values below are tempoary data
 	//HubCADate: data in hub ca file

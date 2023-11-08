@@ -12,6 +12,7 @@ import (
 	"k8s.io/kubectl/pkg/scheme"
 	addonclientset "open-cluster-management.io/api/client/addon/clientset/versioned"
 	clusterv1client "open-cluster-management.io/api/client/cluster/clientset/versioned"
+	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 	clusterv1 "open-cluster-management.io/api/cluster/v1"
 
 	"testing"
@@ -30,6 +31,7 @@ var apiExtensionsClient apiextensionsclient.Interface
 var dynamicClient dynamic.Interface
 var clusterClient clusterv1client.Interface
 var addonClient addonclientset.Interface
+var operatorClient operatorclient.Interface
 
 func TestE2EClusteradm(t *testing.T) {
 	gomega.RegisterFailHandler(ginkgo.Fail)
@@ -71,6 +73,8 @@ var _ = ginkgo.BeforeSuite(func() {
 	clusterClient, err = clusterv1client.NewForConfig(hubConfig)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	addonClient, err = addonclientset.NewForConfig(hubConfig)
+	gomega.Expect(err).NotTo(gomega.HaveOccurred())
+	operatorClient, err = operatorclient.NewForConfig(hubConfig)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	err = clusterv1.AddToScheme(scheme.Scheme)

@@ -104,6 +104,7 @@ func (o *Options) runWithClient() error {
 				"addon/appmgr/service_account.yaml",
 				"addon/appmgr/service_metrics.yaml",
 				"addon/appmgr/service_operator.yaml",
+				"addon/appmgr/mutatingwebhookconfiguration.yaml",
 			}
 
 			err := r.Apply(scenario.Files, o.values, files...)

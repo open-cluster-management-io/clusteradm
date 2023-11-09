@@ -1,0 +1,5 @@
+# Copyright Contributors to the Open Cluster Management project
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: ocm-mutating-webhook

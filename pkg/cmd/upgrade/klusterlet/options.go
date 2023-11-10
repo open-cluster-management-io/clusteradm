@@ -4,6 +4,7 @@ package klusterlet
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/resource"
+	"open-cluster-management.io/clusteradm/pkg/cmd/join"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
@@ -12,7 +13,7 @@ type Options struct {
 	//ClusteradmFlags: The generic options from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 
-	values Values
+	values join.Values
 	//The file to output the resources will be sent to the file.
 	registry string
 	//version of predefined compatible image versions

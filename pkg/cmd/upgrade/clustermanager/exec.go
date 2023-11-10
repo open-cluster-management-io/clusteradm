@@ -2,11 +2,16 @@
 package clustermanager
 
 import (
+	"context"
 	"fmt"
+
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
+	clusteradminit "open-cluster-management.io/clusteradm/pkg/cmd/init"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 
 	"github.com/spf13/cobra"
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/klog/v2"
 	init_scenario "open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
@@ -16,28 +21,52 @@ import (
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun)
-	o.values = Values{
-		Hub: Hub{
-			Registry: o.registry,
-		},
+
+	f := o.ClusteradmFlags.KubectlFactory
+	o.builder = f.NewBuilder()
+
+	restConfig, err := f.ToRESTConfig()
+	if err != nil {
+		return err
+	}
+
+	operatorClient, err := operatorclient.NewForConfig(restConfig)
+	if err != nil {
+		return err
+	}
+	cm, err := operatorClient.OperatorV1().ClusterManagers().Get(context.TODO(), "cluster-manager", metav1.GetOptions{})
+	if errors.IsNotFound(err) {
+		return fmt.Errorf("clustermanager is not installed")
+	}
+	if err != nil {
+		return err
 	}
 
 	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
-
 	if err != nil {
 		klog.Errorf("unable to retrieve version ", err)
 		return err
 	}
 
-	o.values.BundleVersion = BundleVersion{
-		RegistrationImageVersion: versionBundle.Registration,
-		PlacementImageVersion:    versionBundle.Placement,
-		WorkImageVersion:         versionBundle.Work,
-		OperatorImageVersion:     versionBundle.Operator,
+	o.values = clusteradminit.Values{
+		Hub: clusteradminit.Hub{
+			Registry: o.registry,
+		},
+		// reconstruct values from the cluster manager CR.
+		RegistrationFeatures: cm.Spec.RegistrationConfiguration.FeatureGates,
+		WorkFeatures:         cm.Spec.WorkConfiguration.FeatureGates,
+		AddonFeatures:        cm.Spec.AddOnManagerConfiguration.FeatureGates,
+		BundleVersion: clusteradminit.BundleVersion{
+			RegistrationImageVersion: versionBundle.Registration,
+			PlacementImageVersion:    versionBundle.Placement,
+			WorkImageVersion:         versionBundle.Work,
+			OperatorImageVersion:     versionBundle.Operator,
+		},
 	}
 
-	f := o.ClusteradmFlags.KubectlFactory
-	o.builder = f.NewBuilder()
+	if len(cm.Spec.RegistrationConfiguration.AutoApproveUsers) > 0 {
+		o.values.AutoApprove = true
+	}
 
 	return nil
 }
@@ -46,24 +75,6 @@ func (o *Options) validate() (err error) {
 	err = o.ClusteradmFlags.ValidateHub()
 	if err != nil {
 		return err
-	}
-
-	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
-	if err != nil {
-		return err
-	}
-
-	apiExtensionsClient, err := apiextensionsclient.NewForConfig(restConfig)
-	if err != nil {
-		return err
-	}
-	installed, err := helpers.IsClusterManagerInstalled(apiExtensionsClient)
-	if err != nil {
-		return err
-	}
-
-	if !installed {
-		return fmt.Errorf("clustermanager is not installed")
 	}
 
 	//TODO check desired version is greater then current version

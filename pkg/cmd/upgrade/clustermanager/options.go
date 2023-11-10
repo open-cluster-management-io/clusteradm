@@ -4,6 +4,7 @@ package clustermanager
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/resource"
+	clusteradminit "open-cluster-management.io/clusteradm/pkg/cmd/init"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
@@ -12,7 +13,7 @@ type Options struct {
 	//ClusteradmFlags: The generic options from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 
-	values Values
+	values clusteradminit.Values
 	//The file to output the resources will be sent to the file.
 	registry string
 	//version of predefined compatible image versions
@@ -23,36 +24,6 @@ type Options struct {
 	Streams genericclioptions.IOStreams
 
 	builder *resource.Builder
-}
-
-type BundleVersion struct {
-	// registration image version
-	RegistrationImageVersion string
-	// placement image version
-	PlacementImageVersion string
-	// work image version
-	WorkImageVersion string
-	// operator image version
-	OperatorImageVersion string
-}
-
-// Values: The values used in the template
-type Values struct {
-	//The values related to the hub
-	Registry string `json:"registry"`
-	//bundle version
-	BundleVersion BundleVersion
-	//Hub: Hub information
-	Hub Hub
-}
-
-type Hub struct {
-	//APIServer: The API Server external URL
-	APIServer string
-	//KubeConfig: The kubeconfig of the bootstrap secret to connect to the hub
-	KubeConfig string
-	//image registry
-	Registry string
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {

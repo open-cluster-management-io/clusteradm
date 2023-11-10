@@ -2,10 +2,14 @@
 package join
 
 import (
+	"bytes"
 	"context"
+	"crypto/x509"
 	"encoding/base64"
+	"encoding/pem"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -22,6 +26,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
+	certutil "k8s.io/client-go/util/cert"
 	"k8s.io/klog/v2"
 	"k8s.io/kubectl/pkg/cmd/util"
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
@@ -601,6 +606,24 @@ func (o *Options) setKubeconfig() error {
 		o.HubConfig.Clusters[0].Cluster.Server = o.hubInClusterEndpoint
 	}
 
+	// set the proxy url
+	if len(o.proxyURL) > 0 {
+		o.HubConfig.Clusters[0].Cluster.ProxyURL = o.proxyURL
+	}
+
+	// append the proxy ca data
+	if len(o.proxyURL) > 0 && len(o.proxyCAFile) > 0 {
+		proxyCAData, err := os.ReadFile(o.proxyCAFile)
+		if err != nil {
+			return err
+		}
+		o.HubConfig.Clusters[0].Cluster.CertificateAuthorityData, err = mergeCertificateData(
+			o.HubConfig.Clusters[0].Cluster.CertificateAuthorityData, proxyCAData)
+		if err != nil {
+			return err
+		}
+	}
+
 	bootstrapConfigBytes, err := yaml.Marshal(o.HubConfig)
 	if err != nil {
 		return err
@@ -608,4 +631,42 @@ func (o *Options) setKubeconfig() error {
 
 	o.values.Hub.KubeConfig = base64.StdEncoding.EncodeToString(bootstrapConfigBytes)
 	return nil
+}
+
+func mergeCertificateData(caBundles ...[]byte) ([]byte, error) {
+	var all []*x509.Certificate
+	for _, caBundle := range caBundles {
+		if len(caBundle) == 0 {
+			continue
+		}
+		certs, err := certutil.ParseCertsPEM(caBundle)
+		if err != nil {
+			return []byte{}, err
+		}
+		all = append(all, certs...)
+	}
+
+	// remove duplicated cert
+	var merged []*x509.Certificate
+	for i := range all {
+		found := false
+		for j := range merged {
+			if reflect.DeepEqual(all[i].Raw, merged[j].Raw) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			merged = append(merged, all[i])
+		}
+	}
+
+	// encode the merged certificates
+	b := bytes.Buffer{}
+	for _, cert := range merged {
+		if err := pem.Encode(&b, &pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw}); err != nil {
+			return []byte{}, err
+		}
+	}
+	return b.Bytes(), nil
 }

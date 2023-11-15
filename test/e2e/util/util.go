@@ -53,11 +53,14 @@ func initE2E() (*TestE2eConfig, error) {
 		os.Setenv("KUBECONFIG", filepath.Join(home, ".kube", "config"))
 	}
 
-	e2eConf := NewTestE2eConfig(
+	e2eConf, err := NewTestE2eConfig(
 		os.Getenv("KUBECONFIG"),
 		os.Getenv("HUB_NAME"), os.Getenv("HUB_CTX"),
 		os.Getenv("MANAGED_CLUSTER1_NAME"), os.Getenv("MANAGED_CLUSTER1_CTX"),
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	// clearenv set the e2e environment from initial state to empty
 	clearenv := func() error {
@@ -71,13 +74,13 @@ func initE2E() (*TestE2eConfig, error) {
 		if err != nil {
 			return err
 		}
-		err = WaitNamespaceDeleted(e2eConf.Kubeconfigpath, e2eConf.Cluster().ManagedCluster1().Context(), config.ManagedClusterNamespace)
+		err = WaitNamespaceDeleted(e2eConf.Cluster().ManagedCluster1().KubeConfig(), config.ManagedClusterNamespace)
 		if err != nil {
 			return err
 		}
 
 		// delete cluster finalizers
-		err = DeleteClusterFinalizers(e2eConf.Kubeconfigpath, e2eConf.Cluster().Hub().Context())
+		err = DeleteClusterFinalizers(e2eConf.Cluster().Hub().KubeConfig())
 		if err != nil {
 			return err
 		}
@@ -89,11 +92,11 @@ func initE2E() (*TestE2eConfig, error) {
 			return err
 		}
 
-		err = DeleteClusterCSRs(e2eConf.Kubeconfigpath, e2eConf.Cluster().Hub().Context())
+		err = DeleteClusterCSRs(e2eConf.Cluster().Hub().KubeConfig())
 		if err != nil {
 			return err
 		}
-		err = WaitNamespaceDeleted(e2eConf.Kubeconfigpath, e2eConf.Cluster().Hub().Context(), config.HubClusterNamespace)
+		err = WaitNamespaceDeleted(e2eConf.Cluster().Hub().KubeConfig(), config.HubClusterNamespace)
 		if err != nil {
 			return err
 		}

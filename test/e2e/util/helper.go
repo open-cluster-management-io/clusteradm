@@ -3,10 +3,8 @@ package util
 
 import (
 	"context"
-	"fmt"
 	"time"
 
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -18,12 +16,7 @@ import (
 
 // WaitNamespaceDeleted receive a kubeconfigpath, a context name and a namespace name,
 // then poll until the specific namespace is fully deleted or an error occurs.
-func WaitNamespaceDeleted(kubeconfigpath string, ctx string, namespace string) error {
-	restcfg, err := buildConfigFromFlags(ctx, kubeconfigpath)
-	if err != nil {
-		return fmt.Errorf("error occurred while build rest config: %s", err)
-	}
-
+func WaitNamespaceDeleted(restcfg *rest.Config, namespace string) error {
 	clientset, err := kubernetes.NewForConfig(restcfg)
 	if err != nil {
 		return err
@@ -41,12 +34,7 @@ func WaitNamespaceDeleted(kubeconfigpath string, ctx string, namespace string) e
 	})
 }
 
-func DeleteClusterCSRs(kubeconfigpath string, ctx string) error {
-	restcfg, err := buildConfigFromFlags(ctx, kubeconfigpath)
-	if err != nil {
-		return fmt.Errorf("error occurred while build rest config: %s", err)
-	}
-
+func DeleteClusterCSRs(restcfg *rest.Config) error {
 	clientset, err := kubernetes.NewForConfig(restcfg)
 	if err != nil {
 		return err
@@ -57,12 +45,7 @@ func DeleteClusterCSRs(kubeconfigpath string, ctx string) error {
 	})
 }
 
-func DeleteClusterFinalizers(kubeconfigpath string, ctx string) error {
-	restcfg, err := buildConfigFromFlags(ctx, kubeconfigpath)
-	if err != nil {
-		return fmt.Errorf("error occurred while build rest config: %s", err)
-	}
-
+func DeleteClusterFinalizers(restcfg *rest.Config) error {
 	clientset, err := clusterclient.NewForConfig(restcfg)
 	if err != nil {
 		return err
@@ -80,29 +63,6 @@ func DeleteClusterFinalizers(kubeconfigpath string, ctx string) error {
 		}
 	}
 	return nil
-}
-
-func WaitCRDDeleted(kubeconfigpath string, ctx string, name string) error {
-	restcfg, err := buildConfigFromFlags(ctx, kubeconfigpath)
-	if err != nil {
-		return fmt.Errorf("error occurred while build rest config: %s", err)
-	}
-
-	client, err := apiextensionsclient.NewForConfig(restcfg)
-	if err != nil {
-		return err
-	}
-
-	return wait.PollUntilContextCancel(context.TODO(), 1*time.Second, true, func(ctx context.Context) (bool, error) {
-		_, err = client.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, name, metav1.GetOptions{})
-		if errors.IsNotFound(err) {
-			return true, nil
-		}
-		if err != nil {
-			return false, err
-		}
-		return false, nil
-	})
 }
 
 // buildConfigFromFlags build rest config for specified context in the kubeconfigfile.

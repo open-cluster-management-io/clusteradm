@@ -20,11 +20,7 @@ import (
 
 //nolint:deadcode,varcheck
 const (
-	klusterletName                 = "klusterlet"
-	registrationOperatorNamespace  = "open-cluster-management"
-	klusterletCRD                  = "klusterlets.operator.open-cluster-management.io"
-	componentNameRegistrationAgent = "klusterlet-registration-agent"
-	componentNameWorkAgent         = "klusterlet-work-agent"
+	klusterletName = "klusterlet"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -33,7 +29,10 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	cfg, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
+	f := o.ClusteradmFlags.KubectlFactory
+	o.builder = f.NewBuilder()
+
+	cfg, err := f.ToRESTConfig()
 	if err != nil {
 		return err
 	}
@@ -56,16 +55,27 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 
 	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun)
 	o.values = join.Values{
-		Registry:             o.registry,
-		ClusterName:          k.Spec.ClusterName,
-		RegistrationFeatures: k.Spec.RegistrationConfiguration.FeatureGates,
-		WorkFeatures:         k.Spec.WorkConfiguration.FeatureGates,
+		Registry:    o.registry,
+		ClusterName: k.Spec.ClusterName,
+		Klusterlet: join.Klusterlet{
+			Name:                k.Name,
+			Mode:                string(k.Spec.DeployOption.Mode),
+			KlusterletNamespace: k.Spec.Namespace,
+		},
 		BundleVersion: join.BundleVersion{
 			RegistrationImageVersion: versionBundle.Registration,
 			PlacementImageVersion:    versionBundle.Placement,
 			WorkImageVersion:         versionBundle.Work,
 			OperatorImageVersion:     versionBundle.Operator,
 		},
+	}
+
+	// reconstruct values from the klusterlet CR.
+	if k.Spec.RegistrationConfiguration != nil {
+		o.values.RegistrationFeatures = k.Spec.RegistrationConfiguration.FeatureGates
+	}
+	if k.Spec.WorkConfiguration != nil {
+		o.values.WorkFeatures = k.Spec.WorkConfiguration.FeatureGates
 	}
 
 	return nil
@@ -104,8 +114,6 @@ func (o *Options) run() error {
 	}
 
 	files := []string{
-		"join/namespace_agent.yaml",
-		"join/namespace_addon.yaml",
 		"join/namespace.yaml",
 		"join/cluster_role.yaml",
 		"join/cluster_role_binding.yaml",
@@ -124,7 +132,7 @@ func (o *Options) run() error {
 	}
 
 	if !o.ClusteradmFlags.DryRun {
-		if err := wait.WaitUntilCRDReady(apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", o.wait); err != nil {
+		if err := wait.WaitUntilCRDReady(apiExtensionsClient, "klusterlets.operator.open-cluster-management.io", o.wait); err != nil {
 			return err
 		}
 	}

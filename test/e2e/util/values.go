@@ -1,9 +1,12 @@
 // Copyright Contributors to the Open Cluster Management project
 package util
 
+import "k8s.io/client-go/rest"
+
 type clusterConfig struct {
-	name    string
-	context string
+	name       string
+	context    string
+	kubeConfig *rest.Config
 }
 
 func (cc *clusterConfig) Name() string {
@@ -12,6 +15,10 @@ func (cc *clusterConfig) Name() string {
 
 func (cc *clusterConfig) Context() string {
 	return cc.context
+}
+
+func (cc *clusterConfig) KubeConfig() *rest.Config {
+	return cc.kubeConfig
 }
 
 type clusterValues struct {

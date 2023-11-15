@@ -28,16 +28,26 @@ func NewTestE2eConfig(
 	hubctx string,
 	mcl1 string,
 	mcl1ctx string,
-) *TestE2eConfig {
+) (*TestE2eConfig, error) {
 
+	hubConfig, err := buildConfigFromFlags(hubctx, kubeconfigpath)
+	if err != nil {
+		return nil, err
+	}
+	mcl1Config, err := buildConfigFromFlags(mcl1ctx, kubeconfigpath)
+	if err != nil {
+		return nil, err
+	}
 	ctx := clusterValues{
 		hub: &clusterConfig{
-			name:    hub,
-			context: hubctx,
+			name:       hub,
+			context:    hubctx,
+			kubeConfig: hubConfig,
 		},
 		mcl1: &clusterConfig{
-			name:    mcl1,
-			context: mcl1ctx,
+			name:       mcl1,
+			context:    mcl1ctx,
+			kubeConfig: mcl1Config,
 		},
 	}
 
@@ -49,5 +59,5 @@ func NewTestE2eConfig(
 		values:         &cfgval,
 		clusteradm:     &clusteradm{},
 		Kubeconfigpath: kubeconfigpath,
-	}
+	}, nil
 }

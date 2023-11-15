@@ -52,10 +52,6 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		Hub: clusteradminit.Hub{
 			Registry: o.registry,
 		},
-		// reconstruct values from the cluster manager CR.
-		RegistrationFeatures: cm.Spec.RegistrationConfiguration.FeatureGates,
-		WorkFeatures:         cm.Spec.WorkConfiguration.FeatureGates,
-		AddonFeatures:        cm.Spec.AddOnManagerConfiguration.FeatureGates,
 		BundleVersion: clusteradminit.BundleVersion{
 			RegistrationImageVersion: versionBundle.Registration,
 			PlacementImageVersion:    versionBundle.Placement,
@@ -64,8 +60,18 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		},
 	}
 
-	if len(cm.Spec.RegistrationConfiguration.AutoApproveUsers) > 0 {
-		o.values.AutoApprove = true
+	// reconstruct values from the cluster manager CR.
+	if cm.Spec.RegistrationConfiguration != nil {
+		o.values.RegistrationFeatures = cm.Spec.RegistrationConfiguration.FeatureGates
+		if len(cm.Spec.RegistrationConfiguration.AutoApproveUsers) > 0 {
+			o.values.AutoApprove = true
+		}
+	}
+	if cm.Spec.WorkConfiguration != nil {
+		o.values.WorkFeatures = cm.Spec.WorkConfiguration.FeatureGates
+	}
+	if cm.Spec.AddOnManagerConfiguration != nil {
+		o.values.AddonFeatures = cm.Spec.AddOnManagerConfiguration.FeatureGates
 	}
 
 	return nil

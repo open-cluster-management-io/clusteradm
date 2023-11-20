@@ -187,7 +187,7 @@ func (o *Options) purgeKlusterlet(kubeClient kubernetes.Interface, klusterletCli
 	}
 
 	b := retry.DefaultBackoff
-	b.Duration = 1 * time.Second
+	b.Duration = 5 * time.Second
 	err = WaitResourceToBeDelete(context.Background(), klusterletClient, o.values.KlusterletName, b)
 	if err != nil {
 		return err

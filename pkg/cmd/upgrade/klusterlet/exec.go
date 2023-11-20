@@ -10,6 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
+	"open-cluster-management.io/clusteradm/pkg/cmd/join"
 	join_scenario "open-cluster-management.io/clusteradm/pkg/cmd/join/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
@@ -19,11 +20,7 @@ import (
 
 //nolint:deadcode,varcheck
 const (
-	klusterletName                 = "klusterlet"
-	registrationOperatorNamespace  = "open-cluster-management"
-	klusterletCRD                  = "klusterlets.operator.open-cluster-management.io"
-	componentNameRegistrationAgent = "klusterlet-registration-agent"
-	componentNameWorkAgent         = "klusterlet-work-agent"
+	klusterletName = "klusterlet"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -32,7 +29,10 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	cfg, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
+	f := o.ClusteradmFlags.KubectlFactory
+	o.builder = f.NewBuilder()
+
+	cfg, err := f.ToRESTConfig()
 	if err != nil {
 		return err
 	}
@@ -47,30 +47,36 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun)
-	o.values = Values{
-		ClusterName: k.Spec.ClusterName,
-		Hub: Hub{
-			Registry: o.registry,
-		},
-	}
-
 	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
-
 	if err != nil {
 		klog.Errorf("unable to retrieve version ", err)
 		return err
 	}
 
-	o.values.BundleVersion = BundleVersion{
-		RegistrationImageVersion: versionBundle.Registration,
-		PlacementImageVersion:    versionBundle.Placement,
-		WorkImageVersion:         versionBundle.Work,
-		OperatorImageVersion:     versionBundle.Operator,
+	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun)
+	o.values = join.Values{
+		Registry:    o.registry,
+		ClusterName: k.Spec.ClusterName,
+		Klusterlet: join.Klusterlet{
+			Name:                k.Name,
+			Mode:                string(k.Spec.DeployOption.Mode),
+			KlusterletNamespace: k.Spec.Namespace,
+		},
+		BundleVersion: join.BundleVersion{
+			RegistrationImageVersion: versionBundle.Registration,
+			PlacementImageVersion:    versionBundle.Placement,
+			WorkImageVersion:         versionBundle.Work,
+			OperatorImageVersion:     versionBundle.Operator,
+		},
 	}
 
-	f := o.ClusteradmFlags.KubectlFactory
-	o.builder = f.NewBuilder()
+	// reconstruct values from the klusterlet CR.
+	if k.Spec.RegistrationConfiguration != nil {
+		o.values.RegistrationFeatures = k.Spec.RegistrationConfiguration.FeatureGates
+	}
+	if k.Spec.WorkConfiguration != nil {
+		o.values.WorkFeatures = k.Spec.WorkConfiguration.FeatureGates
+	}
 
 	return nil
 }
@@ -108,8 +114,6 @@ func (o *Options) run() error {
 	}
 
 	files := []string{
-		"join/namespace_agent.yaml",
-		"join/namespace_addon.yaml",
 		"join/namespace.yaml",
 		"join/cluster_role.yaml",
 		"join/cluster_role_binding.yaml",
@@ -128,7 +132,7 @@ func (o *Options) run() error {
 	}
 
 	if !o.ClusteradmFlags.DryRun {
-		if err := wait.WaitUntilCRDReady(apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", o.wait); err != nil {
+		if err := wait.WaitUntilCRDReady(apiExtensionsClient, "klusterlets.operator.open-cluster-management.io", o.wait); err != nil {
 			return err
 		}
 	}

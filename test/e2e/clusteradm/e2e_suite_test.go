@@ -77,7 +77,7 @@ var _ = ginkgo.BeforeSuite(func() {
 	operatorClient, err = operatorclient.NewForConfig(hubConfig)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
-	err = clusterv1.AddToScheme(scheme.Scheme)
+	err = clusterv1.Install(scheme.Scheme)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	restConfig = hubConfig

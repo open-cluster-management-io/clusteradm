@@ -56,6 +56,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 			RegistrationImageVersion: versionBundle.Registration,
 			PlacementImageVersion:    versionBundle.Placement,
 			WorkImageVersion:         versionBundle.Work,
+			AddonManagerImageVersion: versionBundle.AddonManager,
 			OperatorImageVersion:     versionBundle.Operator,
 		},
 	}

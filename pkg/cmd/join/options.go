@@ -63,6 +63,9 @@ type Options struct {
 	//The proxy server ca-file(optional)
 	proxyCAFile string
 
+	// Resource requirement
+	resourceQosClass string
+
 	//Values below are used to fill in yaml files
 	values Values
 
@@ -81,6 +84,8 @@ type Values struct {
 	Hub Hub
 	//Klusterlet is the klusterlet related configuration
 	Klusterlet Klusterlet
+	//ResourceRequirement is the resource requirement
+	ResourceRequirement ResourceRequirement
 	//Registry is the image registry related configuration
 	Registry string
 	//bundle version
@@ -110,6 +115,11 @@ type Klusterlet struct {
 	Mode                string
 	Name                string
 	KlusterletNamespace string
+}
+
+// ResourceRequirement is for templating resource requirement
+type ResourceRequirement struct {
+	Type string
 }
 
 type BundleVersion struct {

@@ -119,6 +119,9 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		Name:                klusterletName,
 		KlusterletNamespace: klusterletNamespace,
 	}
+	o.values.ResourceRequirement = ResourceRequirement{
+		Type: o.resourceQosClass,
+	}
 	o.values.ManagedKubeconfig = o.managedKubeconfigFile
 	o.values.RegistrationFeatures = genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeRegistrationFeatureGates)
 	o.values.WorkFeatures = genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeWorkFeatureGates)

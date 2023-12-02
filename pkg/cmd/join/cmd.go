@@ -69,6 +69,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().StringVar(&o.proxyURL, "proxy-url", "", "the URL of a forward proxy server that will be used by agents to connect to the hub cluster.")
 	cmd.Flags().StringVar(&o.proxyCAFile, "proxy-ca-file", "", "the file path to proxy ca, optional")
 	cmd.Flags().StringVar(&o.resourceQosClass, "resource-qos-class", "default", "the resource QoS class of the klusterlet pod. Can be one of Default or BestEffort")
+	cmd.Flags().BoolVar(&o.createNameSpace, "create-namespace", true, "If true, create open-cluster-management namespace, otherwise use existing one")
 
 	return cmd
 }

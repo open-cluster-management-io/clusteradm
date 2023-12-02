@@ -305,7 +305,7 @@ func (o *Options) run() error {
 
 	_, err = kubeClient.CoreV1().Namespaces().Get(context.TODO(), o.values.AgentNamespace, metav1.GetOptions{})
 
-	if errors.IsNotFound(err) {
+	if errors.IsNotFound(err) && o.createNameSpace {
 		_, err = kubeClient.CoreV1().Namespaces().Create(context.TODO(), &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: o.values.AgentNamespace,
@@ -356,11 +356,13 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient opera
 	if !available {
 		files = append(files,
 			"join/klusterlets.crd.yaml",
-			"join/namespace.yaml",
 			"join/service_account.yaml",
 			"join/cluster_role.yaml",
 			"join/cluster_role_binding.yaml",
 		)
+		if o.createNameSpace {
+			files = append(files, "join/namespace.yaml")
+		}
 	}
 	files = append(files,
 		"bootstrap_hub_kubeconfig.yaml",

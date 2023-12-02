@@ -66,6 +66,9 @@ type Options struct {
 	// Resource requirement
 	resourceQosClass string
 
+	// If create ns or use existing ns
+	createNameSpace bool
+
 	//Values below are used to fill in yaml files
 	values Values
 

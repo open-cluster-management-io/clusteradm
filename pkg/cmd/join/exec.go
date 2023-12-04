@@ -354,15 +354,15 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient opera
 	var files []string
 	// If Deployment/klusterlet is not deployed, deploy it
 	if !available {
+		if o.createNameSpace {
+			files = append(files, "join/namespace.yaml")
+		}
 		files = append(files,
 			"join/klusterlets.crd.yaml",
 			"join/service_account.yaml",
 			"join/cluster_role.yaml",
 			"join/cluster_role_binding.yaml",
 		)
-		if o.createNameSpace {
-			files = append(files, "join/namespace.yaml")
-		}
 	}
 	files = append(files,
 		"bootstrap_hub_kubeconfig.yaml",

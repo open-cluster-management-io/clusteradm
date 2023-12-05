@@ -28,7 +28,7 @@ require (
 	k8s.io/klog/v2 v2.90.1
 	k8s.io/kubectl v0.27.1
 	k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5
-	open-cluster-management.io/api v0.12.0
+	open-cluster-management.io/api v0.12.1-0.20231130134655-97a8a92a7f30
 	open-cluster-management.io/cluster-proxy v0.1.2
 	open-cluster-management.io/managed-serviceaccount v0.2.1-0.20220427065210-de6a7b7b5be8
 	sigs.k8s.io/apiserver-network-proxy v0.1.2
@@ -138,13 +138,13 @@ require (
 	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	go.starlark.net v0.0.0-20220302181546-5411bad688d1 // indirect
-	golang.org/x/crypto v0.5.0 // indirect
-	golang.org/x/net v0.10.0 // indirect
+	golang.org/x/crypto v0.14.0 // indirect
+	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.4.0 // indirect
-	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
-	golang.org/x/term v0.8.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
+	golang.org/x/sync v0.5.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/term v0.13.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.7.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect

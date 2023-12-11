@@ -119,6 +119,9 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		Name:                klusterletName,
 		KlusterletNamespace: klusterletNamespace,
 	}
+	o.values.ResourceRequirement = ResourceRequirement{
+		Type: o.resourceQosClass,
+	}
 	o.values.ManagedKubeconfig = o.managedKubeconfigFile
 	o.values.RegistrationFeatures = genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeRegistrationFeatureGates)
 	o.values.WorkFeatures = genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeWorkFeatureGates)
@@ -302,7 +305,7 @@ func (o *Options) run() error {
 
 	_, err = kubeClient.CoreV1().Namespaces().Get(context.TODO(), o.values.AgentNamespace, metav1.GetOptions{})
 
-	if errors.IsNotFound(err) {
+	if errors.IsNotFound(err) && o.createNameSpace {
 		_, err = kubeClient.CoreV1().Namespaces().Create(context.TODO(), &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: o.values.AgentNamespace,
@@ -351,9 +354,11 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient opera
 	var files []string
 	// If Deployment/klusterlet is not deployed, deploy it
 	if !available {
+		if o.createNameSpace {
+			files = append(files, "join/namespace.yaml")
+		}
 		files = append(files,
 			"join/klusterlets.crd.yaml",
-			"join/namespace.yaml",
 			"join/service_account.yaml",
 			"join/cluster_role.yaml",
 			"join/cluster_role_binding.yaml",

@@ -3,7 +3,6 @@ package join
 
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/cli-runtime/pkg/resource"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
@@ -71,8 +70,6 @@ type Options struct {
 
 	//Values below are used to fill in yaml files
 	values Values
-
-	builder *resource.Builder
 
 	Streams genericclioptions.IOStreams
 }

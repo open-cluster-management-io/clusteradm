@@ -3,7 +3,6 @@ package klusterlet
 
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/cli-runtime/pkg/resource"
 	"open-cluster-management.io/clusteradm/pkg/cmd/join"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
@@ -22,8 +21,6 @@ type Options struct {
 	wait bool
 
 	Streams genericclioptions.IOStreams
-
-	builder *resource.Builder
 }
 
 type BundleVersion struct {

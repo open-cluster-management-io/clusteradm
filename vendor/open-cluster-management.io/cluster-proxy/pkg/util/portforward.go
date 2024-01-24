@@ -12,9 +12,10 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/httpstream"
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -25,7 +26,7 @@ import (
 )
 
 type LocalProxyServer interface {
-	Listen() (func(), error)
+	Listen(ctx context.Context) (func(), error)
 }
 
 // PortForwardProtocolV1Name is the subprotocol used for port forwarding.
@@ -33,16 +34,35 @@ const PortForwardProtocolV1Name = "portforward.k8s.io"
 
 func NewRoundRobinLocalProxy(
 	restConfig *rest.Config,
+	readiness *atomic.Value,
 	podNamespace,
 	podSelector string,
 	targetPort int32) LocalProxyServer {
+	return NewRoundRobinLocalProxyWithReqId(
+		restConfig,
+		readiness,
+		podNamespace,
+		podSelector,
+		targetPort,
+		0,
+	)
+}
+
+func NewRoundRobinLocalProxyWithReqId(
+	restConfig *rest.Config,
+	readiness *atomic.Value,
+	podNamespace,
+	podSelector string,
+	targetPort int32,
+	reqId int) LocalProxyServer {
 	return &roundRobin{
 		restConfig:           restConfig,
 		proxyServerNamespace: podNamespace,
 		podSelector:          podSelector,
 		targetPort:           targetPort,
-		reqId:                0,
+		reqId:                reqId,
 		lock:                 &sync.Mutex{},
+		firstConnReceived:    readiness,
 	}
 }
 
@@ -53,12 +73,13 @@ type roundRobin struct {
 	podSelector          string
 	targetPort           int32
 
-	restConfig *rest.Config
-	lock       *sync.Mutex
-	reqId      int
+	restConfig        *rest.Config
+	lock              *sync.Mutex
+	reqId             int
+	firstConnReceived *atomic.Value
 }
 
-func (r *roundRobin) Listen() (func(), error) {
+func (r *roundRobin) Listen(ctx context.Context) (func(), error) {
 	klog.V(4).Infof("Started local proxy server at port %d", r.targetPort)
 	listener, err := net.Listen(
 		"tcp",
@@ -68,17 +89,25 @@ func (r *roundRobin) Listen() (func(), error) {
 	}
 	go func() {
 		for {
-			conn, err := listener.Accept()
-			if err != nil {
-				if !strings.Contains(strings.ToLower(err.Error()), "use of closed network connection") {
-					runtime.HandleError(fmt.Errorf("error accepting connection on port %d: %v", r.targetPort, err))
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				conn, err := listener.Accept()
+				if err != nil {
+					if !strings.Contains(strings.ToLower(err.Error()), "use of closed network connection") {
+						runtime.HandleError(fmt.Errorf("error accepting connection on port %d: %v", r.targetPort, err))
+						continue
+					}
+				}
+				if conn != nil {
+					go func() {
+						if err := r.handle(conn); err != nil {
+							runtime.HandleError(fmt.Errorf("error handling connection: %v", err))
+						}
+					}()
 				}
 			}
-			go func() {
-				if err := r.handle(conn); err != nil {
-					runtime.HandleError(fmt.Errorf("error handling connection: %v", err))
-				}
-			}()
 		}
 	}()
 	return func() { listener.Close() }, nil
@@ -104,14 +133,26 @@ func (r *roundRobin) handle(conn net.Conn) error {
 		return err
 	}
 
+	candidates := make([]*corev1.Pod, 0)
+	for _, pod := range podList.Items {
+		if pod.Status.Phase != corev1.PodRunning {
+			continue
+		}
+		pod := pod
+		candidates = append(candidates, &pod)
+	}
+	if len(candidates) == 0 {
+		return errors.New("no valid proxy server pod instances found")
+	}
+
 	r.lock.Lock()
 	currentId := r.reqId
 	r.reqId++
 	r.lock.Unlock()
 
-	podIdx := rand.Intn(len(podList.Items))
-	pod := podList.Items[podIdx]
-	klog.V(6).Infof("Selected pod %s for request ID %d", pod.Name, currentId)
+	podIdx := rand.Intn(len(candidates))
+	pod := candidates[podIdx]
+	klog.Infof("Forwarding to pod %v", pod.Name)
 	req := nativeClient.RESTClient().
 		Post().
 		Prefix("api", "v1").
@@ -128,9 +169,9 @@ func (r *roundRobin) handle(conn net.Conn) error {
 
 	// create error stream
 	headers := http.Header{}
-	headers.Set(v1.StreamType, v1.StreamTypeError)
-	headers.Set(v1.PortHeader, fmt.Sprintf("%d", r.targetPort))
-	headers.Set(v1.PortForwardRequestIDHeader, strconv.Itoa(currentId))
+	headers.Set(corev1.StreamType, corev1.StreamTypeError)
+	headers.Set(corev1.PortHeader, fmt.Sprintf("%d", r.targetPort))
+	headers.Set(corev1.PortForwardRequestIDHeader, strconv.Itoa(currentId))
 
 	errorStream, err := streamConn.CreateStream(headers)
 	if err != nil {
@@ -153,7 +194,7 @@ func (r *roundRobin) handle(conn net.Conn) error {
 	}()
 
 	// create data stream
-	headers.Set(v1.StreamType, v1.StreamTypeData)
+	headers.Set(corev1.StreamType, corev1.StreamTypeData)
 	dataStream, err := streamConn.CreateStream(headers)
 	if err != nil {
 		runtime.HandleError(fmt.Errorf("error creating forwarding stream for port %d -> %d: %v", r.targetPort, r.targetPort, err))
@@ -186,14 +227,30 @@ func (r *roundRobin) handle(conn net.Conn) error {
 	}()
 
 	// wait for either a local->remote error or for copying from remote->local to finish
-	select {
-	case <-remoteDone:
-		klog.V(6).Info("Connection closed from remote")
-	case <-localError:
-		klog.V(6).Info("Connection closed due to local error")
-	}
+	defer func() {
+		if err := conn.Close(); err != nil {
+			runtime.HandleError(fmt.Errorf("failed closing port-forwarding connection: %v", err))
+		}
+	}()
 
-	return nil
+	r.firstConnReceived.Store(true)
+
+	for {
+		select {
+		case <-remoteDone:
+			klog.V(6).Info("Connection closed from remote")
+			return nil
+		case <-localError:
+			klog.V(6).Info("Connection closed due to local error")
+			return nil
+		case err := <-errorChan:
+			if err != nil {
+				runtime.HandleError(err)
+			}
+			klog.Infof("Connection closed due to error stream closed")
+			return nil
+		}
+	}
 }
 
 var _ net.Conn = &conn{}

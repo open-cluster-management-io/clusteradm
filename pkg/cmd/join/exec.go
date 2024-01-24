@@ -138,7 +138,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
 
 	if err != nil {
-		klog.Errorf("unable to retrieve version ", err)
+		klog.Errorf("unable to retrieve version: %v", err)
 		return err
 	}
 
@@ -211,9 +211,6 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		klusterletApiserver = ""
 	}
 	o.values.Klusterlet.APIServer = klusterletApiserver
-
-	f := o.ClusteradmFlags.KubectlFactory
-	o.builder = f.NewBuilder()
 
 	klog.V(3).InfoS("values:",
 		"clusterName", o.values.ClusterName,
@@ -301,7 +298,7 @@ func (o *Options) run() error {
 		return err
 	}
 
-	r := reader.NewResourceReader(o.builder, o.ClusteradmFlags.DryRun, o.Streams)
+	r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
 
 	_, err = kubeClient.CoreV1().Namespaces().Get(context.TODO(), o.values.AgentNamespace, metav1.GetOptions{})
 

@@ -4,10 +4,11 @@ package clusterset
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/klog/v2"
 	v1 "open-cluster-management.io/api/cluster/v1"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -16,6 +17,7 @@ import (
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	clusterapiv1beta2 "open-cluster-management.io/api/cluster/v1beta2"
 	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
+	clustersdkv1beta2 "open-cluster-management.io/sdk-go/pkg/apis/cluster/v1beta2"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -163,7 +165,7 @@ func (c *clusterGetter) List(selector labels.Selector) ([]*v1.ManagedCluster, er
 }
 
 func (c *clusterGetter) listClustersByClusterSet(clusterset *clusterapiv1beta2.ManagedClusterSet) ([]string, error) {
-	clusters, err := clusterapiv1beta2.GetClustersFromClusterSet(clusterset, c)
+	clusters, err := clustersdkv1beta2.GetClustersFromClusterSet(clusterset, c)
 	if err != nil {
 		return nil, err
 	}

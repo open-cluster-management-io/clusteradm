@@ -3,7 +3,7 @@ package work
 
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
@@ -33,7 +33,7 @@ func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, st
 		ClusterOption:   genericclioptionsclusteradm.NewClusterOption().AllowUnset(),
 		FileNameFlags: genericclioptions.FileNameFlags{
 			Filenames: &[]string{},
-			Recursive: pointer.Bool(true),
+			Recursive: ptr.To[bool](true),
 		},
 	}
 }

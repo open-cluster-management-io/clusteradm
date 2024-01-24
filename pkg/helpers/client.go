@@ -28,7 +28,7 @@ import (
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/kubectl/pkg/cmd/util"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"open-cluster-management.io/clusteradm/pkg/config"
 )
 
@@ -213,7 +213,7 @@ func GetBootstrapTokenFromSA(ctx context.Context, kubeClient kubernetes.Interfac
 		CreateToken(ctx, config.BootstrapSAName, &authv1.TokenRequest{
 			Spec: authv1.TokenRequestSpec{
 				// token expired in 1 hour
-				ExpirationSeconds: pointer.Int64(3600),
+				ExpirationSeconds: ptr.To[int64](3600),
 			},
 		}, metav1.CreateOptions{})
 	if err != nil {

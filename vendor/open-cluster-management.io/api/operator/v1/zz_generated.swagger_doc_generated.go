@@ -60,6 +60,7 @@ var map_ClusterManagerSpec = map[string]string{
 	"registrationConfiguration": "RegistrationConfiguration contains the configuration of registration",
 	"workConfiguration":         "WorkConfiguration contains the configuration of work",
 	"addOnManagerConfiguration": "AddOnManagerConfiguration contains the configuration of addon manager",
+	"resourceRequirement":       "ResourceRequirement specify QoS classes of deployments managed by clustermanager. It applies to all the containers in the deployments.",
 }
 
 func (ClusterManagerSpec) SwaggerDoc() map[string]string {
@@ -213,7 +214,7 @@ var map_KlusterletSpec = map[string]string{
 	"registrationConfiguration": "RegistrationConfiguration contains the configuration of registration",
 	"workConfiguration":         "WorkConfiguration contains the configuration of work",
 	"hubApiServerHostAlias":     "HubApiServerHostAlias contains the host alias for hub api server. registration-agent and work-agent will use it to communicate with hub api server.",
-	"resourceRequirement":       "ResourceRequirement specify QoS classes of klusterlet deployment",
+	"resourceRequirement":       "ResourceRequirement specify QoS classes of deployments managed by klusterlet. It applies to all the containers in the deployments.",
 }
 
 func (KlusterletSpec) SwaggerDoc() map[string]string {
@@ -236,18 +237,12 @@ var map_RegistrationConfiguration = map[string]string{
 	"clientCertExpirationSeconds": "clientCertExpirationSeconds represents the seconds of a client certificate to expire. If it is not set or 0, the default duration seconds will be set by the hub cluster. If the value is larger than the max signing duration seconds set on the hub cluster, the max signing duration seconds will be set.",
 	"featureGates":                "FeatureGates represents the list of feature gates for registration If it is set empty, default feature gates will be used. If it is set, featuregate/Foo is an example of one item in FeatureGates:\n  1. If featuregate/Foo does not exist, registration-operator will discard it\n  2. If featuregate/Foo exists and is false by default. It is now possible to set featuregate/Foo=[false|true]\n  3. If featuregate/Foo exists and is true by default. If a cluster-admin upgrading from 1 to 2 wants to continue having featuregate/Foo=false,\n \the can set featuregate/Foo=false before upgrading. Let's say the cluster-admin wants featuregate/Foo=false.",
 	"clusterAnnotations":          "ClusterAnnotations is annotations with the reserve prefix \"agent.open-cluster-management.io\" set on ManagedCluster when creating only, other actors can update it afterwards.",
+	"kubeAPIQPS":                  "KubeAPIQPS indicates the maximum QPS while talking with apiserver of hub cluster from the spoke cluster. If it is set empty, use the default value: 50",
+	"kubeAPIBurst":                "KubeAPIBurst indicates the maximum burst of the throttle while talking with apiserver of hub cluster from the spoke cluster. If it is set empty, use the default value: 100",
 }
 
 func (RegistrationConfiguration) SwaggerDoc() map[string]string {
 	return map_RegistrationConfiguration
-}
-
-var map_ResourceRequirement = map[string]string{
-	"": "ResourceRequirement allow user override the default pod QoS classes",
-}
-
-func (ResourceRequirement) SwaggerDoc() map[string]string {
-	return map_ResourceRequirement
 }
 
 var map_ServerURL = map[string]string{
@@ -258,6 +253,16 @@ var map_ServerURL = map[string]string{
 
 func (ServerURL) SwaggerDoc() map[string]string {
 	return map_ServerURL
+}
+
+var map_WorkAgentConfiguration = map[string]string{
+	"featureGates": "FeatureGates represents the list of feature gates for work If it is set empty, default feature gates will be used. If it is set, featuregate/Foo is an example of one item in FeatureGates:\n  1. If featuregate/Foo does not exist, registration-operator will discard it\n  2. If featuregate/Foo exists and is false by default. It is now possible to set featuregate/Foo=[false|true]\n  3. If featuregate/Foo exists and is true by default. If a cluster-admin upgrading from 1 to 2 wants to continue having featuregate/Foo=false,\n \the can set featuregate/Foo=false before upgrading. Let's say the cluster-admin wants featuregate/Foo=false.",
+	"kubeAPIQPS":   "KubeAPIQPS indicates the maximum QPS while talking with apiserver of hub cluster from the spoke cluster. If it is set empty, use the default value: 50",
+	"kubeAPIBurst": "KubeAPIBurst indicates the maximum burst of the throttle while talking with apiserver of hub cluster from the spoke cluster. If it is set empty, use the default value: 100",
+}
+
+func (WorkAgentConfiguration) SwaggerDoc() map[string]string {
+	return map_WorkAgentConfiguration
 }
 
 // AUTO-GENERATED FUNCTIONS END HERE

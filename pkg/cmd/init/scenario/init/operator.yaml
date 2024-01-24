@@ -43,6 +43,11 @@ spec:
         - hub       
         image: {{ .Hub.Registry }}/registration-operator:{{ .BundleVersion.OperatorImageVersion }}
         imagePullPolicy: IfNotPresent
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
         livenessProbe:
           httpGet:
             path: /healthz

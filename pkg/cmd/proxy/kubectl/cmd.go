@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync/atomic"
 
 	"bufio"
 
@@ -90,13 +91,16 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 			}
 
 			// Run port-forward in goroutine
+			readiness := &atomic.Value{}
+			readiness.Store(true)
 			localProxy := util.NewRoundRobinLocalProxy(
 				hubRestConfig,
+				readiness,
 				proxyConfig.Spec.ProxyServer.Namespace,
 				common.LabelKeyComponentName+"="+common.ComponentNameProxyServer,
 				int32(8090), // TODO make it configurable or random later
 			)
-			portForwardClose, err := localProxy.Listen()
+			portForwardClose, err := localProxy.Listen(cmd.Context())
 			if err != nil {
 				return errors.Wrapf(err, "failed listening local proxy")
 			}
@@ -222,7 +226,7 @@ func getManagedServiceAccountToken(hubRestConfig *rest.Config, msaName string, n
 		return "", err
 	}
 
-	msa, err := msaClient.Authentication().ManagedServiceAccounts(namespace).Get(context.TODO(), msaName, metav1.GetOptions{})
+	msa, err := msaClient.AuthenticationV1beta1().ManagedServiceAccounts(namespace).Get(context.TODO(), msaName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

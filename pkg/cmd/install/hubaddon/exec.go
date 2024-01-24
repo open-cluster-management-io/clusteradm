@@ -22,8 +22,6 @@ const (
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	klog.V(1).InfoS("addon options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.names, "output-file", o.outputFile)
-	f := o.ClusteradmFlags.KubectlFactory
-	o.builder = f.NewBuilder()
 	return nil
 }
 
@@ -83,7 +81,7 @@ func (o *Options) run() error {
 
 func (o *Options) runWithClient() error {
 
-	r := reader.NewResourceReader(o.builder, o.ClusteradmFlags.DryRun, o.Streams)
+	r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
 
 	for _, addon := range o.values.hubAddons {
 		switch addon {

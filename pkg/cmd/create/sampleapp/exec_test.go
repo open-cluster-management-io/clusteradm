@@ -4,10 +4,11 @@ package sampleapp
 import (
 	"context"
 	"fmt"
-	cmdutil "k8s.io/kubectl/pkg/cmd/util"
-	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"os"
 	"path/filepath"
+
+	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
@@ -134,7 +135,7 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 		gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 		f := cmdutil.NewFactory(TestClientGetter{cfg: restConfig})
-		r := reader.NewResourceReader(f.NewBuilder(), false, genericclioptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr})
+		r := reader.NewResourceReader(f, false, genericclioptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr})
 
 		mydir, err := os.Getwd()
 		gomega.Expect(err).ToNot(gomega.HaveOccurred(), "install addon error")

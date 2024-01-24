@@ -74,7 +74,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
 
 	if err != nil {
-		klog.Errorf("unable to retrieve version ", err)
+		klog.Errorf("unable to retrieve version: %v", err)
 		return err
 	}
 
@@ -84,11 +84,6 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		WorkImageVersion:         versionBundle.Work,
 		OperatorImageVersion:     versionBundle.Operator,
 		AddonManagerImageVersion: versionBundle.AddonManager,
-	}
-
-	f := o.ClusteradmFlags.KubectlFactory
-	if !o.singleton {
-		o.builder = f.NewBuilder()
 	}
 
 	return nil
@@ -179,7 +174,7 @@ func (o *Options) run() error {
 			"init/clustermanager_sa.yaml",
 		)
 
-		r := reader.NewResourceReader(o.builder, o.ClusteradmFlags.DryRun, o.Streams)
+		r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
 		err = r.Apply(scenario.Files, o.values, files...)
 		if err != nil {
 			return err

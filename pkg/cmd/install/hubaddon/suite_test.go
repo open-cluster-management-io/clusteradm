@@ -30,7 +30,6 @@ const (
 )
 
 var testEnv *envtest.Environment
-var restConfig *rest.Config
 var kubeClient kubernetes.Interface
 var clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 
@@ -55,8 +54,6 @@ var _ = ginkgo.BeforeSuite(func() {
 
 	kubeClient, err = kubernetes.NewForConfig(cfg)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
-
-	restConfig = cfg
 
 	// add clusteradm flags
 	f := cmdutil.NewFactory(TestClientGetter{cfg: cfg})

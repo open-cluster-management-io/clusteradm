@@ -16,6 +16,9 @@ spec:
       labels:
         app: cluster-manager
     spec:
+      volumes:
+      - emptyDir: {}
+        name: tmpdir
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -56,16 +59,28 @@ spec:
           initialDelaySeconds: 2
           periodSeconds: 10
         name: registration-operator
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmpdir
         readinessProbe:
           httpGet:
             path: /healthz
             port: 8443
             scheme: HTTPS
           initialDelaySeconds: 2
+        {{- if or (eq .ResourceRequirement.Type "Default") (eq .ResourceRequirement.Type "") }}
         resources:
           requests:
             cpu: 100m
             memory: 128Mi
+        {{- end }}
+        {{- if eq .ResourceRequirement.Type "BestEffort" }}
+        resources: {}
+        {{- end }}
+        {{- if eq .ResourceRequirement.Type "ResourceRequirement" }}
+        resources:
+          {{ .ResourceRequirement.ResourceRequirements | indent 10 }}
+        {{- end }}
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:

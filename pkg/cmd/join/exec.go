@@ -39,6 +39,7 @@ import (
 	preflightinterface "open-cluster-management.io/clusteradm/pkg/helpers/preflight"
 	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
+	"open-cluster-management.io/clusteradm/pkg/helpers/resourcerequirement"
 	"open-cluster-management.io/clusteradm/pkg/helpers/version"
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
 )
@@ -119,9 +120,13 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		Name:                klusterletName,
 		KlusterletNamespace: klusterletNamespace,
 	}
-	o.values.ResourceRequirement = ResourceRequirement{
-		Type: o.resourceQosClass,
+
+	resourceRequirement, err := resourcerequirement.NewResourceRequirement(o.resourceQosClass, o.resourceLimits, o.resourceRequests)
+	if err != nil {
+		return err
 	}
+	o.values.ResourceRequirement = *resourceRequirement
+
 	o.values.ManagedKubeconfig = o.managedKubeconfigFile
 	o.values.RegistrationFeatures = genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeRegistrationFeatureGates)
 	o.values.WorkFeatures = genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeWorkFeatureGates)

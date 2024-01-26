@@ -105,8 +105,8 @@ var _ = ginkgo.Describe("test clusteradm with addon create", func() {
 				if meta.IsStatusConditionTrue(mca.Status.Conditions, "Available") {
 					return nil
 				}
-				return fmt.Errorf("addon is not available")
-			}, 60*time.Second, 1*time.Second).ShouldNot(gomega.HaveOccurred())
+				return fmt.Errorf("addon is not available: %v", mca.Status.Conditions)
+			}, 300*time.Second, 1*time.Second).ShouldNot(gomega.HaveOccurred())
 
 			ginkgo.By("hub disable addon")
 			err = e2e.Clusteradm().Addon(

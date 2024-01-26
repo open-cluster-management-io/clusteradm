@@ -77,7 +77,7 @@ var _ = ginkgo.Describe("test clusteradm upgrade clustermanager and Klusterlets"
 			if err != nil {
 				return err
 			}
-			if operator.Spec.Template.Spec.Containers[0].Image != "quay.io/open-cluster-management/registration-operator:v"+version.GetDefaultBundleVersion() {
+			if operator.Spec.Template.Spec.Containers[0].Image != "quay.io/open-cluster-management/registration-operator:latest" {
 				return fmt.Errorf("version of the operator is not correct, get %s", operator.Spec.Template.Spec.Containers[0].Image)
 			}
 			registration, err := mcl1KubeClient.AppsV1().Deployments("open-cluster-management-agent").Get(

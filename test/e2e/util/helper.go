@@ -3,6 +3,7 @@ package util
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -23,13 +24,14 @@ func WaitNamespaceDeleted(restcfg *rest.Config, namespace string) error {
 	}
 
 	return wait.PollUntilContextCancel(context.TODO(), 1*time.Second, true, func(ctx context.Context) (bool, error) {
-		_, err = clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+		ns, err := clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return true, nil
 		}
 		if err != nil {
 			return false, err
 		}
+		fmt.Printf("namespace stil exists %v", ns.Status)
 		return false, nil
 	})
 }

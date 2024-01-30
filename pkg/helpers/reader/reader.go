@@ -27,14 +27,16 @@ type ResourceReader struct {
 	dryRun  bool
 	streams genericclioptions.IOStreams
 	raw     []byte
+	f       cmdutil.Factory
 }
 
-func NewResourceReader(builder *resource.Builder, dryRun bool, streams genericclioptions.IOStreams) *ResourceReader {
+func NewResourceReader(f cmdutil.Factory, dryRun bool, streams genericclioptions.IOStreams) *ResourceReader {
 	return &ResourceReader{
-		builder: builder.Unstructured().ContinueOnError(),
+		builder: f.NewBuilder().Unstructured(),
 		dryRun:  dryRun,
 		streams: streams,
 		raw:     []byte{},
+		f:       f,
 	}
 }
 
@@ -112,7 +114,7 @@ func (r *ResourceReader) applyOneObject(info *resource.Info) error {
 	}
 
 	if !r.dryRun {
-		patcher := newPatcher(info, helper)
+		patcher := newPatcher(info, helper, r.f)
 		patchBytes, patchedObject, err := patcher.Patch(info.Object, modified, info.Source, info.Namespace, info.Name, r.streams.ErrOut)
 		if err != nil {
 			return cmdutil.AddSourceToErr(fmt.Sprintf("applying patch:\n%s\nto:\n%v\nfor:", patchBytes, info), info.Source, err)
@@ -126,11 +128,12 @@ func (r *ResourceReader) applyOneObject(info *resource.Info) error {
 	return nil
 }
 
-func newPatcher(info *resource.Info, helper *resource.Helper) *apply.Patcher {
+func newPatcher(info *resource.Info, helper *resource.Helper, f cmdutil.Factory) *apply.Patcher {
 	return &apply.Patcher{
-		Mapping:   info.Mapping,
-		Helper:    helper,
-		Overwrite: true,
-		BackOff:   clockwork.NewRealClock(),
+		Mapping:       info.Mapping,
+		Helper:        helper,
+		Overwrite:     true,
+		BackOff:       clockwork.NewRealClock(),
+		OpenAPIGetter: f,
 	}
 }

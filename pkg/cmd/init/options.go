@@ -3,7 +3,6 @@ package init
 
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/cli-runtime/pkg/resource"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"open-cluster-management.io/clusteradm/pkg/helpers/helm"
@@ -36,8 +35,6 @@ type Options struct {
 	wait bool
 	//
 	output string
-
-	builder *resource.Builder
 
 	Streams genericclioptions.IOStreams
 }

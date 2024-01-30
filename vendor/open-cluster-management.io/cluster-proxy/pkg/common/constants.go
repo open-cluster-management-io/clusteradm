@@ -3,9 +3,8 @@ package common
 import "k8s.io/apimachinery/pkg/util/sets"
 
 const (
-	AddonName             = "cluster-proxy"
-	AddonFullName         = "open-cluster-management:cluster-proxy"
-	AddonInstallNamespace = "open-cluster-management-" + AddonName
+	AddonName     = "cluster-proxy"
+	AddonFullName = "open-cluster-management:cluster-proxy"
 
 	ComponentNameProxyAgentServer = "proxy-agent-server"
 	ComponentNameProxyServer      = "proxy-server"
@@ -30,5 +29,10 @@ const (
 )
 
 const (
-	LabelKeyComponentName = "proxy.open-cluster-management.io/component-name"
+	LabelKeyComponentName                = "proxy.open-cluster-management.io/component-name"
+	AnnotationKeyConfigurationGeneration = "proxy.open-cluster-management.io/configuration-generation"
+)
+
+const (
+	AgentClientSecretName = "agent-client"
 )

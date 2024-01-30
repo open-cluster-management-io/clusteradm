@@ -3,16 +3,17 @@ package clusteradme2e
 
 import (
 	"context"
-	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"os"
 	"time"
+
+	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	authv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"open-cluster-management.io/clusteradm/pkg/config"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"open-cluster-management.io/clusteradm/test/e2e/clusteradm/scenario"
@@ -46,11 +47,10 @@ var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", func() {
 			)
 
 			kubeConfigFlags := &genericclioptions.ConfigFlags{
-				KubeConfig: pointer.String(e2e.Kubeconfigpath),
-				Context:    pointer.String(e2e.Cluster().Hub().Context()),
+				KubeConfig: ptr.To[string](e2e.Kubeconfigpath),
+				Context:    ptr.To[string](e2e.Cluster().Hub().Context()),
 			}
-			resourceBuilder := cmdutil.NewFactory(kubeConfigFlags).NewBuilder()
-			r := reader.NewResourceReader(resourceBuilder, false, genericclioptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr})
+			r := reader.NewResourceReader(cmdutil.NewFactory(kubeConfigFlags), false, genericclioptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr})
 			var values = make(map[string]interface{})
 			err = r.Apply(scenario.Files, values, files...)
 			gomega.Expect(err).To(gomega.BeNil())
@@ -62,7 +62,7 @@ var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", func() {
 					CreateToken(context.TODO(), "sa-manual-token", &authv1.TokenRequest{
 						Spec: authv1.TokenRequestSpec{
 							// token expired in 1 hour
-							ExpirationSeconds: pointer.Int64(3600),
+							ExpirationSeconds: ptr.To[int64](3600),
 						},
 					}, metav1.CreateOptions{})
 				if err != nil {

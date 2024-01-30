@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"text/tabwriter"
 	"time"
 
@@ -126,13 +127,16 @@ func (o *Options) run(streams genericclioptions.IOStreams) error {
 
 	if !o.isProxyServerAddressProvided {
 		// run a local port-forward server if no proxy server specified
+		readiness := &atomic.Value{}
+		readiness.Store(true)
 		localProxy := util.NewRoundRobinLocalProxy(
 			hubRestConfig,
+			readiness,
 			proxyConfig.Spec.ProxyServer.Namespace,
 			common.LabelKeyComponentName+"="+common.ComponentNameProxyServer, // TODO: configurable label selector?
 			int32(o.proxyServerPort),
 		)
-		closeFn, err := localProxy.Listen()
+		closeFn, err := localProxy.Listen(context.Background())
 		if err != nil {
 			return errors.Wrapf(err, "failed listening local proxy")
 		}

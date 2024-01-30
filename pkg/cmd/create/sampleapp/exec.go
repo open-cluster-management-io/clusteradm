@@ -6,10 +6,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"os"
 	"path/filepath"
 	"runtime"
+
+	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,9 +37,6 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	} else {
 		o.SampleAppName = args[0]
 	}
-
-	f := o.ClusteradmFlags.KubectlFactory
-	o.builder = f.NewBuilder()
 
 	return nil
 }
@@ -116,7 +114,7 @@ func (o *Options) checkManagedClusterBinding(clusterClient clusterclientset.Inte
 
 func (o *Options) deployApp() error {
 	// Prepare deployment tools
-	r := reader.NewResourceReader(o.builder, o.ClusteradmFlags.DryRun, o.Streams)
+	r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
 
 	// Retrieve sample application manifests
 	_, currentFilePath, _, ok := runtime.Caller(0)

@@ -13,7 +13,10 @@ import (
 // +openshift:compatibility-gen:level=1
 // +k8s:openapi-gen=true
 type NutanixMachineProviderConfig struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
+	// metadata is the standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// cluster is to identify the cluster (the Prism Element under management
@@ -83,6 +86,14 @@ type NutanixMachineProviderConfig struct {
 	// credentials data to access Nutanix PC client
 	// +kubebuilder:validation:Required
 	CredentialsSecret *corev1.LocalObjectReference `json:"credentialsSecret"`
+
+	// failureDomain refers to the name of the FailureDomain with which this Machine is associated.
+	// If this is configured, the Nutanix machine controller will use the prism_central endpoint
+	// and credentials defined in the referenced FailureDomain to communicate to the prism_central.
+	// It will also verify that the 'cluster' and subnets' configuration in the NutanixMachineProviderConfig
+	// is consistent with that in the referenced failureDomain.
+	// +optional
+	FailureDomain *NutanixFailureDomainReference `json:"failureDomain"`
 }
 
 // NutanixCategory identifies a pair of prism category key and value

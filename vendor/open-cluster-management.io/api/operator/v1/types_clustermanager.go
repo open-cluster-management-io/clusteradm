@@ -70,6 +70,11 @@ type ClusterManagerSpec struct {
 	// AddOnManagerConfiguration contains the configuration of addon manager
 	// +optional
 	AddOnManagerConfiguration *AddOnManagerConfiguration `json:"addOnManagerConfiguration,omitempty"`
+
+	// ResourceRequirement specify QoS classes of deployments managed by clustermanager.
+	// It applies to all the containers in the deployments.
+	// +optional
+	ResourceRequirement *ResourceRequirement `json:"resourceRequirement,omitempty"`
 }
 
 // NodePlacement describes node scheduling configuration for the pods.
@@ -175,7 +180,6 @@ type WebhookConfiguration struct {
 
 	// Port represents the port of a webhook-server. The default value of Port is 443.
 	// +optional
-	// +default=443
 	// +kubebuilder:default=443
 	// +kubebuilder:validation:Maximum=65535
 	Port int32 `json:"port,omitempty"`
@@ -190,7 +194,6 @@ type ClusterManagerDeployOption struct {
 	// of hub-cluster with cluster-admin permission).
 	// Note: Do not modify the Mode field once it's applied.
 	// +required
-	// +default=Default
 	// +kubebuilder:validation:Required
 	// +kubebuilder:default=Default
 	// +kubebuilder:validation:Enum=Default;Hosted

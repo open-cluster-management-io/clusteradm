@@ -4,14 +4,15 @@ package placement
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	clusterv1beta1 "open-cluster-management.io/api/cluster/v1beta1"
-	"strconv"
-	"strings"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -65,7 +66,7 @@ func (o *Options) run() (err error) {
 	}
 
 	if o.NumOfClusters > 0 {
-		desiredPlacement.Spec.NumberOfClusters = pointer.Int32(o.NumOfClusters)
+		desiredPlacement.Spec.NumberOfClusters = ptr.To[int32](o.NumOfClusters)
 	}
 
 	if len(o.ClusterSelector) > 0 {

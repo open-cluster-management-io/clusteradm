@@ -3,12 +3,13 @@ package hubaddon
 
 import (
 	"context"
+	"os"
+
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"os"
 )
 
 const (
@@ -63,7 +64,6 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 				values: Values{
 					hubAddons: []string{invalidAddon},
 				},
-				builder: clusteradmFlags.KubectlFactory.NewBuilder(),
 			}
 
 			err = o.runWithClient()
@@ -94,7 +94,6 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 					Namespace: invalidNamespace,
 					hubAddons: []string{appMgrAddonName},
 				},
-				builder: clusteradmFlags.KubectlFactory.NewBuilder(),
 				Streams: genericclioptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr},
 			}
 
@@ -112,7 +111,6 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 						AppAddon: ocmVersion,
 					},
 				},
-				builder: clusteradmFlags.KubectlFactory.NewBuilder(),
 				Streams: genericclioptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr},
 			}
 
@@ -146,7 +144,6 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 						PolicyAddon: ocmVersion,
 					},
 				},
-				builder: clusteradmFlags.KubectlFactory.NewBuilder(),
 				Streams: genericclioptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr},
 			}
 

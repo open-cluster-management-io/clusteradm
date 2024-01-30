@@ -4,7 +4,6 @@ package sampleapp
 
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/cli-runtime/pkg/resource"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
@@ -23,8 +22,6 @@ type Options struct {
 
 	//The file to output the resources will be sent to the file.
 	OutputFile string
-
-	builder *resource.Builder
 }
 
 func NewOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {

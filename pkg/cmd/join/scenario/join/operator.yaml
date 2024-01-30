@@ -43,6 +43,19 @@ spec:
       containers:
       - name: klusterlet
         image: {{ .Registry }}/registration-operator:{{ .BundleVersion.OperatorImageVersion }}
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          privileged: false
+          runAsNonRoot: true
+          readOnlyRootFilesystem: true
         args:
           - "/registration-operator"
           - "klusterlet"

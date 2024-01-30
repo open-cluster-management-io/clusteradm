@@ -18,6 +18,7 @@ import (
 	clusterv1beta1 "open-cluster-management.io/api/cluster/v1beta1"
 	workapiv1 "open-cluster-management.io/api/work/v1"
 	workapiv1alpha1 "open-cluster-management.io/api/work/v1alpha1"
+	clustersdkv1beta1 "open-cluster-management.io/sdk-go/pkg/apis/cluster/v1beta1"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -113,7 +114,7 @@ func (o *Options) readManifests() ([]workapiv1.Manifest, error) {
 		return nil, err
 	}
 
-	manifests := []workapiv1.Manifest{}
+	var manifests []workapiv1.Manifest
 
 	items, err := result.Infos()
 	if err != nil {
@@ -173,7 +174,7 @@ func (o *Options) getClusters(workClient workclientset.Interface, clusterClient 
 		return nil, nil, err
 	}
 
-	pdtracker := clusterv1beta1.NewPlacementDecisionClustersTracker(placement, placementDecisionGetter{clusterClient: clusterClient}, existingDeployClusters)
+	pdtracker := clustersdkv1beta1.NewPlacementDecisionClustersTracker(placement, placementDecisionGetter{clusterClient: clusterClient}, existingDeployClusters)
 	addedClusters, deletedClusters, err := pdtracker.GetClusterChanges()
 	if err != nil {
 		return nil, nil, err
@@ -211,33 +212,35 @@ func (o *Options) applyWorkSet(workClient workclientset.Interface, clusterClient
 		if _, err := workClient.WorkV1alpha1().ManifestWorkReplicaSets(placement.Namespace).Create(context.TODO(), workSet, metav1.CreateOptions{}); err != nil {
 			return err
 		}
-		fmt.Fprintf(o.Streams.Out, "create manifestworkreplicaset %s in namespace %s\n", o.Workname, placement.Namespace)
-		return nil
+		_, err = fmt.Fprintf(o.Streams.Out, "create manifestworkreplicaset %s in namespace %s\n", o.Workname, placement.Namespace)
+		return err
 	case err != nil:
 		return err
 	}
 
 	if !o.Overwrite {
-		fmt.Fprintf(o.Streams.Out, "manifestworkreplicaset %s in namespace %s already exists\n", o.Workname, placement.Namespace)
+		_, err = fmt.Fprintf(o.Streams.Out, "manifestworkreplicaset %s in namespace %s already exists\n", o.Workname, placement.Namespace)
 	} else {
 		workSet.Spec.ManifestWorkTemplate.Workload.Manifests = manifests
 		workSet.Spec.PlacementRefs = []workapiv1alpha1.LocalPlacementReference{{Name: placement.Name}}
 		if _, err := workClient.WorkV1alpha1().ManifestWorkReplicaSets(placement.Namespace).Update(context.TODO(), workSet, metav1.UpdateOptions{}); err != nil {
 			return err
 		}
-		fmt.Fprintf(o.Streams.Out, "update manifestworkreplicaset %s in namespace %s\n", o.Workname, placement.Namespace)
+		_, err = fmt.Fprintf(o.Streams.Out, "update manifestworkreplicaset %s in namespace %s\n", o.Workname, placement.Namespace)
 	}
 
-	return nil
+	return err
 }
 
 func (o *Options) applyWork(workClient workclientset.Interface, manifests []workapiv1.Manifest, addedClusters, deletedClusters sets.Set[string]) error {
 	for clusterName := range deletedClusters {
 		if o.Overwrite {
 			if err := workClient.WorkV1().ManifestWorks(clusterName).Delete(context.TODO(), o.Workname, metav1.DeleteOptions{}); err != nil {
-				fmt.Fprintf(o.Streams.Out, "failed to delete work %s in cluster %s as %s\n", o.Workname, clusterName, err)
+				return err
 			}
-			fmt.Fprintf(o.Streams.Out, "delete work %s in cluster %s\n", o.Workname, clusterName)
+			if _, err := fmt.Fprintf(o.Streams.Out, "delete work %s in cluster %s\n", o.Workname, clusterName); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -260,20 +263,26 @@ func (o *Options) applyWork(workClient workclientset.Interface, manifests []work
 			if _, err := workClient.WorkV1().ManifestWorks(clusterName).Create(context.TODO(), work, metav1.CreateOptions{}); err != nil {
 				return err
 			}
-			fmt.Fprintf(o.Streams.Out, "create work %s in cluster %s\n", o.Workname, clusterName)
+			if _, err := fmt.Fprintf(o.Streams.Out, "create work %s in cluster %s\n", o.Workname, clusterName); err != nil {
+				return err
+			}
 			continue
 		case err != nil:
 			return err
 		}
 
 		if !o.Overwrite {
-			fmt.Fprintf(o.Streams.Out, "work %s in cluster %s already exists\n", o.Workname, clusterName)
+			if _, err := fmt.Fprintf(o.Streams.Out, "work %s in cluster %s already exists\n", o.Workname, clusterName); err != nil {
+				return err
+			}
 		} else {
 			work.Spec.Workload.Manifests = manifests
 			if _, err := workClient.WorkV1().ManifestWorks(clusterName).Update(context.TODO(), work, metav1.UpdateOptions{}); err != nil {
 				return err
 			}
-			fmt.Fprintf(o.Streams.Out, "update work %s in cluster %s\n", o.Workname, clusterName)
+			if _, err := fmt.Fprintf(o.Streams.Out, "update work %s in cluster %s\n", o.Workname, clusterName); err != nil {
+				return err
+			}
 		}
 	}
 

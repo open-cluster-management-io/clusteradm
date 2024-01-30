@@ -1,6 +1,8 @@
 package v1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 // +genclient
 // +genclient:nonNamespaced
@@ -80,32 +82,17 @@ type KlusterletSpec struct {
 
 	// WorkConfiguration contains the configuration of work
 	// +optional
-	WorkConfiguration *WorkConfiguration `json:"workConfiguration,omitempty"`
+	WorkConfiguration *WorkAgentConfiguration `json:"workConfiguration,omitempty"`
 
 	// HubApiServerHostAlias contains the host alias for hub api server.
 	// registration-agent and work-agent will use it to communicate with hub api server.
 	// +optional
 	HubApiServerHostAlias *HubApiServerHostAlias `json:"hubApiServerHostAlias,omitempty"`
 
-	// ResourceRequirement specify QoS classes of klusterlet deployment
+	// ResourceRequirement specify QoS classes of deployments managed by klusterlet.
+	// It applies to all the containers in the deployments.
 	// +optional
 	ResourceRequirement *ResourceRequirement `json:"resourceRequirement,omitempty"`
-}
-
-type ResourceQosClass string
-
-const (
-	// Default use resource setting in the template file
-	ResourceQosClassDefault ResourceQosClass = "Default"
-	// If all containers in the pod don't set resource request and limits, the pod is treated as BestEffort.
-	ResourceQosClassBestEffort ResourceQosClass = "BestEffort"
-)
-
-// ResourceRequirement allow user override the default pod QoS classes
-type ResourceRequirement struct {
-	// +kubebuilder:validation:Enum=Default;BestEffort
-	// +kubebuilder:default:=Default
-	Type ResourceQosClass `json:"type"`
 }
 
 // ServerURL represents the apiserver url and ca bundle that is accessible externally
@@ -157,6 +144,42 @@ type RegistrationConfiguration struct {
 	// ManagedCluster when creating only, other actors can update it afterwards.
 	// +optional
 	ClusterAnnotations map[string]string `json:"clusterAnnotations,omitempty"`
+
+	// KubeAPIQPS indicates the maximum QPS while talking with apiserver of hub cluster from the spoke cluster.
+	// If it is set empty, use the default value: 50
+	// +optional
+	// +kubebuilder:default:=50
+	KubeAPIQPS int32 `json:"kubeAPIQPS,omitempty"`
+
+	// KubeAPIBurst indicates the maximum burst of the throttle while talking with apiserver of hub cluster from the spoke cluster.
+	// If it is set empty, use the default value: 100
+	// +optional
+	// +kubebuilder:default:=100
+	KubeAPIBurst int32 `json:"kubeAPIBurst,omitempty"`
+}
+
+type WorkAgentConfiguration struct {
+	// FeatureGates represents the list of feature gates for work
+	// If it is set empty, default feature gates will be used.
+	// If it is set, featuregate/Foo is an example of one item in FeatureGates:
+	//   1. If featuregate/Foo does not exist, registration-operator will discard it
+	//   2. If featuregate/Foo exists and is false by default. It is now possible to set featuregate/Foo=[false|true]
+	//   3. If featuregate/Foo exists and is true by default. If a cluster-admin upgrading from 1 to 2 wants to continue having featuregate/Foo=false,
+	//  	he can set featuregate/Foo=false before upgrading. Let's say the cluster-admin wants featuregate/Foo=false.
+	// +optional
+	FeatureGates []FeatureGate `json:"featureGates,omitempty"`
+
+	// KubeAPIQPS indicates the maximum QPS while talking with apiserver of hub cluster from the spoke cluster.
+	// If it is set empty, use the default value: 50
+	// +optional
+	// +kubebuilder:default:=50
+	KubeAPIQPS int32 `json:"kubeAPIQPS,omitempty"`
+
+	// KubeAPIBurst indicates the maximum burst of the throttle while talking with apiserver of hub cluster from the spoke cluster.
+	// If it is set empty, use the default value: 100
+	// +optional
+	// +kubebuilder:default:=100
+	KubeAPIBurst int32 `json:"kubeAPIBurst,omitempty"`
 }
 
 const (

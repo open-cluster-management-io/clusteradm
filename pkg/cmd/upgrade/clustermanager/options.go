@@ -3,7 +3,6 @@ package clustermanager
 
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/cli-runtime/pkg/resource"
 	clusteradminit "open-cluster-management.io/clusteradm/pkg/cmd/init"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
@@ -22,8 +21,6 @@ type Options struct {
 	wait bool
 
 	Streams genericclioptions.IOStreams
-
-	builder *resource.Builder
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {

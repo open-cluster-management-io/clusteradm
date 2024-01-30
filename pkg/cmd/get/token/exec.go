@@ -20,8 +20,6 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 			TokenSecret: helpers.RandStringRunes_az09(16),
 		},
 	}
-	f := o.ClusteradmFlags.KubectlFactory
-	o.builder = f.NewBuilder()
 	return nil
 }
 
@@ -40,7 +38,7 @@ func (o *Options) run() error {
 		return err
 	}
 
-	r := reader.NewResourceReader(o.builder, o.ClusteradmFlags.DryRun, o.Streams)
+	r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
 
 	//Retrieve token from service-account/bootstrap-token
 	// and if not found create it

@@ -23,8 +23,6 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun)
 
 	f := o.ClusteradmFlags.KubectlFactory
-	o.builder = f.NewBuilder()
-
 	restConfig, err := f.ToRESTConfig()
 	if err != nil {
 		return err
@@ -44,7 +42,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 
 	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
 	if err != nil {
-		klog.Errorf("unable to retrieve version ", err)
+		klog.Errorf("unable to retrieve version: %v", err)
 		return err
 	}
 
@@ -92,7 +90,7 @@ func (o *Options) validate() (err error) {
 }
 
 func (o *Options) run() error {
-	r := reader.NewResourceReader(o.builder, o.ClusteradmFlags.DryRun, o.Streams)
+	r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
 
 	_, apiExtensionsClient, _, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
 	if err != nil {

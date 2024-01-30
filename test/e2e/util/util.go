@@ -137,6 +137,7 @@ func (tec *TestE2eConfig) ResetEnv() error {
 		"--context", tec.Cluster().ManagedCluster1().Context(),
 		"--hub-token", tec.CommandResult().Token(), "--hub-apiserver", tec.CommandResult().Host(),
 		"--cluster-name", tec.Cluster().ManagedCluster1().Name(),
+		"--bundle-version=latest",
 		"--wait",
 		"--force-internal-endpoint-lookup",
 	)

@@ -31,7 +31,7 @@ func WaitNamespaceDeleted(restcfg *rest.Config, namespace string) error {
 		if err != nil {
 			return false, err
 		}
-		fmt.Printf("namespace stil exists %v", ns.Status)
+		fmt.Printf("namespace stil exists %v\n", ns.Status)
 		return false, nil
 	})
 }

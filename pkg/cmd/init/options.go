@@ -6,6 +6,7 @@ import (
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"open-cluster-management.io/clusteradm/pkg/helpers/helm"
+	"open-cluster-management.io/clusteradm/pkg/helpers/resourcerequirement"
 )
 
 // Options is holding all the command-line options
@@ -28,6 +29,14 @@ type Options struct {
 	singleton     bool
 	SingletonName string
 	Helm          *helm.Helm
+
+	// Resource requirement for the containers managed by the cluster manager and the cluster manager operator
+	resourceQosClass string
+	resourceLimits   map[string]string
+	resourceRequests map[string]string
+
+	// If create ns or use existing ns
+	createNamespace bool
 
 	//If set, will be persisting the generated join command to a local file
 	outputJoinCommandFile string
@@ -70,6 +79,10 @@ type Values struct {
 
 	// Features is the slice of feature for addon manager
 	AddonFeatures []operatorv1.FeatureGate
+
+	// ResourceRequirement is the resource requirement setting for the containers managed by the cluster manager
+	// and the cluster manager operator
+	ResourceRequirement resourcerequirement.ResourceRequirement
 }
 
 // Hub: The hub values for the template

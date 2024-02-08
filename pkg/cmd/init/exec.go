@@ -24,6 +24,7 @@ import (
 	clusteradmjson "open-cluster-management.io/clusteradm/pkg/helpers/json"
 	preflightinterface "open-cluster-management.io/clusteradm/pkg/helpers/preflight"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
+	"open-cluster-management.io/clusteradm/pkg/helpers/resourcerequirement"
 	"open-cluster-management.io/clusteradm/pkg/helpers/version"
 	helperwait "open-cluster-management.io/clusteradm/pkg/helpers/wait"
 )
@@ -67,6 +68,11 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 			WorkFeatures:         genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubWorkFeatureGates),
 			AddonFeatures:        genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubAddonManagerFeatureGates),
 		}
+		resourceRequirement, err := resourcerequirement.NewResourceRequirement(o.resourceQosClass, o.resourceLimits, o.resourceRequests)
+		if err != nil {
+			return err
+		}
+		o.values.ResourceRequirement = *resourceRequirement
 	} else {
 		o.Helm.WithNamespace(o.SingletonName)
 	}
@@ -150,9 +156,13 @@ func (o *Options) run() error {
 	} else {
 		token := fmt.Sprintf("%s.%s", o.values.Hub.TokenID, o.values.Hub.TokenSecret)
 
-		files := []string{
-			"init/namespace.yaml",
+		files := []string{}
+		if o.createNamespace {
+			files = append(files, "init/namespace.yaml")
+		} else {
+			fmt.Fprintf(o.Streams.Out, "skip creating namespace\n")
 		}
+
 		if o.useBootstrapToken {
 			files = append(files,
 				"init/bootstrap-token-secret.yaml",

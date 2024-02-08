@@ -6,6 +6,7 @@ import (
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
+	"open-cluster-management.io/clusteradm/pkg/helpers/resourcerequirement"
 )
 
 // Options: The structure holding all the command-line options
@@ -62,8 +63,10 @@ type Options struct {
 	//The proxy server ca-file(optional)
 	proxyCAFile string
 
-	// Resource requirement
+	// Resource requirement for the containers managed by klusterlet and the klusterlet operator
 	resourceQosClass string
+	resourceLimits   map[string]string
+	resourceRequests map[string]string
 
 	// If create ns or use existing ns
 	createNameSpace bool
@@ -84,8 +87,6 @@ type Values struct {
 	Hub Hub
 	//Klusterlet is the klusterlet related configuration
 	Klusterlet Klusterlet
-	//ResourceRequirement is the resource requirement
-	ResourceRequirement ResourceRequirement
 	//Registry is the image registry related configuration
 	Registry string
 	//bundle version
@@ -98,6 +99,10 @@ type Values struct {
 
 	// Features is the slice of feature for work
 	WorkFeatures []operatorv1.FeatureGate
+
+	// ResourceRequirement is the resource requirement setting for the containers managed by the klusterlet
+	// and the klusterlet operator
+	ResourceRequirement resourcerequirement.ResourceRequirement
 }
 
 // Hub: The hub values for the template
@@ -115,11 +120,6 @@ type Klusterlet struct {
 	Mode                string
 	Name                string
 	KlusterletNamespace string
-}
-
-// ResourceRequirement is for templating resource requirement
-type ResourceRequirement struct {
-	Type string
 }
 
 type BundleVersion struct {

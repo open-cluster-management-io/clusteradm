@@ -17,6 +17,10 @@ spec:
   {{ end }}
   resourceRequirement:
     type: {{ .ResourceRequirement.Type }}
+    {{- if eq .ResourceRequirement.Type "ResourceRequirement" }}
+    resourceRequirements:
+      {{ .ResourceRequirement.ResourceRequirements | indent 6 }}
+    {{- end }}
   {{if .RegistrationFeatures}}
   registrationConfiguration:
     featureGates:

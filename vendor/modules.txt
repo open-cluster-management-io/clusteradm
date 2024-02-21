@@ -561,8 +561,8 @@ go.starlark.net/resolve
 go.starlark.net/starlark
 go.starlark.net/starlarkstruct
 go.starlark.net/syntax
-# golang.org/x/crypto v0.14.0
-## explicit; go 1.17
+# golang.org/x/crypto v0.16.0
+## explicit; go 1.18
 golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blowfish
 golang.org/x/crypto/cast5
@@ -575,8 +575,8 @@ golang.org/x/crypto/openpgp/packet
 golang.org/x/crypto/openpgp/s2k
 golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/scrypt
-# golang.org/x/net v0.17.0
-## explicit; go 1.17
+# golang.org/x/net v0.19.0
+## explicit; go 1.18
 golang.org/x/net/context
 golang.org/x/net/html
 golang.org/x/net/html/atom
@@ -597,17 +597,17 @@ golang.org/x/oauth2/internal
 ## explicit; go 1.18
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
-# golang.org/x/sys v0.13.0
-## explicit; go 1.17
+# golang.org/x/sys v0.15.0
+## explicit; go 1.18
 golang.org/x/sys/execabs
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/term v0.13.0
-## explicit; go 1.17
+# golang.org/x/term v0.15.0
+## explicit; go 1.18
 golang.org/x/term
-# golang.org/x/text v0.13.0
-## explicit; go 1.17
+# golang.org/x/text v0.14.0
+## explicit; go 1.18
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
 golang.org/x/text/encoding/htmlindex
@@ -631,10 +631,9 @@ golang.org/x/text/unicode/norm
 # golang.org/x/time v0.3.0
 ## explicit
 golang.org/x/time/rate
-# golang.org/x/tools v0.12.0
+# golang.org/x/tools v0.16.1
 ## explicit; go 1.18
 golang.org/x/tools/go/ast/inspector
-golang.org/x/tools/internal/typeparams
 # google.golang.org/appengine v1.6.7
 ## explicit; go 1.11
 google.golang.org/appengine/internal
@@ -781,7 +780,7 @@ helm.sh/helm/v3/pkg/storage/driver
 helm.sh/helm/v3/pkg/strvals
 helm.sh/helm/v3/pkg/time
 helm.sh/helm/v3/pkg/uploader
-# k8s.io/api v0.29.0
+# k8s.io/api v0.29.1
 ## explicit; go 1.21
 k8s.io/api/admission/v1
 k8s.io/api/admission/v1beta1
@@ -850,7 +849,7 @@ k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1
-# k8s.io/apimachinery v0.29.0
+# k8s.io/apimachinery v0.29.1
 ## explicit; go 1.21
 k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/api/errors
@@ -920,7 +919,7 @@ k8s.io/cli-runtime/pkg/genericclioptions
 k8s.io/cli-runtime/pkg/genericiooptions
 k8s.io/cli-runtime/pkg/printers
 k8s.io/cli-runtime/pkg/resource
-# k8s.io/client-go v0.29.0
+# k8s.io/client-go v0.29.1
 ## explicit; go 1.21
 k8s.io/client-go/applyconfigurations/admissionregistration/v1
 k8s.io/client-go/applyconfigurations/admissionregistration/v1alpha1
@@ -1134,7 +1133,7 @@ k8s.io/client-go/util/jsonpath
 k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/retry
 k8s.io/client-go/util/workqueue
-# k8s.io/component-base v0.29.0
+# k8s.io/component-base v0.29.1
 ## explicit; go 1.21
 k8s.io/component-base/cli/flag
 k8s.io/component-base/featuregate
@@ -1215,8 +1214,8 @@ k8s.io/utils/pointer
 k8s.io/utils/ptr
 k8s.io/utils/strings/slices
 k8s.io/utils/trace
-# open-cluster-management.io/api v0.12.1-0.20240122084346-e7bd1bd9ea6a
-## explicit; go 1.20
+# open-cluster-management.io/api v0.13.0
+## explicit; go 1.21
 open-cluster-management.io/api/addon/v1alpha1
 open-cluster-management.io/api/client/addon/clientset/versioned
 open-cluster-management.io/api/client/addon/clientset/versioned/scheme
@@ -1258,7 +1257,7 @@ open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versio
 open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned/scheme
 open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned/typed/authentication/v1alpha1
 open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned/typed/authentication/v1beta1
-# open-cluster-management.io/sdk-go v0.0.0-20240124090839-4c12d87122d4
+# open-cluster-management.io/sdk-go v0.13.0
 ## explicit; go 1.21
 open-cluster-management.io/sdk-go/pkg/apis/cluster/v1beta1
 open-cluster-management.io/sdk-go/pkg/apis/cluster/v1beta2

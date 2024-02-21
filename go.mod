@@ -31,7 +31,7 @@ require (
 	open-cluster-management.io/api v0.13.0
 	open-cluster-management.io/cluster-proxy v0.3.0
 	open-cluster-management.io/managed-serviceaccount v0.4.0
-	open-cluster-management.io/sdk-go v0.0.0-20240124090839-4c12d87122d4
+	open-cluster-management.io/sdk-go v0.13.0
 	sigs.k8s.io/apiserver-network-proxy v0.1.2
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.28.0
 	sigs.k8s.io/controller-runtime v0.16.2

@@ -1138,8 +1138,8 @@ open-cluster-management.io/cluster-proxy v0.3.0 h1:aXuTqxOdmZqyOfXYwRuPGFLROBEHc
 open-cluster-management.io/cluster-proxy v0.3.0/go.mod h1:iMvV2HBT5gyJeP1XOvFz1xz3V+DNb/fbR8QzySpWsz8=
 open-cluster-management.io/managed-serviceaccount v0.4.0 h1:DPuNNR0a+sYnlvUkUB77mBNasl+fpl/vgKb1vq6+aqk=
 open-cluster-management.io/managed-serviceaccount v0.4.0/go.mod h1:o8vJwxYo3FYoxM2x245LqAmwvl5/ViYk/Md+3peXLSc=
-open-cluster-management.io/sdk-go v0.0.0-20240124090839-4c12d87122d4 h1:1n+4a3mU0EzjOunJUkTdMk4asMBYuWFdqwQ35QpFfZk=
-open-cluster-management.io/sdk-go v0.0.0-20240124090839-4c12d87122d4/go.mod h1:p3oaf+iu9ghMl4cBJXWXlDnUHVn+QxL90YLTve9bn/k=
+open-cluster-management.io/sdk-go v0.13.0 h1:ddMGsPUekQr9z03tVN6vF39Uf+WEKMtGU/xSd81HdoA=
+open-cluster-management.io/sdk-go v0.13.0/go.mod h1:UnsjzYOrDTF9a8rHEXksoIAtAdO1o5CD5Jtaw6T5B9w=
 oras.land/oras-go v1.2.2 h1:0E9tOHUfrNH7TCDk5KU0jVBEzCqbfdyuVfGmJ7ZeRPE=
 oras.land/oras-go v1.2.2/go.mod h1:Apa81sKoZPpP7CDciE006tSZ0x3Q3+dOoBcMZ/aNxvw=
 rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=

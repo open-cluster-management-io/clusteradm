@@ -17,7 +17,7 @@ type VersionBundle struct {
 	MulticlusterControlplane string
 }
 
-var defaultBundleVersion = "0.12.0"
+var defaultBundleVersion = "0.13.0"
 
 func GetDefaultBundleVersion() string {
 	return defaultBundleVersion
@@ -44,66 +44,6 @@ func GetVersionBundle(version string) (VersionBundle, error) {
 
 	// predefined bundle version
 	// TODO: automated version tracking
-	versionBundleList["0.5.0"] = VersionBundle{
-		Registration:             "v0.5.0",
-		Placement:                "v0.2.0",
-		Work:                     "v0.5.0",
-		Operator:                 "v0.5.0",
-		AppAddon:                 "v0.5.0",
-		PolicyAddon:              "v0.8.0",
-		MulticlusterControlplane: "v0.1.0",
-	}
-
-	versionBundleList["0.6.0"] = VersionBundle{
-		Registration:             "v0.6.0",
-		Placement:                "v0.3.0",
-		Work:                     "v0.6.0",
-		Operator:                 "v0.6.0",
-		AppAddon:                 "v0.6.0",
-		PolicyAddon:              "v0.8.0",
-		MulticlusterControlplane: "v0.1.0",
-	}
-
-	versionBundleList["0.7.0"] = VersionBundle{
-		Registration:             "v0.7.0",
-		Placement:                "v0.4.0",
-		Work:                     "v0.7.0",
-		Operator:                 "v0.7.0",
-		AppAddon:                 "v0.7.0",
-		PolicyAddon:              "v0.8.0",
-		MulticlusterControlplane: "v0.1.0",
-	}
-
-	versionBundleList["0.8.0"] = VersionBundle{
-		Registration:             "v0.8.0",
-		Placement:                "v0.8.0",
-		Work:                     "v0.8.0",
-		Operator:                 "v0.8.0",
-		AppAddon:                 "v0.8.0",
-		PolicyAddon:              "v0.8.0",
-		MulticlusterControlplane: "v0.1.0",
-	}
-
-	versionBundleList["0.9.0"] = VersionBundle{
-		Registration:             "v0.9.0",
-		Placement:                "v0.9.0",
-		Work:                     "v0.9.0",
-		Operator:                 "v0.9.0",
-		AppAddon:                 "v0.9.0",
-		PolicyAddon:              "v0.9.0",
-		MulticlusterControlplane: "v0.1.0",
-	}
-
-	versionBundleList["0.9.1"] = VersionBundle{
-		Registration:             "v0.9.0",
-		Placement:                "v0.9.0",
-		Work:                     "v0.9.0",
-		Operator:                 "v0.9.1",
-		AppAddon:                 "v0.9.0",
-		PolicyAddon:              "v0.9.0",
-		MulticlusterControlplane: "v0.1.0",
-	}
-
 	versionBundleList["0.10.0"] = VersionBundle{
 		Registration:             "v0.10.0",
 		Placement:                "v0.10.0",
@@ -134,6 +74,17 @@ func GetVersionBundle(version string) (VersionBundle, error) {
 		AppAddon:                 "v0.12.0",
 		PolicyAddon:              "v0.12.0",
 		MulticlusterControlplane: "v0.3.0",
+	}
+
+	versionBundleList["0.13.0"] = VersionBundle{
+		Registration:             "v0.13.0",
+		Placement:                "v0.13.0",
+		Work:                     "v0.13.0",
+		Operator:                 "v0.13.0",
+		AddonManager:             "v0.13.0",
+		AppAddon:                 "v0.13.0",
+		PolicyAddon:              "v0.13.0",
+		MulticlusterControlplane: "v0.4.0",
 	}
 
 	// default

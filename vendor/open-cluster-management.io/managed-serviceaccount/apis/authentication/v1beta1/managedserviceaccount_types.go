@@ -26,6 +26,7 @@ func init() {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:storageversion
 
 // +genclient
 // ManagedServiceAccount is the Schema for the managedserviceaccounts API

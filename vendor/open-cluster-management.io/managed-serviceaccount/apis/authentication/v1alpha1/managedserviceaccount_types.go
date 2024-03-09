@@ -26,7 +26,7 @@ func init() {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-//+kubebuilder:storageversion
+//+kubebuilder:deprecatedversion:warning="authentication.open-cluster-management.io/v1alpha1 ManagedServiceAccount is deprecated; use authentication.open-cluster-management.io/v1beta1 ManagedServiceAccount; version v1alpha1 will be removed in the next release"
 
 // +genclient
 // ManagedServiceAccount is the Schema for the managedserviceaccounts API

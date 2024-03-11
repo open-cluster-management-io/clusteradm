@@ -30,7 +30,7 @@ import (
 	"open-cluster-management.io/cluster-proxy/pkg/util"
 	"open-cluster-management.io/clusteradm/pkg/config"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
-	msaClientv1alpha1 "open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned"
+	msaclientset "open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned"
 )
 
 func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *cobra.Command {
@@ -221,7 +221,7 @@ func getProxyConfig(hubRestConfig *rest.Config, streams genericclioptions.IOStre
 }
 
 func getManagedServiceAccountToken(hubRestConfig *rest.Config, msaName string, namespace string) (string, error) {
-	msaClient, err := msaClientv1alpha1.NewForConfig(hubRestConfig)
+	msaClient, err := msaclientset.NewForConfig(hubRestConfig)
 	if err != nil {
 		return "", err
 	}

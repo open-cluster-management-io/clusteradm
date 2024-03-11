@@ -86,9 +86,9 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 
 	agentNamespace := AgentNamespacePrefix + "agent"
 
-	o.values = Values{
+	o.values = scenario.Values{
 		ClusterName: o.clusterName,
-		Hub: Hub{
+		Hub: scenario.Hub{
 			APIServer: o.hubAPIServer,
 		},
 		Registry:       o.registry,
@@ -116,7 +116,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		o.values.AgentNamespace = agentNamespace
 	}
 
-	o.values.Klusterlet = Klusterlet{
+	o.values.Klusterlet = scenario.Klusterlet{
 		Name:                klusterletName,
 		KlusterletNamespace: klusterletNamespace,
 	}
@@ -147,7 +147,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	o.values.BundleVersion = BundleVersion{
+	o.values.BundleVersion = scenario.BundleVersion{
 		RegistrationImageVersion: versionBundle.Registration,
 		PlacementImageVersion:    versionBundle.Placement,
 		WorkImageVersion:         versionBundle.Work,

@@ -10,7 +10,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
-	"open-cluster-management.io/clusteradm/pkg/cmd/join"
 	join_scenario "open-cluster-management.io/clusteradm/pkg/cmd/join/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
@@ -52,15 +51,15 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	}
 
 	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun)
-	o.values = join.Values{
+	o.values = join_scenario.Values{
 		Registry:    o.registry,
 		ClusterName: k.Spec.ClusterName,
-		Klusterlet: join.Klusterlet{
+		Klusterlet: join_scenario.Klusterlet{
 			Name:                k.Name,
 			Mode:                string(k.Spec.DeployOption.Mode),
 			KlusterletNamespace: k.Spec.Namespace,
 		},
-		BundleVersion: join.BundleVersion{
+		BundleVersion: join_scenario.BundleVersion{
 			RegistrationImageVersion: versionBundle.Registration,
 			PlacementImageVersion:    versionBundle.Placement,
 			WorkImageVersion:         versionBundle.Work,

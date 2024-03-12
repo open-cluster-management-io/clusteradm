@@ -3,7 +3,7 @@ package clustermanager
 
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	clusteradminit "open-cluster-management.io/clusteradm/pkg/cmd/init"
+	init_scenario "open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
@@ -12,7 +12,7 @@ type Options struct {
 	//ClusteradmFlags: The generic options from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 
-	values clusteradminit.Values
+	values init_scenario.Values
 	//The file to output the resources will be sent to the file.
 	registry string
 	//version of predefined compatible image versions

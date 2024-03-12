@@ -8,7 +8,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
-	clusteradminit "open-cluster-management.io/clusteradm/pkg/cmd/init"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 
 	"github.com/spf13/cobra"
@@ -46,11 +45,11 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	o.values = clusteradminit.Values{
-		Hub: clusteradminit.Hub{
+	o.values = init_scenario.Values{
+		Hub: init_scenario.Hub{
 			Registry: o.registry,
 		},
-		BundleVersion: clusteradminit.BundleVersion{
+		BundleVersion: init_scenario.BundleVersion{
 			RegistrationImageVersion: versionBundle.Registration,
 			PlacementImageVersion:    versionBundle.Placement,
 			WorkImageVersion:         versionBundle.Work,

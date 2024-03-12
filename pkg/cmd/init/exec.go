@@ -57,8 +57,8 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	})
 
 	if !o.singleton {
-		o.values = Values{
-			Hub: Hub{
+		o.values = scenario.Values{
+			Hub: scenario.Hub{
 				TokenID:     helpers.RandStringRunes_az09(6),
 				TokenSecret: helpers.RandStringRunes_az09(16),
 				Registry:    o.registry,
@@ -84,7 +84,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	o.values.BundleVersion = BundleVersion{
+	o.values.BundleVersion = scenario.BundleVersion{
 		RegistrationImageVersion: versionBundle.Registration,
 		PlacementImageVersion:    versionBundle.Placement,
 		WorkImageVersion:         versionBundle.Work,

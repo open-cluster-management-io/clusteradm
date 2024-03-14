@@ -42,6 +42,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers/resourcerequirement"
 	"open-cluster-management.io/clusteradm/pkg/helpers/version"
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
+	sdkhelpers "open-cluster-management.io/sdk-go/pkg/helpers"
 )
 
 const (
@@ -207,7 +208,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		}
 	}
 
-	klusterletApiserver, err := helpers.GetAPIServer(kubeClient)
+	klusterletApiserver, err := sdkhelpers.GetAPIServer(kubeClient)
 	if err != nil {
 		klog.Warningf("Failed looking for cluster endpoint for the registering klusterlet: %v", err)
 		klusterletApiserver = ""
@@ -271,7 +272,7 @@ func (o *Options) validate() error {
 			if err != nil {
 				return err
 			}
-			inClusterEndpoint, err := helpers.GetAPIServer(kubeClient)
+			inClusterEndpoint, err := sdkhelpers.GetAPIServer(kubeClient)
 			if err != nil {
 				return err
 			}
@@ -580,7 +581,7 @@ func (o *Options) createClientcmdapiv1Config(externalClientUnSecure *kubernetes.
 	var err error
 	// set hub in cluster endpoint
 	if o.forceHubInClusterEndpointLookup {
-		o.hubInClusterEndpoint, err = helpers.GetAPIServer(externalClientUnSecure)
+		o.hubInClusterEndpoint, err = sdkhelpers.GetAPIServer(externalClientUnSecure)
 		if err != nil {
 			if !errors.IsNotFound(err) {
 				return nil, err
@@ -596,7 +597,7 @@ func (o *Options) createClientcmdapiv1Config(externalClientUnSecure *kubernetes.
 		bootstrapConfig.Clusters[0].Cluster.CertificateAuthorityData = o.HubCADate
 	} else {
 		// get ca data from externalClientUnsecure, ca may empty(cluster-info exists with no ca data)
-		ca, err := helpers.GetCACert(externalClientUnSecure)
+		ca, err := sdkhelpers.GetCACert(externalClientUnSecure)
 		if err != nil {
 			return nil, err
 		}

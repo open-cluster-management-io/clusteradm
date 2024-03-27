@@ -33,6 +33,16 @@ rules:
       - update
   - apiGroups:
       - addon.open-cluster-management.io
+    resourceNames:
+      - config-policy-controller
+      - governance-policy-framework
+    resources:
+      - clustermanagementaddons/status
+    verbs:
+      - patch
+      - update
+  - apiGroups:
+      - addon.open-cluster-management.io
     resources:
       - managedclusteraddons
     verbs:
@@ -95,6 +105,14 @@ rules:
       - approve
   - apiGroups:
       - cluster.open-cluster-management.io
+    resourceNames:
+      - id.k8s.io
+    resources:
+      - clusterclaims
+    verbs:
+      - get
+  - apiGroups:
+      - cluster.open-cluster-management.io
     resources:
       - managedclusters
     verbs:
@@ -149,7 +167,14 @@ rules:
       - watch
   - apiGroups:
       - ""
+    resources:
+      - secrets
+    verbs:
+      - create
+  - apiGroups:
+      - ""
     resourceNames:
+      - governance-policy-database
       - policy-encryption-key
     resources:
       - secrets
@@ -157,6 +182,36 @@ rules:
       - get
       - list
       - watch
+  - apiGroups:
+      - ""
+    resourceNames:
+      - open-cluster-management-compliance-history-api-recorder
+    resources:
+      - secrets
+    verbs:
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - serviceaccounts
+    verbs:
+      - create
+  - apiGroups:
+      - ""
+    resourceNames:
+      - open-cluster-management-compliance-history-api-recorder
+    resources:
+      - serviceaccounts
+    verbs:
+      - delete
+      - get
+      - patch
+      - update
   - apiGroups:
       - policy.open-cluster-management.io
     resources:
@@ -192,6 +247,7 @@ rules:
   - apiGroups:
       - rbac.authorization.k8s.io
     resourceNames:
+      - open-cluster-management:compliance-history-api-recorder
       - open-cluster-management:config-policy-controller-hub
       - open-cluster-management:policy-framework-hub
     resources:
@@ -210,6 +266,7 @@ rules:
   - apiGroups:
       - rbac.authorization.k8s.io
     resourceNames:
+      - open-cluster-management:compliance-history-api-recorder
       - open-cluster-management:config-policy-controller-hub
       - open-cluster-management:policy-framework-hub
     resources:
@@ -219,6 +276,24 @@ rules:
       - get
       - patch
       - update
+  - apiGroups:
+      - route.openshift.io
+    resources:
+      - routes
+    verbs:
+      - create
+  - apiGroups:
+      - route.openshift.io
+    resourceNames:
+      - governance-history-api
+    resources:
+      - routes
+    verbs:
+      - delete
+      - get
+      - list
+      - update
+      - watch
   - apiGroups:
       - work.open-cluster-management.io
     resources:

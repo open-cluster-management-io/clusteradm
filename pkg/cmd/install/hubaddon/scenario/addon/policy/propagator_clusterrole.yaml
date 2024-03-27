@@ -4,179 +4,185 @@ kind: ClusterRole
 metadata:
   name: governance-policy-propagator
 rules:
-- apiGroups:
-  - '*'
-  resources:
-  - '*'
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - apps.open-cluster-management.io
-  resources:
-  - placementrules
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - cluster.open-cluster-management.io
-  resources:
-  - managedclusters
-  - placementdecisions
-  - placements
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - config.openshift.io
-  resourceNames:
-  - cluster
-  resources:
-  - dnses
-  verbs:
-  - get
-- apiGroups:
-  - ""
-  resources:
-  - events
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - create
-- apiGroups:
-  - ""
-  resourceNames:
-  - governance-policy-database
-  resources:
-  - secrets
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ""
-  resourceNames:
-  - policy-encryption-key
-  resources:
-  - secrets
-  verbs:
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - policy.open-cluster-management.io
-  resources:
-  - placementbindings
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - policy.open-cluster-management.io
-  resources:
-  - policies
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - policy.open-cluster-management.io
-  resources:
-  - policies/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - policy.open-cluster-management.io
-  resources:
-  - policies/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - policy.open-cluster-management.io
-  resources:
-  - policyautomations
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - policy.open-cluster-management.io
-  resources:
-  - policyautomations/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - policy.open-cluster-management.io
-  resources:
-  - policyautomations/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - policy.open-cluster-management.io
-  resources:
-  - policysets
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - policy.open-cluster-management.io
-  resources:
-  - policysets/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - policy.open-cluster-management.io
-  resources:
-  - policysets/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - tower.ansible.com
-  resources:
-  - ansiblejobs
-  verbs:
-  - create
-  - delete
-  - deletecollection
-  - get
-  - list
-  - patch
-  - update
-  - watch
+  - apiGroups:
+      - "*"
+    resources:
+      - "*"
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - apps.open-cluster-management.io
+    resources:
+      - placementrules
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - authorization.k8s.io
+    resources:
+      - subjectaccessreviews
+    verbs:
+      - create
+  - apiGroups:
+      - cluster.open-cluster-management.io
+    resources:
+      - managedclusters
+      - placementdecisions
+      - placements
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - config.openshift.io
+    resourceNames:
+      - cluster
+    resources:
+      - dnses
+    verbs:
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - create
+  - apiGroups:
+      - ""
+    resourceNames:
+      - governance-policy-database
+    resources:
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resourceNames:
+      - policy-encryption-key
+    resources:
+      - secrets
+    verbs:
+      - get
+      - list
+      - update
+      - watch
+  - apiGroups:
+      - policy.open-cluster-management.io
+    resources:
+      - placementbindings
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - policy.open-cluster-management.io
+    resources:
+      - policies
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - policy.open-cluster-management.io
+    resources:
+      - policies/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - policy.open-cluster-management.io
+    resources:
+      - policies/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - policy.open-cluster-management.io
+    resources:
+      - policyautomations
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - policy.open-cluster-management.io
+    resources:
+      - policyautomations/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - policy.open-cluster-management.io
+    resources:
+      - policyautomations/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - policy.open-cluster-management.io
+    resources:
+      - policysets
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - policy.open-cluster-management.io
+    resources:
+      - policysets/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - policy.open-cluster-management.io
+    resources:
+      - policysets/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - tower.ansible.com
+    resources:
+      - ansiblejobs
+    verbs:
+      - create
+      - delete
+      - deletecollection
+      - get
+      - list
+      - patch
+      - update
+      - watch

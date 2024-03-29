@@ -4,6 +4,7 @@ package hubaddon
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
+	"open-cluster-management.io/clusteradm/pkg/helpers/version"
 )
 
 type Options struct {
@@ -19,20 +20,13 @@ type Options struct {
 	Streams genericclioptions.IOStreams
 }
 
-type BundleVersion struct {
-	// app image version
-	AppAddon string
-	// policy image version
-	PolicyAddon string
-}
-
 // Values: The values used in the template
 type Values struct {
 	hubAddons []string
 	// Namespace to install
 	Namespace string
 	// Version to install
-	BundleVersion BundleVersion
+	BundleVersion version.VersionBundle
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {

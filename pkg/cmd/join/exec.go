@@ -40,8 +40,8 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"open-cluster-management.io/clusteradm/pkg/helpers/resourcerequirement"
-	"open-cluster-management.io/clusteradm/pkg/helpers/version"
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
+	"open-cluster-management.io/clusteradm/pkg/version"
 	sdkhelpers "open-cluster-management.io/sdk-go/pkg/helpers"
 )
 

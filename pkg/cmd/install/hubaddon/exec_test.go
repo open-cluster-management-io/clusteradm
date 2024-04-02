@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"open-cluster-management.io/clusteradm/pkg/helpers/version"
+	"open-cluster-management.io/clusteradm/pkg/version"
 )
 
 var _ = ginkgo.Describe("install hub-addon", func() {

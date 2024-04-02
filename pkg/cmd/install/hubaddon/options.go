@@ -4,7 +4,7 @@ package hubaddon
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
-	"open-cluster-management.io/clusteradm/pkg/helpers/version"
+	"open-cluster-management.io/clusteradm/pkg/version"
 )
 
 type Options struct {

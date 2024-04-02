@@ -14,8 +14,8 @@ import (
 	"k8s.io/klog/v2"
 	init_scenario "open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
-	"open-cluster-management.io/clusteradm/pkg/helpers/version"
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
+	"open-cluster-management.io/clusteradm/pkg/version"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {

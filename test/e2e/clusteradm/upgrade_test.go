@@ -10,7 +10,7 @@ import (
 	"github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"open-cluster-management.io/clusteradm/pkg/helpers/version"
+	"open-cluster-management.io/clusteradm/pkg/version"
 )
 
 var _ = ginkgo.Describe("test clusteradm upgrade clustermanager and Klusterlets", ginkgo.Ordered, func() {

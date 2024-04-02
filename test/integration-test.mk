@@ -2,6 +2,7 @@
 TEST_TMP :=/tmp
 
 export KUBEBUILDER_ASSETS ?=$(TEST_TMP)/kubebuilder/bin
+export GINKGO ?=$(TEST_TMP)/ginkgo/ginkgo
 
 GO := go
 GOHOSTOS :=$(shell $(GO) env GOHOSTOS)
@@ -22,6 +23,11 @@ else
 endif
 .PHONY: ensure-kubebuilder-tools
 
+ensure-ginkgo:
+	$(info Downloading ginkgo into '$(TEST_TMP)/ginkgo')
+	GOBIN=$(TEST_TMP)/ginkgo go install github.com/onsi/ginkgo/v2/ginkgo@$(shell awk '/github.com\/onsi\/ginkgo\/v2/ {print $$2}' go.mod)
+.PHONY: ensure-ginkgo
+
 clean-integration-test:
 	$(RM) '$(KB_TOOLS_ARCHIVE_PATH)'
 	rm -rf $(TEST_TMP)/kubebuilder
@@ -30,6 +36,6 @@ clean-integration-test:
 
 clean: clean-integration-test
 
-test-integration: ensure-kubebuilder-tools
-	go test -v ./pkg/cmd/addon/enable  ./pkg/cmd/addon/disable  ./pkg/cmd/install/hubaddon 
+test-integration: ensure-kubebuilder-tools ensure-ginkgo
+	$(GINKGO) -v ./pkg/cmd/addon/enable  ./pkg/cmd/addon/disable  ./pkg/cmd/install/hubaddon 
 .PHONY: test-integration

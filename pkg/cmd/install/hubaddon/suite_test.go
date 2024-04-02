@@ -2,10 +2,14 @@
 package hubaddon
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/restmapper"
@@ -29,9 +33,12 @@ const (
 	consistentlyInterval = 1  // seconds
 )
 
-var testEnv *envtest.Environment
-var kubeClient kubernetes.Interface
-var clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
+var (
+	ocmNamespace    = "open-cluster-management"
+	testEnv         *envtest.Environment
+	kubeClient      kubernetes.Interface
+	clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
+)
 
 func TestIntegrationInstallAddons(t *testing.T) {
 	gomega.RegisterFailHandler(ginkgo.Fail)
@@ -58,6 +65,17 @@ var _ = ginkgo.BeforeSuite(func() {
 	// add clusteradm flags
 	f := cmdutil.NewFactory(TestClientGetter{cfg: cfg})
 	clusteradmFlags = genericclioptionsclusteradm.NewClusteradmFlags(f)
+
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: ocmNamespace,
+		},
+	}
+
+	_, err = kubeClient.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
+	if !errors.IsAlreadyExists(err) {
+		gomega.Expect(err).ToNot(gomega.HaveOccurred())
+	}
 })
 
 var _ = ginkgo.AfterSuite(func() {

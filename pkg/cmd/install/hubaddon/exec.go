@@ -48,16 +48,11 @@ func (o *Options) validate() (err error) {
 	}
 
 	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
-
 	if err != nil {
-		klog.Errorf("unable to retrieve version "+o.bundleVersion, err)
 		return err
 	}
 
-	o.values.BundleVersion = BundleVersion{
-		AppAddon:    versionBundle.AppAddon,
-		PolicyAddon: versionBundle.PolicyAddon,
-	}
+	o.values.BundleVersion = versionBundle
 
 	return nil
 }
@@ -139,6 +134,7 @@ func (o *Options) runWithClient() error {
 				"addon/policy/propagator_clusterrolebinding.yaml",
 				"addon/policy/propagator_role.yaml",
 				"addon/policy/propagator_rolebinding.yaml",
+				"addon/policy/propagator_service.yaml",
 				"addon/policy/propagator_serviceaccount.yaml",
 				"addon/policy/clustermanagementaddon_configpolicy.yaml",
 				"addon/policy/clustermanagementaddon_policyframework.yaml",
@@ -147,7 +143,7 @@ func (o *Options) runWithClient() error {
 
 			err := r.Apply(scenario.Files, o.values, files...)
 			if err != nil {
-				return err
+				return fmt.Errorf("Error deploying framework deployment dependencies: %w", err)
 			}
 
 			deployments := []string{
@@ -157,7 +153,7 @@ func (o *Options) runWithClient() error {
 
 			err = r.Apply(scenario.Files, o.values, deployments...)
 			if err != nil {
-				return err
+				return fmt.Errorf("Error deploying framework deployments: %w", err)
 			}
 
 			fmt.Fprintf(o.Streams.Out, "Installing built-in %s add-on to the Hub cluster...\n", policyFrameworkAddonName)

@@ -7,24 +7,47 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-)
-
-const (
-	invalidNamespace = "no-such-ns"
-	ocmNamespace     = "open-cluster-management"
-	ocmVersion       = "latest"
-
-	invalidAddon           = "no-such-addon"
-	channelDeployment      = "multicluster-operators-channel"
-	subscriptionDeployment = "multicluster-operators-subscription"
-	propagatorDeployment   = "governance-policy-propagator"
-	policyAddonDeployment  = "governance-policy-addon-controller"
+	"open-cluster-management.io/clusteradm/pkg/helpers/version"
 )
 
 var _ = ginkgo.Describe("install hub-addon", func() {
+
+	// Map of Hub Addons to test, mapping the Hub Addon name to
+	// an array of deployment names to check for availability
+	var hubAddons = map[string][]string{
+		"application-manager": {
+			"multicluster-operators-channel",
+			"multicluster-operators-subscription",
+		},
+		"governance-policy-framework": {
+			"governance-policy-propagator",
+			"governance-policy-addon-controller",
+		},
+	}
+
+	const (
+		invalidNamespace = "no-such-ns"
+		invalidAddon     = "no-such-addon"
+	)
+
+	var (
+		ocmVersion       = version.GetDefaultBundleVersion()
+		ocmBundleVersion = version.VersionBundle{}
+	)
+
+	ginkgo.BeforeEach(func() {
+		if bundleVersion, ok := os.LookupEnv("OCM_BUNDLE_VERSION"); ok && bundleVersion != "" {
+			ocmVersion = bundleVersion
+		}
+
+		var err error
+		ocmBundleVersion, err = version.GetVersionBundle(ocmVersion)
+		gomega.Expect(err).ToNot(gomega.HaveOccurred())
+	})
+
 	ginkgo.Context("validate", func() {
 
 		ginkgo.It("Should not create any built-in add-on deployment(s) because it's not a valid add-on name", func() {
@@ -48,17 +71,9 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 		})
 	})
 
-	ginkgo.Context("runWithClient", func() {
+	ginkgo.Context("runWithClient - invalid configurations", func() {
 
 		ginkgo.It("Should not create any built-in add-on deployment(s) because it's not a valid add-on name", func() {
-			ns := &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: ocmNamespace,
-				},
-			}
-			_, err := kubeClient.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
-			gomega.Expect(err).ToNot(gomega.HaveOccurred())
-
 			o := Options{
 				ClusteradmFlags: clusteradmFlags,
 				values: Values{
@@ -66,24 +81,17 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 				},
 			}
 
-			err = o.runWithClient()
+			err := o.runWithClient()
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
-			gomega.Consistently(func() error {
-				_, err := kubeClient.AppsV1().Deployments(ocmNamespace).Get(context.Background(), channelDeployment, metav1.GetOptions{})
-				if err != nil {
-					return err
+			for _, addonDeployments := range hubAddons {
+				for _, deployment := range addonDeployments {
+					gomega.Consistently(func() bool {
+						_, err := kubeClient.AppsV1().Deployments(ocmNamespace).Get(context.Background(), deployment, metav1.GetOptions{})
+						return errors.IsNotFound(err)
+					}, consistentlyTimeout, consistentlyInterval).Should(gomega.BeTrue())
 				}
-				return nil
-			}, consistentlyTimeout, consistentlyInterval).Should(gomega.HaveOccurred())
-
-			gomega.Consistently(func() error {
-				_, err := kubeClient.AppsV1().Deployments(ocmNamespace).Get(context.Background(), subscriptionDeployment, metav1.GetOptions{})
-				if err != nil {
-					return err
-				}
-				return nil
-			}, consistentlyTimeout, consistentlyInterval).Should(gomega.HaveOccurred())
+			}
 		})
 
 		ginkgo.It("Should not create any built-in add-on deployment(s) because it's not a valid namespace", func() {
@@ -100,71 +108,45 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 			err := o.runWithClient()
 			gomega.Expect(err).Should(gomega.HaveOccurred())
 		})
-
-		ginkgo.It("Should deploy the built in application-manager add-on deployments in open-cluster-management namespace successfully", func() {
-			o := Options{
-				ClusteradmFlags: clusteradmFlags,
-				values: Values{
-					Namespace: ocmNamespace,
-					hubAddons: []string{appMgrAddonName},
-					BundleVersion: BundleVersion{
-						AppAddon: ocmVersion,
-					},
-				},
-				Streams: genericclioptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr},
-			}
-
-			err := o.runWithClient()
-			gomega.Expect(err).ToNot(gomega.HaveOccurred())
-
-			gomega.Eventually(func() error {
-				_, err := kubeClient.AppsV1().Deployments(ocmNamespace).Get(context.Background(), channelDeployment, metav1.GetOptions{})
-				if err != nil {
-					return err
-				}
-				return nil
-			}, eventuallyTimeout, eventuallyInterval).ShouldNot(gomega.HaveOccurred())
-
-			gomega.Eventually(func() error {
-				_, err := kubeClient.AppsV1().Deployments(ocmNamespace).Get(context.Background(), subscriptionDeployment, metav1.GetOptions{})
-				if err != nil {
-					return err
-				}
-				return nil
-			}, eventuallyTimeout, eventuallyInterval).ShouldNot(gomega.HaveOccurred())
-		})
-
-		ginkgo.It("Should deploy the built-in governance-policy-framework add-on deployments in open-cluster-management-hub namespace successfully", func() {
-			o := Options{
-				ClusteradmFlags: clusteradmFlags,
-				values: Values{
-					hubAddons: []string{policyFrameworkAddonName},
-					Namespace: ocmNamespace,
-					BundleVersion: BundleVersion{
-						PolicyAddon: ocmVersion,
-					},
-				},
-				Streams: genericclioptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr},
-			}
-
-			err := o.runWithClient()
-			gomega.Expect(err).ToNot(gomega.HaveOccurred())
-
-			gomega.Eventually(func() error {
-				_, err := kubeClient.AppsV1().Deployments(ocmNamespace).Get(context.Background(), propagatorDeployment, metav1.GetOptions{})
-				if err != nil {
-					return err
-				}
-				return nil
-			}, eventuallyTimeout, eventuallyInterval).ShouldNot(gomega.HaveOccurred())
-
-			gomega.Eventually(func() error {
-				_, err := kubeClient.AppsV1().Deployments(ocmNamespace).Get(context.Background(), policyAddonDeployment, metav1.GetOptions{})
-				if err != nil {
-					return err
-				}
-				return nil
-			}, eventuallyTimeout, eventuallyInterval).ShouldNot(gomega.HaveOccurred())
-		})
 	})
+
+	// Generate entries for the `runWithClient` test table
+	addonTests := []ginkgo.TableEntry{}
+	for hubAddon, deployments := range hubAddons {
+		addonTests = append(addonTests, ginkgo.Entry(hubAddon, hubAddon, deployments))
+	}
+
+	ginkgo.DescribeTableSubtree("runWithClient",
+		func(hubAddon string, deployments []string) {
+			ginkgo.It("Should deploy the built in "+hubAddon+" add-on deployments in open-cluster-management namespace successfully", func() {
+				o := Options{
+					ClusteradmFlags: clusteradmFlags,
+					bundleVersion:   ocmVersion,
+					values: Values{
+						Namespace:     ocmNamespace,
+						hubAddons:     []string{hubAddon},
+						BundleVersion: ocmBundleVersion,
+					},
+					Streams: genericclioptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr},
+				}
+
+				err := o.runWithClient()
+				gomega.Expect(err).ToNot(gomega.HaveOccurred())
+
+				for _, deployment := range deployments {
+					gomega.Eventually(func() (bool, error) {
+						appDeployment, err := kubeClient.AppsV1().Deployments(ocmNamespace).Get(context.Background(), deployment, metav1.GetOptions{})
+						if err != nil {
+							return false, err
+						}
+
+						availableReplicas := appDeployment.Status.AvailableReplicas
+						expectedReplicas := appDeployment.Status.Replicas
+						return availableReplicas == expectedReplicas, nil
+					}, eventuallyTimeout, eventuallyInterval).Should(gomega.BeTrue(), deployment+" deployment should be ready")
+				}
+			})
+		},
+		addonTests,
+	)
 })

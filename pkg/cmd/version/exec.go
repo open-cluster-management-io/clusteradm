@@ -6,8 +6,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	clusteradm "open-cluster-management.io/clusteradm"
-	version "open-cluster-management.io/clusteradm/pkg/helpers/version"
+	"open-cluster-management.io/clusteradm/pkg/version"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -19,7 +18,7 @@ func (o *Options) validate() error {
 }
 
 func (o *Options) run() (err error) {
-	fmt.Printf("client\t\tversion\t:%s\n", strings.Trim(clusteradm.GetVersion(), "\n"))
+	fmt.Printf("client\t\tversion\t:%s\n", strings.Trim(version.Get().GitVersion, "\n"))
 	discoveryClient, err := o.ClusteradmFlags.KubectlFactory.ToDiscoveryClient()
 	if err != nil {
 		return err

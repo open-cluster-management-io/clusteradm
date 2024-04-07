@@ -11,6 +11,21 @@ GOPATH := ${shell go env GOPATH}
 GOOS := ${shell go env GOOS}
 GOARCH := ${shell go env GOARCH}
 
+SOURCE_GIT_LATEST_TAG ?= $(shell git describe --tags `git rev-list --tags --max-count=1`)
+SOURCE_GIT_TAG ?=$(shell git describe --long --tags --abbrev=7 --match 'v[0-9]*' || echo 'v0.0.0-unknown-$(SOURCE_GIT_COMMIT)')
+SOURCE_GIT_COMMIT ?=$(shell git rev-parse --short "HEAD^{commit}" 2>/dev/null)
+SOURCE_GIT_TREE_STATE ?=$(shell ( ( [ ! -d ".git/" ] || git diff --quiet ) && echo 'clean' ) || echo 'dirty')
+
+GO_LD_EXTRAFLAGS ?=
+
+define version-ldflags
+-X open-cluster-management.io/clusteradm/pkg/version.versionFromGit="$(SOURCE_GIT_TAG)" \
+-X open-cluster-management.io/clusteradm/pkg/version.commitFromGit="$(SOURCE_GIT_COMMIT)" \
+-X open-cluster-management.io/clusteradm/pkg/version.gitTreeState="$(SOURCE_GIT_TREE_STATE)" \
+-X open-cluster-management.io/clusteradm/pkg/version.buildDate="$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')"
+endef
+GO_LD_FLAGS ?=-ldflags "$(call version-ldflags,$(GO_PACKAGE)/pkg/version) $(GO_LD_EXTRAFLAGS)"
+
 export PROJECT_DIR            = $(shell 'pwd')
 export PROJECT_NAME			  = $(shell basename ${PROJECT_DIR})
 
@@ -32,30 +47,24 @@ deps:
 .PHONY: build
 build: 
 	rm -f ${GOPATH}/bin/clusteradm
-	go install ./cmd/clusteradm/clusteradm.go
+	go install $(GO_LD_FLAGS) ./cmd/clusteradm/clusteradm.go
 
 .PHONY: 
 build-bin:
 	@rm -rf bin
 	@mkdir -p bin
-	GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_darwin_amd64.tar.gz LICENSE -C bin/ clusteradm
-	GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_darwin_arm64.tar.gz LICENSE -C bin/ clusteradm
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_linux_amd64.tar.gz LICENSE -C bin/ clusteradm
-	GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_linux_arm64.tar.gz LICENSE -C bin/ clusteradm
-	GOOS=linux GOARCH=ppc64le go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_linux_ppc64le.tar.gz LICENSE -C bin/ clusteradm
-	GOOS=linux GOARCH=s390x go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_linux_s390x.tar.gz LICENSE -C bin/ clusteradm
-	GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -gcflags=-trimpath=x/y -o bin/clusteradm.exe ./cmd/clusteradm/clusteradm.go && zip -q bin/clusteradm_windows_amd64.zip LICENSE -j bin/clusteradm.exe
-
-.PHONY: release
-release: 
-	@if [[ -z "${VERSION}" ]]; then VERSION=`cat VERSION.txt`; echo $$VERSION; fi; \
-	git tag $$VERSION && git push upstream --tags
+	GOOS=darwin GOARCH=amd64 go build $(GO_LD_FLAGS) -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_darwin_amd64.tar.gz LICENSE -C bin/ clusteradm
+	GOOS=darwin GOARCH=arm64 go build $(GO_LD_FLAGS) -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_darwin_arm64.tar.gz LICENSE -C bin/ clusteradm
+	GOOS=linux GOARCH=amd64 go build $(GO_LD_FLAGS) -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_linux_amd64.tar.gz LICENSE -C bin/ clusteradm
+	GOOS=linux GOARCH=arm64 go build $(GO_LD_FLAGS) -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_linux_arm64.tar.gz LICENSE -C bin/ clusteradm
+	GOOS=linux GOARCH=ppc64le go build $(GO_LD_FLAGS) -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_linux_ppc64le.tar.gz LICENSE -C bin/ clusteradm
+	GOOS=linux GOARCH=s390x go build $(GO_LD_FLAGS) -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_linux_s390x.tar.gz LICENSE -C bin/ clusteradm
+	GOOS=windows GOARCH=amd64 go build $(GO_LD_FLAGS) -gcflags=-trimpath=x/y -o bin/clusteradm.exe ./cmd/clusteradm/clusteradm.go && zip -q bin/clusteradm_windows_amd64.zip LICENSE -j bin/clusteradm.exe
 
 .PHONY: build-krew
 build-krew: krew-tools
-	@if [[ -z "${VERSION}" ]]; then VERSION=`cat VERSION.txt`; echo $$VERSION; fi; \
 	docker run -v ${PROJECT_DIR}/.krew.yaml:/tmp/template-file.yaml rajatjindal/krew-release-bot:v0.0.40 \
-	krew-release-bot template --tag v$$VERSION --template-file /tmp/template-file.yaml > krew-manifest.yaml; 
+	krew-release-bot template --tag ${SOURCE_GIT_LATEST_TAG} --template-file /tmp/template-file.yaml > krew-manifest.yaml;
 	KREW=/tmp/krew-${GOOS}\_$(GOARCH) && \
 	KREW_ROOT=`mktemp -d` KREW_OS=darwin KREW_ARCH=amd64 $$KREW install --manifest=krew-manifest.yaml && \
 	KREW_ROOT=`mktemp -d` KREW_OS=linux KREW_ARCH=amd64 $$KREW install --manifest=krew-manifest.yaml && \

@@ -12,7 +12,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
-	"open-cluster-management.io/clusteradm/pkg/helpers/version"
+	"open-cluster-management.io/clusteradm/pkg/version"
 )
 
 const (

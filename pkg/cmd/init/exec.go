@@ -25,8 +25,8 @@ import (
 	preflightinterface "open-cluster-management.io/clusteradm/pkg/helpers/preflight"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"open-cluster-management.io/clusteradm/pkg/helpers/resourcerequirement"
-	"open-cluster-management.io/clusteradm/pkg/helpers/version"
 	helperwait "open-cluster-management.io/clusteradm/pkg/helpers/wait"
+	"open-cluster-management.io/clusteradm/pkg/version"
 )
 
 var (

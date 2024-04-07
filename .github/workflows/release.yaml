@@ -22,9 +22,6 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GO_VERSION }}
-      - name: Check version
-        run: |
-          cat VERSION.txt | grep ${{ github.ref_name }}
       - name: Build project
         run: |
           make build-bin

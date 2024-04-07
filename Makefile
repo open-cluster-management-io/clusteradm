@@ -11,6 +11,7 @@ GOPATH := ${shell go env GOPATH}
 GOOS := ${shell go env GOOS}
 GOARCH := ${shell go env GOARCH}
 
+SOURCE_GIT_LATEST_TAG ?= $(shell git describe --tags `git rev-list --tags --max-count=1`)
 SOURCE_GIT_TAG ?=$(shell git describe --long --tags --abbrev=7 --match 'v[0-9]*' || echo 'v0.0.0-unknown-$(SOURCE_GIT_COMMIT)')
 SOURCE_GIT_COMMIT ?=$(shell git rev-parse --short "HEAD^{commit}" 2>/dev/null)
 SOURCE_GIT_TREE_STATE ?=$(shell ( ( [ ! -d ".git/" ] || git diff --quiet ) && echo 'clean' ) || echo 'dirty')
@@ -54,7 +55,7 @@ build-bin:
 	@mkdir -p bin
 	GOOS=darwin GOARCH=amd64 go build $(GO_LD_FLAGS) -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_darwin_amd64.tar.gz LICENSE -C bin/ clusteradm
 	GOOS=darwin GOARCH=arm64 go build $(GO_LD_FLAGS) -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_darwin_arm64.tar.gz LICENSE -C bin/ clusteradm
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build $(GO_LD_FLAGS) -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_linux_amd64.tar.gz LICENSE -C bin/ clusteradm
+	GOOS=linux GOARCH=amd64 go build $(GO_LD_FLAGS) -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_linux_amd64.tar.gz LICENSE -C bin/ clusteradm
 	GOOS=linux GOARCH=arm64 go build $(GO_LD_FLAGS) -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_linux_arm64.tar.gz LICENSE -C bin/ clusteradm
 	GOOS=linux GOARCH=ppc64le go build $(GO_LD_FLAGS) -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_linux_ppc64le.tar.gz LICENSE -C bin/ clusteradm
 	GOOS=linux GOARCH=s390x go build $(GO_LD_FLAGS) -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_linux_s390x.tar.gz LICENSE -C bin/ clusteradm
@@ -63,7 +64,7 @@ build-bin:
 .PHONY: build-krew
 build-krew: krew-tools
 	docker run -v ${PROJECT_DIR}/.krew.yaml:/tmp/template-file.yaml rajatjindal/krew-release-bot:v0.0.40 \
-	krew-release-bot template --tag v$$SOURCE_GIT_TAG --template-file /tmp/template-file.yaml > krew-manifest.yaml;
+	krew-release-bot template --tag ${SOURCE_GIT_LATEST_TAG} --template-file /tmp/template-file.yaml > krew-manifest.yaml;
 	KREW=/tmp/krew-${GOOS}\_$(GOARCH) && \
 	KREW_ROOT=`mktemp -d` KREW_OS=darwin KREW_ARCH=amd64 $$KREW install --manifest=krew-manifest.yaml && \
 	KREW_ROOT=`mktemp -d` KREW_OS=linux KREW_ARCH=amd64 $$KREW install --manifest=krew-manifest.yaml && \

@@ -29,7 +29,9 @@ import (
 	certutil "k8s.io/client-go/util/cert"
 	"k8s.io/klog/v2"
 	"k8s.io/kubectl/pkg/cmd/util"
+	clusterclient "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
+	clusterv1 "open-cluster-management.io/api/cluster/v1"
 	ocmfeature "open-cluster-management.io/api/feature"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 	"open-cluster-management.io/clusteradm/pkg/cmd/join/preflight"
@@ -419,6 +421,11 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient opera
 				return err
 			}
 		}
+
+		err = o.waitUntilManagedClusterIsCreated(int64(o.ClusteradmFlags.Timeout), o.values.ClusterName)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -453,6 +460,51 @@ func checkIfRegistrationOperatorAvailable(f util.Factory) (bool, error) {
 		}
 	}
 	return meta.IsStatusConditionTrue(conds, "Available"), nil
+}
+
+func (o *Options) waitUntilManagedClusterIsCreated(timeout int64, clusterName string) error {
+	//Create an unsecure bootstrap
+	bootstrapExternalConfigUnSecure := o.createExternalBootstrapConfig()
+	restConfig, err := helpers.CreateRESTConfigFromClientcmdapiv1Config(bootstrapExternalConfigUnSecure)
+	if err != nil {
+		return fmt.Errorf("failed to create rest config: %v", err)
+	}
+	clusterClient, err := clusterclient.NewForConfig(restConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create client: %v", err)
+	}
+
+	phase := &atomic.Value{}
+	phase.Store("")
+	operatorSpinner := printer.NewSpinnerWithStatus(
+		"Waiting for managed cluster to be created...",
+		time.Millisecond*500,
+		"Managed cluster is created.\n",
+		func() string {
+			return phase.Load().(string)
+		})
+	operatorSpinner.Start()
+	defer operatorSpinner.Stop()
+
+	return helpers.WatchUntil(
+		func() (watch.Interface, error) {
+			w, err := clusterClient.ClusterV1().ManagedClusters().
+				Watch(context.TODO(), metav1.ListOptions{
+					TimeoutSeconds: &timeout,
+					FieldSelector:  fmt.Sprintf("metadata.name=%s", clusterName),
+				})
+			if err != nil {
+				return nil, fmt.Errorf("failed to watch: %v", err)
+			}
+			return w, nil
+		},
+		func(event watch.Event) bool {
+			cluster, ok := event.Object.(*clusterv1.ManagedCluster)
+			if !ok {
+				return false
+			}
+			return cluster.Name == clusterName
+		})
 }
 
 func waitUntilRegistrationOperatorConditionIsTrue(f util.Factory, timeout int64) error {

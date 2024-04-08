@@ -115,14 +115,12 @@ func (o *Options) validate() error {
 	} else {
 		checks = append(checks,
 			preflight.HubApiServerCheck{
-				ClusterCtx: o.ClusteradmFlags.Context,
-				ConfigPath: "", // TODO(@Promacanthus)： user custom kubeconfig path from command line arguments.
+				Config: o.ClusteradmFlags.KubectlFactory.ToRawKubeConfigLoader(),
 			},
 			preflight.ClusterInfoCheck{
 				Namespace:    metav1.NamespacePublic,
 				ResourceName: preflight.BootstrapConfigMap,
-				ClusterCtx:   o.ClusteradmFlags.Context,
-				ConfigPath:   "", // TODO(@Promacanthus)： user custom kubeconfig path from command line arguments.
+				Config:       o.ClusteradmFlags.KubectlFactory.ToRawKubeConfigLoader(),
 				Client:       kubeClient,
 			})
 	}

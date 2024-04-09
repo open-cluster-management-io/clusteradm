@@ -9,19 +9,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakekube "k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	testinghelper "open-cluster-management.io/clusteradm/pkg/helpers/testing"
 )
 
 var (
-	currentContext     = "ocm-hub"
 	kubeconfigFilePath = "testdata/kubeconfig"
 )
 
 func Test_loadCurrentCluster(t *testing.T) {
 	type args struct {
-		context            string
 		kubeConfigFilePath string
 	}
 	tests := []struct {
@@ -33,7 +32,6 @@ func Test_loadCurrentCluster(t *testing.T) {
 		{
 			name: "load",
 			args: args{
-				context:            currentContext,
 				kubeConfigFilePath: kubeconfigFilePath,
 			},
 			want: &api.Cluster{
@@ -51,7 +49,13 @@ func Test_loadCurrentCluster(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := loadCurrentCluster(tt.args.context, tt.args.kubeConfigFilePath)
+			config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+				&clientcmd.ClientConfigLoadingRules{ExplicitPath: tt.args.kubeConfigFilePath},
+				&clientcmd.ConfigOverrides{}).RawConfig()
+			if err != nil {
+				t.Error(err)
+			}
+			got, err := loadCurrentCluster(config)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("loadCurrentCluster() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -148,7 +152,6 @@ func Test_createClusterInfo(t *testing.T) {
 
 func TestHubApiServerCheck_Check(t *testing.T) {
 	type fields struct {
-		ClusterCtx string
 		ConfigPath string
 	}
 	tests := []struct {
@@ -158,29 +161,18 @@ func TestHubApiServerCheck_Check(t *testing.T) {
 		wantErrorList []error
 	}{
 		{
-			name: "empty context",
-			fields: fields{
-				ClusterCtx: "",
-				ConfigPath: kubeconfigFilePath,
-			},
-			wantWarnings:  []string{"Hub Api Server is a domain name, maybe you should set HostAlias in klusterlet"},
-			wantErrorList: nil,
-		},
-		{
 			name: "no kubeconfig file",
 			fields: fields{
-				ClusterCtx: currentContext,
 				ConfigPath: "invalid_path",
 			},
 			wantWarnings: nil,
 			wantErrorList: []error{
-				errors.New("failed to load kubeconfig file invalid_path that already exists on disk: open invalid_path: no such file or directory"),
+				errors.New("stat invalid_path: no such file or directory"),
 			},
 		},
 		{
 			name: "hub api server with domain",
 			fields: fields{
-				ClusterCtx: currentContext,
 				ConfigPath: kubeconfigFilePath,
 			},
 			wantWarnings:  []string{"Hub Api Server is a domain name, maybe you should set HostAlias in klusterlet"},
@@ -189,7 +181,6 @@ func TestHubApiServerCheck_Check(t *testing.T) {
 		{
 			name: "hub api server with ip",
 			fields: fields{
-				ClusterCtx: currentContext,
 				ConfigPath: "testdata/kubeconfig_ip",
 			},
 			wantWarnings:  nil,
@@ -198,9 +189,11 @@ func TestHubApiServerCheck_Check(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			config := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+				&clientcmd.ClientConfigLoadingRules{ExplicitPath: tt.fields.ConfigPath},
+				&clientcmd.ConfigOverrides{})
 			c := HubApiServerCheck{
-				ClusterCtx: tt.fields.ClusterCtx,
-				ConfigPath: tt.fields.ConfigPath,
+				Config: config,
 			}
 			gotWarnings, gotErrorList := c.Check()
 			testinghelper.AssertWarnings(t, gotWarnings, tt.wantWarnings)
@@ -213,7 +206,6 @@ func TestClusterInfoCheck_Check(t *testing.T) {
 	type fields struct {
 		Namespace    string
 		ResourceName string
-		ClusterCtx   string
 		ConfigPath   string
 		Object       []runtime.Object
 	}
@@ -230,7 +222,6 @@ func TestClusterInfoCheck_Check(t *testing.T) {
 			fields: fields{
 				Namespace:    metav1.NamespacePublic,
 				ResourceName: BootstrapConfigMap,
-				ClusterCtx:   currentContext,
 				ConfigPath:   kubeconfigFilePath,
 				Object:       []runtime.Object{newConfigMap(BootstrapConfigMap, metav1.NamespacePublic, newKubeConfig())},
 			},
@@ -244,7 +235,6 @@ func TestClusterInfoCheck_Check(t *testing.T) {
 			fields: fields{
 				Namespace:    metav1.NamespacePublic,
 				ResourceName: BootstrapConfigMap,
-				ClusterCtx:   currentContext,
 				ConfigPath:   kubeconfigFilePath,
 				Object:       []runtime.Object{newConfigMap(BootstrapConfigMap, metav1.NamespacePublic, nil)},
 			},
@@ -258,7 +248,6 @@ func TestClusterInfoCheck_Check(t *testing.T) {
 			fields: fields{
 				Namespace:    metav1.NamespacePublic,
 				ResourceName: BootstrapConfigMap,
-				ClusterCtx:   currentContext,
 				ConfigPath:   kubeconfigFilePath,
 				Object:       []runtime.Object{},
 			},
@@ -271,12 +260,13 @@ func TestClusterInfoCheck_Check(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client := fakekube.NewSimpleClientset(tt.fields.Object...)
-
+			config := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+				&clientcmd.ClientConfigLoadingRules{ExplicitPath: tt.fields.ConfigPath},
+				&clientcmd.ConfigOverrides{})
 			c := ClusterInfoCheck{
 				Namespace:    tt.fields.Namespace,
 				ResourceName: tt.fields.ResourceName,
-				ClusterCtx:   tt.fields.ClusterCtx,
-				ConfigPath:   tt.fields.ConfigPath,
+				Config:       config,
 				Client:       client,
 			}
 			gotWarnings, gotErrorList := c.Check()

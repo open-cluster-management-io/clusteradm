@@ -37,8 +37,7 @@ func (c SingletonControlplaneCheck) Name() string {
 }
 
 type HubApiServerCheck struct {
-	ClusterCtx string // current-context in kubeconfig
-	ConfigPath string // kubeconfig file path
+	Config clientcmd.ClientConfig
 }
 
 func checkServer(server string) (warnings []string, errorList []error) {
@@ -62,7 +61,11 @@ func checkServer(server string) (warnings []string, errorList []error) {
 }
 
 func (c HubApiServerCheck) Check() (warnings []string, errorList []error) {
-	cluster, err := loadCurrentCluster(c.ClusterCtx, c.ConfigPath)
+	config, err := c.Config.RawConfig()
+	if err != nil {
+		return nil, []error{err}
+	}
+	cluster, err := loadCurrentCluster(config)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -77,8 +80,7 @@ func (c HubApiServerCheck) Name() string {
 type ClusterInfoCheck struct {
 	Namespace    string
 	ResourceName string
-	ClusterCtx   string // current-context in kubeconfig
-	ConfigPath   string // kubeconfig file path
+	Config       clientcmd.ClientConfig
 	Client       kubernetes.Interface
 }
 
@@ -87,7 +89,14 @@ func (c ClusterInfoCheck) Check() (warnings []string, errorList []error) {
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			resourceNotFound := errors.New("no ConfigMap named cluster-info in the kube-public namespace, clusteradm will creates it")
-			cluster, err := loadCurrentCluster(c.ClusterCtx, c.ConfigPath)
+			config, err := c.Config.RawConfig()
+			if err != nil {
+				return nil, []error{err}
+			}
+			cluster, err := loadCurrentCluster(config)
+			if err != nil {
+				return nil, []error{err}
+			}
 			if err != nil {
 				return []string{resourceNotFound.Error()}, []error{err}
 			}
@@ -110,36 +119,15 @@ func (c ClusterInfoCheck) Name() string {
 
 // loadCurrentCluster will load kubeconfig from file and return the current cluster.
 // The default file path is ~/.kube/config.
-func loadCurrentCluster(context string, kubeConfigFilePath string) (*api.Cluster, error) {
-	var (
-		currentConfig *clientcmdapi.Config
-		err           error
-	)
-
-	if len(kubeConfigFilePath) == 0 {
-		currentConfig, err = clientcmd.NewDefaultClientConfigLoadingRules().Load()
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		currentConfig, err = clientcmd.LoadFromFile(kubeConfigFilePath)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to load kubeconfig file %s that already exists on disk", kubeConfigFilePath)
-		}
-	}
-	// load kubeconfig from file
-	// get the hub cluster context
-	if len(context) == 0 {
-		// use the current context from the kubeconfig
-		context = currentConfig.CurrentContext
-	}
+func loadCurrentCluster(currentConfig clientcmdapi.Config) (*api.Cluster, error) {
+	context := currentConfig.CurrentContext
 	currentCtx, exists := currentConfig.Contexts[context]
 	if !exists {
-		return nil, errors.Errorf("failed to find the given Current Context in Contexts of the kubeconfig file %s", kubeConfigFilePath)
+		return nil, errors.Errorf("failed to find the given Current Context in Contexts of the kubeconfig")
 	}
 	currentCluster, exists := currentConfig.Clusters[currentCtx.Cluster]
 	if !exists {
-		return nil, errors.Errorf("failed to find the given CurrentContext Cluster in Clusters of the kubeconfig file %s", kubeConfigFilePath)
+		return nil, errors.Errorf("failed to find the given CurrentContext Cluster in Clusters of the kubeconfig")
 	}
 	return currentCluster, nil
 }

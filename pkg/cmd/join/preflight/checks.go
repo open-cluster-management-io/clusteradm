@@ -47,9 +47,17 @@ func (c HubKubeconfigCheck) Check() (warningList []string, errorList []error) {
 	_, err = discoveryClient.ServerVersion()
 	if err != nil {
 		return nil, []error{err}
-
 	}
-	return nil, nil
+
+	apiResourceList, err := discoveryClient.ServerResourcesForGroupVersion("cluster.open-cluster-management.io/v1")
+	var errs []error
+	if err != nil {
+		errs = append(errs, err)
+	}
+	if len(apiResourceList.APIResources) == 0 {
+		errs = append(errs, fmt.Errorf("no apigroup cluster.open-cluster-management.io/v1 detected"))
+	}
+	return nil, errs
 }
 
 func (c HubKubeconfigCheck) Name() string {

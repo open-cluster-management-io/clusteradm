@@ -27,7 +27,7 @@ rules:
   - get
   - create
   - list
-  - update
+  - watch
 - apiGroups: 
   - "cluster.open-cluster-management.io"
   resources: 

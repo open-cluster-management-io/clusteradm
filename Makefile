@@ -55,7 +55,8 @@ build-bin:
 	@mkdir -p bin
 	GOOS=darwin GOARCH=amd64 go build $(GO_LD_FLAGS) -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_darwin_amd64.tar.gz LICENSE -C bin/ clusteradm
 	GOOS=darwin GOARCH=arm64 go build $(GO_LD_FLAGS) -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_darwin_arm64.tar.gz LICENSE -C bin/ clusteradm
-	GOOS=linux GOARCH=amd64 go build $(GO_LD_FLAGS) -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_linux_amd64.tar.gz LICENSE -C bin/ clusteradm
+    # add CGO_ENABLED flag for linux/amd64 to support different version of glibc
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build $(GO_LD_FLAGS) -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_linux_amd64.tar.gz LICENSE -C bin/ clusteradm
 	GOOS=linux GOARCH=arm64 go build $(GO_LD_FLAGS) -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_linux_arm64.tar.gz LICENSE -C bin/ clusteradm
 	GOOS=linux GOARCH=ppc64le go build $(GO_LD_FLAGS) -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_linux_ppc64le.tar.gz LICENSE -C bin/ clusteradm
 	GOOS=linux GOARCH=s390x go build $(GO_LD_FLAGS) -gcflags=-trimpath=x/y -o bin/clusteradm ./cmd/clusteradm/clusteradm.go && tar -czf bin/clusteradm_linux_s390x.tar.gz LICENSE -C bin/ clusteradm

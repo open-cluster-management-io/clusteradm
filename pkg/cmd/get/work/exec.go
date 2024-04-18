@@ -71,7 +71,7 @@ func (o *Options) run() (err error) {
 		if len(o.workName) > 0 {
 			listOpts.FieldSelector = fmt.Sprintf("metadata.name=%s", o.workName)
 		}
-		works, err := workClient.WorkV1().ManifestWorks(cluster).List(context.TODO(), metav1.ListOptions{})
+		works, err := workClient.WorkV1().ManifestWorks(cluster).List(context.TODO(), listOpts)
 		if err != nil {
 			return err
 		}
@@ -88,13 +88,12 @@ func (o *Options) convertToTree(obj runtime.Object, tree *printer.TreePrinter) *
 		for _, work := range workList.Items {
 			cluster, number, applied, available := getFileds(work)
 			mp := make(map[string]interface{})
-			mp[".Cluster"] = cluster
 			mp[".Number of Manifests"] = number
 			mp[".Applied"] = applied
 			mp[".Available"] = available
-			tree.AddFileds(work.Name, &mp)
+			tree.AddFileds(fmt.Sprintf("%s.%s", cluster, work.Name), &mp)
 			workStatus := printer.WorkDetails(".Resources", &work)
-			tree.AddFileds(work.Name, &workStatus)
+			tree.AddFileds(fmt.Sprintf("%s.%s", cluster, work.Name), &workStatus)
 		}
 	}
 	return tree

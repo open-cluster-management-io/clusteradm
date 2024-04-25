@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
+	"strings"
 
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift/library-go/pkg/assets"
@@ -60,6 +61,12 @@ func (r *ResourceReader) Apply(fs embed.FS, config interface{}, files ...string)
 		Stream(bytes.NewReader(rawObjects), "local").
 		Flatten().
 		Do()
+	if r.dryRun {
+		// Ignore CRD not installed error when dry-run
+		rb.IgnoreErrors(func(err error) bool {
+			return err != nil && strings.Contains(err.Error(), "ensure CRDs are installed first")
+		})
+	}
 	infos, err := rb.Infos()
 	if err != nil {
 		return err

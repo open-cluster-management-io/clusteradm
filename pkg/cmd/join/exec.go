@@ -291,7 +291,7 @@ func (o *Options) validate() error {
 }
 
 func (o *Options) run() error {
-	kubeClient, apiExtensionsClient, _, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
+	_, apiExtensionsClient, _, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
 	if err != nil {
 		return err
 	}
@@ -307,24 +307,6 @@ func (o *Options) run() error {
 	}
 
 	r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
-
-	_, err = kubeClient.CoreV1().Namespaces().Get(context.TODO(), o.values.AgentNamespace, metav1.GetOptions{})
-
-	if errors.IsNotFound(err) && o.createNameSpace {
-		_, err = kubeClient.CoreV1().Namespaces().Create(context.TODO(), &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: o.values.AgentNamespace,
-				Annotations: map[string]string{
-					"workload.openshift.io/allowed": "management",
-				},
-			},
-		}, metav1.CreateOptions{})
-		if err != nil {
-			return err
-		}
-	} else if err != nil {
-		return err
-	}
 
 	if err = o.applyKlusterlet(r, operatorClient, apiExtensionsClient); err != nil {
 		return err
@@ -356,9 +338,9 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient opera
 		return err
 	}
 
-	var files []string
 	// If Deployment/klusterlet is not deployed, deploy it
 	if !available {
+		var files []string
 		if o.createNameSpace {
 			files = append(files, "join/namespace.yaml")
 		}
@@ -367,25 +349,10 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient opera
 			"join/service_account.yaml",
 			"join/cluster_role.yaml",
 			"join/cluster_role_binding.yaml",
+			"join/operator.yaml",
 		)
-	}
-	files = append(files,
-		"bootstrap_hub_kubeconfig.yaml",
-	)
 
-	if o.mode == string(operatorv1.InstallModeHosted) {
-		files = append(files,
-			"join/hosted/external_managed_kubeconfig.yaml",
-		)
-	}
-
-	err = r.Apply(scenario.Files, o.values, files...)
-	if err != nil {
-		return err
-	}
-
-	if !available {
-		err = r.Apply(scenario.Files, o.values, "join/operator.yaml")
+		err = r.Apply(scenario.Files, o.values, files...)
 		if err != nil {
 			return err
 		}
@@ -397,7 +364,24 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient opera
 		}
 	}
 
-	err = r.Apply(scenario.Files, o.values, "join/klusterlets.cr.yaml")
+	// Apply klusterlet and bootstrap secret
+	files := []string{}
+	if o.createNameSpace {
+		// Create agent namespace before the bootstrap secret, since the secret is in the agent namespace
+		files = append(files, "join/agent-namespace.yaml")
+	}
+	files = append(files,
+		"bootstrap_hub_kubeconfig.yaml",
+	)
+	if o.mode == string(operatorv1.InstallModeHosted) {
+		files = append(files,
+			"join/hosted/external_managed_kubeconfig.yaml",
+		)
+	}
+	files = append(files,
+		"join/klusterlets.cr.yaml",
+	)
+	err = r.Apply(scenario.Files, o.values, files...)
 	if err != nil {
 		return err
 	}

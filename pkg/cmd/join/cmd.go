@@ -48,6 +48,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	}
 
 	genericclioptionsclusteradm.SpokeMutableFeatureGate.AddFlag(cmd.Flags())
+	o.capiOptions.AddFlags(cmd.Flags())
 	cmd.Flags().StringVar(&o.token, "hub-token", "", "The token to access the hub")
 	cmd.Flags().StringVar(&o.hubAPIServer, "hub-apiserver", "", "The api server url to the hub")
 	cmd.Flags().StringVar(&o.caFile, "ca-file", "", "the file path to hub ca, optional")

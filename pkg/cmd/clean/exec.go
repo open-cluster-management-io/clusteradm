@@ -224,8 +224,12 @@ func isManagedClusterExist(config *rest.Config) (bool, error) {
 		return false, err
 	}
 
-	if len(managedClusters.Items) > 0 {
-		return true, nil
+	for _, cluster := range managedClusters.Items {
+		for _, cond := range cluster.Status.Conditions {
+			if cond.Type == "ManagedClusterConditionAvailable" && cond.Status == "True" {
+				return true, nil
+			}
+		}
 	}
 	return false, nil
 }

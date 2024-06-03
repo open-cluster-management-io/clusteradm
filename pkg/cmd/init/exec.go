@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	url         = "https://openclustermanagement.blob.core.windows.net/releases/"
+	url         = "https://open-cluster-management.io/helm-charts"
 	repoName    = "ocm"
 	chartName   = "multicluster-controlplane"
 	releaseName = "multicluster-controlplane"

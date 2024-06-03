@@ -5,9 +5,11 @@ package init
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/client-go/rest"
 	"log"
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
+	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -225,10 +227,8 @@ func isManagedClusterExist(config *rest.Config) (bool, error) {
 	}
 
 	for _, cluster := range managedClusters.Items {
-		for _, cond := range cluster.Status.Conditions {
-			if cond.Type == "ManagedClusterConditionAvailable" && cond.Status == "True" {
-				return true, nil
-			}
+		if meta.IsStatusConditionTrue(cluster.Status.Conditions, clusterapiv1.ManagedClusterConditionAvailable) {
+			return true, nil
 		}
 	}
 	return false, nil

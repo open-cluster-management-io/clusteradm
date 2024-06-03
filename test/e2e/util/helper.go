@@ -4,6 +4,8 @@ package util
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/meta"
+	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -49,10 +51,9 @@ func WaitForManagedClusterAvailableStatusToChange(restcfg *rest.Config, clusterN
 		if err != nil {
 			return false, err
 		}
-		for _, cond := range managedCluster.Status.Conditions {
-			if cond.Type == "ManagedClusterConditionAvailable" && cond.Status != "True" {
-				return true, nil
-			}
+
+		if !meta.IsStatusConditionTrue(managedCluster.Status.Conditions, clusterapiv1.ManagedClusterConditionAvailable) {
+			return true, nil
 		}
 
 		return false, nil

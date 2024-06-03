@@ -36,6 +36,29 @@ func WaitNamespaceDeleted(restcfg *rest.Config, namespace string) error {
 	})
 }
 
+func WaitForManagedClusterAvailableStatusToChange(restcfg *rest.Config, clusterName string) error {
+	klusterClient, err := clusterclient.NewForConfig(restcfg)
+	if err != nil {
+		return err
+	}
+	return wait.PollUntilContextCancel(context.TODO(), 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		managedCluster, err := klusterClient.ClusterV1().ManagedClusters().Get(context.TODO(), clusterName, metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			return true, nil
+		}
+		if err != nil {
+			return false, err
+		}
+		for _, cond := range managedCluster.Status.Conditions {
+			if cond.Type == "ManagedClusterConditionAvailable" && cond.Status != "True" {
+				return true, nil
+			}
+		}
+
+		return false, nil
+	})
+}
+
 func DeleteClusterCSRs(restcfg *rest.Config) error {
 	clientset, err := kubernetes.NewForConfig(restcfg)
 	if err != nil {

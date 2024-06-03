@@ -84,6 +84,12 @@ func initE2E() (*TestE2eConfig, error) {
 		if err != nil {
 			return err
 		}
+
+		// wait for managed cluster Available status to be "False"
+		err = WaitForManagedClusterAvailableStatusToChange(e2eConf.Cluster().Hub().KubeConfig(), e2eConf.Cluster().ManagedCluster1().Name())
+		if err != nil {
+			return err
+		}
 		err = e2eConf.Clusteradm().Clean(
 			"--context", e2eConf.Cluster().Hub().Context(),
 			"--purge-operator=false",

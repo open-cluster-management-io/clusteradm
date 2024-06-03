@@ -166,7 +166,7 @@ func isAppliedManifestWorkExist(client appliedworkclient.Interface) []string {
 		return nil
 	}
 	if err != nil {
-		klog.Warningf("can not list applied manifest works: %v, ypu should check and delete the applied manifest works manully.", err)
+		klog.Warningf("can not list applied manifest works: %v, you should check and delete the applied manifest works manually.", err)
 		return nil
 	}
 	var amws []string

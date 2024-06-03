@@ -72,7 +72,7 @@ func (o *Options) Run() error {
 	}
 
 	if exist {
-		fmt.Fprintf(o.Streams.Out, "Please detach the managed clusters from the hub control plane\n")
+		fmt.Fprintf(o.Streams.Out, "Please detach all managed clusters from the hub control plane\n")
 		return nil
 	}
 

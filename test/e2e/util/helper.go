@@ -4,6 +4,8 @@ package util
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/meta"
+	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -32,6 +34,28 @@ func WaitNamespaceDeleted(restcfg *rest.Config, namespace string) error {
 			return false, err
 		}
 		fmt.Printf("namespace stil exists %v\n", ns.Status)
+		return false, nil
+	})
+}
+
+func WaitForManagedClusterAvailableStatusToChange(restcfg *rest.Config, clusterName string) error {
+	klusterClient, err := clusterclient.NewForConfig(restcfg)
+	if err != nil {
+		return err
+	}
+	return wait.PollUntilContextCancel(context.TODO(), 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		managedCluster, err := klusterClient.ClusterV1().ManagedClusters().Get(context.TODO(), clusterName, metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			return true, nil
+		}
+		if err != nil {
+			return false, err
+		}
+
+		if !meta.IsStatusConditionTrue(managedCluster.Status.Conditions, clusterapiv1.ManagedClusterConditionAvailable) {
+			return true, nil
+		}
+
 		return false, nil
 	})
 }

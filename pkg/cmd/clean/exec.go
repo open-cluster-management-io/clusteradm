@@ -5,7 +5,11 @@ package init
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/client-go/rest"
 	"log"
+	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
+	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -61,6 +65,17 @@ func (o *Options) Run() error {
 	clusterManagerClient, err := clustermanagerclient.NewForConfig(config)
 	if err != nil {
 		return err
+	}
+
+	// check if any managed cluster exist or not
+	exist, err := isManagedClusterExist(config)
+	if err != nil {
+		return err
+	}
+
+	if exist {
+		fmt.Fprintf(o.Streams.Out, "Please detach all managed clusters from the hub control plane\n")
+		return nil
 	}
 
 	//Clean other resources
@@ -199,4 +214,22 @@ func puregeOperator(client kubernetes.Interface, extensionClient apiextensionscl
 	}
 
 	return utilerrors.NewAggregate(errs)
+}
+
+func isManagedClusterExist(config *rest.Config) (bool, error) {
+	clusterClient, err := clusterclientset.NewForConfig(config)
+	if err != nil {
+		return false, err
+	}
+	managedClusters, err := clusterClient.ClusterV1().ManagedClusters().List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return false, err
+	}
+
+	for _, cluster := range managedClusters.Items {
+		if meta.IsStatusConditionTrue(cluster.Status.Conditions, clusterapiv1.ManagedClusterConditionAvailable) {
+			return true, nil
+		}
+	}
+	return false, nil
 }

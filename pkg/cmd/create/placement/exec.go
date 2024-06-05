@@ -149,7 +149,12 @@ func (o *Options) applyPlacement(clusterClient clusterclientset.Interface, place
 	placementOrigin, err := clusterClient.ClusterV1beta1().Placements(o.Namespace).Get(context.TODO(), placement.Name, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		_, createErr := clusterClient.ClusterV1beta1().Placements(o.Namespace).Create(context.TODO(), placement, metav1.CreateOptions{})
-		return createErr
+		if createErr != nil {
+			return createErr
+		}
+
+		fmt.Fprintf(o.Streams.Out, "Placement '%s' has been created in '%s' namespace\n", placement.Name, o.Namespace)
+		return nil
 	}
 	if err != nil {
 		return err
@@ -161,6 +166,10 @@ func (o *Options) applyPlacement(clusterClient clusterclientset.Interface, place
 
 	placementOrigin.Spec = placement.Spec
 	_, err = clusterClient.ClusterV1beta1().Placements(o.Namespace).Update(context.TODO(), placementOrigin, metav1.UpdateOptions{})
+	if err != nil {
+		return err
+	}
 
-	return err
+	fmt.Fprintf(o.Streams.Out, "Placement '%s' of '%s' namespace has been updated\n", placementOrigin.Name, o.Namespace)
+	return nil
 }

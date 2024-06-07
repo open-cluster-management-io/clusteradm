@@ -2,17 +2,18 @@
 package hubaddon
 
 import (
+	"context"
 	"fmt"
-	"os"
 	"strings"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	addonclientset "open-cluster-management.io/api/client/addon/clientset/versioned"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 
 	"open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
-	"open-cluster-management.io/clusteradm/pkg/version"
 )
 
 const (
@@ -21,7 +22,7 @@ const (
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
-	klog.V(1).InfoS("addon options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.names, "output-file", o.outputFile)
+	klog.V(1).InfoS("addon options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.names)
 	return nil
 }
 
@@ -46,13 +47,6 @@ func (o *Options) validate() (err error) {
 			return fmt.Errorf("invalid add-on name %s", n)
 		}
 	}
-
-	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
-	if err != nil {
-		return err
-	}
-
-	o.values.BundleVersion = versionBundle
 
 	return nil
 }
@@ -79,49 +73,68 @@ func (o *Options) runWithClient() error {
 	r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
 
 	for _, addon := range o.values.hubAddons {
+		if err := o.checkExistingAddon(addon); err != nil {
+			return err
+		}
 		switch addon {
 		// Install the Application Management Addon
 		case appMgrAddonName:
-			err := r.Apply(scenario.Files, o.values, scenario.AppManagerConfigFiles...)
-			if err != nil {
-				return err
-			}
-			err = r.Apply(scenario.Files, o.values, scenario.AppManagerDeploymentFiles...)
+			err := r.Delete(scenario.Files, o.values, scenario.AppManagerConfigFiles...)
 			if err != nil {
 				return err
 			}
 
-			fmt.Fprintf(o.Streams.Out, "Installing built-in %s add-on to the Hub cluster...\n", appMgrAddonName)
+			err = r.Delete(scenario.Files, o.values, scenario.AppManagerDeploymentFiles...)
+			if err != nil {
+				return err
+			}
+
+			fmt.Fprintf(o.Streams.Out, "Uninstalling built-in %s add-on from the Hub cluster...\n", appMgrAddonName)
 
 		// Install the Policy Framework Addon
 		case policyFrameworkAddonName:
-			err := r.Apply(scenario.Files, o.values, scenario.PolicyFrameworkConfigFiles...)
+			err := r.Delete(scenario.Files, o.values, scenario.PolicyFrameworkConfigFiles...)
 			if err != nil {
 				return fmt.Errorf("Error deploying framework deployment dependencies: %w", err)
 			}
 
-			err = r.Apply(scenario.Files, o.values, scenario.PolicyFrameworkDeploymentFiles...)
+			err = r.Delete(scenario.Files, o.values, scenario.PolicyFrameworkDeploymentFiles...)
 			if err != nil {
 				return fmt.Errorf("Error deploying framework deployments: %w", err)
 			}
 
-			fmt.Fprintf(o.Streams.Out, "Installing built-in %s add-on to the Hub cluster...\n", policyFrameworkAddonName)
+			fmt.Fprintf(o.Streams.Out, "Uninstalling built-in %s add-on from the Hub cluster...\n", policyFrameworkAddonName)
 		}
 	}
 
-	if len(o.outputFile) > 0 {
-		sh, err := os.OpenFile(o.outputFile, os.O_CREATE|os.O_WRONLY, 0755)
-		if err != nil {
-			return err
-		}
-		_, err = fmt.Fprintf(sh, "%s", string(r.RawAppliedResources()))
-		if err != nil {
-			return err
-		}
-		if err := sh.Close(); err != nil {
-			return err
-		}
+	return nil
+}
+
+func (o *Options) checkExistingAddon(name string) error {
+	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
+	if err != nil {
+		return err
 	}
 
+	addonClient, err := addonclientset.NewForConfig(restConfig)
+	if err != nil {
+		return err
+	}
+
+	addons, err := addonClient.AddonV1alpha1().ManagedClusterAddOns(metav1.NamespaceAll).List(context.TODO(), metav1.ListOptions{
+		FieldSelector: fmt.Sprintf("metadata.name=%s", name),
+	})
+	if err != nil {
+		return err
+	}
+
+	if len(addons.Items) > 0 {
+		var enabledClusters []string
+		for _, addon := range addons.Items {
+			enabledClusters = append(enabledClusters, addon.Namespace)
+		}
+		return fmt.Errorf("there are still addons for %s enabled on some clusters, run `cluster addon disable --names %s "+
+			"--clusters %s` to disable addons", name, name, strings.Join(enabledClusters, ","))
+	}
 	return nil
 }

@@ -135,6 +135,46 @@ func (r *ResourceReader) applyOneObject(info *resource.Info) error {
 	return nil
 }
 
+func (r *ResourceReader) Delete(fs embed.FS, config interface{}, files ...string) error {
+	rawObjects := []byte{}
+	for _, file := range files {
+		template, err := fs.ReadFile(file)
+		if err != nil {
+			return err
+		}
+		objData := assets.MustCreateAssetFromTemplate(file, template, config).Data
+		rawObjects = append(rawObjects, objData...)
+		rawObjects = append(rawObjects, []byte(yamlSeparator)...)
+	}
+
+	rb := r.builder.
+		Stream(bytes.NewReader(rawObjects), "local").
+		Flatten().
+		Do()
+	infos, err := rb.Infos()
+	if err != nil {
+		return err
+	}
+
+	var errs []error
+	for _, object := range infos {
+		if err := r.deleteOneObject(object); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return utilerrors.NewAggregate(errs)
+}
+
+func (r *ResourceReader) deleteOneObject(info *resource.Info) error {
+	helper := resource.NewHelper(info.Client, info.Mapping).
+		DryRun(r.dryRun)
+	_, err := helper.Delete(info.Namespace, info.Name)
+	if errors.IsNotFound(err) {
+		return nil
+	}
+	return err
+}
+
 func newPatcher(info *resource.Info, helper *resource.Helper, f cmdutil.Factory) *apply.Patcher {
 	return &apply.Patcher{
 		Mapping:       info.Mapping,

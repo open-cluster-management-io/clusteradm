@@ -300,21 +300,6 @@ func (o *Options) validate() error {
 }
 
 func (o *Options) run() error {
-	_, apiExtensionsClient, _, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
-	if err != nil {
-		return err
-	}
-
-	config, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
-	if err != nil {
-		return err
-	}
-
-	operatorClient, err := operatorclient.NewForConfig(config)
-	if err != nil {
-		return err
-	}
-
 	f := o.ClusteradmFlags.KubectlFactory
 	if o.capiOptions.Enable {
 		getter, err := o.capiOptions.ToClientGetter()
@@ -322,6 +307,21 @@ func (o *Options) run() error {
 			return err
 		}
 		f = cmdutil.NewFactory(getter)
+	}
+
+	_, apiExtensionsClient, _, err := helpers.GetClients(f)
+	if err != nil {
+		return err
+	}
+
+	config, err := f.ToRESTConfig()
+	if err != nil {
+		return err
+	}
+
+	operatorClient, err := operatorclient.NewForConfig(config)
+	if err != nil {
+		return err
 	}
 
 	r := reader.NewResourceReader(f, o.ClusteradmFlags.DryRun, o.Streams)

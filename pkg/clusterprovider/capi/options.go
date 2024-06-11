@@ -46,7 +46,7 @@ func NewCAPIOption(factory cmdutil.Factory) *CAPIOptions {
 
 func (o *CAPIOptions) AddFlags(flags *pflag.FlagSet) {
 	flags.StringVar(&o.KubeConfigFile, "capi-kubeconfig", "", "kubeconfig to connect to capi management cluster.")
-	flags.StringVar(&o.KubeConfigFile, "capi-cluster-name", "", "cluster name of capi to join, in the format of namespace/name")
+	flags.StringVar(&o.ClusterName, "capi-cluster-name", "", "cluster name of capi to join, in the format of namespace/name")
 	flags.BoolVar(&o.Enable, "capi-import", false, "impor from capi, capi-cluster-name must be set when this is set to true")
 }
 

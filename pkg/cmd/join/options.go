@@ -4,6 +4,7 @@ package join
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
+	"open-cluster-management.io/clusteradm/pkg/clusterprovider/capi"
 	"open-cluster-management.io/clusteradm/pkg/cmd/join/scenario"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
@@ -73,6 +74,8 @@ type Options struct {
 	//Values below are used to fill in yaml files
 	values scenario.Values
 
+	capiOptions *capi.CAPIOptions
+
 	Streams genericclioptions.IOStreams
 }
 
@@ -80,5 +83,6 @@ func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, st
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
 		Streams:         streams,
+		capiOptions:     capi.NewCAPIOption(clusteradmFlags.KubectlFactory),
 	}
 }

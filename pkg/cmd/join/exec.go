@@ -29,6 +29,7 @@ import (
 	certutil "k8s.io/client-go/util/cert"
 	"k8s.io/klog/v2"
 	"k8s.io/kubectl/pkg/cmd/util"
+	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	clusterclient "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 	clusterv1 "open-cluster-management.io/api/cluster/v1"
@@ -224,6 +225,10 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		"clusterName", o.values.ClusterName,
 		"hubAPIServer", o.values.Hub.APIServer,
 		"klusterletAPIServer", o.values.Klusterlet.APIServer)
+
+	if err := o.capiOptions.Complete(cmd, args); err != nil {
+		return err
+	}
 	return nil
 
 }
@@ -287,16 +292,29 @@ func (o *Options) validate() error {
 		o.values.ManagedKubeconfig = base64.StdEncoding.EncodeToString(managedConfig)
 	}
 
+	if err := o.capiOptions.Validate(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (o *Options) run() error {
-	_, apiExtensionsClient, _, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
+	f := o.ClusteradmFlags.KubectlFactory
+	if o.capiOptions.Enable {
+		getter, err := o.capiOptions.ToClientGetter()
+		if err != nil {
+			return err
+		}
+		f = cmdutil.NewFactory(getter)
+	}
+
+	_, apiExtensionsClient, _, err := helpers.GetClients(f)
 	if err != nil {
 		return err
 	}
 
-	config, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
+	config, err := f.ToRESTConfig()
 	if err != nil {
 		return err
 	}
@@ -306,7 +324,7 @@ func (o *Options) run() error {
 		return err
 	}
 
-	r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
+	r := reader.NewResourceReader(f, o.ClusteradmFlags.DryRun, o.Streams)
 
 	if err = o.applyKlusterlet(r, operatorClient, apiExtensionsClient); err != nil {
 		return err

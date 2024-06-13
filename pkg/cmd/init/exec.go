@@ -3,6 +3,7 @@ package init
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"time"
@@ -59,15 +60,25 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	if !o.singleton {
 		o.values = scenario.Values{
 			Hub: scenario.Hub{
-				TokenID:     helpers.RandStringRunes_az09(6),
-				TokenSecret: helpers.RandStringRunes_az09(16),
-				Registry:    o.registry,
+				TokenID:       helpers.RandStringRunes_az09(6),
+				TokenSecret:   helpers.RandStringRunes_az09(16),
+				Registry:      o.registry,
+				ImagePullCred: "e30K", // e30K is the base64 string of '{}'
 			},
 			AutoApprove:          genericclioptionsclusteradm.HubMutableFeatureGate.Enabled(ocmfeature.ManagedClusterAutoApproval),
 			RegistrationFeatures: genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubRegistrationFeatureGates),
 			WorkFeatures:         genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubWorkFeatureGates),
 			AddonFeatures:        genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubAddonManagerFeatureGates),
 		}
+
+		if o.imagePullCredFile != "" {
+			data, err := os.ReadFile(o.imagePullCredFile)
+			if err != nil {
+				return fmt.Errorf("failed read the image pull credential file %v: %v", o.imagePullCredFile, err)
+			}
+			o.values.Hub.ImagePullCred = base64.StdEncoding.EncodeToString(data)
+		}
+
 		resourceRequirement, err := resourcerequirement.NewResourceRequirement(o.resourceQosClass, o.resourceLimits, o.resourceRequests)
 		if err != nil {
 			return err
@@ -180,6 +191,7 @@ func (o *Options) run() error {
 			"init/clustermanager_cluster_role_binding.yaml",
 			"init/clustermanagers.crd.yaml",
 			"init/clustermanager_sa.yaml",
+			"init/image-pull-secret.yaml",
 		)
 
 		r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
@@ -219,7 +231,7 @@ func (o *Options) run() error {
 			}
 		}
 
-		//if service-account wait for the sa secret
+		// if service-account wait for the sa secret
 		if !o.useBootstrapToken && !o.ClusteradmFlags.DryRun {
 			token, err = helpers.GetBootstrapTokenFromSA(context.TODO(), kubeClient)
 			if err != nil {

@@ -14,4 +14,5 @@ const (
 	HubClusterNamespace               = "open-cluster-management-hub"
 	ManagedClusterNamespace           = "open-cluster-management-agent"
 	ManagedProxyConfigurationName     = "cluster-proxy"
+	ImagePullSecret                   = "open-cluster-management-image-pull-credentials"
 )

@@ -26,9 +26,9 @@ type BundleVersion struct {
 
 // Values: The values used in the template
 type Values struct {
-	//The values related to the hub
+	// The values related to the hub
 	Hub Hub `json:"hub"`
-	//bundle version
+	// bundle version
 	BundleVersion BundleVersion
 
 	// if enable auto approve
@@ -50,10 +50,14 @@ type Values struct {
 
 // Hub: The hub values for the template
 type Hub struct {
-	//TokenID: A token id allowing the cluster to connect back to the hub
+	// TokenID: A token id allowing the cluster to connect back to the hub
 	TokenID string `json:"tokenID"`
-	//TokenSecret: A token secret allowing the cluster to connect back to the hub
+	// TokenSecret: A token secret allowing the cluster to connect back to the hub
 	TokenSecret string `json:"tokenSecret"`
 	// Registry is the name of the image registry to pull.
 	Registry string `json:"registry"`
+
+	// ImagePullCred is the credential used to pull image. should be a base64 string and will be filled into the default image pull secret
+	// named open-cluster-management-image-pull-credentials.
+	ImagePullCred string `json:"imagePullCred"`
 }

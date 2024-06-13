@@ -4,3 +4,5 @@ kind: ServiceAccount
 metadata:
   name: cluster-manager
   namespace: open-cluster-management
+imagePullSecrets:
+  - name: open-cluster-management-image-pull-credentials

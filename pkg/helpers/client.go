@@ -101,7 +101,7 @@ func GetToken(ctx context.Context, kubeClient kubernetes.Interface) (string, Tok
 	token, err := GetBootstrapTokenFromSA(ctx, kubeClient)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			//As no SA search for bootstrap token
+			// As no SA search for bootstrap token
 			var token string
 			token, err = GetBootstrapToken(ctx, kubeClient)
 			if err == nil {
@@ -122,7 +122,7 @@ func GetBootstrapSecret(ctx context.Context, kubeClient kubernetes.Interface) (*
 	if err != nil {
 		return nil, err
 	}
-	//sort items by creationTimestamp
+	// sort items by creationTimestamp
 	sort.Slice(l.Items, func(i, j int) bool {
 		return l.Items[j].CreationTimestamp.Before(&l.Items[i].CreationTimestamp)
 	})
@@ -213,7 +213,7 @@ func WatchUntil(
 	defer w.Stop()
 	for {
 		event, ok := <-w.ResultChan()
-		if !ok { //The channel is closed by Kubernetes, thus, user should check the pod status manually
+		if !ok { // The channel is closed by Kubernetes, thus, user should check the pod status manually
 			return fmt.Errorf("unexpected watch event received")
 		}
 

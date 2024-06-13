@@ -2,8 +2,11 @@
 package clusteradme2e
 
 import (
+	"time"
+
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
+	"open-cluster-management.io/clusteradm/test/e2e/util"
 )
 
 var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode", func() {
@@ -37,6 +40,11 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode"
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "managedcluster1 join error")
 
+			gomega.Eventually(func() error {
+				return util.ValidateImagePullSecret(managedClusterKubeClient,
+					"e30K", "open-cluster-management")
+			}, time.Second*120, time.Second*2).ShouldNot(gomega.HaveOccurred())
+
 			ginkgo.By("hub accept managedcluster1")
 			err = e2e.Clusteradm().Accept(
 				"--clusters", e2e.Cluster().ManagedCluster1().Name(),
@@ -45,5 +53,6 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode"
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm accept error")
 		})
+
 	})
 })

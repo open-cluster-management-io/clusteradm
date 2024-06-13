@@ -11,24 +11,24 @@ import (
 
 // Options: The structure holding all the command-line options
 type Options struct {
-	//ClusteradmFlags: The generic options from the clusteradm cli-runtime.
+	// ClusteradmFlags: The generic options from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 
-	//Values below are input from flags
-	//The token generated on the hub to access it from the cluster
+	// Values below are input from flags
+	// The token generated on the hub to access it from the cluster
 	token string
-	//The external hub apiserver url (https://<host>:<port>)
+	// The external hub apiserver url (https://<host>:<port>)
 	hubAPIServer string
-	//The hub ca-file(optional)
+	// The hub ca-file(optional)
 	caFile string
-	//the name under the cluster must be imported
+	// the name under the cluster must be imported
 	clusterName string
 
 	// OCM agent deploy mode, default to "default".
 	mode string
 	// managed cluster kubeconfig file, used in hosted mode
 	managedKubeconfigFile string
-	//Pulling image registry of OCM
+	// Pulling image registry of OCM
 	registry string
 	// version of predefined compatible image versions
 	bundleVersion string
@@ -36,9 +36,9 @@ type Options struct {
 	// if set, deploy the singleton agent rather than klusterlet
 	singleton bool
 
-	//The file to output the resources will be sent to the file.
+	// The file to output the resources will be sent to the file.
 	outputFile string
-	//Runs the cluster joining in foreground
+	// Runs the cluster joining in foreground
 	wait bool
 	// By default, The installing registration agent will be starting registration using
 	// the external endpoint from --hub-apiserver instead of looking for the internal
@@ -51,8 +51,8 @@ type Options struct {
 	forceManagedInClusterEndpointLookup bool
 	hubInClusterEndpoint                string
 
-	//Values below are tempoary data
-	//HubCADate: data in hub ca file
+	// Values below are tempoary data
+	// HubCADate: data in hub ca file
 	HubCADate []byte
 	// hub config
 	HubConfig *clientcmdapiv1.Config
@@ -60,7 +60,7 @@ type Options struct {
 	// The URL of a forward proxy server which will be used by agnets on the managed cluster
 	// to connect to the hub cluster (optional)
 	proxyURL string
-	//The proxy server ca-file(optional)
+	// The proxy server ca-file(optional)
 	proxyCAFile string
 
 	// Resource requirement for the containers managed by klusterlet and the klusterlet operator
@@ -71,12 +71,15 @@ type Options struct {
 	// If create ns or use existing ns
 	createNameSpace bool
 
-	//Values below are used to fill in yaml files
+	// Values below are used to fill in yaml files
 	values scenario.Values
 
 	capiOptions *capi.CAPIOptions
 
 	Streams genericclioptions.IOStreams
+
+	// enableSyncLabels is to enable the feature which can sync the labels from klusterlet to all agent resources.
+	enableSyncLabels bool
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {

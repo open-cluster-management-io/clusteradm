@@ -59,6 +59,9 @@ spec:
         args:
           - "/registration-operator"
           - "klusterlet"
+          {{- if .EnableSyncLabels }}
+          - --enable-sync-labels
+          {{- end }}
         livenessProbe:
           httpGet:
             path: /healthz

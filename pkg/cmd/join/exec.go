@@ -95,8 +95,9 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		Hub: scenario.Hub{
 			APIServer: o.hubAPIServer,
 		},
-		Registry:       o.registry,
-		AgentNamespace: agentNamespace,
+		Registry:         o.registry,
+		AgentNamespace:   agentNamespace,
+		EnableSyncLabels: o.enableSyncLabels,
 	}
 	// deploy klusterlet
 	// operatorNamespace is the namespace to deploy klsuterlet;

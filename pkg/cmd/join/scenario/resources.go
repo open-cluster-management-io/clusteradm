@@ -13,17 +13,17 @@ var Files embed.FS
 
 // Values: The values used in the template
 type Values struct {
-	//ClusterName: the name of the joined cluster on the hub
+	// ClusterName: the name of the joined cluster on the hub
 	ClusterName string
-	//AgentNamespace: the namespace to deploy the agent
+	// AgentNamespace: the namespace to deploy the agent
 	AgentNamespace string
-	//Hub: Hub information
+	// Hub: Hub information
 	Hub Hub
-	//Klusterlet is the klusterlet related configuration
+	// Klusterlet is the klusterlet related configuration
 	Klusterlet Klusterlet
-	//Registry is the image registry related configuration
+	// Registry is the image registry related configuration
 	Registry string
-	//bundle version
+	// bundle version
 	BundleVersion BundleVersion
 	// managed kubeconfig
 	ManagedKubeconfig string
@@ -37,19 +37,22 @@ type Values struct {
 	// ResourceRequirement is the resource requirement setting for the containers managed by the klusterlet
 	// and the klusterlet operator
 	ResourceRequirement resourcerequirement.ResourceRequirement
+
+	// EnableSyncLabels is to enable the feature which can sync the labels from klusterlet to all agent resources.
+	EnableSyncLabels bool
 }
 
 // Hub: The hub values for the template
 type Hub struct {
-	//APIServer: The API Server external URL
+	// APIServer: The API Server external URL
 	APIServer string
-	//KubeConfig: The kubeconfig of the bootstrap secret to connect to the hub
+	// KubeConfig: The kubeconfig of the bootstrap secret to connect to the hub
 	KubeConfig string
 }
 
 // Klusterlet is for templating klusterlet configuration
 type Klusterlet struct {
-	//APIServer: The API Server external URL
+	// APIServer: The API Server external URL
 	APIServer           string
 	Mode                string
 	Name                string

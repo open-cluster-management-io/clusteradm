@@ -15,11 +15,6 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/version"
 )
 
-const (
-	appMgrAddonName          = "application-manager"
-	policyFrameworkAddonName = "governance-policy-framework"
-)
-
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	klog.V(1).InfoS("addon options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.names, "output-file", o.outputFile)
 	return nil
@@ -37,12 +32,7 @@ func (o *Options) validate() (err error) {
 
 	names := strings.Split(o.names, ",")
 	for _, n := range names {
-		switch n {
-		case appMgrAddonName:
-			continue
-		case policyFrameworkAddonName:
-			continue
-		default:
+		if _, ok := scenario.AddonDeploymentFiles[n]; !ok {
 			return fmt.Errorf("invalid add-on name %s", n)
 		}
 	}
@@ -67,9 +57,9 @@ func (o *Options) run() error {
 			addons = append(addons, strings.TrimSpace(n))
 		}
 	}
-	o.values.hubAddons = addons
+	o.values.HubAddons = addons
 
-	klog.V(3).InfoS("values:", "addon", o.values.hubAddons)
+	klog.V(3).InfoS("values:", "addon", o.values.HubAddons)
 
 	return o.runWithClient()
 }
@@ -78,35 +68,26 @@ func (o *Options) runWithClient() error {
 
 	r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
 
-	for _, addon := range o.values.hubAddons {
-		switch addon {
-		// Install the Application Management Addon
-		case appMgrAddonName:
-			err := r.Apply(scenario.Files, o.values, scenario.AppManagerConfigFiles...)
-			if err != nil {
-				return err
-			}
-			err = r.Apply(scenario.Files, o.values, scenario.AppManagerDeploymentFiles...)
-			if err != nil {
-				return err
-			}
-
-			fmt.Fprintf(o.Streams.Out, "Installing built-in %s add-on to the Hub cluster...\n", appMgrAddonName)
-
-		// Install the Policy Framework Addon
-		case policyFrameworkAddonName:
-			err := r.Apply(scenario.Files, o.values, scenario.PolicyFrameworkConfigFiles...)
-			if err != nil {
-				return fmt.Errorf("Error deploying framework deployment dependencies: %w", err)
-			}
-
-			err = r.Apply(scenario.Files, o.values, scenario.PolicyFrameworkDeploymentFiles...)
-			if err != nil {
-				return fmt.Errorf("Error deploying framework deployments: %w", err)
-			}
-
-			fmt.Fprintf(o.Streams.Out, "Installing built-in %s add-on to the Hub cluster...\n", policyFrameworkAddonName)
+	for _, addon := range o.values.HubAddons {
+		files, ok := scenario.AddonDeploymentFiles[addon]
+		if !ok {
+			continue
 		}
+		err := r.Apply(scenario.Files, o.values, files.CRDFiles...)
+		if err != nil {
+			return fmt.Errorf("Error deploying %s CRDs: %w", addon, err)
+		}
+		err = r.Apply(scenario.Files, o.values, files.ConfigFiles...)
+		if err != nil {
+			return fmt.Errorf("Error deploying %s dependencies: %w", addon, err)
+		}
+		err = r.Apply(scenario.Files, o.values, files.DeploymentFiles...)
+		if err != nil {
+			return fmt.Errorf("Error deploying %s deployments: %w", addon, err)
+		}
+
+		fmt.Fprintf(o.Streams.Out, "Installing built-in %s add-on to the Hub cluster...\n", addon)
+
 	}
 
 	if len(o.outputFile) > 0 {

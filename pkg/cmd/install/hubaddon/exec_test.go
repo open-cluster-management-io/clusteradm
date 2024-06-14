@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
 	"open-cluster-management.io/clusteradm/pkg/version"
 )
 
@@ -76,8 +77,8 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 		ginkgo.It("Should not create any built-in add-on deployment(s) because it's not a valid add-on name", func() {
 			o := Options{
 				ClusteradmFlags: clusteradmFlags,
-				values: Values{
-					hubAddons: []string{invalidAddon},
+				values: scenario.Values{
+					HubAddons: []string{invalidAddon},
 				},
 			}
 
@@ -98,9 +99,9 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 			o := Options{
 				ClusteradmFlags: clusteradmFlags,
 				bundleVersion:   ocmVersion,
-				values: Values{
+				values: scenario.Values{
 					Namespace: invalidNamespace,
-					hubAddons: []string{appMgrAddonName},
+					HubAddons: []string{scenario.AppMgrAddonName},
 				},
 				Streams: genericclioptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr},
 			}
@@ -122,9 +123,9 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 				o := Options{
 					ClusteradmFlags: clusteradmFlags,
 					bundleVersion:   ocmVersion,
-					values: Values{
+					values: scenario.Values{
 						Namespace:     ocmNamespace,
-						hubAddons:     []string{hubAddon},
+						HubAddons:     []string{hubAddon},
 						BundleVersion: ocmBundleVersion,
 					},
 					Streams: genericclioptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr},

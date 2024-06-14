@@ -8,7 +8,7 @@ import (
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
-// NewCmd provides a cobra command wrapping NewCmdImportCluster
+// NewCmd provides a cobra command wrapping addon install cmd
 func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "install",

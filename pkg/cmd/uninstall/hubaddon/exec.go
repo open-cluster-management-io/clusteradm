@@ -9,16 +9,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	addonclientset "open-cluster-management.io/api/client/addon/clientset/versioned"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
+	"open-cluster-management.io/clusteradm/pkg/version"
 
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 
 	"open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
-)
-
-const (
-	appMgrAddonName          = "application-manager"
-	policyFrameworkAddonName = "governance-policy-framework"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -38,12 +34,7 @@ func (o *Options) validate() (err error) {
 
 	names := strings.Split(o.names, ",")
 	for _, n := range names {
-		switch n {
-		case appMgrAddonName:
-			continue
-		case policyFrameworkAddonName:
-			continue
-		default:
+		if _, ok := scenario.AddonDeploymentFiles[n]; !ok {
 			return fmt.Errorf("invalid add-on name %s", n)
 		}
 	}
@@ -61,9 +52,12 @@ func (o *Options) run() error {
 			addons = append(addons, strings.TrimSpace(n))
 		}
 	}
-	o.values.hubAddons = addons
+	o.values.HubAddons = addons
+	// this needs to be set to render the manifests, but the version value
+	// does not matter.
+	o.values.BundleVersion, _ = version.GetVersionBundle("default")
 
-	klog.V(3).InfoS("values:", "addon", o.values.hubAddons)
+	klog.V(3).InfoS("values:", "addon", o.values.HubAddons)
 
 	return o.runWithClient()
 }
@@ -72,39 +66,26 @@ func (o *Options) runWithClient() error {
 
 	r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
 
-	for _, addon := range o.values.hubAddons {
+	for _, addon := range o.values.HubAddons {
 		if err := o.checkExistingAddon(addon); err != nil {
 			return err
 		}
-		switch addon {
-		// Install the Application Management Addon
-		case appMgrAddonName:
-			err := r.Delete(scenario.Files, o.values, scenario.AppManagerConfigFiles...)
-			if err != nil {
-				return err
-			}
-
-			err = r.Delete(scenario.Files, o.values, scenario.AppManagerDeploymentFiles...)
-			if err != nil {
-				return err
-			}
-
-			fmt.Fprintf(o.Streams.Out, "Uninstalling built-in %s add-on from the Hub cluster...\n", appMgrAddonName)
-
-		// Install the Policy Framework Addon
-		case policyFrameworkAddonName:
-			err := r.Delete(scenario.Files, o.values, scenario.PolicyFrameworkConfigFiles...)
-			if err != nil {
-				return fmt.Errorf("Error deploying framework deployment dependencies: %w", err)
-			}
-
-			err = r.Delete(scenario.Files, o.values, scenario.PolicyFrameworkDeploymentFiles...)
-			if err != nil {
-				return fmt.Errorf("Error deploying framework deployments: %w", err)
-			}
-
-			fmt.Fprintf(o.Streams.Out, "Uninstalling built-in %s add-on from the Hub cluster...\n", policyFrameworkAddonName)
+		files, ok := scenario.AddonDeploymentFiles[addon]
+		if !ok {
+			continue
 		}
+
+		err := r.Delete(scenario.Files, o.values, files.ConfigFiles...)
+		if err != nil {
+			return err
+		}
+
+		err = r.Delete(scenario.Files, o.values, files.DeploymentFiles...)
+		if err != nil {
+			return err
+		}
+
+		fmt.Fprintf(o.Streams.Out, "Uninstalling built-in %s add-on from the Hub cluster...\n", addon)
 	}
 
 	return nil

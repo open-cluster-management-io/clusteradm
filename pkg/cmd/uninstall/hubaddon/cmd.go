@@ -13,8 +13,8 @@ import (
 
 var example = `
 # Uninstall built-in add-ons from the hub cluster
-%[1]s install hub-addon --names application-manager
-%[1]s install hub-addon --names governance-policy-framework
+%[1]s uninstall hub-addon --names application-manager
+%[1]s uninstall hub-addon --names governance-policy-framework
 `
 
 // NewCmd...
@@ -23,8 +23,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 
 	cmd := &cobra.Command{
 		Use:          "hub-addon",
-		Short:        "install hub-addon",
-		Long:         "Install specific built-in add-on(s) to the hub cluster",
+		Short:        "uninstall hub-addon",
+		Long:         "Uninstall specific built-in add-on(s) to the hub cluster",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRunE: func(c *cobra.Command, args []string) error {
@@ -47,8 +47,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		},
 	}
 
-	cmd.Flags().StringVar(&o.names, "names", "", "Names of the built-in add-on to install (comma separated). The built-in add-ons are: application-manager, governance-policy-framework")
-	cmd.Flags().StringVar(&o.values.Namespace, "namespace", "open-cluster-management", "Namespace of the built-in add-on to install. Defaults to open-cluster-management")
+	cmd.Flags().StringVar(&o.names, "names", "", "Names of the built-in add-on to uninstall (comma separated). The built-in add-ons are: application-manager, governance-policy-framework")
+	cmd.Flags().StringVar(&o.values.Namespace, "namespace", "open-cluster-management", "Namespace of the built-in add-on to uninstall. Defaults to open-cluster-management")
 
 	return cmd
 }

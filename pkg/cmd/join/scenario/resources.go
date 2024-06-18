@@ -23,6 +23,11 @@ type Values struct {
 	Klusterlet Klusterlet
 	// Registry is the image registry related configuration
 	Registry string
+
+	// ImagePullCred is the credential used to pull image. should be a base64 string and will be filled into the
+	// default image pull secret named open-cluster-management-image-pull-credentials.
+	ImagePullCred string
+
 	// bundle version
 	BundleVersion BundleVersion
 	// managed kubeconfig

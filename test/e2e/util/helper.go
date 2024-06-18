@@ -3,9 +3,12 @@ package util
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"k8s.io/apimachinery/pkg/api/meta"
 	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
+	"open-cluster-management.io/clusteradm/pkg/config"
+	"os"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -78,6 +81,9 @@ func DeleteClusterFinalizers(restcfg *rest.Config) error {
 	}
 
 	clusterList, err := clientset.ClusterV1().ManagedClusters().List(context.TODO(), metav1.ListOptions{})
+	if errors.IsNotFound(err) {
+		return nil
+	}
 	if err != nil {
 		return err
 	}
@@ -98,4 +104,27 @@ func buildConfigFromFlags(context, kubeconfigPath string) (*rest.Config, error) 
 		&clientcmd.ConfigOverrides{
 			CurrentContext: context,
 		}).ClientConfig()
+}
+
+func ValidateImagePullSecret(kubeClient kubernetes.Interface, expectedCred string, namespace string) error {
+	pullSecret, err := kubeClient.CoreV1().Secrets(namespace).Get(context.TODO(), config.ImagePullSecret, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("cannot find pull secret in %v ns. %v", namespace, err)
+	}
+	if base64.StdEncoding.EncodeToString(pullSecret.Data[".dockerconfigjson"]) != expectedCred {
+		return fmt.Errorf("unexpected .dockerconfigjson %v of pull secret in ns %v.expected:%v",
+			base64.StdEncoding.EncodeToString(pullSecret.Data[".dockerconfigjson"]), namespace, expectedCred)
+	}
+
+	return nil
+}
+
+func NewTestImagePullCredentialFile(fileName string) string {
+	data := `{"auths":{}}`
+	_ = os.WriteFile(fileName, []byte(data), 0600)
+	return base64.StdEncoding.EncodeToString([]byte(data))
+}
+
+func CleanupTestImagePullCredentialFile(fileName string) {
+	_ = os.Remove(fileName)
 }

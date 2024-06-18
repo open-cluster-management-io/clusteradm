@@ -96,9 +96,19 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 			APIServer: o.hubAPIServer,
 		},
 		Registry:         o.registry,
+		ImagePullCred:    "e30K", // e30K is the base64 string of '{}'
 		AgentNamespace:   agentNamespace,
 		EnableSyncLabels: o.enableSyncLabels,
 	}
+
+	if o.imagePullCredFile != "" {
+		data, err := os.ReadFile(o.imagePullCredFile)
+		if err != nil {
+			return fmt.Errorf("failed read the image pull credential file %v: %v", o.imagePullCredFile, err)
+		}
+		o.values.ImagePullCred = base64.StdEncoding.EncodeToString(data)
+	}
+
 	// deploy klusterlet
 	// operatorNamespace is the namespace to deploy klsuterlet;
 	// agentNamespace is the namesapce to deploy the agents(registration agent, work agent, etc.);
@@ -179,14 +189,14 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	// 2. if not found, assume using an authorized ca.
 	// 3. use the ca and token to build a secured client and call hub
 
-	//Create an unsecure bootstrap
+	// Create an unsecure bootstrap
 	bootstrapExternalConfigUnSecure := o.createExternalBootstrapConfig()
-	//create external client from the bootstrap
+	// create external client from the bootstrap
 	externalClientUnSecure, err := helpers.CreateClientFromClientcmdapiv1Config(bootstrapExternalConfigUnSecure)
 	if err != nil {
 		return err
 	}
-	//Create the kubeconfig for the internal client
+	// Create the kubeconfig for the internal client
 	o.HubConfig, err = o.createClientcmdapiv1Config(externalClientUnSecure, bootstrapExternalConfigUnSecure)
 	if err != nil {
 		return err
@@ -366,6 +376,7 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient opera
 		files = append(files,
 			"join/klusterlets.crd.yaml",
 			"join/service_account.yaml",
+			"join/image-pull-secret.yaml",
 			"join/cluster_role.yaml",
 			"join/cluster_role_binding.yaml",
 			"join/operator.yaml",
@@ -466,7 +477,7 @@ func checkIfRegistrationOperatorAvailable(f util.Factory) (bool, error) {
 }
 
 func (o *Options) waitUntilManagedClusterIsCreated(timeout int64, clusterName string) error {
-	//Create an unsecure bootstrap
+	// Create an unsecure bootstrap
 	bootstrapExternalConfigUnSecure := o.createExternalBootstrapConfig()
 	restConfig, err := helpers.CreateRESTConfigFromClientcmdapiv1Config(bootstrapExternalConfigUnSecure)
 	if err != nil {

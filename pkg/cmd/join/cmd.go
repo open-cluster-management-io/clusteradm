@@ -55,6 +55,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().StringVar(&o.clusterName, "cluster-name", "", "The name of the joining cluster")
 	cmd.Flags().StringVar(&o.outputFile, "output-file", "", "The generated resources will be copied in the specified file")
 	cmd.Flags().StringVar(&o.registry, "image-registry", "quay.io/open-cluster-management", "The name of the image registry serving OCM images.")
+	cmd.Flags().StringVar(&o.imagePullCredFile, "image-pull-credential-file", "",
+		"The credential file is the docker config json file and will be filled into the default image pull secret named open-cluster-management-image-pull-credentials.")
 	cmd.Flags().StringVar(&o.bundleVersion, "bundle-version", "default",
 		"The version of predefined compatible image versions (e.g. v0.6.0). Defaults to the latest released version. You can also set \"latest\" to install the latest development version.")
 	cmd.Flags().BoolVar(&o.forceHubInClusterEndpointLookup, "force-internal-endpoint-lookup", false,

@@ -30,6 +30,11 @@ type Options struct {
 	managedKubeconfigFile string
 	// Pulling image registry of OCM
 	registry string
+
+	// imagePullCredFile is a credential file is used to pull image which should be docker credentials json file and
+	// will be filled into the secret open-cluster-management-image-pull-credentials.
+	imagePullCredFile string
+
 	// version of predefined compatible image versions
 	bundleVersion string
 

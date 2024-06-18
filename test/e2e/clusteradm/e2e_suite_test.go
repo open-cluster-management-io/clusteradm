@@ -26,7 +26,7 @@ var e2e *util.TestE2eConfig
 
 // var testEnv *envtest.Environment
 var restConfig *rest.Config
-var kubeClient kubernetes.Interface
+var kubeClient, managedClusterKubeClient kubernetes.Interface
 var apiExtensionsClient apiextensionsclient.Interface
 var dynamicClient dynamic.Interface
 var clusterClient clusterv1client.Interface
@@ -39,7 +39,7 @@ func TestE2EClusteradm(t *testing.T) {
 	suiteConfig, reporterConfig := ginkgo.GinkgoConfiguration()
 	// adjust it
 	suiteConfig.SkipStrings = []string{"NEVER-RUN"}
-	//suiteConfig.FocusStrings = []string{"test clusteradm with manual bootstrap token"}
+	// suiteConfig.FocusStrings = []string{"test clusteradm with manual bootstrap token"}
 	reporterConfig.FullTrace = true
 
 	ginkgo.RunSpecs(t, "E2E clusteradm test", suiteConfig, reporterConfig)
@@ -64,6 +64,15 @@ var _ = ginkgo.BeforeSuite(func() {
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	kubeClient, err = kubernetes.NewForConfig(hubConfig)
+	gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+	managedClusterCtx := os.Getenv("MANAGED_CLUSTER1_CTX")
+	managedClusterClientConfig := clientcmd.NewNonInteractiveClientConfig(*configapi,
+		managedClusterCtx, nil, clientcmd.NewDefaultClientConfigLoadingRules())
+	managedClusterConfig, err := managedClusterClientConfig.ClientConfig()
+	gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+	managedClusterKubeClient, err = kubernetes.NewForConfig(managedClusterConfig)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	apiExtensionsClient, err = apiextensionsclient.NewForConfig(hubConfig)

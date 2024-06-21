@@ -13,9 +13,7 @@ type Options struct {
 	//A list of comma separated addon names
 	names string
 	//The file to output the resources will be sent to the file.
-	outputFile    string
-	values        scenario.Values
-	bundleVersion string
+	values scenario.Values
 
 	Streams genericclioptions.IOStreams
 }

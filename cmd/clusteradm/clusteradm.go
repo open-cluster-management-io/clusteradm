@@ -35,10 +35,11 @@ import (
 	deletecmd "open-cluster-management.io/clusteradm/pkg/cmd/delete"
 	"open-cluster-management.io/clusteradm/pkg/cmd/get"
 	inithub "open-cluster-management.io/clusteradm/pkg/cmd/init"
-	install "open-cluster-management.io/clusteradm/pkg/cmd/install"
+	"open-cluster-management.io/clusteradm/pkg/cmd/install"
 	joinhub "open-cluster-management.io/clusteradm/pkg/cmd/join"
 	"open-cluster-management.io/clusteradm/pkg/cmd/proxy"
-	unjoin "open-cluster-management.io/clusteradm/pkg/cmd/unjoin"
+	"open-cluster-management.io/clusteradm/pkg/cmd/uninstall"
+	"open-cluster-management.io/clusteradm/pkg/cmd/unjoin"
 	"open-cluster-management.io/clusteradm/pkg/cmd/upgrade"
 	"open-cluster-management.io/clusteradm/pkg/cmd/version"
 )
@@ -96,6 +97,7 @@ func main() {
 				deletecmd.NewCmd(clusteradmFlags, streams),
 				get.NewCmd(clusteradmFlags, streams),
 				install.NewCmd(clusteradmFlags, streams),
+				uninstall.NewCmd(clusteradmFlags, streams),
 				upgrade.NewCmd(clusteradmFlags, streams),
 				version.NewCmd(clusteradmFlags, streams),
 			},

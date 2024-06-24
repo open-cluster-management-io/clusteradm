@@ -85,6 +85,8 @@ type Options struct {
 
 	// enableSyncLabels is to enable the feature which can sync the labels from klusterlet to all agent resources.
 	enableSyncLabels bool
+
+	clientCertExpirationSeconds int32
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {

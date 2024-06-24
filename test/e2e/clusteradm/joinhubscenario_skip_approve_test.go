@@ -73,17 +73,18 @@ var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", func() {
 			}, 30, 1).Should(gomega.BeNil())
 
 			ginkgo.By("managedcluster1 join hub")
-			err = e2e.Clusteradm().Join(
-				"--context", e2e.Cluster().ManagedCluster1().Context(),
-				"--hub-token", token,
-				"--hub-apiserver", e2e.CommandResult().Host(),
-				"--force-internal-endpoint-lookup",
-				"--cluster-name", e2e.Cluster().ManagedCluster1().Name(),
-				"--bundle-version=latest",
-				"--wait",
-			)
+			gomega.Eventually(func() error {
+				return e2e.Clusteradm().Join(
+					"--context", e2e.Cluster().ManagedCluster1().Context(),
+					"--hub-token", token,
+					"--hub-apiserver", e2e.CommandResult().Host(),
+					"--force-internal-endpoint-lookup",
+					"--cluster-name", e2e.Cluster().ManagedCluster1().Name(),
+					"--bundle-version=latest",
+					"--wait",
+				)
+			}, 2*time.Minute, 10*time.Second).Should(gomega.BeNil(), "managedcluster1 join error")
 
-			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "managedcluster1 join error")
 			ginkgo.By("hub accept managedcluster1")
 			err = e2e.Clusteradm().Accept(
 				"--clusters", e2e.Cluster().ManagedCluster1().Name(),

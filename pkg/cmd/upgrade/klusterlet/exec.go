@@ -22,7 +22,7 @@ const (
 	klusterletName = "klusterlet"
 )
 
-func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 	err = o.ClusteradmFlags.ValidateManagedCluster()
 	if err != nil {
 		return err
@@ -69,7 +69,8 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 
 	// reconstruct values from the klusterlet CR.
 	if k.Spec.RegistrationConfiguration != nil {
-		o.values.RegistrationFeatures = k.Spec.RegistrationConfiguration.FeatureGates
+		o.values.RegistrationConfiguration.RegistrationFeatures = k.Spec.RegistrationConfiguration.FeatureGates
+		o.values.RegistrationConfiguration.ClientCertExpirationSeconds = k.Spec.RegistrationConfiguration.ClientCertExpirationSeconds
 	}
 	if k.Spec.WorkConfiguration != nil {
 		o.values.WorkFeatures = k.Spec.WorkConfiguration.FeatureGates

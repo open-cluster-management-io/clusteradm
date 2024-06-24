@@ -28,10 +28,10 @@ require (
 	k8s.io/klog/v2 v2.120.1
 	k8s.io/kubectl v0.29.2
 	k8s.io/utils v0.0.0-20240310230437-4693a0247e57
-	open-cluster-management.io/api v0.13.1-0.20240429070245-e24755340ca2
+	open-cluster-management.io/api v0.14.0
 	open-cluster-management.io/cluster-proxy v0.4.0
-	open-cluster-management.io/managed-serviceaccount v0.5.0
-	open-cluster-management.io/sdk-go v0.13.1-0.20240313075541-00a94671ced1
+	open-cluster-management.io/managed-serviceaccount v0.6.0
+	open-cluster-management.io/sdk-go v0.14.0
 	sigs.k8s.io/apiserver-network-proxy v0.29.0
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.29.0
 	sigs.k8s.io/controller-runtime v0.17.2

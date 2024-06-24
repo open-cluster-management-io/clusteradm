@@ -56,6 +56,7 @@ type RegistrationConfig struct {
 	// +required
 	// +kubebuilder:validation:MaxLength=571
 	// +kubebuilder:validation:MinLength=5
+	// +kubebuilder:validation:Pattern=^([a-z0-9][a-z0-9-]*[a-z0-9]\.)+[a-z]+\/[a-z0-9-\.]+$
 	SignerName string `json:"signerName"`
 
 	// subject is the user subject of the addon agent to be registered to the hub.
@@ -415,29 +416,17 @@ const (
 
 // the reason of condition ManagedClusterAddOnConditionProgressing
 const (
-	// ProgressingReasonInstalling is the reason of condition Progressing indicating the addon configuration is
-	// installing.
-	ProgressingReasonInstalling = "Installing"
+	// ProgressingReasonProgressing is the reason of condition Progressing indicating the addon configuration is
+	// applying.
+	ProgressingReasonProgressing = "Progressing"
 
-	// ProgressingReasonInstallSucceed is the reason of condition Progressing indicating the addon configuration is
-	// installed successfully.
-	ProgressingReasonInstallSucceed = "InstallSucceed"
+	// ProgressingReasonCompleted is the reason of condition Progressing indicating the addon configuration is
+	// applied successfully.
+	ProgressingReasonCompleted = "Completed"
 
-	// ProgressingReasonInstallFailed is the reason of condition Progressing indicating the addon configuration is
-	// installed failed.
-	ProgressingReasonInstallFailed = "InstallFailed"
-
-	// ProgressingReasonUpgrading is the reason of condition Progressing indicating the addon configuration is
-	// upgrading.
-	ProgressingReasonUpgrading = "Upgrading"
-
-	// ProgressingReasonUpgradeSucceed is the reason of condition Progressing indicating the addon configuration is
-	// upgraded successfully.
-	ProgressingReasonUpgradeSucceed = "UpgradeSucceed"
-
-	// ProgressingReasonUpgradeFailed is the reason of condition Progressing indicating the addon configuration is
-	// upgraded failed.
-	ProgressingReasonUpgradeFailed = "UpgradeFailed"
+	// ProgressingReasonFailed is the reason of condition Progressing indicating the addon configuration
+	// failed to apply.
+	ProgressingReasonFailed = "Failed"
 
 	// ProgressingReasonWaitingForCanary is the reason of condition Progressing indicating the addon configuration
 	// upgrade is pending and waiting for canary is done.

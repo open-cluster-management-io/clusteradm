@@ -129,13 +129,13 @@ func GetVersionBundle(version string) (VersionBundle, error) {
 	}
 
 	versionBundleList["0.14.0"] = VersionBundle{
-		Registration:             "0.14.0",
-		Placement:                "0.14.0",
-		Work:                     "0.14.0",
-		Operator:                 "0.14.0",
-		AddonManager:             "0.14.0",
-		AppAddon:                 "0.14.0",
-		PolicyAddon:              "0.14.0",
+		Registration:             "v0.14.0",
+		Placement:                "v0.14.0",
+		Work:                     "v0.14.0",
+		Operator:                 "v0.14.0",
+		AddonManager:             "v0.14.0",
+		AppAddon:                 "v0.14.0",
+		PolicyAddon:              "v0.14.0",
 		MulticlusterControlplane: "v0.5.0",
 	}
 

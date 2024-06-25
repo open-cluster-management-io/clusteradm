@@ -87,12 +87,12 @@ const (
 )
 
 type ManagedServiceAccountRotation struct {
-	// Enabled prescribes whether the ServiceAccount token will
-	// be rotated from the upstream
+	// Enabled prescribes whether the ServiceAccount token will be rotated before it expires.
+	// Deprecated: All ServiceAccount tokens will be rotated before they expire regardless of this field.
 	// +optional
 	// +kubebuilder:default=true
 	Enabled bool `json:"enabled"`
-	// Validity is the duration for which the signed ServiceAccount token is valid.
+	// Validity is the duration of validity for requesting the signed ServiceAccount token.
 	// +optional
 	// +kubebuilder:default="8640h0m0s"
 	Validity metav1.Duration `json:"validity"`

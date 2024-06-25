@@ -1228,7 +1228,7 @@ k8s.io/utils/pointer
 k8s.io/utils/ptr
 k8s.io/utils/strings/slices
 k8s.io/utils/trace
-# open-cluster-management.io/api v0.13.1-0.20240429070245-e24755340ca2
+# open-cluster-management.io/api v0.14.0
 ## explicit; go 1.21
 open-cluster-management.io/api/addon/v1alpha1
 open-cluster-management.io/api/client/addon/clientset/versioned
@@ -1263,15 +1263,15 @@ open-cluster-management.io/cluster-proxy/pkg/generated/clientset/versioned
 open-cluster-management.io/cluster-proxy/pkg/generated/clientset/versioned/scheme
 open-cluster-management.io/cluster-proxy/pkg/generated/clientset/versioned/typed/proxy/v1alpha1
 open-cluster-management.io/cluster-proxy/pkg/util
-# open-cluster-management.io/managed-serviceaccount v0.5.0
-## explicit; go 1.20
+# open-cluster-management.io/managed-serviceaccount v0.6.0
+## explicit; go 1.21
 open-cluster-management.io/managed-serviceaccount/apis/authentication/v1alpha1
 open-cluster-management.io/managed-serviceaccount/apis/authentication/v1beta1
 open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned
 open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned/scheme
 open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned/typed/authentication/v1alpha1
 open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned/typed/authentication/v1beta1
-# open-cluster-management.io/sdk-go v0.13.1-0.20240313075541-00a94671ced1
+# open-cluster-management.io/sdk-go v0.14.0
 ## explicit; go 1.21
 open-cluster-management.io/sdk-go/pkg/apis/cluster/v1beta1
 open-cluster-management.io/sdk-go/pkg/apis/cluster/v1beta2

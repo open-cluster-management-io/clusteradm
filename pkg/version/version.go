@@ -46,7 +46,7 @@ type VersionBundle struct {
 	MulticlusterControlplane string
 }
 
-var defaultBundleVersion = "0.13.3"
+var defaultBundleVersion = "0.14.0"
 
 func GetDefaultBundleVersion() string {
 	return defaultBundleVersion

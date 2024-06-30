@@ -21,13 +21,16 @@ spec:
     resourceRequirements:
       {{ .ResourceRequirement.ResourceRequirements | indent 6 }}
     {{- end }}
-  {{if .RegistrationFeatures}}
+  {{with .RegistrationConfiguration}}
   registrationConfiguration:
+    {{if .RegistrationFeatures}}
     featureGates:
     {{range .RegistrationFeatures }}
     - feature: {{ .Feature }}
       mode: {{ .Mode }}
     {{end}}
+    {{end}}
+    clientCertExpirationSeconds: {{ .ClientCertExpirationSeconds }}
   {{end}}
   {{if .WorkFeatures}}
   workConfiguration:

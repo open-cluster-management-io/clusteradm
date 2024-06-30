@@ -33,8 +33,13 @@ type Values struct {
 	// managed kubeconfig
 	ManagedKubeconfig string
 
-	// Features is the slice of feature for registration
-	RegistrationFeatures []operatorv1.FeatureGate
+	RegistrationConfiguration struct {
+		// Features is the slice of feature for registration
+		RegistrationFeatures []operatorv1.FeatureGate
+
+		// clientCertExpirationSeconds is the expiration time for the client certificate
+		ClientCertExpirationSeconds int32
+	}
 
 	// Features is the slice of feature for work
 	WorkFeatures []operatorv1.FeatureGate

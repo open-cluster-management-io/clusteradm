@@ -29,7 +29,6 @@ import (
 	certutil "k8s.io/client-go/util/cert"
 	"k8s.io/klog/v2"
 	"k8s.io/kubectl/pkg/cmd/util"
-	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	clusterclient "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 	clusterv1 "open-cluster-management.io/api/cluster/v1"
@@ -143,7 +142,8 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	o.values.ResourceRequirement = *resourceRequirement
 
 	o.values.ManagedKubeconfig = o.managedKubeconfigFile
-	o.values.RegistrationFeatures = genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeRegistrationFeatureGates)
+	o.values.RegistrationConfiguration.RegistrationFeatures = genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeRegistrationFeatureGates)
+	o.values.RegistrationConfiguration.ClientCertExpirationSeconds = o.clientCertExpirationSeconds
 	o.values.WorkFeatures = genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeWorkFeatureGates)
 
 	// set mode based on mode and singleton
@@ -317,7 +317,7 @@ func (o *Options) run() error {
 		if err != nil {
 			return err
 		}
-		f = cmdutil.NewFactory(getter)
+		f = util.NewFactory(getter)
 	}
 
 	_, apiExtensionsClient, _, err := helpers.GetClients(f)

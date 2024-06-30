@@ -25,16 +25,22 @@ func init() {
 
 func ConvertToFeatureGateAPI(featureGates featuregate.MutableFeatureGate, defaultFeatureGate map[featuregate.Feature]featuregate.FeatureSpec) []operatorv1.FeatureGate {
 	var features []operatorv1.FeatureGate
-	for feature := range featureGates.GetAll() {
-		spec, ok := defaultFeatureGate[feature]
-		if !ok {
+	featureGatesMap := featureGates.GetAll()
+
+	// enable user-specified feature gates
+	for feature := range featureGatesMap {
+		if _, ok := defaultFeatureGate[feature]; !ok {
 			continue
 		}
-
-		if featureGates.Enabled(feature) && !spec.Default {
+		if featureGates.Enabled(feature) {
 			features = append(features, operatorv1.FeatureGate{Feature: string(feature), Mode: operatorv1.FeatureGateModeTypeEnable})
-		} else if !featureGates.Enabled(feature) && spec.Default {
-			features = append(features, operatorv1.FeatureGate{Feature: string(feature), Mode: operatorv1.FeatureGateModeTypeDisable})
+		}
+	}
+
+	// enable default feature gates
+	for feature, spec := range defaultFeatureGate {
+		if _, ok := featureGatesMap[feature]; !ok && spec.Default {
+			features = append(features, operatorv1.FeatureGate{Feature: string(feature), Mode: operatorv1.FeatureGateModeTypeEnable})
 		}
 	}
 

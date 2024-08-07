@@ -23,6 +23,27 @@ jobs:
       - name: verify
         run: make verify
 
+  unit-test:
+    runs-on: ubuntu-latest
+    env:
+      GOPATH: /tmp/go
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    - name: Create GOPATH src directory
+      run: mkdir -p $GOPATH/src/github.com/open-cluster-management
+    - name: Check out code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 1
+    - name: Copy the code into the GOPATH
+      run: cp -r . $GOPATH/src/github.com/open-cluster-management/clusteradm
+    - name: Unit Tests
+      working-directory: ${{ env.GOPATH }}/src/github.com/open-cluster-management/clusteradm
+      run: make test
+
   integration-test:
     runs-on: ubuntu-latest
     steps:
@@ -38,11 +59,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
         go-version: ${{ env.GO_VERSION }}
-
     - name: E2E Tests
       run: make test-e2e

@@ -21,20 +21,32 @@ import (
 
 	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
 	"open-cluster-management.io/clusteradm/pkg/cmd/addon/enable"
-	installScenario "open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
+	hubaddonscenario "open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
+	installscenario "open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
+	"open-cluster-management.io/clusteradm/pkg/version"
 )
 
 // AddonOptions: options used for addon deployment
 type AddonOptions struct {
-	values Values
-}
-
-// Values: The values used in the addons deployment template
-type Values struct {
-	hubAddons []string
+	values hubaddonscenario.Values
 }
 
 var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
+	var (
+		ocmVersion       = version.GetDefaultBundleVersion()
+		ocmBundleVersion = version.VersionBundle{}
+	)
+
+	ginkgo.BeforeEach(func() {
+		if bundleVersion, ok := os.LookupEnv("OCM_BUNDLE_VERSION"); ok && bundleVersion != "" {
+			ocmVersion = bundleVersion
+		}
+
+		var err error
+		ocmBundleVersion, err = version.GetVersionBundle(ocmVersion)
+		gomega.Expect(err).ToNot(gomega.HaveOccurred())
+	})
+
 	var cluster1Name string
 	var cluster2Name string
 	var err error
@@ -120,8 +132,10 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 		ginkgo.By(fmt.Sprintf("installing %s addon", addon))
 
 		ao := AddonOptions{
-			values: Values{
-				hubAddons: []string{addon},
+			values: hubaddonscenario.Values{
+				HubAddons:     []string{addon},
+				Namespace:     addonNamespace,
+				BundleVersion: ocmBundleVersion,
 			},
 		}
 
@@ -144,7 +158,7 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 		files, err := addonPathWalkDir(appDir)
 		gomega.Expect(err).ToNot(gomega.HaveOccurred(), "install addon error")
 
-		err = r.Apply(installScenario.Files, ao.values, files...)
+		err = r.Apply(installscenario.Files, ao.values, files...)
 		gomega.Expect(err).ToNot(gomega.HaveOccurred(), "install addon error")
 
 		fmt.Fprintf(streams.Out, "Installing built-in %s add-on to namespace %s.\n", addon, addonNamespace)
@@ -176,9 +190,10 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 			assertCreatingClusters(cluster2Name)
 
 			o := Options{
-				Streams:       streams,
-				SampleAppName: testSampleAppName,
-				Namespace:     testNamespace,
+				Streams:         streams,
+				SampleAppName:   testSampleAppName,
+				Namespace:       testNamespace,
+				ClusteradmFlags: clusteradmFlags,
 			}
 
 			clusters := []string{cluster1Name, cluster2Name}

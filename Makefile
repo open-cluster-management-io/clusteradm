@@ -100,7 +100,7 @@ check-copyright:
 	@build/check-copyright.sh
 
 .PHONY: test
-test: deps
+test: deps ensure-kubebuilder-tools
 	@build/run-unit-tests.sh
 
 .PHONY: clean-test

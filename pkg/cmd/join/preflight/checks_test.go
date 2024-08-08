@@ -43,7 +43,7 @@ func TestHubKubeconfigCheck(t *testing.T) {
 			wantErrorList: []error{errors.New("--hub-apiserver should start with http:// or https://")},
 		},
 		{
-			name: "ca not validated",
+			name: "no ca",
 			config: &clientcmdapiv1.Config{
 				Clusters: []clientcmdapiv1.NamedCluster{
 					{
@@ -54,8 +54,8 @@ func TestHubKubeconfigCheck(t *testing.T) {
 					},
 				},
 			},
-			wantWarnings:  nil,
-			wantErrorList: []error{errors.New("no ca detected, creating hub kubeconfig without ca")},
+			wantWarnings:  []string{"no ca detected, creating hub kubeconfig without ca"},
+			wantErrorList: nil,
 		},
 	}
 

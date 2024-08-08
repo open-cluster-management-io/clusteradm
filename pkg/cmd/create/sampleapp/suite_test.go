@@ -5,24 +5,24 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/discovery/cached/memory"
-	"k8s.io/client-go/restmapper"
-	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-
-	"github.com/onsi/ginkgo/v2"
-	"github.com/onsi/gomega"
-
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
-
+	"k8s.io/client-go/restmapper"
+	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	addonv1alpha1client "open-cluster-management.io/api/client/addon/clientset/versioned"
 	clusterv1client "open-cluster-management.io/api/client/cluster/clientset/versioned"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
+
+	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
 // nolint:deadcode,varcheck
@@ -40,6 +40,7 @@ var apiExtensionsClient apiextensionsclient.Interface
 var dynamicClient dynamic.Interface
 var clusterClient clusterv1client.Interface
 var addonClient addonv1alpha1client.Interface
+var clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 
 func TestIntegrationEnableAddons(t *testing.T) {
 	gomega.RegisterFailHandler(ginkgo.Fail)
@@ -54,8 +55,8 @@ var _ = ginkgo.BeforeSuite(func() {
 		ErrorIfCRDPathMissing: true,
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "..", "..", "..", "vendor", "open-cluster-management.io", "api", "cluster", "v1"),
-			filepath.Join("..", "..", "..", "..", "vendor", "open-cluster-management.io", "api", "cluster", "v1alpha1", "0000_03_clusters.open-cluster-management.io_placements.crd.yaml"),
 			filepath.Join("..", "..", "..", "..", "vendor", "open-cluster-management.io", "api", "cluster", "v1beta1"),
+			filepath.Join("..", "..", "..", "..", "vendor", "open-cluster-management.io", "api", "cluster", "v1beta2"),
 			filepath.Join("..", "..", "..", "..", "vendor", "open-cluster-management.io", "api", "addon", "v1alpha1"),
 		},
 	}
@@ -76,6 +77,10 @@ var _ = ginkgo.BeforeSuite(func() {
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	restConfig = cfg
+
+	// add clusteradm flags
+	f := cmdutil.NewFactory(TestClientGetter{cfg: cfg})
+	clusteradmFlags = genericclioptionsclusteradm.NewClusteradmFlags(f)
 })
 
 var _ = ginkgo.AfterSuite(func() {

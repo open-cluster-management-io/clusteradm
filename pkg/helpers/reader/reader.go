@@ -45,20 +45,20 @@ func (r *ResourceReader) RawAppliedResources() []byte {
 	return r.raw
 }
 
-func (r *ResourceReader) Apply(fs embed.FS, config interface{}, files ...string) error {
-	rawObjects := []byte{}
-	for _, file := range files {
-		template, err := fs.ReadFile(file)
-		if err != nil {
-			return err
+func (r *ResourceReader) ApplyRaw(raw [][]byte) error {
+	var errs []error
+	for _, objData := range raw {
+		if err := r.apply(objData); err != nil {
+			errs = append(errs, err)
 		}
-		objData := assets.MustCreateAssetFromTemplate(file, template, config).Data
-		rawObjects = append(rawObjects, objData...)
-		rawObjects = append(rawObjects, []byte(yamlSeparator)...)
 	}
 
+	return utilerrors.NewAggregate(errs)
+}
+
+func (r *ResourceReader) apply(raw []byte) error {
 	rb := r.builder.
-		Stream(bytes.NewReader(rawObjects), "local").
+		Stream(bytes.NewReader(raw), "local").
 		Flatten().
 		Do()
 	if r.dryRun {
@@ -80,10 +80,25 @@ func (r *ResourceReader) Apply(fs embed.FS, config interface{}, files ...string)
 	}
 
 	if r.dryRun {
-		fmt.Fprintf(r.streams.Out, "%s", string(rawObjects))
+		fmt.Fprintf(r.streams.Out, "%s", string(raw))
 	}
-	r.raw = append(r.raw, rawObjects...)
+	r.raw = append(r.raw, raw...)
 	return utilerrors.NewAggregate(errs)
+}
+
+func (r *ResourceReader) Apply(fs embed.FS, config interface{}, files ...string) error {
+	rawObjects := []byte{}
+	for _, file := range files {
+		template, err := fs.ReadFile(file)
+		if err != nil {
+			return err
+		}
+		objData := assets.MustCreateAssetFromTemplate(file, template, config).Data
+		rawObjects = append(rawObjects, objData...)
+		rawObjects = append(rawObjects, []byte(yamlSeparator)...)
+	}
+
+	return r.apply(rawObjects)
 }
 
 func (r *ResourceReader) applyOneObject(info *resource.Info) error {

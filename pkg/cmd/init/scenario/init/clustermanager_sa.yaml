@@ -1,8 +1,0 @@
-# Copyright Contributors to the Open Cluster Management project
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: cluster-manager
-  namespace: open-cluster-management
-imagePullSecrets:
-  - name: open-cluster-management-image-pull-credentials

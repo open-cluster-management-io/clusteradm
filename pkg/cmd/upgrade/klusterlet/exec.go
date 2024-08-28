@@ -10,11 +10,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
-	join_scenario "open-cluster-management.io/clusteradm/pkg/cmd/join/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
-	"open-cluster-management.io/clusteradm/pkg/version"
+	klusterletchart "open-cluster-management.io/ocm/deploy/klusterlet/chart"
+	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
 )
 
 //nolint:deadcode,varcheck
@@ -44,36 +44,13 @@ func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 		return err
 	}
 
-	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
-	if err != nil {
-		klog.Errorf("unable to retrieve version: %v", err)
-		return err
-	}
-
 	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun)
-	o.values = join_scenario.Values{
-		Registry:    o.registry,
-		ClusterName: k.Spec.ClusterName,
-		Klusterlet: join_scenario.Klusterlet{
-			Name:                k.Name,
-			Mode:                string(k.Spec.DeployOption.Mode),
-			KlusterletNamespace: k.Spec.Namespace,
-		},
-		BundleVersion: join_scenario.BundleVersion{
-			RegistrationImageVersion: versionBundle.Registration,
-			PlacementImageVersion:    versionBundle.Placement,
-			WorkImageVersion:         versionBundle.Work,
-			OperatorImageVersion:     versionBundle.Operator,
-		},
-	}
-
 	// reconstruct values from the klusterlet CR.
 	if k.Spec.RegistrationConfiguration != nil {
-		o.values.RegistrationConfiguration.RegistrationFeatures = k.Spec.RegistrationConfiguration.FeatureGates
-		o.values.RegistrationConfiguration.ClientCertExpirationSeconds = k.Spec.RegistrationConfiguration.ClientCertExpirationSeconds
+		o.klusterletChartConfig.Klusterlet.RegistrationConfiguration = *k.Spec.RegistrationConfiguration
 	}
 	if k.Spec.WorkConfiguration != nil {
-		o.values.WorkFeatures = k.Spec.WorkConfiguration.FeatureGates
+		o.klusterletChartConfig.Klusterlet.WorkConfiguration = *k.Spec.WorkConfiguration
 	}
 
 	return nil
@@ -98,7 +75,6 @@ func (o *Options) validate() error {
 		return fmt.Errorf("klusterlet is not installed")
 	}
 	fmt.Fprint(o.Streams.Out, "Klusterlet installed. starting upgrade ")
-	fmt.Fprint(o.Streams.Out, "Klusterlet installed. starting upgrade\n")
 
 	return nil
 }
@@ -111,21 +87,16 @@ func (o *Options) run() error {
 		return err
 	}
 
-	files := []string{
-		"join/namespace.yaml",
-		"join/cluster_role.yaml",
-		"join/cluster_role_binding.yaml",
-		"join/klusterlets.crd.yaml",
-		"join/service_account.yaml",
-	}
-
-	err = r.Apply(join_scenario.Files, o.values, files...)
+	raw, err := chart.RenderChart[*klusterletchart.ChartConfig](
+		o.klusterletChartConfig,
+		"open-cluster-management",
+		"klusterlet",
+		klusterletchart.ChartFiles)
 	if err != nil {
 		return err
 	}
 
-	err = r.Apply(join_scenario.Files, o.values, "join/operator.yaml")
-	if err != nil {
+	if err := r.ApplyRaw(raw); err != nil {
 		return err
 	}
 
@@ -140,11 +111,6 @@ func (o *Options) run() error {
 			int64(o.ClusteradmFlags.Timeout)); err != nil {
 			return err
 		}
-	}
-
-	err = r.Apply(join_scenario.Files, o.values, "join/klusterlets.cr.yaml")
-	if err != nil {
-		return err
 	}
 
 	fmt.Fprint(o.Streams.Out, "upgraded completed successfully\n")

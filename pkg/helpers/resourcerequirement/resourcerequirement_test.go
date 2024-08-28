@@ -6,20 +6,10 @@ import (
 	_ "embed"
 	"testing"
 
-	"github.com/ghodss/yaml"
-	"github.com/openshift/library-go/pkg/assets"
-	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 )
-
-//go:embed fake_deployment.yaml
-var fakeDeploymentYaml string
-
-type values struct {
-	ResourceRequirement ResourceRequirement
-}
 
 func TestResourceRequirement(t *testing.T) {
 	expectedLimitsCpu := "200m"
@@ -35,30 +25,21 @@ func TestResourceRequirement(t *testing.T) {
 		"cpu":    expectedRequestsCpu,
 		"memory": expectedRequestsMemory,
 	}
-	r, err := NewResourceRequirement(string(operatorv1.ResourceQosClassResourceRequirement), limits, requests)
+	r, err := NewResourceRequirement(operatorv1.ResourceQosClassResourceRequirement, limits, requests)
 	if err != nil {
 		t.Fatalf("failed to create resource requirement: %v", err)
 	}
-	val := values{
-		ResourceRequirement: *r,
+	if r.ResourceRequirements.Limits.Cpu().String() != expectedLimitsCpu {
+		t.Fatalf("expect limits.cpu is %s, but got %s", expectedLimitsCpu, r.ResourceRequirements.Limits.Cpu().String())
 	}
-	data := assets.MustCreateAssetFromTemplate("fake-deployment", []byte(fakeDeploymentYaml), val).Data
-	deployment := &v1.Deployment{}
-	if err := yaml.Unmarshal(data, deployment); err != nil {
-		t.Fatalf("failed to unmarshal deployment: %v", err)
+	if r.ResourceRequirements.Requests.Cpu().String() != expectedRequestsCpu {
+		t.Fatalf("expect requests.cpu is %s, but got %s", expectedRequestsCpu, r.ResourceRequirements.Requests.Cpu().String())
 	}
-	resources := deployment.Spec.Template.Spec.Containers[0].Resources
-	if resources.Limits.Cpu().String() != expectedLimitsCpu {
-		t.Fatalf("expect limits.cpu is %s, but got %s", expectedLimitsCpu, resources.Limits.Cpu().String())
+	if r.ResourceRequirements.Limits.Memory().String() != expectedLimitsMemory {
+		t.Fatalf("expect limits.memory to be %s, but got %s", expectedLimitsMemory, r.ResourceRequirements.Limits.Memory().String())
 	}
-	if resources.Requests.Cpu().String() != expectedRequestsCpu {
-		t.Fatalf("expect requests.cpu is %s, but got %s", expectedRequestsCpu, resources.Requests.Cpu().String())
-	}
-	if resources.Limits.Memory().String() != expectedLimitsMemory {
-		t.Fatalf("expect limits.memory to be %s, but got %s", expectedLimitsMemory, resources.Limits.Memory().String())
-	}
-	if resources.Requests.Memory().String() != expectedRequestsMemory {
-		t.Fatalf("expect requests.memory to be %s, but got %s", expectedRequestsMemory, resources.Requests.Memory().String())
+	if r.ResourceRequirements.Requests.Memory().String() != expectedRequestsMemory {
+		t.Fatalf("expect requests.memory to be %s, but got %s", expectedRequestsMemory, r.ResourceRequirements.Requests.Memory().String())
 	}
 }
 

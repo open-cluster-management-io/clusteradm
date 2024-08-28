@@ -9,13 +9,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
+	clustermanagerchart "open-cluster-management.io/ocm/deploy/cluster-manager/chart"
+	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
 
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
-	init_scenario "open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
-	"open-cluster-management.io/clusteradm/pkg/version"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -39,37 +39,22 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
-	if err != nil {
-		klog.Errorf("unable to retrieve version: %v", err)
-		return err
+	o.clusterManagerChartConfig.Images = clustermanagerchart.ImagesConfig{
+		Registry: o.registry,
+		Tag:      o.bundleVersion,
 	}
 
-	o.values = init_scenario.Values{
-		Hub: init_scenario.Hub{
-			Registry: o.registry,
-		},
-		BundleVersion: init_scenario.BundleVersion{
-			RegistrationImageVersion: versionBundle.Registration,
-			PlacementImageVersion:    versionBundle.Placement,
-			WorkImageVersion:         versionBundle.Work,
-			AddonManagerImageVersion: versionBundle.AddonManager,
-			OperatorImageVersion:     versionBundle.Operator,
-		},
-	}
+	o.clusterManagerChartConfig.ClusterManager = clustermanagerchart.ClusterManagerConfig{}
 
 	// reconstruct values from the cluster manager CR.
 	if cm.Spec.RegistrationConfiguration != nil {
-		o.values.RegistrationFeatures = cm.Spec.RegistrationConfiguration.FeatureGates
-		if len(cm.Spec.RegistrationConfiguration.AutoApproveUsers) > 0 {
-			o.values.AutoApprove = true
-		}
+		o.clusterManagerChartConfig.ClusterManager.RegistrationConfiguration = *cm.Spec.RegistrationConfiguration
 	}
 	if cm.Spec.WorkConfiguration != nil {
-		o.values.WorkFeatures = cm.Spec.WorkConfiguration.FeatureGates
+		o.clusterManagerChartConfig.ClusterManager.WorkConfiguration = *cm.Spec.WorkConfiguration
 	}
 	if cm.Spec.AddOnManagerConfiguration != nil {
-		o.values.AddonFeatures = cm.Spec.AddOnManagerConfiguration.FeatureGates
+		o.clusterManagerChartConfig.ClusterManager.AddOnManagerConfiguration = *cm.Spec.AddOnManagerConfiguration
 	}
 
 	return nil
@@ -96,20 +81,16 @@ func (o *Options) run() error {
 		return err
 	}
 
-	files := []string{
-		"init/clustermanager_cluster_role.yaml",
-		"init/clustermanager_cluster_role_binding.yaml",
-		"init/clustermanagers.crd.yaml",
-		"init/clustermanager_sa.yaml",
-	}
-
-	err = r.Apply(init_scenario.Files, o.values, files...)
+	raw, err := chart.RenderChart[*clustermanagerchart.ChartConfig](
+		o.clusterManagerChartConfig,
+		"open-cluster-management",
+		"cluster-manager",
+		clustermanagerchart.ChartFiles)
 	if err != nil {
 		return err
 	}
 
-	err = r.Apply(init_scenario.Files, o.values, "init/operator.yaml")
-	if err != nil {
+	if err := r.ApplyRaw(raw); err != nil {
 		return err
 	}
 
@@ -124,11 +105,6 @@ func (o *Options) run() error {
 			int64(o.ClusteradmFlags.Timeout)); err != nil {
 			return err
 		}
-	}
-
-	err = r.Apply(init_scenario.Files, o.values, "init/clustermanager.cr.yaml")
-	if err != nil {
-		return err
 	}
 
 	fmt.Fprint(o.Streams.Out, "upgraded completed successfully\n")

@@ -3,7 +3,6 @@ package init
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"os"
 	"time"
@@ -17,6 +16,7 @@ import (
 	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
 	ocmfeature "open-cluster-management.io/api/feature"
+	operatorv1 "open-cluster-management.io/api/operator/v1"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/preflight"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
@@ -27,7 +27,8 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"open-cluster-management.io/clusteradm/pkg/helpers/resourcerequirement"
 	helperwait "open-cluster-management.io/clusteradm/pkg/helpers/wait"
-	"open-cluster-management.io/clusteradm/pkg/version"
+	clustermanagerchart "open-cluster-management.io/ocm/deploy/cluster-manager/chart"
+	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
 )
 
 var (
@@ -58,50 +59,47 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	})
 
 	if !o.singleton {
-		o.values = scenario.Values{
-			Hub: scenario.Hub{
-				TokenID:       helpers.RandStringRunes_az09(6),
-				TokenSecret:   helpers.RandStringRunes_az09(16),
-				Registry:      o.registry,
-				ImagePullCred: "e30K", // e30K is the base64 string of '{}'
+		o.clusterManagerChartConfig.Images = clustermanagerchart.ImagesConfig{
+			Registry: o.registry,
+			ImageCredentials: clustermanagerchart.ImageCredentials{
+				CreateImageCredentials: true,
 			},
-			AutoApprove:          genericclioptionsclusteradm.HubMutableFeatureGate.Enabled(ocmfeature.ManagedClusterAutoApproval),
-			RegistrationFeatures: genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubRegistrationFeatureGates),
-			WorkFeatures:         genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubWorkFeatureGates),
-			AddonFeatures:        genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubAddonManagerFeatureGates),
 		}
+		o.clusterManagerChartConfig.ClusterManager = clustermanagerchart.ClusterManagerConfig{
+			RegistrationConfiguration: operatorv1.RegistrationHubConfiguration{
+				FeatureGates: genericclioptionsclusteradm.ConvertToFeatureGateAPI(
+					genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubRegistrationFeatureGates),
+			},
+			WorkConfiguration: operatorv1.WorkConfiguration{
+				FeatureGates: genericclioptionsclusteradm.ConvertToFeatureGateAPI(
+					genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubWorkFeatureGates),
+			},
+			AddOnManagerConfiguration: operatorv1.AddOnManagerConfiguration{
+				FeatureGates: genericclioptionsclusteradm.ConvertToFeatureGateAPI(
+					genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubAddonManagerFeatureGates),
+			},
+		}
+		o.clusterManagerChartConfig.CreateBootstrapToken = o.useBootstrapToken
 
 		if o.imagePullCredFile != "" {
-			data, err := os.ReadFile(o.imagePullCredFile)
+			_, err := os.ReadFile(o.imagePullCredFile)
 			if err != nil {
 				return fmt.Errorf("failed read the image pull credential file %v: %v", o.imagePullCredFile, err)
 			}
-			o.values.Hub.ImagePullCred = base64.StdEncoding.EncodeToString(data)
+			// TODO read username/password and set to helm chart.
 		}
 
-		resourceRequirement, err := resourcerequirement.NewResourceRequirement(o.resourceQosClass, o.resourceLimits, o.resourceRequests)
+		resourceRequirement, err := resourcerequirement.NewResourceRequirement(
+			operatorv1.ResourceQosClass(o.resourceQosClass), o.resourceLimits, o.resourceRequests)
 		if err != nil {
 			return err
 		}
-		o.values.ResourceRequirement = *resourceRequirement
+		o.clusterManagerChartConfig.ClusterManager.ResourceRequirement = *resourceRequirement
 	} else {
 		o.Helm.WithNamespace(o.SingletonName)
 	}
 
-	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
-
-	if err != nil {
-		klog.Errorf("unable to retrieve version: %v", err)
-		return err
-	}
-
-	o.values.BundleVersion = scenario.BundleVersion{
-		RegistrationImageVersion: versionBundle.Registration,
-		PlacementImageVersion:    versionBundle.Placement,
-		WorkImageVersion:         versionBundle.Work,
-		OperatorImageVersion:     versionBundle.Operator,
-		AddonManagerImageVersion: versionBundle.AddonManager,
-	}
+	o.clusterManagerChartConfig.Images.Tag = o.bundleVersion
 
 	return nil
 }
@@ -163,8 +161,6 @@ func (o *Options) run() error {
 			return err
 		}
 	} else {
-		token := fmt.Sprintf("%s.%s", o.values.Hub.TokenID, o.values.Hub.TokenSecret)
-
 		files := []string{}
 		if o.createNamespace {
 			files = append(files, "init/namespace.yaml")
@@ -172,36 +168,22 @@ func (o *Options) run() error {
 			fmt.Fprintf(o.Streams.Out, "skip creating namespace\n")
 		}
 
-		if o.useBootstrapToken {
-			files = append(files,
-				"init/bootstrap-token-secret.yaml",
-				"init/bootstrap_cluster_role.yaml",
-				"init/bootstrap_cluster_role_binding.yaml",
-			)
-		} else {
-			files = append(files,
-				"init/bootstrap_sa.yaml",
-				"init/bootstrap_cluster_role.yaml",
-				"init/bootstrap_sa_cluster_role_binding.yaml",
-			)
-		}
-
-		files = append(files,
-			"init/clustermanager_cluster_role.yaml",
-			"init/clustermanager_cluster_role_binding.yaml",
-			"init/clustermanagers.crd.yaml",
-			"init/clustermanager_sa.yaml",
-			"init/image-pull-secret.yaml",
-		)
-
 		r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
-		err = r.Apply(scenario.Files, o.values, files...)
+		err = r.Apply(scenario.Files, nil, files...)
 		if err != nil {
 			return err
 		}
 
-		err = r.Apply(scenario.Files, o.values, "init/operator.yaml")
+		raw, err := chart.RenderChart[*clustermanagerchart.ChartConfig](
+			o.clusterManagerChartConfig,
+			"open-cluster-management",
+			"cluster-manager",
+			clustermanagerchart.ChartFiles)
 		if err != nil {
+			return err
+		}
+
+		if err := r.ApplyRaw(raw); err != nil {
 			return err
 		}
 
@@ -218,11 +200,6 @@ func (o *Options) run() error {
 			}
 		}
 
-		err = r.Apply(scenario.Files, o.values, "init/clustermanager.cr.yaml")
-		if err != nil {
-			return err
-		}
-
 		if o.wait && !o.ClusteradmFlags.DryRun {
 			if err := helperwait.WaitUntilClusterManagerRegistrationReady(
 				o.ClusteradmFlags.KubectlFactory,
@@ -232,8 +209,14 @@ func (o *Options) run() error {
 		}
 
 		// if service-account wait for the sa secret
+		var token string
 		if !o.useBootstrapToken && !o.ClusteradmFlags.DryRun {
 			token, err = helpers.GetBootstrapTokenFromSA(context.TODO(), kubeClient)
+			if err != nil {
+				return err
+			}
+		} else if !o.ClusteradmFlags.DryRun {
+			token, err = helpers.GetBootstrapToken(context.TODO(), kubeClient)
 			if err != nil {
 				return err
 			}

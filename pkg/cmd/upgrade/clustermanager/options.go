@@ -3,8 +3,9 @@ package clustermanager
 
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	init_scenario "open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
+	clustermanagerchart "open-cluster-management.io/ocm/deploy/cluster-manager/chart"
+	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
 )
 
 // Options is holding all the command-line options
@@ -12,7 +13,7 @@ type Options struct {
 	//ClusteradmFlags: The generic options from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 
-	values init_scenario.Values
+	clusterManagerChartConfig *clustermanagerchart.ChartConfig
 	//The file to output the resources will be sent to the file.
 	registry string
 	//version of predefined compatible image versions
@@ -25,7 +26,8 @@ type Options struct {
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
-		ClusteradmFlags: clusteradmFlags,
-		Streams:         streams,
+		ClusteradmFlags:           clusteradmFlags,
+		Streams:                   streams,
+		clusterManagerChartConfig: chart.NewDefaultClusterManagerChartConfig(),
 	}
 }

@@ -5,8 +5,9 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"open-cluster-management.io/clusteradm/pkg/clusterprovider/capi"
-	"open-cluster-management.io/clusteradm/pkg/cmd/join/scenario"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
+	klusterletchart "open-cluster-management.io/ocm/deploy/klusterlet/chart"
+	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
 )
 
 // Options: The structure holding all the command-line options
@@ -76,8 +77,7 @@ type Options struct {
 	// If create ns or use existing ns
 	createNameSpace bool
 
-	// Values below are used to fill in yaml files
-	values scenario.Values
+	klusterletChartConfig *klusterletchart.ChartConfig
 
 	capiOptions *capi.CAPIOptions
 
@@ -91,8 +91,9 @@ type Options struct {
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
-		ClusteradmFlags: clusteradmFlags,
-		Streams:         streams,
-		capiOptions:     capi.NewCAPIOption(clusteradmFlags.KubectlFactory),
+		ClusteradmFlags:       clusteradmFlags,
+		Streams:               streams,
+		capiOptions:           capi.NewCAPIOption(clusteradmFlags.KubectlFactory),
+		klusterletChartConfig: chart.NewDefaultKlusterletChartConfig(),
 	}
 }

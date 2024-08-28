@@ -168,6 +168,14 @@ func (o *Options) run() error {
 			fmt.Fprintf(o.Streams.Out, "skip creating namespace\n")
 		}
 
+		if !o.useBootstrapToken {
+			files = append(files,
+				"init/bootstrap_sa.yaml",
+				"init/bootstrap_cluster_role.yaml",
+				"init/bootstrap_sa_cluster_role_binding.yaml",
+			)
+		}
+
 		r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
 		err = r.Apply(scenario.Files, nil, files...)
 		if err != nil {

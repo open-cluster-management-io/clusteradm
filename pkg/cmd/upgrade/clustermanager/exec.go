@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
-	clustermanagerchart "open-cluster-management.io/ocm/deploy/cluster-manager/chart"
+	"open-cluster-management.io/clusteradm/pkg/version"
 	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
 
 	"github.com/spf13/cobra"
@@ -39,12 +39,21 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	o.clusterManagerChartConfig.Images = clustermanagerchart.ImagesConfig{
-		Registry: o.registry,
-		Tag:      o.bundleVersion,
+	bundleVersion, err := version.GetVersionBundle(o.bundleVersion)
+	if err != nil {
+		return err
 	}
 
-	o.clusterManagerChartConfig.ClusterManager = clustermanagerchart.ClusterManagerConfig{}
+	o.clusterManagerChartConfig.Images = chart.ImagesConfig{
+		Registry: o.registry,
+		Tag:      bundleVersion.OCM,
+	}
+
+	if cm.Spec.ResourceRequirement != nil {
+		o.clusterManagerChartConfig.ClusterManager = chart.ClusterManagerConfig{
+			ResourceRequirement: *cm.Spec.ResourceRequirement,
+		}
+	}
 
 	// reconstruct values from the cluster manager CR.
 	if cm.Spec.RegistrationConfiguration != nil {

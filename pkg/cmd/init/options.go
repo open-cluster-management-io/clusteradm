@@ -5,7 +5,6 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"open-cluster-management.io/clusteradm/pkg/helpers/helm"
-	clustermanagerchart "open-cluster-management.io/ocm/deploy/cluster-manager/chart"
 	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
 )
 
@@ -13,7 +12,7 @@ import (
 type Options struct {
 	// ClusteradmFlags: The generic options from the clusteradm cli-runtime.
 	ClusteradmFlags           *genericclioptionsclusteradm.ClusteradmFlags
-	clusterManagerChartConfig *clustermanagerchart.ChartConfig
+	clusterManagerChartConfig *chart.ClusterManagerChartConfig
 	// The file to output the resources will be sent to the file.
 	outputFile string
 	// If true the bootstrap token will be used instead of the service account token

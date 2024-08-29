@@ -6,7 +6,6 @@ import (
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"open-cluster-management.io/clusteradm/pkg/clusterprovider/capi"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
-	klusterletchart "open-cluster-management.io/ocm/deploy/klusterlet/chart"
 	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
 )
 
@@ -77,7 +76,7 @@ type Options struct {
 	// If create ns or use existing ns
 	createNameSpace bool
 
-	klusterletChartConfig *klusterletchart.ChartConfig
+	klusterletChartConfig *chart.KlusterletChartConfig
 
 	capiOptions *capi.CAPIOptions
 

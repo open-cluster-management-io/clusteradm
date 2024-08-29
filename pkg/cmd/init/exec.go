@@ -26,7 +26,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"open-cluster-management.io/clusteradm/pkg/helpers/resourcerequirement"
 	helperwait "open-cluster-management.io/clusteradm/pkg/helpers/wait"
-	clustermanagerchart "open-cluster-management.io/ocm/deploy/cluster-manager/chart"
+	"open-cluster-management.io/clusteradm/pkg/version"
 	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
 )
 
@@ -57,14 +57,20 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		}
 	})
 
+	bundleVersion, err := version.GetVersionBundle(o.bundleVersion)
+	if err != nil {
+		return err
+	}
+
 	if !o.singleton {
-		o.clusterManagerChartConfig.Images = clustermanagerchart.ImagesConfig{
+		o.clusterManagerChartConfig.Images = chart.ImagesConfig{
 			Registry: o.registry,
-			ImageCredentials: clustermanagerchart.ImageCredentials{
+			ImageCredentials: chart.ImageCredentials{
 				CreateImageCredentials: true,
 			},
+			Tag: bundleVersion.OCM,
 		}
-		o.clusterManagerChartConfig.ClusterManager = clustermanagerchart.ClusterManagerConfig{
+		o.clusterManagerChartConfig.ClusterManager = chart.ClusterManagerConfig{
 			RegistrationConfiguration: operatorv1.RegistrationHubConfiguration{
 				FeatureGates: genericclioptionsclusteradm.ConvertToFeatureGateAPI(
 					genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubRegistrationFeatureGates),
@@ -81,11 +87,11 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		o.clusterManagerChartConfig.CreateBootstrapToken = o.useBootstrapToken
 
 		if o.imagePullCredFile != "" {
-			_, err := os.ReadFile(o.imagePullCredFile)
+			content, err := os.ReadFile(o.imagePullCredFile)
 			if err != nil {
 				return fmt.Errorf("failed read the image pull credential file %v: %v", o.imagePullCredFile, err)
 			}
-			// TODO read username/password and set to helm chart.
+			o.clusterManagerChartConfig.Images.ImageCredentials.DockerConfigJson = string(content)
 		}
 
 		resourceRequirement, err := resourcerequirement.NewResourceRequirement(
@@ -97,8 +103,6 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	} else {
 		o.Helm.WithNamespace(o.SingletonName)
 	}
-
-	o.clusterManagerChartConfig.Images.Tag = o.bundleVersion
 
 	return nil
 }

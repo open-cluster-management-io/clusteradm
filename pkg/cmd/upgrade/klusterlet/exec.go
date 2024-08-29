@@ -13,6 +13,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
+	"open-cluster-management.io/clusteradm/pkg/version"
 	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
 )
 
@@ -41,6 +42,25 @@ func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 	k, err := operatorClient.OperatorV1().Klusterlets().Get(context.TODO(), klusterletName, metav1.GetOptions{})
 	if err != nil {
 		return err
+	}
+
+	bundleVersion, err := version.GetVersionBundle(o.bundleVersion)
+	if err != nil {
+		return err
+	}
+
+	o.klusterletChartConfig.Images = chart.ImagesConfig{
+		Registry: o.registry,
+		Tag:      bundleVersion.OCM,
+	}
+
+	if k.Spec.ResourceRequirement != nil {
+		o.klusterletChartConfig.Klusterlet = chart.KlusterletConfig{
+			ClusterName:         k.Spec.ClusterName,
+			Namespace:           k.Spec.Namespace,
+			Mode:                k.Spec.DeployOption.Mode,
+			ResourceRequirement: *k.Spec.ResourceRequirement,
+		}
 	}
 
 	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun)

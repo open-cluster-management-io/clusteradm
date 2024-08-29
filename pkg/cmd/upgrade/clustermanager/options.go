@@ -4,7 +4,6 @@ package clustermanager
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
-	clustermanagerchart "open-cluster-management.io/ocm/deploy/cluster-manager/chart"
 	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
 )
 
@@ -13,7 +12,7 @@ type Options struct {
 	//ClusteradmFlags: The generic options from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 
-	clusterManagerChartConfig *clustermanagerchart.ChartConfig
+	clusterManagerChartConfig *chart.ClusterManagerChartConfig
 	//The file to output the resources will be sent to the file.
 	registry string
 	//version of predefined compatible image versions

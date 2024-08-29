@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/x509"
-	"encoding/base64"
 	"encoding/pem"
 	"fmt"
 	"os"
@@ -42,7 +41,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"open-cluster-management.io/clusteradm/pkg/helpers/resourcerequirement"
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
-	klusterletchart "open-cluster-management.io/ocm/deploy/klusterlet/chart"
+	"open-cluster-management.io/clusteradm/pkg/version"
 	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
 	sdkhelpers "open-cluster-management.io/sdk-go/pkg/helpers"
 )
@@ -89,24 +88,30 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 
 	agentNamespace := AgentNamespacePrefix + "agent"
 
-	o.klusterletChartConfig.Klusterlet = klusterletchart.KlusterletConfig{
+	o.klusterletChartConfig.Klusterlet = chart.KlusterletConfig{
 		ClusterName: o.clusterName,
 	}
 
-	o.klusterletChartConfig.Images = klusterletchart.ImagesConfig{
+	bundleVersion, err := version.GetVersionBundle(o.bundleVersion)
+	if err != nil {
+		return err
+	}
+
+	o.klusterletChartConfig.Images = chart.ImagesConfig{
 		Registry: o.registry,
-		ImageCredentials: klusterletchart.ImageCredentials{
+		Tag:      bundleVersion.OCM,
+		ImageCredentials: chart.ImageCredentials{
 			CreateImageCredentials: true,
 		},
 	}
 	o.klusterletChartConfig.EnableSyncLabels = o.enableSyncLabels
 
 	if o.imagePullCredFile != "" {
-		_, err := os.ReadFile(o.imagePullCredFile)
+		content, err := os.ReadFile(o.imagePullCredFile)
 		if err != nil {
 			return fmt.Errorf("failed read the image pull credential file %v: %v", o.imagePullCredFile, err)
 		}
-		// TODO add user/password
+		o.klusterletChartConfig.Images.ImageCredentials.DockerConfigJson = string(content)
 	}
 
 	// deploy klusterlet
@@ -136,9 +141,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	if err != nil {
 		return err
 	}
-	if resourceRequirement.ResourceRequirements != nil {
-		o.klusterletChartConfig.Resources = *resourceRequirement.ResourceRequirements
-	}
+	o.klusterletChartConfig.Klusterlet.ResourceRequirement = *resourceRequirement
 
 	o.klusterletChartConfig.Klusterlet.RegistrationConfiguration = operatorv1.RegistrationConfiguration{
 		FeatureGates: genericclioptionsclusteradm.ConvertToFeatureGateAPI(
@@ -158,8 +161,6 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	} else {
 		o.klusterletChartConfig.Klusterlet.Mode = operatorv1.InstallMode(o.mode)
 	}
-
-	o.klusterletChartConfig.Images.Tag = o.bundleVersion
 
 	// if --ca-file is set, read ca data
 	if o.caFile != "" {
@@ -285,7 +286,7 @@ func (o *Options) validate() error {
 				return err
 			}
 		}
-		o.klusterletChartConfig.ExternalManagedKubeConfig = base64.StdEncoding.EncodeToString(managedConfig)
+		o.klusterletChartConfig.ExternalManagedKubeConfig = string(managedConfig)
 	}
 
 	if err := o.capiOptions.Validate(); err != nil {
@@ -353,20 +354,20 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient opera
 		return err
 	}
 
+	o.klusterletChartConfig.CreateNamespace = o.createNameSpace
+
 	// If Deployment/klusterlet is not deployed, deploy it
-	if !available {
-		o.klusterletChartConfig.CreateNamespace = o.createNameSpace
+	if available {
+		o.klusterletChartConfig.NoOperator = true
+	}
 
-		raw, err := chart.RenderKlusterletChart(
-			o.klusterletChartConfig,
-			"open-cluster-management")
-		if err != nil {
-			return err
-		}
+	raw, err := chart.RenderKlusterletChart(o.klusterletChartConfig, OperatorNamesapce)
+	if err != nil {
+		return err
+	}
 
-		if err := r.ApplyRaw(raw); err != nil {
-			return err
-		}
+	if err := r.ApplyRaw(raw); err != nil {
+		return err
 	}
 
 	if !o.ClusteradmFlags.DryRun {

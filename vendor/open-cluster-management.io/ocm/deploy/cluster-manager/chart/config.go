@@ -17,6 +17,8 @@ var ChartFiles embed.FS
 const ChartName = "cluster-manager"
 
 type ChartConfig struct {
+	// CreateNamespace is used in the render function to append the release ns in the objects.
+	CreateNamespace bool `json:"createNamespace,omitempty"`
 	// ReplicaCount is the replicas for the clusterManager operator deployment.
 	ReplicaCount int `json:"replicaCount,omitempty"`
 	// Images is the configurations for all images used in operator deployment and clusterManager CR.
@@ -35,6 +37,8 @@ type ChartConfig struct {
 	Affinity corev1.Affinity `json:"affinity,omitempty"`
 	// CreateBootstrapToken is to enable/disable the bootstrap token secret for auto approve.
 	CreateBootstrapToken bool `json:"createBootstrapToken,omitempty"`
+	// CreateBootstrapSA is to create a serviceAccount to generate token.
+	CreateBootstrapSA bool `json:"createBootstrapSA,omitempty"`
 	// ClusterManager is the configuration of clusterManager CR
 	ClusterManager ClusterManagerConfig `json:"clusterManager,omitempty"`
 }

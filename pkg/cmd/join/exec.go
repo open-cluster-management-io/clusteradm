@@ -35,7 +35,6 @@ import (
 	ocmfeature "open-cluster-management.io/api/feature"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 	"open-cluster-management.io/clusteradm/pkg/cmd/join/preflight"
-	"open-cluster-management.io/clusteradm/pkg/cmd/join/scenario"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	preflightinterface "open-cluster-management.io/clusteradm/pkg/helpers/preflight"
@@ -356,21 +355,11 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient opera
 
 	// If Deployment/klusterlet is not deployed, deploy it
 	if !available {
-		var files []string
-		if o.createNameSpace {
-			files = append(files, "join/namespace.yaml")
-		}
+		o.klusterletChartConfig.CreateNamespace = o.createNameSpace
 
-		err = r.Apply(scenario.Files, nil, files...)
-		if err != nil {
-			return err
-		}
-
-		raw, err := chart.RenderChart[*klusterletchart.ChartConfig](
+		raw, err := chart.RenderKlusterletChart(
 			o.klusterletChartConfig,
-			"open-cluster-management",
-			"klusterlet",
-			klusterletchart.ChartFiles)
+			"open-cluster-management")
 		if err != nil {
 			return err
 		}
@@ -673,7 +662,7 @@ func (o *Options) setKubeconfig() error {
 		return err
 	}
 
-	o.klusterletChartConfig.BootstrapHubKubeConfig = base64.StdEncoding.EncodeToString(bootstrapConfigBytes)
+	o.klusterletChartConfig.BootstrapHubKubeConfig = string(bootstrapConfigBytes)
 	return nil
 }
 

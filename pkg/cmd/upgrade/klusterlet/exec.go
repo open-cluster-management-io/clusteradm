@@ -13,7 +13,6 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
-	klusterletchart "open-cluster-management.io/ocm/deploy/klusterlet/chart"
 	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
 )
 
@@ -87,11 +86,9 @@ func (o *Options) run() error {
 		return err
 	}
 
-	raw, err := chart.RenderChart[*klusterletchart.ChartConfig](
+	raw, err := chart.RenderKlusterletChart(
 		o.klusterletChartConfig,
-		"open-cluster-management",
-		"klusterlet",
-		klusterletchart.ChartFiles)
+		"open-cluster-management")
 	if err != nil {
 		return err
 	}

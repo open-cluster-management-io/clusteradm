@@ -1,4 +1,4 @@
-# Copyright Contributors to the Open Cluster Management project
+{{- if .Values.createBootstrapSA }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -10,4 +10,5 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: cluster-bootstrap
-    namespace: open-cluster-management
+    namespace: {{ .Release.Namespace }}
+{{- end }}

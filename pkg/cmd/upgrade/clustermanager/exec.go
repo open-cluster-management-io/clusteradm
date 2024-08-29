@@ -81,11 +81,9 @@ func (o *Options) run() error {
 		return err
 	}
 
-	raw, err := chart.RenderChart[*clustermanagerchart.ChartConfig](
+	raw, err := chart.RenderClusterManagerChart(
 		o.clusterManagerChartConfig,
-		"open-cluster-management",
-		"cluster-manager",
-		clustermanagerchart.ChartFiles)
+		"open-cluster-management")
 	if err != nil {
 		return err
 	}

@@ -18,7 +18,6 @@ import (
 	ocmfeature "open-cluster-management.io/api/feature"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/preflight"
-	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/helm"
@@ -161,32 +160,21 @@ func (o *Options) run() error {
 			return err
 		}
 	} else {
-		files := []string{}
-		if o.createNamespace {
-			files = append(files, "init/namespace.yaml")
-		} else {
+		o.clusterManagerChartConfig.CreateNamespace = o.createNamespace
+		if !o.createNamespace {
 			fmt.Fprintf(o.Streams.Out, "skip creating namespace\n")
 		}
 
 		if !o.useBootstrapToken {
-			files = append(files,
-				"init/bootstrap_sa.yaml",
-				"init/bootstrap_cluster_role.yaml",
-				"init/bootstrap_sa_cluster_role_binding.yaml",
-			)
+			o.clusterManagerChartConfig.CreateBootstrapSA = true
+		} else {
+			o.clusterManagerChartConfig.CreateBootstrapToken = true
 		}
 
 		r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
-		err = r.Apply(scenario.Files, nil, files...)
-		if err != nil {
-			return err
-		}
-
-		raw, err := chart.RenderChart[*clustermanagerchart.ChartConfig](
+		raw, err := chart.RenderClusterManagerChart(
 			o.clusterManagerChartConfig,
-			"open-cluster-management",
-			"cluster-manager",
-			clustermanagerchart.ChartFiles)
+			"open-cluster-management")
 		if err != nil {
 			return err
 		}

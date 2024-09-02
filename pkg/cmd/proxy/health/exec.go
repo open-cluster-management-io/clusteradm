@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8snet "k8s.io/apimachinery/pkg/util/net"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
@@ -68,7 +68,7 @@ func (o *Options) validate() error {
 	return nil
 }
 
-func (o *Options) run(streams genericclioptions.IOStreams) error {
+func (o *Options) run(streams genericiooptions.IOStreams) error {
 
 	hubRestConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
@@ -317,7 +317,7 @@ type writer struct {
 	w *tabwriter.Writer
 }
 
-func newWriter(streams genericclioptions.IOStreams) writer {
+func newWriter(streams genericiooptions.IOStreams) writer {
 	w := tabwriter.NewWriter(streams.Out, 4, 8, 4, ' ', 0)
 	// header
 	_, _ = fmt.Fprintf(w,

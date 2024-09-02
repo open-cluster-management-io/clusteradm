@@ -2,7 +2,7 @@
 package unjoin
 
 import (
-	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
@@ -19,7 +19,7 @@ type Options struct {
 	outputFile string
 	values     Values
 
-	Streams genericclioptions.IOStreams
+	Streams genericiooptions.IOStreams
 }
 type Values struct {
 	//ClusterName: the name of the joined cluster on the hub
@@ -30,7 +30,7 @@ type Values struct {
 	AgentNamespace string
 }
 
-func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
+func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
 		Streams:         streams,

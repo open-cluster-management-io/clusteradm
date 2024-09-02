@@ -3,7 +3,7 @@
 package init
 
 import (
-	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
@@ -19,7 +19,7 @@ type Options struct {
 	//Delete the operator by default
 	purgeOperator bool
 
-	Streams genericclioptions.IOStreams
+	Streams genericiooptions.IOStreams
 }
 
 // Values: The values used in the template
@@ -36,7 +36,7 @@ type Hub struct {
 	TokenSecret string `json:"tokenSecret"`
 }
 
-func NewOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
+func NewOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
 		Streams:         streams,

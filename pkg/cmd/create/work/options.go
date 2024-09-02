@@ -3,6 +3,7 @@ package work
 
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"k8s.io/utils/ptr"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
@@ -13,7 +14,7 @@ type Options struct {
 
 	ClusterOption *genericclioptionsclusteradm.ClusterOption
 
-	Streams genericclioptions.IOStreams
+	Streams genericiooptions.IOStreams
 
 	Placement string
 
@@ -26,7 +27,7 @@ type Options struct {
 	UseReplicaSet bool
 }
 
-func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
+func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
 		Streams:         streams,

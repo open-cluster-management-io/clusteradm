@@ -2,7 +2,7 @@
 package accept
 
 import (
-	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
@@ -20,7 +20,7 @@ type Options struct {
 
 	Requesters []string
 
-	Streams genericclioptions.IOStreams
+	Streams genericiooptions.IOStreams
 }
 
 // Values used in the template
@@ -28,7 +28,7 @@ type Values struct {
 	Clusters []string
 }
 
-func NewOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
+func NewOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
 		ClusterOptions:  genericclioptionsclusteradm.NewClusterOption(),

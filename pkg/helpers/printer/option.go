@@ -8,7 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"k8s.io/cli-runtime/pkg/printers"
 )
 
@@ -55,7 +55,7 @@ func (p *PrinterOption) WithTableConverter(f func(runtime.Object) *metav1.Table)
 	return p
 }
 
-func (p *PrinterOption) Print(stream genericclioptions.IOStreams, obj runtime.Object) error {
+func (p *PrinterOption) Print(stream genericiooptions.IOStreams, obj runtime.Object) error {
 	switch p.Format {
 	case "tree":
 		p.tree = *p.treeConverter(obj, &p.tree)

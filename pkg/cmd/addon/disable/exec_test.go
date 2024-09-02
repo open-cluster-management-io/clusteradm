@@ -11,7 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 
 	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
 
@@ -51,7 +51,7 @@ var _ = ginkgo.Describe("addon disable", func() {
 		gomega.Expect(err).ToNot(gomega.HaveOccurred(), "creat cluster error")
 	}
 
-	streams := genericclioptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr}
+	streams := genericiooptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr}
 
 	assertEnableAddon := func(addons []string, clusters []string, o *enable.Options) {
 		ns := o.Namespace

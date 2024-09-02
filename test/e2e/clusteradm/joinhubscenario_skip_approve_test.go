@@ -6,13 +6,14 @@ import (
 	"os"
 	"time"
 
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	authv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/utils/ptr"
 	"open-cluster-management.io/clusteradm/pkg/config"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
@@ -50,7 +51,7 @@ var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", func() {
 				KubeConfig: ptr.To[string](e2e.Kubeconfigpath),
 				Context:    ptr.To[string](e2e.Cluster().Hub().Context()),
 			}
-			r := reader.NewResourceReader(cmdutil.NewFactory(kubeConfigFlags), false, genericclioptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr})
+			r := reader.NewResourceReader(cmdutil.NewFactory(kubeConfigFlags), false, genericiooptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr})
 			var values = make(map[string]interface{})
 			err = r.Apply(scenario.Files, values, files...)
 			gomega.Expect(err).To(gomega.BeNil())

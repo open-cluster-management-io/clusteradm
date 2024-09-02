@@ -3,7 +3,7 @@ package addon
 
 import (
 	"github.com/spf13/cobra"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"open-cluster-management.io/clusteradm/pkg/cmd/addon/create"
 	"open-cluster-management.io/clusteradm/pkg/cmd/addon/disable"
 	"open-cluster-management.io/clusteradm/pkg/cmd/addon/enable"
@@ -11,7 +11,7 @@ import (
 )
 
 // NewCmd provides a cobra command wrapping NewCmdImportCluster
-func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *cobra.Command {
+func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "addon",
 		Short: "addon options",

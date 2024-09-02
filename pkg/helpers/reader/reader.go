@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/kubectl/pkg/cmd/apply"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
@@ -26,12 +26,12 @@ const yamlSeparator = "\n---\n"
 type ResourceReader struct {
 	builder *resource.Builder
 	dryRun  bool
-	streams genericclioptions.IOStreams
+	streams genericiooptions.IOStreams
 	raw     []byte
 	f       cmdutil.Factory
 }
 
-func NewResourceReader(f cmdutil.Factory, dryRun bool, streams genericclioptions.IOStreams) *ResourceReader {
+func NewResourceReader(f cmdutil.Factory, dryRun bool, streams genericiooptions.IOStreams) *ResourceReader {
 	return &ResourceReader{
 		builder: f.NewBuilder().Unstructured(),
 		dryRun:  dryRun,

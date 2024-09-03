@@ -17,7 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 
 	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
 	"open-cluster-management.io/clusteradm/pkg/cmd/addon/enable"
@@ -101,7 +101,7 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 		gomega.Expect(err).ToNot(gomega.HaveOccurred())
 	}
 
-	streams := genericclioptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr}
+	streams := genericiooptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr}
 
 	addonPathWalkDir := func(root string) ([]string, error) {
 		var files []string
@@ -149,7 +149,7 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 		gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 		f := cmdutil.NewFactory(TestClientGetter{cfg: restConfig})
-		r := reader.NewResourceReader(f, false, genericclioptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr})
+		r := reader.NewResourceReader(f, false, genericiooptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr})
 
 		mydir, err := os.Getwd()
 		gomega.Expect(err).ToNot(gomega.HaveOccurred(), "install addon error")

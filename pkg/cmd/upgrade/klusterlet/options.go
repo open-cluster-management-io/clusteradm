@@ -2,7 +2,7 @@
 package klusterlet
 
 import (
-	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
 )
@@ -21,10 +21,10 @@ type Options struct {
 	//If set, the command will hold until the OCM control plane initialized
 	wait bool
 
-	Streams genericclioptions.IOStreams
+	Streams genericiooptions.IOStreams
 }
 
-func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
+func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags:       clusteradmFlags,
 		Streams:               streams,

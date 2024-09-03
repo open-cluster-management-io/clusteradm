@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 	"k8s.io/client-go/tools/clientcmd"
 	cliflag "k8s.io/component-base/cli/flag"
@@ -75,7 +76,7 @@ func main() {
 
 	f := cmdutil.NewFactory(matchVersionKubeConfigFlags)
 	root.SetGlobalNormalizationFunc(cliflag.WarnWordSepNormalizeFunc)
-	streams := genericclioptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr}
+	streams := genericiooptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr}
 
 	clusteradmFlags := genericclioptionsclusteradm.NewClusteradmFlags(f)
 	clusteradmFlags.AddFlags(flags)

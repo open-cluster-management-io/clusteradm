@@ -2,7 +2,7 @@
 package work
 
 import (
-	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
@@ -13,14 +13,14 @@ type Options struct {
 
 	ClusterOptions *genericclioptionsclusteradm.ClusterOption
 
-	Streams genericclioptions.IOStreams
+	Streams genericiooptions.IOStreams
 
 	Workname string
 
 	Force bool
 }
 
-func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
+func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
 		Streams:         streams,

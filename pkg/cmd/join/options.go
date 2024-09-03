@@ -2,7 +2,7 @@
 package join
 
 import (
-	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"open-cluster-management.io/clusteradm/pkg/clusterprovider/capi"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
@@ -80,7 +80,7 @@ type Options struct {
 
 	capiOptions *capi.CAPIOptions
 
-	Streams genericclioptions.IOStreams
+	Streams genericiooptions.IOStreams
 
 	// enableSyncLabels is to enable the feature which can sync the labels from klusterlet to all agent resources.
 	enableSyncLabels bool
@@ -88,7 +88,7 @@ type Options struct {
 	clientCertExpirationSeconds int32
 }
 
-func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
+func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags:       clusteradmFlags,
 		Streams:               streams,

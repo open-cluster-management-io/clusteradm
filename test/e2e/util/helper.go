@@ -5,11 +5,12 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"os"
+	"time"
+
 	"k8s.io/apimachinery/pkg/api/meta"
 	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
 	"open-cluster-management.io/clusteradm/pkg/config"
-	"os"
-	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,7 +37,7 @@ func WaitNamespaceDeleted(restcfg *rest.Config, namespace string) error {
 		if err != nil {
 			return false, err
 		}
-		fmt.Printf("namespace stil exists %v\n", ns.Status)
+		fmt.Printf("namespace %s still exists %v\n", ns.Name, ns.Status)
 		return false, nil
 	})
 }

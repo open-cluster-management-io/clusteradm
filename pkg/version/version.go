@@ -36,13 +36,9 @@ func Get() version.Info {
 }
 
 type VersionBundle struct {
-	Registration             string
-	Placement                string
-	Work                     string
-	Operator                 string
+	OCM                      string
 	AppAddon                 string
 	PolicyAddon              string
-	AddonManager             string
 	MulticlusterControlplane string
 }
 
@@ -61,11 +57,7 @@ func GetVersionBundle(version string) (VersionBundle, error) {
 
 	// latest
 	versionBundleList["latest"] = VersionBundle{
-		Registration:             "latest",
-		Placement:                "latest",
-		Work:                     "latest",
-		Operator:                 "latest",
-		AddonManager:             "latest",
+		OCM:                      "latest",
 		AppAddon:                 "latest",
 		PolicyAddon:              "latest",
 		MulticlusterControlplane: "latest",
@@ -73,67 +65,35 @@ func GetVersionBundle(version string) (VersionBundle, error) {
 
 	// predefined bundle version
 	// TODO: automated version tracking
-	versionBundleList["0.12.0"] = VersionBundle{
-		Registration:             "v0.12.0",
-		Placement:                "v0.12.0",
-		Work:                     "v0.12.0",
-		Operator:                 "v0.12.0",
-		AddonManager:             "v0.12.0",
-		AppAddon:                 "v0.12.0",
-		PolicyAddon:              "v0.12.0",
-		MulticlusterControlplane: "v0.3.0",
-	}
-
 	versionBundleList["0.13.0"] = VersionBundle{
-		Registration:             "v0.13.0",
-		Placement:                "v0.13.0",
-		Work:                     "v0.13.0",
-		Operator:                 "v0.13.0",
-		AddonManager:             "v0.13.0",
+		OCM:                      "v0.13.0",
 		AppAddon:                 "v0.13.0",
 		PolicyAddon:              "v0.13.0",
 		MulticlusterControlplane: "v0.4.0",
 	}
 
 	versionBundleList["0.13.1"] = VersionBundle{
-		Registration:             "v0.13.1",
-		Placement:                "v0.13.1",
-		Work:                     "v0.13.1",
-		Operator:                 "v0.13.1",
-		AddonManager:             "v0.13.1",
-		AppAddon:                 "v0.13.0",
+		OCM:                      "v0.13.1",
 		PolicyAddon:              "v0.13.0",
 		MulticlusterControlplane: "v0.4.0",
 	}
 
 	versionBundleList["0.13.2"] = VersionBundle{
-		Registration:             "v0.13.2",
-		Placement:                "v0.13.2",
-		Work:                     "v0.13.2",
-		Operator:                 "v0.13.2",
-		AddonManager:             "v0.13.2",
+		OCM:                      "v0.13.2",
 		AppAddon:                 "v0.13.0",
 		PolicyAddon:              "v0.13.0",
 		MulticlusterControlplane: "v0.4.0",
 	}
 
 	versionBundleList["0.13.3"] = VersionBundle{
-		Registration:             "v0.13.3",
-		Placement:                "v0.13.3",
-		Work:                     "v0.13.3",
-		Operator:                 "v0.13.3",
-		AddonManager:             "v0.13.3",
+		OCM:                      "v0.13.3",
 		AppAddon:                 "v0.13.0",
 		PolicyAddon:              "v0.13.0",
 		MulticlusterControlplane: "v0.4.0",
 	}
 
 	versionBundleList["0.14.0"] = VersionBundle{
-		Registration:             "v0.14.0",
-		Placement:                "v0.14.0",
-		Work:                     "v0.14.0",
-		Operator:                 "v0.14.0",
-		AddonManager:             "v0.14.0",
+		OCM:                      "v0.14.0",
 		AppAddon:                 "v0.14.0",
 		PolicyAddon:              "v0.14.0",
 		MulticlusterControlplane: "v0.5.0",

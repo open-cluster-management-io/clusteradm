@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/x509"
-	"encoding/base64"
 	"encoding/pem"
 	"fmt"
 	"os"
@@ -35,7 +34,6 @@ import (
 	ocmfeature "open-cluster-management.io/api/feature"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 	"open-cluster-management.io/clusteradm/pkg/cmd/join/preflight"
-	"open-cluster-management.io/clusteradm/pkg/cmd/join/scenario"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	preflightinterface "open-cluster-management.io/clusteradm/pkg/helpers/preflight"
@@ -44,6 +42,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers/resourcerequirement"
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
 	"open-cluster-management.io/clusteradm/pkg/version"
+	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
 	sdkhelpers "open-cluster-management.io/sdk-go/pkg/helpers"
 )
 
@@ -89,23 +88,30 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 
 	agentNamespace := AgentNamespacePrefix + "agent"
 
-	o.values = scenario.Values{
+	o.klusterletChartConfig.Klusterlet = chart.KlusterletConfig{
 		ClusterName: o.clusterName,
-		Hub: scenario.Hub{
-			APIServer: o.hubAPIServer,
-		},
-		Registry:         o.registry,
-		ImagePullCred:    "e30K", // e30K is the base64 string of '{}'
-		AgentNamespace:   agentNamespace,
-		EnableSyncLabels: o.enableSyncLabels,
 	}
 
+	bundleVersion, err := version.GetVersionBundle(o.bundleVersion)
+	if err != nil {
+		return err
+	}
+
+	o.klusterletChartConfig.Images = chart.ImagesConfig{
+		Registry: o.registry,
+		Tag:      bundleVersion.OCM,
+		ImageCredentials: chart.ImageCredentials{
+			CreateImageCredentials: true,
+		},
+	}
+	o.klusterletChartConfig.EnableSyncLabels = o.enableSyncLabels
+
 	if o.imagePullCredFile != "" {
-		data, err := os.ReadFile(o.imagePullCredFile)
+		content, err := os.ReadFile(o.imagePullCredFile)
 		if err != nil {
 			return fmt.Errorf("failed read the image pull credential file %v: %v", o.imagePullCredFile, err)
 		}
-		o.values.ImagePullCred = base64.StdEncoding.EncodeToString(data)
+		o.klusterletChartConfig.Images.ImageCredentials.DockerConfigJson = string(content)
 	}
 
 	// deploy klusterlet
@@ -125,55 +131,36 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		klusterletName += "-hosted-" + helpers.RandStringRunes_az09(6)
 		agentNamespace = klusterletName
 		klusterletNamespace = AgentNamespacePrefix + agentNamespace
-
-		// update AgentNamespace
-		o.values.AgentNamespace = agentNamespace
 	}
 
-	o.values.Klusterlet = scenario.Klusterlet{
-		Name:                klusterletName,
-		KlusterletNamespace: klusterletNamespace,
-	}
+	o.klusterletChartConfig.Klusterlet.Name = klusterletName
+	o.klusterletChartConfig.Klusterlet.Namespace = klusterletNamespace
 
-	resourceRequirement, err := resourcerequirement.NewResourceRequirement(o.resourceQosClass, o.resourceLimits, o.resourceRequests)
+	resourceRequirement, err := resourcerequirement.NewResourceRequirement(
+		operatorv1.ResourceQosClass(o.resourceQosClass), o.resourceLimits, o.resourceRequests)
 	if err != nil {
 		return err
 	}
-	o.values.ResourceRequirement = *resourceRequirement
+	o.klusterletChartConfig.Klusterlet.ResourceRequirement = *resourceRequirement
 
-	o.values.ManagedKubeconfig = o.managedKubeconfigFile
-	o.values.RegistrationConfiguration.RegistrationFeatures = genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeRegistrationFeatureGates)
-	o.values.RegistrationConfiguration.ClientCertExpirationSeconds = o.clientCertExpirationSeconds
-	o.values.WorkFeatures = genericclioptionsclusteradm.ConvertToFeatureGateAPI(genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeWorkFeatureGates)
+	o.klusterletChartConfig.Klusterlet.RegistrationConfiguration = operatorv1.RegistrationConfiguration{
+		FeatureGates: genericclioptionsclusteradm.ConvertToFeatureGateAPI(
+			genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeRegistrationFeatureGates),
+		ClientCertExpirationSeconds: o.clientCertExpirationSeconds,
+	}
+	o.klusterletChartConfig.Klusterlet.WorkConfiguration = operatorv1.WorkAgentConfiguration{
+		FeatureGates: genericclioptionsclusteradm.ConvertToFeatureGateAPI(
+			genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeWorkFeatureGates),
+	}
 
 	// set mode based on mode and singleton
 	if o.mode == string(operatorv1.InstallModeHosted) && o.singleton {
-		o.values.Klusterlet.Mode = string(operatorv1.InstallModeSingletonHosted)
+		o.klusterletChartConfig.Klusterlet.Mode = operatorv1.InstallModeSingletonHosted
 	} else if o.singleton {
-		o.values.Klusterlet.Mode = string(operatorv1.InstallModeSingleton)
+		o.klusterletChartConfig.Klusterlet.Mode = operatorv1.InstallModeSingleton
 	} else {
-		o.values.Klusterlet.Mode = o.mode
+		o.klusterletChartConfig.Klusterlet.Mode = operatorv1.InstallMode(o.mode)
 	}
-
-	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
-
-	if err != nil {
-		klog.Errorf("unable to retrieve version: %v", err)
-		return err
-	}
-
-	o.values.BundleVersion = scenario.BundleVersion{
-		RegistrationImageVersion: versionBundle.Registration,
-		PlacementImageVersion:    versionBundle.Placement,
-		WorkImageVersion:         versionBundle.Work,
-		OperatorImageVersion:     versionBundle.Operator,
-	}
-	klog.V(3).InfoS("Image version:",
-		"'registration image version'", versionBundle.Registration,
-		"'placement image version'", versionBundle.Placement,
-		"'work image version'", versionBundle.Work,
-		"'operator image version'", versionBundle.Operator,
-		"'singleton agent image version'", versionBundle.Operator)
 
 	// if --ca-file is set, read ca data
 	if o.caFile != "" {
@@ -230,12 +217,11 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		klog.Warningf("ConfigMap/cluster-info.data.kubeconfig.clusters[0].cluster.server field [%s] in namespace kube-public should start with http:// or https://", klusterletApiserver)
 		klusterletApiserver = ""
 	}
-	o.values.Klusterlet.APIServer = klusterletApiserver
-
-	klog.V(3).InfoS("values:",
-		"clusterName", o.values.ClusterName,
-		"hubAPIServer", o.values.Hub.APIServer,
-		"klusterletAPIServer", o.values.Klusterlet.APIServer)
+	o.klusterletChartConfig.Klusterlet.ExternalServerURLs = []operatorv1.ServerURL{
+		{
+			URL: klusterletApiserver,
+		},
+	}
 
 	if err := o.capiOptions.Complete(cmd, args); err != nil {
 		return err
@@ -257,7 +243,7 @@ func (o *Options) validate() error {
 				ManagedKubeconfigFile: o.managedKubeconfigFile,
 			},
 			preflight.ClusterNameCheck{
-				ClusterName: o.values.ClusterName,
+				ClusterName: o.klusterletChartConfig.Klusterlet.ClusterName,
 			},
 		}, os.Stderr); err != nil {
 		return err
@@ -300,7 +286,7 @@ func (o *Options) validate() error {
 				return err
 			}
 		}
-		o.values.ManagedKubeconfig = base64.StdEncoding.EncodeToString(managedConfig)
+		o.klusterletChartConfig.ExternalManagedKubeConfig = string(managedConfig)
 	}
 
 	if err := o.capiOptions.Validate(); err != nil {
@@ -356,7 +342,7 @@ func (o *Options) run() error {
 	}
 
 	fmt.Fprintf(o.Streams.Out, "Please log onto the hub cluster and run the following command:\n\n"+
-		"    %s accept --clusters %s\n\n", helpers.GetExampleHeader(), o.values.ClusterName)
+		"    %s accept --clusters %s\n\n", helpers.GetExampleHeader(), o.klusterletChartConfig.Klusterlet.ClusterName)
 	fmt.Fprintf(o.Streams.Out, "This is not needed when the ManagedClusterAutoApproval feature is enabled\n")
 	return nil
 
@@ -368,53 +354,26 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient opera
 		return err
 	}
 
-	// If Deployment/klusterlet is not deployed, deploy it
-	if !available {
-		var files []string
-		if o.createNameSpace {
-			files = append(files, "join/namespace.yaml")
-		}
-		files = append(files,
-			"join/klusterlets.crd.yaml",
-			"join/service_account.yaml",
-			"join/image-pull-secret.yaml",
-			"join/cluster_role.yaml",
-			"join/cluster_role_binding.yaml",
-			"join/operator.yaml",
-		)
+	o.klusterletChartConfig.CreateNamespace = o.createNameSpace
 
-		err = r.Apply(scenario.Files, o.values, files...)
-		if err != nil {
-			return err
-		}
+	// If Deployment/klusterlet is not deployed, deploy it
+	if available {
+		o.klusterletChartConfig.NoOperator = true
+	}
+
+	raw, err := chart.RenderKlusterletChart(o.klusterletChartConfig, OperatorNamesapce)
+	if err != nil {
+		return err
+	}
+
+	if err := r.ApplyRaw(raw); err != nil {
+		return err
 	}
 
 	if !o.ClusteradmFlags.DryRun {
 		if err := wait.WaitUntilCRDReady(apiExtensionsClient, "klusterlets.operator.open-cluster-management.io", o.wait); err != nil {
 			return err
 		}
-	}
-
-	// Apply klusterlet and bootstrap secret
-	files := []string{}
-	if o.createNameSpace {
-		// Create agent namespace before the bootstrap secret, since the secret is in the agent namespace
-		files = append(files, "join/agent-namespace.yaml")
-	}
-	files = append(files,
-		"bootstrap_hub_kubeconfig.yaml",
-	)
-	if o.mode == string(operatorv1.InstallModeHosted) {
-		files = append(files,
-			"join/hosted/external_managed_kubeconfig.yaml",
-		)
-	}
-	files = append(files,
-		"join/klusterlets.cr.yaml",
-	)
-	err = r.Apply(scenario.Files, o.values, files...)
-	if err != nil {
-		return err
 	}
 
 	if !available && o.wait && !o.ClusteradmFlags.DryRun {
@@ -426,18 +385,18 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient opera
 
 	if o.wait && !o.ClusteradmFlags.DryRun {
 		if o.mode == string(operatorv1.InstallModeHosted) {
-			err = waitUntilKlusterletConditionIsTrue(operatorClient, int64(o.ClusteradmFlags.Timeout), o.values.Klusterlet.Name)
+			err = waitUntilKlusterletConditionIsTrue(operatorClient, int64(o.ClusteradmFlags.Timeout), o.klusterletChartConfig.Klusterlet.Name)
 			if err != nil {
 				return err
 			}
 		} else {
-			err = waitUntilKlusterletConditionIsTrue(operatorClient, int64(o.ClusteradmFlags.Timeout), o.values.Klusterlet.Name)
+			err = waitUntilKlusterletConditionIsTrue(operatorClient, int64(o.ClusteradmFlags.Timeout), o.klusterletChartConfig.Klusterlet.Name)
 			if err != nil {
 				return err
 			}
 		}
 
-		err = o.waitUntilManagedClusterIsCreated(int64(o.ClusteradmFlags.Timeout), o.values.ClusterName)
+		err = o.waitUntilManagedClusterIsCreated(int64(o.ClusteradmFlags.Timeout), o.klusterletChartConfig.Klusterlet.ClusterName)
 		if err != nil {
 			return err
 		}
@@ -704,7 +663,7 @@ func (o *Options) setKubeconfig() error {
 		return err
 	}
 
-	o.values.Hub.KubeConfig = base64.StdEncoding.EncodeToString(bootstrapConfigBytes)
+	o.klusterletChartConfig.BootstrapHubKubeConfig = string(bootstrapConfigBytes)
 	return nil
 }
 

@@ -1,7 +1,0 @@
-# Copyright Contributors to the Open Cluster Management project
-apiVersion: v1
-kind: Namespace
-metadata:
-  annotations:
-    workload.openshift.io/allowed: "management"
-  name: open-cluster-management

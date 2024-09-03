@@ -3,16 +3,16 @@ package init
 
 import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"open-cluster-management.io/clusteradm/pkg/cmd/init/scenario"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"open-cluster-management.io/clusteradm/pkg/helpers/helm"
+	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
 )
 
 // Options is holding all the command-line options
 type Options struct {
 	// ClusteradmFlags: The generic options from the clusteradm cli-runtime.
-	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
-	values          scenario.Values
+	ClusteradmFlags           *genericclioptionsclusteradm.ClusteradmFlags
+	clusterManagerChartConfig *chart.ClusterManagerChartConfig
 	// The file to output the resources will be sent to the file.
 	outputFile string
 	// If true the bootstrap token will be used instead of the service account token
@@ -54,8 +54,9 @@ type Options struct {
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
 	return &Options{
-		ClusteradmFlags: clusteradmFlags,
-		Streams:         streams,
-		Helm:            helm.NewHelm(),
+		ClusteradmFlags:           clusteradmFlags,
+		clusterManagerChartConfig: chart.NewDefaultClusterManagerChartConfig(),
+		Streams:                   streams,
+		Helm:                      helm.NewHelm(),
 	}
 }

@@ -46,7 +46,7 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode"
 			gomega.Expect(len(cm.Spec.RegistrationConfiguration.FeatureGates)).Should(gomega.Equal(2))
 
 			gomega.Eventually(func() error {
-				return util.ValidateImagePullSecret(kubeClient, "e30K",
+				return util.ValidateImagePullSecret(kubeClient, "e30=",
 					"open-cluster-management")
 			}, time.Second*120, time.Second*2).ShouldNot(gomega.HaveOccurred())
 

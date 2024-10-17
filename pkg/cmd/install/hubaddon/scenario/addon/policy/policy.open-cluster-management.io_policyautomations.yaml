@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: policyautomations.policy.open-cluster-management.io
 spec:
   group: policy.open-cluster-management.io
@@ -19,17 +19,21 @@ spec:
   - name: v1beta1
     schema:
       openAPIV3Schema:
-        description: PolicyAutomation is the Schema for the policyautomations API
+        description: >-
+          PolicyAutomation is the schema for the policyautomations API. PolicyAutomation configures
+          creation of an AnsibleJob, from the tower.ansible.com API group, to initiate Ansible to run upon
+          noncompliant events of the attached policy, or when you manually initiate the run with the
+          "policy.open-cluster-management.io/rerun=true" annotation.
         properties:
           apiVersion:
-            description: |-
+            description: >-
               APIVersion defines the versioned schema of this representation of an object.
               Servers should convert recognized schemas to the latest internal value, and
               may reject unrecognized values.
               More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: |-
+            description: >-
               Kind is a string value representing the REST resource this object represents.
               Servers may infer this from the endpoint the client submits requests to.
               Cannot be updated.
@@ -39,10 +43,11 @@ spec:
           metadata:
             type: object
           spec:
-            description: PolicyAutomationSpec defines the desired state of PolicyAutomation
+            description: PolicyAutomationSpec defines how and when automation is initiated
+              for the referenced policy.
             properties:
               automationDef:
-                description: AutomationDef defines the automation to invoke
+                description: AutomationDef defines the automation to invoke.
                 properties:
                   extra_vars:
                     description: ExtraVars is passed to the Ansible job at execution
@@ -50,25 +55,25 @@ spec:
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
                   jobTtl:
-                    description: JobTTL sets the time to live for the Kubernetes AnsibleJob
-                      object after the Ansible job run has finished.
+                    description: >-
+                      JobTTL sets the time to live for the Kubernetes Job object after the Ansible job playbook run
+                      has finished.
                     type: integer
                   name:
-                    description: Name of the Ansible Template to run in Tower as a
-                      job
+                    description: Name of the Ansible Template to run in Ansible Automation
+                      Platform as a job.
                     minLength: 1
                     type: string
                   policyViolationsLimit:
-                    description: |-
-                      The maximum number of violating cluster contexts that will be provided to the Ansible job as extra variables.
-                      When policyViolationsLimit is set to 0, it means no limit.
-                      The default value is 1000.
+                    description: >-
+                      The maximum number of violating cluster contexts that are provided to the Ansible job as
+                      extra variables. When policyViolationsLimit is set to "0", it means no limit. The default value
+                      is "1000".
                     minimum: 0
                     type: integer
                   secret:
-                    description: |-
-                      TowerSecret is the name of the secret that contains the Ansible Automation Platform
-                      credential.
+                    description: TowerSecret is the name of the secret that contains
+                      the Ansible Automation Platform credential.
                     minLength: 1
                     type: string
                   type:
@@ -79,32 +84,36 @@ spec:
                 - secret
                 type: object
               delayAfterRunSeconds:
-                description: |-
-                  DelayAfterRunSeconds sets the minimum number of seconds before
-                  an automation can run again due to a new violation on the same
-                  managed cluster. This only applies to the EveryEvent Mode.  The
-                  default value is 0.
+                description: >-
+                  DelayAfterRunSeconds sets the minimum number of seconds before an automation can run again due
+                  to a new violation on the same managed cluster. This only applies to the EveryEvent mode. The
+                  default value is "0".
                 minimum: 0
                 type: integer
               eventHook:
-                description: EventHook decides when automation is going to be triggered
+                default: noncompliant
+                description: >-
+                  EventHook specifies the compliance state that initiates automation. This must be set to
+                  "noncompliant".
                 enum:
                 - noncompliant
                 type: string
               mode:
-                description: Mode decides how automation is going to be triggered
+                description: >-
+                  Mode specifies how often automation is initiated. The supported values are "once", "everyEvent",
+                  and "disabled".
                 enum:
                 - once
                 - everyEvent
                 - disabled
                 type: string
               policyRef:
-                description: |-
-                  PolicyRef is the name of the policy that this automation resource
-                  is bound to.
+                description: PolicyRef is the name of the policy that this automation
+                  resource is bound to.
                 type: string
               rescanAfter:
-                description: RescanAfter is reserved for future use.
+                description: RescanAfter is reserved for future use and should not
+                  be set.
                 type: string
             required:
             - automationDef
@@ -112,17 +121,21 @@ spec:
             - policyRef
             type: object
           status:
-            description: PolicyAutomationStatus defines the observed state of PolicyAutomation
+            description: PolicyAutomationStatus defines the observed state of the
+              PolicyAutomation resource.
             properties:
               clustersWithEvent:
                 additionalProperties:
-                  description: PolicyAutomation events on each target cluster
+                  description: ClusterEvent shows the PolicyAutomation event on each
+                    target cluster.
                   properties:
                     automationStartTime:
-                      description: Policy automation start time for everyEvent mode
+                      description: AutomationStartTime is the policy automation start
+                        time for everyEvent mode.
                       type: string
                     eventTime:
-                      description: The last policy compliance transition event time
+                      description: EventTime is the last policy compliance transition
+                        event time.
                       type: string
                   required:
                   - automationStartTime

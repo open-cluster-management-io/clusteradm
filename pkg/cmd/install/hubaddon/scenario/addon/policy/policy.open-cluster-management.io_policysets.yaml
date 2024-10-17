@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: policysets.policy.open-cluster-management.io
 spec:
   group: policy.open-cluster-management.io
@@ -26,17 +26,20 @@ spec:
     name: v1beta1
     schema:
       openAPIV3Schema:
-        description: PolicySet is the Schema for the policysets API
+        description: >-
+          PolicySet is the schema for the policysets API. A policy set is a logical grouping of policies
+          from the same namespace. The policy set is bound to a placement resource and applies the
+          placement to all policies within the set. The status reports the overall compliance of the set.
         properties:
           apiVersion:
-            description: |-
+            description: >-
               APIVersion defines the versioned schema of this representation of an object.
               Servers should convert recognized schemas to the latest internal value, and
               may reject unrecognized values.
               More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: |-
+            description: >-
               Kind is a string value representing the REST resource this object represents.
               Servers may infer this from the endpoint the client submits requests to.
               Cannot be updated.
@@ -46,15 +49,15 @@ spec:
           metadata:
             type: object
           spec:
-            description: |-
-              PolicySetSpec describes a group of policies that are related and
-              can be placed on the same managed clusters.
+            description: PolicySetSpec defines the group of policies to be included
+              in the policy set.
             properties:
               description:
-                description: Description of this PolicySet.
+                description: Description is the description of this policy set.
                 type: string
               policies:
-                description: Policies that are grouped together within the PolicySet.
+                description: Policies is a list of policy names that are contained
+                  within the policy set.
                 items:
                   minLength: 1
                   type: string
@@ -63,24 +66,44 @@ spec:
             - policies
             type: object
           status:
-            description: PolicySetStatus defines the observed state of PolicySet
+            description: PolicySetStatus reports the observed status of the policy
+              set resulting from its policies.
             properties:
               compliant:
+                description: Compliant reports the observed status resulting from
+                  the compliance of the policies within.
+                enum:
+                - Compliant
+                - Pending
+                - NonCompliant
                 type: string
               placement:
                 items:
-                  description: PolicySetStatusPlacement defines a placement object
-                    for the status
+                  description: >-
+                    PolicySetStatusPlacement reports how and what managed cluster placement resources are attached to
+                    the policy set.
                   properties:
                     placement:
+                      description: >-
+                        Placement is the name of the Placement resource, from the cluster.open-cluster-management.io
+                        API group, that is bound to the policy.
                       type: string
                     placementBinding:
+                      description: >-
+                        PlacementBinding is the name of the PlacementBinding resource, from the
+                        policies.open-cluster-management.io API group, that binds the placement resource to the policy
+                        set.
                       type: string
                     placementRule:
+                      description: >-
+                        PlacementRule (deprecated) is the name of the PlacementRule resource, from the
+                        apps.open-cluster-management.io API group, that is bound to the policy.
                       type: string
                   type: object
                 type: array
               statusMessage:
+                description: StatusMessge reports the current state while determining
+                  the compliance of the policy set.
                 type: string
             type: object
         required:

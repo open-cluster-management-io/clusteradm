@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: placementbindings.policy.open-cluster-management.io
 spec:
   group: policy.open-cluster-management.io
@@ -19,28 +19,31 @@ spec:
   - name: v1
     schema:
       openAPIV3Schema:
-        description: PlacementBinding is the Schema for the placementbindings API
+        description: >-
+          PlacementBinding is the schema for the placementbindings API. A PlacementBinding resource binds a
+          managed cluster placement resource to a policy or policy set, along with configurable overrides.
         properties:
           apiVersion:
-            description: |-
+            description: >-
               APIVersion defines the versioned schema of this representation of an object.
               Servers should convert recognized schemas to the latest internal value, and
               may reject unrecognized values.
               More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           bindingOverrides:
-            description: BindingOverrides defines the overrides to the Subjects
+            description: BindingOverrides defines the overrides for the subjects.
             properties:
               remediationAction:
-                description: This field overrides the policy remediationAction on
-                  target clusters
+                description: >-
+                  RemediationAction overrides the policy remediationAction on target clusters. This parameter is
+                  optional. If you set it, you must set it to "enforce".
                 enum:
                 - Enforce
                 - enforce
                 type: string
             type: object
           kind:
-            description: |-
+            description: >-
               Kind is a string value representing the REST resource this object represents.
               Servers may infer this from the endpoint the client submits requests to.
               Cannot be updated.
@@ -50,22 +53,31 @@ spec:
           metadata:
             type: object
           placementRef:
-            description: PlacementSubject defines the resource that can be used as
-              PlacementBinding placementRef
+            description: >-
+              PlacementSubject defines the placement resource that is being bound to the subjects defined in
+              the placement binding.
             properties:
               apiGroup:
+                description: >-
+                  APIGroup is the API group to which the kind belongs. Must be set to
+                  "cluster.open-cluster-management.io" for Placement or "apps.open-cluster-management.io" for
+                  PlacementRule (deprecated).
                 enum:
                 - apps.open-cluster-management.io
                 - cluster.open-cluster-management.io
                 minLength: 1
                 type: string
               kind:
+                description: >-
+                  Kind is the kind of the placement resource. Must be set to either "Placement" or
+                  "PlacementRule" (deprecated).
                 enum:
                 - PlacementRule
                 - Placement
                 minLength: 1
                 type: string
               name:
+                description: Name is the name of the placement resource being bound.
                 minLength: 1
                 type: string
             required:
@@ -74,31 +86,42 @@ spec:
             - name
             type: object
           status:
-            description: PlacementBindingStatus defines the observed state of PlacementBinding
+            description: PlacementBindingStatus defines the observed state of the
+              PlacementBinding resource.
             type: object
           subFilter:
-            description: This field provides the ability to select a subset of bound
-              clusters
+            description: >-
+              SubFilter provides the ability to apply overrides to a subset of bound clusters when multiple
+              placement bindings are used to bind a policy to placements. When set, only the overrides will be
+              applied to the clusters bound by this placement binding but it will not be considered for placing
+              the policy. This parameter is optional. If you set it, you must set it to "restricted".
             enum:
             - restricted
             type: string
           subjects:
             items:
-              description: Subject defines the resource that can be used as PlacementBinding
-                subject
+              description: Subject defines the resource to bind to the placement resource.
               properties:
                 apiGroup:
+                  description: >-
+                    APIGroup is the API group to which the kind belongs. Must be set to
+                    "policy.open-cluster-management.io".
                   enum:
                   - policy.open-cluster-management.io
                   minLength: 1
                   type: string
                 kind:
+                  description: >-
+                    Kind is the kind of the object to bind to the placement resource. Must be set to either
+                    "Policy" or "PolicySet".
                   enum:
                   - Policy
                   - PolicySet
                   minLength: 1
                   type: string
                 name:
+                  description: Name is the name of the policy or policy set to bind
+                    to the placement resource.
                   minLength: 1
                   type: string
               required:

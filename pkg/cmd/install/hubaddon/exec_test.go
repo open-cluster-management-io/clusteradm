@@ -9,7 +9,7 @@ import (
 	"github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
 	"open-cluster-management.io/clusteradm/pkg/version"
 )
@@ -103,7 +103,7 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 					Namespace: invalidNamespace,
 					HubAddons: []string{scenario.AppMgrAddonName},
 				},
-				Streams: genericclioptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr},
+				Streams: genericiooptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr},
 			}
 
 			err := o.runWithClient()
@@ -128,7 +128,7 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 						HubAddons:     []string{hubAddon},
 						BundleVersion: ocmBundleVersion,
 					},
-					Streams: genericclioptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr},
+					Streams: genericiooptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr},
 				}
 
 				err := o.runWithClient()

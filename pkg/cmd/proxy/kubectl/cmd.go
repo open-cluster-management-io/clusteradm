@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -33,7 +33,7 @@ import (
 	msaclientset "open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned"
 )
 
-func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *cobra.Command {
+func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *cobra.Command {
 	o := newOptions(clusteradmFlags)
 
 	var hubRestConfig *rest.Config
@@ -179,7 +179,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	return cmd
 }
 
-func getProxyConfig(hubRestConfig *rest.Config, streams genericclioptions.IOStreams) (*proxyv1alpha1.ManagedProxyConfiguration, error) {
+func getProxyConfig(hubRestConfig *rest.Config, streams genericiooptions.IOStreams) (*proxyv1alpha1.ManagedProxyConfiguration, error) {
 	addonClient, err := addonv1alpha1client.NewForConfig(hubRestConfig)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed initializing addon api client")

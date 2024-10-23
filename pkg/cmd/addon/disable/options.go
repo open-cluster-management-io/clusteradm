@@ -2,7 +2,7 @@
 package disable
 
 import (
-	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
@@ -15,10 +15,10 @@ type Options struct {
 	//The specified namespace for addon to disable
 	Namespace string
 
-	Streams genericclioptions.IOStreams
+	Streams genericiooptions.IOStreams
 }
 
-func NewOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *Options {
+func NewOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
 		Streams:         streams,

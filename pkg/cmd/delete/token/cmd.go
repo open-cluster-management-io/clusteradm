@@ -7,7 +7,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 
 	"github.com/spf13/cobra"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
@@ -17,7 +17,7 @@ var example = `
 `
 
 // NewCmd ...
-func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericclioptions.IOStreams) *cobra.Command {
+func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *cobra.Command {
 	o := newOptions(clusteradmFlags, streams)
 
 	cmd := &cobra.Command{

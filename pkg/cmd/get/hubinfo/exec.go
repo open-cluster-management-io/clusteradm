@@ -59,6 +59,7 @@ const (
 
 	componentNameRegistrationController = "cluster-manager-registration-controller"
 	componentNameRegistrationWebhook    = "cluster-manager-registration-webhook"
+	componentNameWorkController         = "cluster-manager-work-controller"
 	componentNameWorkWebhook            = "cluster-manager-work-webhook"
 	componentNamePlacementController    = "cluster-manager-placement-controller"
 )
@@ -141,6 +142,11 @@ func (o *Options) printRegistration(cmgr *v1.ClusterManager) error {
 
 func (o *Options) printWork(cmgr *v1.ClusterManager) error {
 	o.printer.Write(printer.LEVEL_1, "Work:\n")
+	err := printer.PrintComponentsDeploy(o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNameWorkController)
+	if err != nil {
+		return err
+	}
+
 	return printer.PrintComponentsDeploy(o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNameWorkWebhook)
 }
 

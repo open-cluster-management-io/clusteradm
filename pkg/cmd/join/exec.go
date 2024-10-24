@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	gherrors "github.com/pkg/errors"
 	"os"
 	"reflect"
 	"strings"
@@ -49,8 +50,9 @@ import (
 const (
 	AgentNamespacePrefix = "open-cluster-management-"
 
-	OperatorNamesapce   = "open-cluster-management"
-	DefaultOperatorName = "klusterlet"
+	OperatorNamesapce     = "open-cluster-management"
+	DefaultOperatorName   = "klusterlet"
+	AwsIrsaAuthentication = "awsirsa"
 )
 
 func format(s string) string {
@@ -148,6 +150,24 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 			genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeRegistrationFeatureGates),
 		ClientCertExpirationSeconds: o.clientCertExpirationSeconds,
 	}
+
+	// set registration auth type
+	if o.registrationAuth == AwsIrsaAuthentication {
+		rawConfig, err := o.ClusteradmFlags.KubectlFactory.ToRawKubeConfigLoader().RawConfig()
+		if err != nil {
+			klog.Errorf("unable to load managedcluster kubeconfig: %v", err)
+			return err
+		}
+
+		o.klusterletChartConfig.Klusterlet.RegistrationConfiguration.RegistrationDriver = operatorv1.RegistrationDriver{
+			AuthType: o.registrationAuth,
+			AwsIrsa: &operatorv1.AwsIrsa{
+				HubClusterArn:     o.hubClusterArn,
+				ManagedClusterArn: rawConfig.Contexts[rawConfig.CurrentContext].Cluster,
+			},
+		}
+	}
+
 	o.klusterletChartConfig.Klusterlet.WorkConfiguration = operatorv1.WorkAgentConfiguration{
 		FeatureGates: genericclioptionsclusteradm.ConvertToFeatureGateAPI(
 			genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeWorkFeatureGates),
@@ -291,6 +311,10 @@ func (o *Options) validate() error {
 
 	if err := o.capiOptions.Validate(); err != nil {
 		return err
+	}
+
+	if (o.registrationAuth == AwsIrsaAuthentication) && (o.hubClusterArn == "") {
+		return gherrors.New("hubClusterArn cannot be empty if registrationAuth type is awsirsa")
 	}
 
 	return nil

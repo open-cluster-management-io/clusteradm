@@ -86,6 +86,12 @@ type Options struct {
 	enableSyncLabels bool
 
 	clientCertExpirationSeconds int32
+
+	// The type of authentication to use for registering and authenticating with hub
+	registrationAuth string
+
+	// The arn of hub cluster(i.e. EKS) to which managed-cluster will join
+	hubClusterArn string
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Options {

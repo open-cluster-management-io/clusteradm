@@ -17,6 +17,7 @@ var example = `
 %[1]s join --hub-token <tokenID.tokenSecret> --hub-apiserver <hub_apiserver_url> --cluster-name <cluster_name> --mode hosted --managed-cluster-kubeconfig <managed-cluster-kubeconfig-file>
 # join a cluster to the hub while the hub provided no valid CA data in kube-public namespace
 %[1]s join --hub-token <tokenID.tokenSecret> --hub-apiserver <hub_apiserver_url> --cluster-name <cluster_name> --ca-file <ca-file>
+%[1]s join --hub-token <tokenID.tokenSecret> --hub-apiserver <hub_apiserver_url> --cluster-name <cluster_name> --registration-auth awsirsa --hub-cluster-arn arn:aws:eks:us-west-2:123456789012:cluster/hub-cluster-1
 `
 
 // NewCmd ...
@@ -77,5 +78,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().BoolVar(&o.createNameSpace, "create-namespace", true, "If true, create the operator namespace(open-cluster-management) and the agent namespace(open-cluster-management-agent for Default mode, <klusterlet-name> for Hosted mode), otherwise use existing one")
 	cmd.Flags().BoolVar(&o.enableSyncLabels, "enable-sync-labels", false, "If true, sync the labels from klusterlet to all agent resources.")
 	cmd.Flags().Int32Var(&o.clientCertExpirationSeconds, "client-cert-expiration-seconds", 31536000, "clientCertExpirationSeconds represents the seconds of a client certificate to expire.")
+	cmd.Flags().StringVar(&o.registrationAuth, "registration-auth", "", "The type of authentication to use for registering and authenticating with hub")
+	cmd.Flags().StringVar(&o.hubClusterArn, "hub-cluster-arn", "", "The arn of the hub cluster(i.e. EKS cluster) to which managed-cluster will join")
 	return cmd
 }

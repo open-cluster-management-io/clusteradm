@@ -42,7 +42,7 @@ type VersionBundle struct {
 	MulticlusterControlplane string
 }
 
-var defaultBundleVersion = "0.14.0"
+var defaultBundleVersion = "0.15.0"
 
 func GetDefaultBundleVersion() string {
 	return defaultBundleVersion
@@ -97,6 +97,13 @@ func GetVersionBundle(version string) (VersionBundle, error) {
 		AppAddon:                 "v0.14.0",
 		PolicyAddon:              "v0.14.0",
 		MulticlusterControlplane: "v0.5.0",
+	}
+
+	versionBundleList["0.15.0"] = VersionBundle{
+		OCM:                      "v0.15.0",
+		AppAddon:                 "v0.15.0",
+		PolicyAddon:              "v0.15.0",
+		MulticlusterControlplane: "v0.6.0",
 	}
 
 	// default

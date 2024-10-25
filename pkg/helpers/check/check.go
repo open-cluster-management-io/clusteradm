@@ -3,7 +3,6 @@ package check
 
 import (
 	"fmt"
-
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterclient "open-cluster-management.io/api/client/cluster/clientset/versioned"
@@ -74,6 +73,15 @@ func CheckForManagedCluster(client clusterclient.Interface) error {
 func findResource(list *metav1.APIResourceList, resourceName string) bool {
 	for _, item := range list.APIResources {
 		if item.Name == resourceName {
+			return true
+		}
+	}
+	return false
+}
+
+func IsFeatureEnabled(featureGates []operatorv1.FeatureGate, feature string) bool {
+	for _, fg := range featureGates {
+		if fg.Feature == feature {
 			return true
 		}
 	}

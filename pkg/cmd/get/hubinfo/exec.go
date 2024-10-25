@@ -4,6 +4,8 @@ package hubinfo
 import (
 	"context"
 	"fmt"
+	"open-cluster-management.io/api/feature"
+	"open-cluster-management.io/clusteradm/pkg/helpers/check"
 
 	"github.com/spf13/cobra"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -62,6 +64,7 @@ const (
 	componentNameWorkController         = "cluster-manager-work-controller"
 	componentNameWorkWebhook            = "cluster-manager-work-webhook"
 	componentNamePlacementController    = "cluster-manager-placement-controller"
+	componentNameAddOnManagerController = "cluster-manager-addon-manager-controller"
 )
 
 func (o *Options) run() error {
@@ -115,6 +118,11 @@ func (o *Options) printComponents() error {
 	}
 
 	o.printer.Write(printer.LEVEL_0, "Components:\n")
+	if check.IsFeatureEnabled(cmgr.Spec.AddOnManagerConfiguration.FeatureGates, string(feature.AddonManagement)) {
+		if err := o.printAddOnManager(cmgr); err != nil {
+			return err
+		}
+	}
 	if err := o.printRegistration(cmgr); err != nil {
 		return err
 	}
@@ -142,17 +150,23 @@ func (o *Options) printRegistration(cmgr *v1.ClusterManager) error {
 
 func (o *Options) printWork(cmgr *v1.ClusterManager) error {
 	o.printer.Write(printer.LEVEL_1, "Work:\n")
-	err := printer.PrintComponentsDeploy(o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNameWorkController)
-	if err != nil {
-		return err
+	if check.IsFeatureEnabled(cmgr.Spec.WorkConfiguration.FeatureGates, string(feature.ManifestWorkReplicaSet)) {
+		err := printer.PrintComponentsDeploy(o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNameWorkController)
+		if err != nil {
+			return err
+		}
 	}
-
 	return printer.PrintComponentsDeploy(o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNameWorkWebhook)
 }
 
 func (o *Options) printPlacement(cmgr *v1.ClusterManager) error {
 	o.printer.Write(printer.LEVEL_1, "Placement:\n")
 	return printer.PrintComponentsDeploy(o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNamePlacementController)
+}
+
+func (o *Options) printAddOnManager(cmgr *v1.ClusterManager) error {
+	o.printer.Write(printer.LEVEL_1, "AddOn Manager:\n")
+	return printer.PrintComponentsDeploy(o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNameAddOnManagerController)
 }
 
 func (o *Options) printComponentsCRD(cmgr *v1.ClusterManager) error {

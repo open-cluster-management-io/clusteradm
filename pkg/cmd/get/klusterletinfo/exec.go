@@ -57,7 +57,9 @@ const (
 	registrationOperatorNamespace = "open-cluster-management"
 	klusterletCRD                 = "klusterlets.operator.open-cluster-management.io"
 
-	componentNameKlusterletAgent = "klusterlet-agent"
+	componentNameRegistrationAgent = "klusterlet-registration-agent"
+	componentNameWorkAgent         = "klusterlet-work-agent"
+	componentNameKlusterletAgent   = "klusterlet-agent"
 )
 
 func (o *Options) run() error {
@@ -135,16 +137,35 @@ func (o *Options) printRegistrationOperator() error {
 }
 
 func (o *Options) printComponents(klet *v1.Klusterlet) error {
-
 	o.printer.Write(printer.LEVEL_0, "Components:\n")
 
-	if err := o.printAgent(klet); err != nil {
-		return err
+	mode := klet.Spec.DeployOption.Mode
+	if mode == v1.InstallModeSingleton || mode == v1.InstallModeSingletonHosted {
+		if err := o.printAgent(klet); err != nil {
+			return err
+		}
+	} else {
+		if err := o.printRegistration(klet); err != nil {
+			return err
+		}
+		if err := o.printWork(klet); err != nil {
+			return err
+		}
 	}
 	if err := o.printComponentsCRD(klet); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (o *Options) printRegistration(klet *v1.Klusterlet) error {
+	o.printer.Write(printer.LEVEL_1, "Registration:\n")
+	return printer.PrintComponentsDeploy(o.printer, o.kubeClient, klet.Status.RelatedResources, componentNameRegistrationAgent)
+}
+
+func (o *Options) printWork(klet *v1.Klusterlet) error {
+	o.printer.Write(printer.LEVEL_1, "Work:\n")
+	return printer.PrintComponentsDeploy(o.printer, o.kubeClient, klet.Status.RelatedResources, componentNameWorkAgent)
 }
 
 func (o *Options) printAgent(klet *v1.Klusterlet) error {

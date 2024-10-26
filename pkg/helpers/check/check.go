@@ -81,7 +81,7 @@ func findResource(list *metav1.APIResourceList, resourceName string) bool {
 
 func IsFeatureEnabled(featureGates []operatorv1.FeatureGate, feature string) bool {
 	for _, fg := range featureGates {
-		if fg.Feature == feature {
+		if fg.Feature == feature && fg.Mode == operatorv1.FeatureGateModeTypeEnable {
 			return true
 		}
 	}

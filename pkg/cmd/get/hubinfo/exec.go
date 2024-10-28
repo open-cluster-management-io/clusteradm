@@ -119,10 +119,8 @@ func (o *Options) printComponents() error {
 
 	o.printer.Write(printer.LEVEL_0, "Components:\n")
 
-	if cmgr.Spec.AddOnManagerConfiguration != nil && check.IsFeatureEnabled(cmgr.Spec.AddOnManagerConfiguration.FeatureGates, string(feature.AddonManagement)) {
-		if err := o.printAddOnManager(cmgr); err != nil {
-			return err
-		}
+	if err := o.printAddOnManager(cmgr); err != nil {
+		return err
 	}
 	if err := o.printRegistration(cmgr); err != nil {
 		return err
@@ -166,6 +164,9 @@ func (o *Options) printPlacement(cmgr *v1.ClusterManager) error {
 }
 
 func (o *Options) printAddOnManager(cmgr *v1.ClusterManager) error {
+	if cmgr.Spec.AddOnManagerConfiguration != nil && !check.IsFeatureEnabled(cmgr.Spec.AddOnManagerConfiguration.FeatureGates, string(feature.AddonManagement)) {
+		return nil
+	}
 	o.printer.Write(printer.LEVEL_1, "AddOn Manager:\n")
 	return printer.PrintComponentsDeploy(o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNameAddOnManagerController)
 }

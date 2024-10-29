@@ -27,7 +27,8 @@ type Values struct {
 	// Namespace to install
 	Namespace string
 	// Version to install
-	BundleVersion version.VersionBundle
+	BundleVersion   version.VersionBundle
+	CreateNamespace bool
 }
 
 var (

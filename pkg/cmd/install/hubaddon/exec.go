@@ -65,6 +65,12 @@ func (o *Options) run() error {
 
 	klog.V(3).InfoS("values:", "addon", o.values.HubAddons)
 
+	if o.values.CreateNamespace {
+		if err := o.createNamespace(); err != nil {
+			return err
+		}
+	}
+
 	return o.runWithClient()
 }
 
@@ -81,27 +87,6 @@ func (o *Options) runWithClient() error {
 		if err != nil {
 			return fmt.Errorf("Error deploying %s CRDs: %w", addon, err)
 		}
-
-		// create namespace if its missing
-		clientSet, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
-		if err != nil {
-			return fmt.Errorf("failed to create kubernetes clientSet")
-		}
-
-		ns, err := clientSet.CoreV1().Namespaces().Get(context.Background(), o.values.Namespace, metav1.GetOptions{})
-		if err != nil && errors.IsNotFound(err) {
-			ns, err = clientSet.CoreV1().Namespaces().Create(context.Background(), &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: o.values.Namespace,
-				},
-			}, metav1.CreateOptions{})
-			if err != nil {
-				return fmt.Errorf("failed to create namespace %s: %w", ns, err)
-			}
-		} else if err != nil {
-			return fmt.Errorf("failed to get namespace %s: %w", ns, err)
-		}
-
 		err = r.Apply(scenario.Files, o.values, files.ConfigFiles...)
 		if err != nil {
 			return fmt.Errorf("Error deploying %s dependencies: %w", addon, err)
@@ -112,7 +97,6 @@ func (o *Options) runWithClient() error {
 		}
 
 		fmt.Fprintf(o.Streams.Out, "Installing built-in %s add-on to the Hub cluster...\n", addon)
-
 	}
 
 	if len(o.outputFile) > 0 {
@@ -127,6 +111,29 @@ func (o *Options) runWithClient() error {
 		if err := sh.Close(); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (o *Options) createNamespace() error {
+	clientSet, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
+	if err != nil {
+		return fmt.Errorf("failed to create kubernetes clientSet")
+	}
+
+	ns, err := clientSet.CoreV1().Namespaces().Get(context.Background(), o.values.Namespace, metav1.GetOptions{})
+	if err != nil && errors.IsNotFound(err) {
+		ns, err = clientSet.CoreV1().Namespaces().Create(context.Background(), &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: o.values.Namespace,
+			},
+		}, metav1.CreateOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to create namespace %s: %w", ns, err)
+		}
+	} else if err != nil {
+		return fmt.Errorf("failed to get namespace %s: %w", ns, err)
 	}
 
 	return nil

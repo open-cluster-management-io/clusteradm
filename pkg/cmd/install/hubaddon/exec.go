@@ -2,7 +2,11 @@
 package hubaddon
 
 import (
+	"context"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"strings"
 
@@ -77,6 +81,28 @@ func (o *Options) runWithClient() error {
 		if err != nil {
 			return fmt.Errorf("Error deploying %s CRDs: %w", addon, err)
 		}
+
+		// create namespace if its missing
+		clientSet, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
+		if err != nil {
+			return fmt.Errorf("failed to create kubernetes clientSet")
+		}
+
+		ns, err := clientSet.CoreV1().Namespaces().Get(context.Background(), o.values.Namespace, metav1.GetOptions{})
+		if err != nil && errors.IsNotFound(err) {
+			ns, err = clientSet.CoreV1().Namespaces().Create(context.Background(), &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: o.values.Namespace,
+				},
+			}, metav1.CreateOptions{})
+			if err != nil {
+				return fmt.Errorf("failed to create namespace %s: %w", ns, err)
+			}
+
+		} else if err != nil {
+			return fmt.Errorf("failed to get namespace %s: %w", ns, err)
+		}
+
 		err = r.Apply(scenario.Files, o.values, files.ConfigFiles...)
 		if err != nil {
 			return fmt.Errorf("Error deploying %s dependencies: %w", addon, err)

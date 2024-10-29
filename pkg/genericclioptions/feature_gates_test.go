@@ -27,7 +27,9 @@ func TestConvertToFeatureGateAPI(t *testing.T) {
 				return fg
 			},
 			defaultFeatureGate: ocmfeature.DefaultHubAddonManagerFeatureGates,
-			expected:           []operatorv1.FeatureGate{},
+			expected: []operatorv1.FeatureGate{
+				{Feature: "AddonManagement", Mode: operatorv1.FeatureGateModeTypeDisable},
+			},
 		},
 		{
 			name: "enable default feature gate",

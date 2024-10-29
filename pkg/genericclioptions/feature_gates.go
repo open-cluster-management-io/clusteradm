@@ -20,7 +20,6 @@ func init() {
 
 	// Update default features
 	utilruntime.Must(HubMutableFeatureGate.SetFromMap(map[string]bool{string(ocmfeature.DefaultClusterSet): true}))
-	utilruntime.Must(SpokeMutableFeatureGate.SetFromMap(map[string]bool{string(ocmfeature.AddonManagement): true}))
 }
 
 func ConvertToFeatureGateAPI(featureGates featuregate.MutableFeatureGate, defaultFeatureGate map[featuregate.Feature]featuregate.FeatureSpec) []operatorv1.FeatureGate {
@@ -34,6 +33,9 @@ func ConvertToFeatureGateAPI(featureGates featuregate.MutableFeatureGate, defaul
 		}
 		if featureGates.Enabled(feature) {
 			features = append(features, operatorv1.FeatureGate{Feature: string(feature), Mode: operatorv1.FeatureGateModeTypeEnable})
+		} else if defaultFeatureGate[feature].Default {
+			// Explicitly disable the feature gate that is enabled by default
+			features = append(features, operatorv1.FeatureGate{Feature: string(feature), Mode: operatorv1.FeatureGateModeTypeDisable})
 		}
 	}
 

@@ -98,7 +98,6 @@ func (o *Options) runWithClient() error {
 			if err != nil {
 				return fmt.Errorf("failed to create namespace %s: %w", ns, err)
 			}
-
 		} else if err != nil {
 			return fmt.Errorf("failed to get namespace %s: %w", ns, err)
 		}

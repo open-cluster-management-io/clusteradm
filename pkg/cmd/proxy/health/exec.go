@@ -152,7 +152,8 @@ func (o *Options) run(streams genericiooptions.IOStreams) error {
 	w := newWriter(streams)
 	for _, cluster := range managedClusterList.Items {
 		if probingClusters.Len() == 0 || probingClusters.Has(cluster.Name) {
-			tunnel, err := konnectivity.CreateSingleUseGrpcTunnel(
+			tunnel, err := konnectivity.CreateSingleUseGrpcTunnelWithContext(
+				context.TODO(),
 				ctx,
 				net.JoinHostPort(o.proxyServerHost, strconv.Itoa(o.proxyServerPort)),
 				grpc.WithTransportCredentials(grpccredentials.NewTLS(tlsCfg)),

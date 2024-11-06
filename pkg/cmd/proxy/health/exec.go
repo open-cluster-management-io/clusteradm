@@ -148,19 +148,20 @@ func (o *Options) run(streams genericiooptions.IOStreams) error {
 		return errors.Wrapf(err, "failed building tls config")
 	}
 
-	tunnel, err := konnectivity.CreateSingleUseGrpcTunnel(
-		ctx,
-		net.JoinHostPort(o.proxyServerHost, strconv.Itoa(o.proxyServerPort)),
-		grpc.WithTransportCredentials(grpccredentials.NewTLS(tlsCfg)),
-	)
-	if err != nil {
-		return errors.Wrapf(err, "failed starting konnectivity proxy")
-	}
-
 	probingClusters := o.ClusterOption.AllClusters()
 	w := newWriter(streams)
 	for _, cluster := range managedClusterList.Items {
 		if probingClusters.Len() == 0 || probingClusters.Has(cluster.Name) {
+			tunnel, err := konnectivity.CreateSingleUseGrpcTunnelWithContext(
+				context.TODO(),
+				ctx,
+				net.JoinHostPort(o.proxyServerHost, strconv.Itoa(o.proxyServerPort)),
+				grpc.WithTransportCredentials(grpccredentials.NewTLS(tlsCfg)),
+			)
+			if err != nil {
+				return errors.Wrapf(err, "failed starting konnectivity proxy")
+			}
+
 			if err := o.visit(&w, hubRestConfig, addonClient, tunnel.DialContext, cluster.Name); err != nil {
 				klog.Errorf("An error occurred when requesting: %v", err)
 			}

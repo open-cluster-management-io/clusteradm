@@ -188,12 +188,14 @@ func (o *Options) run() error {
 		}
 
 		if !o.ClusteradmFlags.DryRun {
-			if err := helperwait.WaitUntilCRDReady(apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", o.wait); err != nil {
+			if err := helperwait.WaitUntilCRDReady(
+				o.Streams.Out, apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", o.wait); err != nil {
 				return err
 			}
 		}
 		if o.wait && !o.ClusteradmFlags.DryRun {
 			if err := helperwait.WaitUntilRegistrationOperatorReady(
+				o.Streams.Out,
 				o.ClusteradmFlags.KubectlFactory,
 				int64(o.ClusteradmFlags.Timeout)); err != nil {
 				return err
@@ -202,6 +204,7 @@ func (o *Options) run() error {
 
 		if o.wait && !o.ClusteradmFlags.DryRun {
 			if err := helperwait.WaitUntilClusterManagerRegistrationReady(
+				o.Streams.Out,
 				o.ClusteradmFlags.KubectlFactory,
 				int64(o.ClusteradmFlags.Timeout)); err != nil {
 				return err
@@ -318,6 +321,7 @@ func (o *Options) deploySingletonControlplane(kubeClient kubernetes.Interface) e
 	// fetch the kubeconfig and get the token
 	if o.wait && !o.ClusteradmFlags.DryRun {
 		if err := helperwait.WaitUntilMulticlusterControlplaneReady(
+			o.Streams.Out,
 			o.ClusteradmFlags.KubectlFactory,
 			o.SingletonName,
 			int64(o.ClusteradmFlags.Timeout)); err != nil {

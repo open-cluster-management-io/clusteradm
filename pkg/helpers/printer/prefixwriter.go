@@ -69,17 +69,19 @@ type flusher interface {
 	Flush()
 }
 
-func NewSpinner(suffix string, interval time.Duration) *spinner.Spinner {
+func NewSpinner(w io.Writer, suffix string, interval time.Duration) *spinner.Spinner {
 	return spinner.New(
 		spinner.CharSets[14],
 		interval,
+		spinner.WithWriter(w),
 		spinner.WithColor("green"),
 		spinner.WithHiddenCursor(true),
 		spinner.WithSuffix(suffixColor.Sprintf(" %s", suffix)))
 }
 
-func NewSpinnerWithStatus(suffix string, interval time.Duration, final string, statusFunc func() string) *spinner.Spinner {
-	s := NewSpinner(suffix, interval)
+func NewSpinnerWithStatus(
+	w io.Writer, suffix string, interval time.Duration, final string, statusFunc func() string) *spinner.Spinner {
+	s := NewSpinner(w, suffix, interval)
 	s.FinalMSG = final
 	s.PreUpdate = func(s *spinner.Spinner) {
 		status := statusFunc()

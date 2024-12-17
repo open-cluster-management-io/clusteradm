@@ -102,12 +102,14 @@ func (o *Options) run() error {
 	}
 
 	if !o.ClusteradmFlags.DryRun {
-		if err := wait.WaitUntilCRDReady(apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", o.wait); err != nil {
+		if err := wait.WaitUntilCRDReady(
+			o.Streams.Out, apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", o.wait); err != nil {
 			return err
 		}
 	}
 	if o.wait && !o.ClusteradmFlags.DryRun {
 		if err := wait.WaitUntilRegistrationOperatorReady(
+			o.Streams.Out,
 			o.ClusteradmFlags.KubectlFactory,
 			int64(o.ClusteradmFlags.Timeout)); err != nil {
 			return err

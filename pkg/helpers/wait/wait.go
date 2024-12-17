@@ -4,6 +4,7 @@ package wait
 import (
 	"context"
 	"fmt"
+	"io"
 	"sync/atomic"
 	"time"
 
@@ -21,12 +22,12 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 )
 
-func WaitUntilCRDReady(apiExtensionsClient apiextensionsclient.Interface, crdName string, wait bool) error {
+func WaitUntilCRDReady(w io.Writer, apiExtensionsClient apiextensionsclient.Interface, crdName string, wait bool) error {
 	b := retry.DefaultBackoff
 	b.Duration = 200 * time.Millisecond
 
 	if wait {
-		crdSpinner := printer.NewSpinner("Waiting for CRD to be ready...", time.Second)
+		crdSpinner := printer.NewSpinner(w, "Waiting for CRD to be ready...", time.Second)
 		crdSpinner.FinalMSG = "CRD successfully registered.\n"
 		crdSpinner.Start()
 		defer crdSpinner.Stop()
@@ -34,7 +35,7 @@ func WaitUntilCRDReady(apiExtensionsClient apiextensionsclient.Interface, crdNam
 	return helpers.WaitCRDToBeReady(apiExtensionsClient, crdName, b, wait)
 }
 
-func WaitUntilRegistrationOperatorReady(f util.Factory, timeout int64) error {
+func WaitUntilRegistrationOperatorReady(w io.Writer, f util.Factory, timeout int64) error {
 	var restConfig *rest.Config
 	restConfig, err := f.ToRESTConfig()
 	if err != nil {
@@ -49,6 +50,7 @@ func WaitUntilRegistrationOperatorReady(f util.Factory, timeout int64) error {
 	phase.Store("")
 	text := "Waiting for registration operator to become ready..."
 	operatorSpinner := printer.NewSpinnerWithStatus(
+		w,
 		text,
 		time.Second,
 		"Registration operator is now available.\n",
@@ -85,7 +87,7 @@ func WaitUntilRegistrationOperatorReady(f util.Factory, timeout int64) error {
 		})
 }
 
-func WaitUntilClusterManagerRegistrationReady(f util.Factory, timeout int64) error {
+func WaitUntilClusterManagerRegistrationReady(w io.Writer, f util.Factory, timeout int64) error {
 	var restConfig *rest.Config
 	restConfig, err := f.ToRESTConfig()
 	if err != nil {
@@ -100,6 +102,7 @@ func WaitUntilClusterManagerRegistrationReady(f util.Factory, timeout int64) err
 	phase.Store("")
 	text := "Waiting for cluster manager registration to become ready..."
 	clusterManagerSpinner := printer.NewSpinnerWithStatus(
+		w,
 		text,
 		time.Second,
 		"ClusterManager registration is now available.\n",
@@ -136,7 +139,7 @@ func WaitUntilClusterManagerRegistrationReady(f util.Factory, timeout int64) err
 		})
 }
 
-func WaitUntilMulticlusterControlplaneReady(f util.Factory, ns string, timeout int64) error {
+func WaitUntilMulticlusterControlplaneReady(w io.Writer, f util.Factory, ns string, timeout int64) error {
 	var restConfig *rest.Config
 	restConfig, err := f.ToRESTConfig()
 	if err != nil {
@@ -151,6 +154,7 @@ func WaitUntilMulticlusterControlplaneReady(f util.Factory, ns string, timeout i
 	phase.Store("")
 	text := "Waiting for multicluster controlplane to become ready..."
 	clusterManagerSpinner := printer.NewSpinnerWithStatus(
+		w,
 		text,
 		time.Second,
 		"Multicluster controlplane is now available.\n",

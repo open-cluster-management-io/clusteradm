@@ -8,6 +8,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	gherrors "github.com/pkg/errors"
+	"io"
 	"os"
 	"reflect"
 	"strings"
@@ -395,13 +396,15 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient opera
 	}
 
 	if !o.ClusteradmFlags.DryRun {
-		if err := wait.WaitUntilCRDReady(apiExtensionsClient, "klusterlets.operator.open-cluster-management.io", o.wait); err != nil {
+		if err := wait.WaitUntilCRDReady(
+			o.Streams.Out, apiExtensionsClient, "klusterlets.operator.open-cluster-management.io", o.wait); err != nil {
 			return err
 		}
 	}
 
 	if !available && o.wait && !o.ClusteradmFlags.DryRun {
-		err = waitUntilRegistrationOperatorConditionIsTrue(o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout))
+		err = waitUntilRegistrationOperatorConditionIsTrue(
+			o.Streams.Out, o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout))
 		if err != nil {
 			return err
 		}
@@ -409,12 +412,14 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient opera
 
 	if o.wait && !o.ClusteradmFlags.DryRun {
 		if o.mode == string(operatorv1.InstallModeHosted) {
-			err = waitUntilKlusterletConditionIsTrue(operatorClient, int64(o.ClusteradmFlags.Timeout), o.klusterletChartConfig.Klusterlet.Name)
+			err = waitUntilKlusterletConditionIsTrue(
+				o.Streams.Out, operatorClient, int64(o.ClusteradmFlags.Timeout), o.klusterletChartConfig.Klusterlet.Name)
 			if err != nil {
 				return err
 			}
 		} else {
-			err = waitUntilKlusterletConditionIsTrue(operatorClient, int64(o.ClusteradmFlags.Timeout), o.klusterletChartConfig.Klusterlet.Name)
+			err = waitUntilKlusterletConditionIsTrue(
+				o.Streams.Out, operatorClient, int64(o.ClusteradmFlags.Timeout), o.klusterletChartConfig.Klusterlet.Name)
 			if err != nil {
 				return err
 			}
@@ -475,6 +480,7 @@ func (o *Options) waitUntilManagedClusterIsCreated(timeout int64, clusterName st
 	phase := &atomic.Value{}
 	phase.Store("")
 	operatorSpinner := printer.NewSpinnerWithStatus(
+		o.Streams.Out,
 		"Waiting for managed cluster to be created...",
 		time.Millisecond*500,
 		"Managed cluster is created.\n",
@@ -505,7 +511,7 @@ func (o *Options) waitUntilManagedClusterIsCreated(timeout int64, clusterName st
 		})
 }
 
-func waitUntilRegistrationOperatorConditionIsTrue(f util.Factory, timeout int64) error {
+func waitUntilRegistrationOperatorConditionIsTrue(w io.Writer, f util.Factory, timeout int64) error {
 	var restConfig *rest.Config
 	restConfig, err := f.ToRESTConfig()
 	if err != nil {
@@ -519,6 +525,7 @@ func waitUntilRegistrationOperatorConditionIsTrue(f util.Factory, timeout int64)
 	phase := &atomic.Value{}
 	phase.Store("")
 	operatorSpinner := printer.NewSpinnerWithStatus(
+		w,
 		"Waiting for registration operator to become ready...",
 		time.Millisecond*500,
 		"Registration operator is now available.\n",
@@ -556,10 +563,12 @@ func waitUntilRegistrationOperatorConditionIsTrue(f util.Factory, timeout int64)
 }
 
 // Wait until the klusterlet condition available=true, or timeout in $timeout seconds
-func waitUntilKlusterletConditionIsTrue(client operatorclient.Interface, timeout int64, klusterletName string) error {
+func waitUntilKlusterletConditionIsTrue(
+	w io.Writer, client operatorclient.Interface, timeout int64, klusterletName string) error {
 	phase := &atomic.Value{}
 	phase.Store("")
 	klusterletSpinner := printer.NewSpinnerWithStatus(
+		w,
 		"Waiting for klusterlet agent to become ready...",
 		time.Millisecond*500,
 		"Klusterlet is now available.\n",

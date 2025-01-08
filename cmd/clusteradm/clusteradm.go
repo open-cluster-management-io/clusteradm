@@ -84,7 +84,7 @@ func main() {
 
 	// From this point and forward we get warnings on flags that contain "_" separators
 
-	root.AddCommand(cmdconfig.NewCmdConfig(clientcmd.NewDefaultPathOptions(), streams))
+	root.AddCommand(cmdconfig.NewCmdConfig(kubeConfigFlags, clientcmd.NewDefaultPathOptions(), streams))
 	root.AddCommand(options.NewCmdOptions(streams.Out))
 	//addon plugin functionality: all `os.Args[0]-<binary>` in the $PATH will be available for plugin
 	plugin.ValidPluginFilenamePrefixes = []string{os.Args[0]}

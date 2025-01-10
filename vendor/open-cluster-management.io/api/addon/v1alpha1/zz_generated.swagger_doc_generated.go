@@ -36,10 +36,21 @@ var map_AddOnDeploymentConfigSpec = map[string]string{
 	"registries":            "Registries describes how to override images used by the addon agent on the managed cluster. the following example will override image \"quay.io/open-cluster-management/addon-agent\" to \"quay.io/ocm/addon-agent\" when deploying the addon agent\n\nregistries:\n  - source: quay.io/open-cluster-management/addon-agent\n    mirror: quay.io/ocm/addon-agent",
 	"proxyConfig":           "ProxyConfig holds proxy settings for add-on agent on the managed cluster. Empty means no proxy settings is available.",
 	"agentInstallNamespace": "AgentInstallNamespace is the namespace where the add-on agent should be installed on the managed cluster.",
+	"resourceRequirements":  "ResourceRequirements specify the resources required by add-on agents. If a container matches multiple ContainerResourceRequirements, the last matched configuration in the array will take precedence.",
 }
 
 func (AddOnDeploymentConfigSpec) SwaggerDoc() map[string]string {
 	return map_AddOnDeploymentConfigSpec
+}
+
+var map_ContainerResourceRequirements = map[string]string{
+	"":            "ContainerResourceRequirements defines resources required by one or a group of containers.",
+	"containerID": "ContainerID is a unique identifier for an agent container. It consists of three parts: resource types, resource name, and container name, separated by ':'. The format follows '{resource_types}:{resource_name}:{container_name}' where\n  1). Supported resource types include deployments, daemonsets, statefulsets, replicasets, jobs,\n    cronjobs and pods;\n  2). Wildcards (*) can be used in any part to match multiple containers. For example, '*:*:*'\n    matches all containers of the agent.",
+	"resources":   "Compute resources required by matched containers.",
+}
+
+func (ContainerResourceRequirements) SwaggerDoc() map[string]string {
+	return map_ContainerResourceRequirements
 }
 
 var map_CustomizedVariable = map[string]string{
@@ -125,7 +136,7 @@ func (CurrentClusterBindingConfig) SwaggerDoc() map[string]string {
 var map_CustomSignerRegistrationConfig = map[string]string{
 	"signerName": "signerName is the name of signer that addon agent will use to create csr.",
 	"subject":    "Subject is the user subject of the addon agent to be registered to the hub. If it is not set, the addon agent will have the default subject \"subject\": {\n  \"user\": \"system:open-cluster-management:cluster:{clusterName}:addon:{addonName}:agent:{agentName}\",\n  \"groups: [\"system:open-cluster-management:cluster:{clusterName}:addon:{addonName}\",\n            \"system:open-cluster-management:addon:{addonName}\", \"system:authenticated\"]\n}",
-	"signingCA":  "SigningCA represents the reference of the secret on the hub cluster to sign the CSR the secret must be in the namespace where the addon-manager is located, and the secret type must be \"kubernetes.io/tls\" Note: The addon manager will not have permission to access the secret by default, so the user must grant the permission to the addon manager(by creating rolebinding for the addon-manager serviceaccount \"addon-manager-controller-sa\").",
+	"signingCA":  "SigningCA represents the reference of the secret on the hub cluster to sign the CSR the secret type must be \"kubernetes.io/tls\" Note: The addon manager will not have permission to access the secret by default, so the user must grant the permission to the addon manager(by creating rolebinding/clusterrolebinding for the addon-manager serviceaccount \"addon-manager-controller-sa\").",
 }
 
 func (CustomSignerRegistrationConfig) SwaggerDoc() map[string]string {
@@ -163,8 +174,9 @@ func (RegistrationSpec) SwaggerDoc() map[string]string {
 }
 
 var map_SigningCARef = map[string]string{
-	"":     "SigningCARef is the reference to the signing CA secret which type must be \"kubernetes.io/tls\" and which namespace must be the same as the addon-manager.",
-	"name": "Name of the signing CA secret",
+	"":          "SigningCARef is the reference to the signing CA secret which type must be \"kubernetes.io/tls\" and which namespace must be the same as the addon-manager.",
+	"name":      "Name of the signing CA secret",
+	"namespace": "Namespace of the signing CA secret, the namespace of the addon-manager will be used if it is not set.",
 }
 
 func (SigningCARef) SwaggerDoc() map[string]string {

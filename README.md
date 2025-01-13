@@ -16,7 +16,7 @@ curl -L https://raw.githubusercontent.com/open-cluster-management-io/clusteradm/
 #### From go install:
 
 ```shell
-GO111MODULE=off go get -u open-cluster-management.io/clusteradm/...
+go install open-cluster-management.io/clusteradm/cmd/clusteradm
 ```
 
 #### From binaries:

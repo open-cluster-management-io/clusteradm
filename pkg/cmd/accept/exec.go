@@ -27,7 +27,7 @@ import (
 const (
 	groupNameBootstrap               = "system:bootstrappers:managedcluster"
 	userNameSignatureBootstrapPrefix = "system:bootstrap:"
-	userNameSignatureSA              = "system:serviceaccount:open-cluster-management:cluster-bootstrap"
+	userNameSignatureSA              = "system:serviceaccount:open-cluster-management:agent-registration-bootstrap"
 	groupNameSA                      = "system:serviceaccounts:open-cluster-management"
 	clusterLabel                     = "open-cluster-management.io/cluster-name"
 )
@@ -124,12 +124,12 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 		passedCSRs = csrs.Items
 	} else {
 		for _, item := range csrs.Items {
-			//Does not have the correct name prefix
+			// Does not have the correct name prefix
 			if !strings.HasPrefix(item.Spec.Username, userNameSignatureBootstrapPrefix) &&
 				!strings.HasPrefix(item.Spec.Username, userNameSignatureSA) {
 				continue
 			}
-			//Check groups
+			// Check groups
 			groups := sets.NewString(item.Spec.Groups...)
 			if !groups.Has(groupNameBootstrap) &&
 				!groups.Has(groupNameSA) {
@@ -173,14 +173,14 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 			fmt.Fprintf(o.Streams.Out, "CSR %s with requester %s is not in the approve list\n", passedCSR.Name, cn)
 			continue
 		}
-		//Check if already approved or denied
+		// Check if already approved or denied
 		approved, denied := GetCertApprovalCondition(&passedCSR.Status)
-		//if already denied, then nothing to do
+		// if already denied, then nothing to do
 		if denied {
 			fmt.Fprintf(o.Streams.Out, "CSR %s already denied\n", passedCSR.Name)
 			continue
 		}
-		//if already approved, then nothing to do
+		// if already approved, then nothing to do
 		if approved {
 			fmt.Fprintf(o.Streams.Out, "CSR %s already approved\n", passedCSR.Name)
 			hasApproved = true
@@ -189,7 +189,7 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 		csrToApprove = append(csrToApprove, passedCSR)
 	}
 
-	//no csr found
+	// no csr found
 	if len(csrToApprove) == 0 {
 		if waitMode {
 			fmt.Fprintf(o.Streams.Out, "no CSR to approve for cluster %s\n", clusterName)
@@ -197,7 +197,7 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 
 		return hasApproved, nil
 	}
-	//if dry-run don't approve
+	// if dry-run don't approve
 	if o.ClusteradmFlags.DryRun {
 		return hasApproved, nil
 	}

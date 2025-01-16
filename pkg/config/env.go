@@ -4,10 +4,10 @@ package config
 
 const (
 	OpenClusterManagementNamespace    = "open-cluster-management"
-	BootstrapSAName                   = "cluster-bootstrap"
-	BootstrapClusterRoleBindingName   = "cluster-bootstrap"
-	BootstrapClusterRoleBindingSAName = "cluster-bootstrap-sa"
-	BootstrapClusterRoleName          = "system:open-cluster-management:bootstrap"
+	BootstrapSAName                   = "agent-registration-bootstrap"
+	BootstrapClusterRoleBindingName   = "open-cluster-management:bootstrap:agent-registration"
+	BootstrapClusterRoleBindingSAName = "agent-registration-bootstrap"
+	BootstrapClusterRoleName          = "open-cluster-management:bootstrap"
 	ClusterManagerName                = "cluster-manager"
 	LabelApp                          = "app"
 	BootstrapSecretPrefix             = "bootstrap-token-"

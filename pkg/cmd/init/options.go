@@ -50,6 +50,12 @@ type Options struct {
 	output string
 
 	Streams genericiooptions.IOStreams
+
+	// The type of authentication to use for initializing the hub cluster
+	registrationAuth []string
+	// The optional ARN to pass if awsirsa is one of the registrationAuths
+	// and the cluster name in EKS kubeconfig doesn't contain hubClusterArn
+	hubClusterArn string
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Options {

@@ -4,6 +4,7 @@ package init
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"os"
 	"time"
 
@@ -70,10 +71,15 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 			},
 			Tag: bundleVersion.OCM,
 		}
+		registrationDrivers, err := getRegistrationDrivers(o)
+		if err != nil {
+			return err
+		}
 		o.clusterManagerChartConfig.ClusterManager = chart.ClusterManagerConfig{
 			RegistrationConfiguration: operatorv1.RegistrationHubConfiguration{
 				FeatureGates: genericclioptionsclusteradm.ConvertToFeatureGateAPI(
 					genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubRegistrationFeatureGates),
+				RegistrationDrivers: registrationDrivers,
 			},
 			WorkConfiguration: operatorv1.WorkConfiguration{
 				FeatureGates: genericclioptionsclusteradm.ConvertToFeatureGateAPI(
@@ -142,6 +148,13 @@ func (o *Options) validate() error {
 
 	if len(o.registry) == 0 {
 		return fmt.Errorf("registry should not be empty")
+	}
+
+	validRegistrationDriver := sets.New[string]("csr", "awsirsa")
+	for _, driver := range o.registrationAuth {
+		if !validRegistrationDriver.Has(driver) {
+			return fmt.Errorf("only csr and awsirsa are valid drivers")
+		}
 	}
 
 	// If --wait is set, some information during initialize process will print to output, the output would not keep
@@ -352,4 +365,41 @@ func (o *Options) deploySingletonControlplane(kubeClient kubernetes.Interface) e
 			"You can use "+fmt.Sprintf("\"kubectl --kubeconfig %s\"", kubeconfigfile)+" to access control plane.\n\n")
 	}
 	return nil
+}
+
+func getRegistrationDrivers(o *Options) ([]operatorv1.RegistrationDriverHub, error) {
+	registrationDrivers := []operatorv1.RegistrationDriverHub{}
+	var registrationDriver operatorv1.RegistrationDriverHub
+
+	for _, driver := range o.registrationAuth {
+		if driver == "csr" {
+			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: driver}
+		} else if driver == "awsirsa" {
+			hubClusterArn, err := getHubClusterArn(o)
+			if err != nil {
+				return registrationDrivers, err
+			}
+			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: driver, HubClusterArn: hubClusterArn}
+		}
+		registrationDrivers = append(registrationDrivers, registrationDriver)
+	}
+
+	return registrationDrivers, nil
+}
+
+func getHubClusterArn(o *Options) (string, error) {
+	hubClusterArn := o.hubClusterArn
+	if hubClusterArn == "" {
+		rawConfig, err := o.ClusteradmFlags.KubectlFactory.ToRawKubeConfigLoader().RawConfig()
+		if err != nil {
+			klog.Errorf("unable to load hub cluster kubeconfig: %v", err)
+			return "", err
+		}
+		hubClusterArn = rawConfig.Contexts[rawConfig.CurrentContext].Cluster
+		if hubClusterArn == "" {
+			klog.Errorf("hubClusterArn has empty value in kubeconfig")
+			return "", fmt.Errorf("unable to retrieve hubClusterArn from kubeconfig")
+		}
+	}
+	return hubClusterArn, nil
 }

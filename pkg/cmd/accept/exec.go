@@ -94,10 +94,24 @@ func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient 
 }
 
 func (o *Options) accept(kubeClient *kubernetes.Clientset, clusterClient *clusterclientset.Clientset, clusterName string, waitMode bool) (bool, error) {
-	approved, err := o.approveCSR(kubeClient, clusterName, waitMode)
+	managedCluster, err := clusterClient.ClusterV1().ManagedClusters().Get(context.TODO(),
+		clusterName,
+		metav1.GetOptions{})
 	if err != nil {
-		return approved, fmt.Errorf("fail to approve the csr for cluster %s: %v", clusterName, err)
+		return false, fmt.Errorf("fail to get managedcluster %s: %v", clusterName, err)
 	}
+	_, hasEksArn := managedCluster.Annotations["agent.open-cluster-management.io/managed-cluster-arn"]
+
+	var approved bool
+	if !hasEksArn {
+		approved, err = o.approveCSR(kubeClient, clusterName, waitMode)
+		if err != nil {
+			return approved, fmt.Errorf("fail to approve the csr for cluster %s: %v", clusterName, err)
+		}
+	} else {
+		approved = true
+	}
+
 	err = o.updateManagedCluster(clusterClient, clusterName)
 	if err != nil {
 		return approved, err

@@ -4,9 +4,11 @@ package init
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"os"
+	"slices"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -75,11 +77,14 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		if err != nil {
 			return err
 		}
+		approvedIdentities := getAutoApprovedIdentities(o)
+
 		o.clusterManagerChartConfig.ClusterManager = chart.ClusterManagerConfig{
 			RegistrationConfiguration: operatorv1.RegistrationHubConfiguration{
 				FeatureGates: genericclioptionsclusteradm.ConvertToFeatureGateAPI(
 					genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubRegistrationFeatureGates),
 				RegistrationDrivers: registrationDrivers,
+				AutoApprovalIdentities: approvedIdentities,
 			},
 			WorkConfiguration: operatorv1.WorkConfiguration{
 				FeatureGates: genericclioptionsclusteradm.ConvertToFeatureGateAPI(
@@ -155,6 +160,31 @@ func (o *Options) validate() error {
 		if !validRegistrationDriver.Has(driver) {
 			return fmt.Errorf("only csr and awsirsa are valid drivers")
 		}
+	}
+
+	featureGates := o.clusterManagerChartConfig.ClusterManager.RegistrationConfiguration.FeatureGates
+	managedClusterAutoApprove := false
+
+	for _, feature := range featureGates {
+		if feature.Feature == "featuregate/ManagedClusterAutoApproval" {
+			if feature.Mode == "Enabled" {
+				managedClusterAutoApprove = true
+			}
+		}
+	}
+	
+	if (managedClusterAutoApprove) {
+		// If hub registration does not accept awsirsa, we stop user if they also pass in a list of patterns for AWS EKS ARN. 
+		if (len(o.awsIdentityPatterns) > 0 && !slices.Contains(o.registrationAuth, "awsirsa") ) {
+			return fmt.Errorf("should not provide list of patterns for aws eks arn if not initializing hub with awsirsa registration")
+		}
+
+		// If hub registration does not accept csr, we stop user if they also pass in a list of users for CSR auto approval. 
+		if (len(o.csrIdentities) > 0 && !slices.Contains(o.registrationAuth, "csr")) {
+			return fmt.Errorf("should not provide list of users for csr to auto approve if not initializing hub with csr registration")
+		}
+	} else if (len(o.awsIdentityPatterns) > 0 || len(o.csrIdentities) > 0){
+		return fmt.Errorf("should enable feature gate ManagedClusterAutoApproval before passing list of identities")
 	}
 
 	// If --wait is set, some information during initialize process will print to output, the output would not keep
@@ -402,4 +432,26 @@ func getHubClusterArn(o *Options) (string, error) {
 		}
 	}
 	return hubClusterArn, nil
+}
+
+func getAutoApprovedIdentities(o *Options) ([]operatorv1.ApprovedIdentities) {
+	approvedIdentities := []operatorv1.ApprovedIdentities{}
+	
+	if len(o.csrIdentities) > 0 {
+		csrApprovedIdentities := operatorv1.ApprovedIdentities {
+			Driver: "csr",
+			Identities: o.csrIdentities,
+		}
+		approvedIdentities = append(approvedIdentities, csrApprovedIdentities)
+	}
+
+	if len(o.awsIdentityPatterns) > 0 {
+		awsApprovedIdentityPatterns := operatorv1.ApprovedIdentities {
+			Driver: "awsirsa",
+			Identities: o.awsIdentityPatterns,
+		}
+		approvedIdentities = append(approvedIdentities, awsApprovedIdentityPatterns)
+	}
+	
+	return approvedIdentities
 }

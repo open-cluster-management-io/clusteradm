@@ -56,6 +56,11 @@ type Options struct {
 	// The optional ARN to pass if awsirsa is one of the registrationAuths
 	// and the cluster name in EKS kubeconfig doesn't contain hubClusterArn
 	hubClusterArn string
+
+	// A list of users that can be auto approve csr and auto accept to join hub cluster
+	csrIdentities []string
+	// A list of AWS EKS ARN patterns that are accepted and whatever matches can be auto accepted to join hub cluster
+	awsIdentityPatterns []string
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Options {

@@ -401,13 +401,13 @@ func getRegistrationDrivers(o *Options) ([]operatorv1.RegistrationDriverHub, err
 
 	for _, driver := range o.registrationAuth {
 		if driver == "csr" {
-			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: driver, Identities: o.csrIdentities}
+			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: driver, AutoApprovedIdentities: o.csrIdentities}
 		} else if driver == "awsirsa" {
 			hubClusterArn, err := getHubClusterArn(o)
 			if err != nil {
 				return registrationDrivers, err
 			}
-			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: driver, HubClusterArn: hubClusterArn, Identities: o.awsIdentityPatterns}
+			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: driver, HubClusterArn: hubClusterArn, AutoApprovedIdentities: o.awsIdentityPatterns}
 		}
 		registrationDrivers = append(registrationDrivers, registrationDriver)
 	}

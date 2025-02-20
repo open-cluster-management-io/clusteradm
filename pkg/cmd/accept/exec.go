@@ -100,6 +100,9 @@ func (o *Options) accept(kubeClient *kubernetes.Clientset, clusterClient *cluste
 	if err != nil {
 		return false, fmt.Errorf("fail to get managedcluster %s: %v", clusterName, err)
 	}
+	// when a managed cluster registers with hub using awsirsa registration-auth, it will add this annotation
+	// to ManagedCluster resource, presense of which is used to decide the requested authentication type.
+	// awrirsa authentication doesn't create CSR on hub, hence there is nothing to approve
 	_, hasEksArn := managedCluster.Annotations["agent.open-cluster-management.io/managed-cluster-arn"]
 
 	var approved bool

@@ -72,6 +72,24 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode"
 			err = e2e.Clusteradm().Init(
 				"--use-bootstrap-token",
 				"--context", e2e.Cluster().Hub().Context(),
+				"--bundle-version=latest",
+				"--registration-auth awsirsa",
+				"--registration-auth csr",
+				"--auto-approved-csr-identity csr1",
+				"--auto-approved-aws-identity-pattern arn:aws:eks:us-west-2:123456789012:cluster/*",
+			)
+			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
+			cm, err = operatorClient.OperatorV1().ClusterManagers().Get(context.TODO(), "cluster-manager", metav1.GetOptions{})
+			gomega.Expect(err).NotTo(gomega.HaveOccurred())
+			// Ensure that the auto approval identities contain user for CSR and pattern for AWS
+			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[0].AuthType).Should(gomega.Equal("csr"))
+			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[1].AuthType).Should(gomega.Equal("awsirsa"))
+			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[0].Identities[0]).Should(gomega.Equal("csr1"))
+			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[1].Identities[0]).Should(gomega.Equal("arn:aws:eks:us-west-2:123456789012:cluster/*"))
+
+			err = e2e.Clusteradm().Init(
+				"--use-bootstrap-token",
+				"--context", e2e.Cluster().Hub().Context(),
 				"--feature-gates=ManagedClusterAutoApproval=true",
 				"--bundle-version=latest",
 			)

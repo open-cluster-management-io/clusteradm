@@ -55,6 +55,7 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode"
 				"--bundle-version=latest",
 				"--registration-drivers=awsirsa,csr",
 				"--hub-cluster-arn=arn:aws:eks:us-west-2:123456789012:cluster/hub-cluster1",
+				"--aws-resource-tags=product:v1:tenant:app-name=My-App,product:v1:tenant:created-by=Team-1",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 
@@ -62,10 +63,14 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode"
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
 			// Ensure that awsirsa and csr is passed as registration-drivers both the values are set.
 			gomega.Expect(len(cm.Spec.RegistrationConfiguration.RegistrationDrivers)).Should(gomega.Equal(2))
+
 			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[0].AuthType).Should(gomega.Equal("awsirsa"))
-			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[1].AuthType).Should(gomega.Equal("csr"))
-			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[0].HubClusterArn).
+			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[0].AwsIrsa.HubClusterArn).
 				Should(gomega.Equal("arn:aws:eks:us-west-2:123456789012:cluster/hub-cluster1"))
+			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[0].AwsIrsa.Tags).
+				Should(gomega.Equal("product:v1:tenant:app-name=My-App,product:v1:tenant:created-by=Team-1"))
+
+			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[1].AuthType).Should(gomega.Equal("csr"))
 
 			err = e2e.Clusteradm().Init(
 				"--use-bootstrap-token",
@@ -74,17 +79,22 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode"
 				"--registration-drivers=awsirsa,csr",
 				"--hub-cluster-arn=arn:aws:eks:us-west-2:123456789012:cluster/hub-cluster1",
 				"--feature-gates=ManagedClusterAutoApproval=true",
-				"--auto-approved-csr-identities=csr1",
-				"--auto-approved-arn-patterns=arn:aws:eks:us-west-2:123456789012:cluster/*",
+				"--auto-approved-csr-identities=user1,user2",
+				"--auto-approved-arn-patterns=arn:aws:eks:us-west-2:123456789013:cluster/.*,arn:aws:eks:us-west-2:123456789012:cluster/.*",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 			cm, err = operatorClient.OperatorV1().ClusterManagers().Get(context.TODO(), "cluster-manager", metav1.GetOptions{})
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
 			// Ensure that the auto approval identities contain user for CSR and pattern for AWS
 			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[0].AuthType).Should(gomega.Equal("awsirsa"))
+			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[0].AwsIrsa.HubClusterArn).
+				Should(gomega.Equal("arn:aws:eks:us-west-2:123456789012:cluster/hub-cluster1"))
+			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[0].AwsIrsa.AutoApprovedIdentities).
+				Should(gomega.Equal("arn:aws:eks:us-west-2:123456789013:cluster/.*,arn:aws:eks:us-west-2:123456789012:cluster/.*"))
+
 			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[1].AuthType).Should(gomega.Equal("csr"))
-			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[1].AutoApprovedIdentities[0]).Should(gomega.Equal("csr1"))
-			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[0].AutoApprovedIdentities[0]).Should(gomega.Equal("arn:aws:eks:us-west-2:123456789012:cluster/*"))
+			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[1].CSR.AutoApprovedIdentities).
+				Should(gomega.Equal("user1,user2"))
 
 			err = e2e.Clusteradm().Init(
 				"--use-bootstrap-token",

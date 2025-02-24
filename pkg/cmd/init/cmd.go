@@ -16,7 +16,11 @@ var example = `
 %[1]s init
 
 # Initialize the hub cluster with the type of authentication. Either or both of csr,awsirsa
-%[1]s init --registration-drivers="awsirsa,csr" --hubClusterArn arn:aws:eks:us-west-2:123456789012:cluster/hub-cluster1
+%[1]s init --registration-drivers "awsirsa,csr"
+    --hubClusterArn arn:aws:eks:us-west-2:123456789012:cluster/hub-cluster1
+	--aws-resource-tags product:v1:tenant:app-name=My-App,product:v1:tenant:created-by=Team-1
+    --auto-approved-csr-identities="user1,user2"
+	--auto-approved-arn-patterns="arn:aws:eks:us-west-2:123456789013:cluster/.*,arn:aws:eks:us-west-2:123456789012:cluster/.*"
 `
 
 // NewCmd ...
@@ -85,6 +89,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		"The type of authentication to use for registering and authenticating with hub. Only csr and awsirsa are accepted as valid inputs. This flag can be repeated to specify multiple authentication types.")
 	cmd.Flags().StringVar(&o.hubClusterArn, "hub-cluster-arn", "",
 		"The hubCluster ARN to be passed if awsirsa is one of the registrationAuths and the cluster name in EKS kubeconfig doesn't contain hubClusterArn")
+	cmd.Flags().StringSliceVar(&o.awsResourceTags, "aws-resource-tags", []string{},
+		"List of tags to be added to AWS resources created by hub while processing awsirsa registration request, for example: product:v1:tenant:app-name=My-App,product:v1:tenant:created-by=Team-1")
 
 	cmd.Flags().StringSliceVar(&o.autoApprovedCSRIdentities, "auto-approved-csr-identities", []string{},
 		"The users or identities that can be auto approved for CSR and auto accepted to join with hub cluster")

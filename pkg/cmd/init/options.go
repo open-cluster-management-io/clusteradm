@@ -61,6 +61,8 @@ type Options struct {
 	autoApprovedCSRIdentities []string
 	// A list of AWS EKS ARN patterns that are accepted and whatever matches can be auto accepted to join hub cluster
 	autoApprovedARNPatterns []string
+	// List of tags to be added to AWS resources created by hub while processing awsirsa registration request
+	awsResourceTags []string
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Options {

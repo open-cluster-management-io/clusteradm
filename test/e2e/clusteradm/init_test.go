@@ -84,8 +84,8 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode"
 			// Ensure that the auto approval identities contain user for CSR and pattern for AWS
 			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[0].AuthType).Should(gomega.Equal("csr"))
 			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[1].AuthType).Should(gomega.Equal("awsirsa"))
-			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[0].Identities[0]).Should(gomega.Equal("csr1"))
-			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[1].Identities[0]).Should(gomega.Equal("arn:aws:eks:us-west-2:123456789012:cluster/*"))
+			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[0].AutoApprovedIdentities[0]).Should(gomega.Equal("csr1"))
+			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[1].AutoApprovedIdentities[0]).Should(gomega.Equal("arn:aws:eks:us-west-2:123456789012:cluster/*"))
 
 			err = e2e.Clusteradm().Init(
 				"--use-bootstrap-token",

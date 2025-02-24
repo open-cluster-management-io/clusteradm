@@ -85,10 +85,10 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		"The type of authentication to use for registering and authenticating with hub. Only csr and awsirsa are accepted as valid inputs. This flag can be repeated to specify multiple authentication types.")
 	cmd.Flags().StringVar(&o.hubClusterArn, "hub-cluster-arn", "",
 		"The hubCluster ARN to be passed if awsirsa is one of the registrationAuths and the cluster name in EKS kubeconfig doesn't contain hubClusterArn")
-	
-	cmd.Flags().StringArrayVar(&o.csrIdentities, "auto-approved-csr-identity", []string{}, 
+
+	cmd.Flags().StringSliceVar(&o.csrIdentities, "auto-approved-csr-identity", []string{},
 		"The user or identity that can be auto approve for CSR and auto accepted to join with hub cluster")
-	cmd.Flags().StringArrayVar(&o.awsIdentityPatterns, "auto-approved-aws-identity-pattern", []string{}, 
+	cmd.Flags().StringSliceVar(&o.awsIdentityPatterns, "auto-approved-aws-identity-pattern", []string{},
 		"A pattern of AWS EKS ARN so any EKS clusters with this pattern will be auto accepted to join with hub cluster")
 	return cmd
 }

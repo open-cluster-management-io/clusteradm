@@ -159,18 +159,7 @@ func (o *Options) validate() error {
 		}
 	}
 
-	featureGates := genericclioptionsclusteradm.ConvertToFeatureGateAPI(
-		genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubRegistrationFeatureGates)
-	managedClusterAutoApprove := false
-	for _, feature := range featureGates {
-		if feature.Feature == "ManagedClusterAutoApproval" {
-			if feature.Mode == "Enable" {
-				managedClusterAutoApprove = true
-			}
-		}
-	}
-
-	if managedClusterAutoApprove {
+	if genericclioptionsclusteradm.HubMutableFeatureGate.Enabled("ManagedClusterAutoApproval") {
 		// If hub registration does not accept awsirsa, we stop user if they also pass in a list of patterns for AWS EKS ARN.
 
 		if len(o.autoApprovedARNPatterns) > 0 && !sets.New[string](o.registrationDrivers...).Has("awsirsa") {

@@ -2,8 +2,10 @@
 package check
 
 import (
+	"errors"
 	"fmt"
-	"k8s.io/apimachinery/pkg/api/errors"
+
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterclient "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
@@ -23,8 +25,8 @@ func CheckForHub(client clusterclient.Interface) error {
 
 	list, err := client.Discovery().ServerResourcesForGroupVersion(clusterv1.GroupVersion.String())
 	if err != nil {
-		if errors.IsNotFound(err) {
-			return fmt.Errorf(msg)
+		if k8serrors.IsNotFound(err) {
+			return errors.New(msg)
 
 		}
 		return fmt.Errorf("failed to list GroupVersion %s: %s", clusterv1.GroupVersion.String(), err)
@@ -34,7 +36,7 @@ func CheckForHub(client clusterclient.Interface) error {
 	if flag {
 		return nil
 	}
-	return fmt.Errorf(msg)
+	return errors.New(msg)
 }
 
 func CheckForKlusterletCRD(client operatorclient.Interface) error {
@@ -48,7 +50,7 @@ func CheckForKlusterletCRD(client operatorclient.Interface) error {
 	if flag {
 		return nil
 	}
-	return fmt.Errorf(msg)
+	return errors.New(msg)
 }
 
 func CheckForManagedCluster(client clusterclient.Interface) error {
@@ -56,8 +58,8 @@ func CheckForManagedCluster(client clusterclient.Interface) error {
 
 	list, err := client.Discovery().ServerResourcesForGroupVersion(clusterv1alpha1.GroupVersion.String())
 	if err != nil {
-		if errors.IsNotFound(err) {
-			return fmt.Errorf(msg)
+		if k8serrors.IsNotFound(err) {
+			return errors.New(msg)
 
 		}
 
@@ -67,7 +69,7 @@ func CheckForManagedCluster(client clusterclient.Interface) error {
 	if flag {
 		return nil
 	}
-	return fmt.Errorf(msg)
+	return errors.New(msg)
 }
 
 func findResource(list *metav1.APIResourceList, resourceName string) bool {

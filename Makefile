@@ -36,7 +36,7 @@ clean: clean-test clean-e2e
 
 .PHONY: verify
 verify:
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.51.1
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.6
 	go vet ./...
 	golangci-lint run --timeout=3m --modules-download-mode vendor -E gofmt ./...
 

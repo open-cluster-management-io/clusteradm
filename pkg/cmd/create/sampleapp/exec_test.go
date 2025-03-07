@@ -22,7 +22,6 @@ import (
 	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
 	"open-cluster-management.io/clusteradm/pkg/cmd/addon/enable"
 	hubaddonscenario "open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
-	installscenario "open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
 	"open-cluster-management.io/clusteradm/pkg/version"
 )
 
@@ -158,7 +157,7 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 		files, err := addonPathWalkDir(appDir)
 		gomega.Expect(err).ToNot(gomega.HaveOccurred(), "install addon error")
 
-		err = r.Apply(installscenario.Files, ao.values, files...)
+		err = r.Apply(hubaddonscenario.Files, ao.values, files...)
 		gomega.Expect(err).ToNot(gomega.HaveOccurred(), "install addon error")
 
 		fmt.Fprintf(streams.Out, "Installing built-in %s add-on to namespace %s.\n", addon, addonNamespace)
@@ -215,17 +214,17 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 				)
 
 				if _, err = clusterClient.ClusterV1beta1().Placements(testNamespace).Get(context.TODO(), placementResourceName, metav1.GetOptions{}); err != nil {
-					return fmt.Errorf(fmt.Sprintf("Missing Placement resource \"%s\" in namespace %s", placementResourceName, testNamespace))
+					return fmt.Errorf("Missing Placement resource \"%s\" in namespace %s", placementResourceName, testNamespace)
 				}
 				fmt.Fprintf(streams.Out, "Placement resource \"%s\" created successfully in namespace %s.\n", placementResourceName, testNamespace)
 
 				if _, err = clusterClient.ClusterV1beta2().ManagedClusterSets().Get(context.TODO(), managedClusterSetName, metav1.GetOptions{}); err != nil {
-					return fmt.Errorf(fmt.Sprintf("Missing ManagedClusterSet resource \"%s\"", managedClusterSetName))
+					return fmt.Errorf("Missing ManagedClusterSet resource \"%s\"", managedClusterSetName)
 				}
 				fmt.Fprintf(streams.Out, "ManagedClusterSet resource \"%s\" created successfully.\n", managedClusterSetName)
 
 				if _, err = clusterClient.ClusterV1beta2().ManagedClusterSetBindings(testNamespace).Get(context.TODO(), managedClusterSetBindingName, metav1.GetOptions{}); err != nil {
-					return fmt.Errorf(fmt.Sprintf("Missing ManagedClusterSetBinding resource \"%s\" in namespace %s", managedClusterSetBindingName, testNamespace))
+					return fmt.Errorf("Missing ManagedClusterSetBinding resource \"%s\" in namespace %s", managedClusterSetBindingName, testNamespace)
 				}
 				fmt.Fprintf(streams.Out, "ManagedClusterSetBinding resource \"%s\" created successfully in namespace %s.\n", managedClusterSetBindingName, testNamespace)
 
@@ -237,7 +236,7 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 
 				channelObjlist, _ := dynamicClient.Resource(channelGVR).List(context.TODO(), metav1.ListOptions{})
 				if !contains(channelObjlist, channelName) {
-					return fmt.Errorf(fmt.Sprintf("Missing Channel custom resource \"%s\"", channelName))
+					return fmt.Errorf("Missing Channel custom resource \"%s\"", channelName)
 				}
 				fmt.Fprintf(streams.Out, "Channel custom resource \"%s\" created successfully in namespace %s.\n", channelName, testNamespace)
 
@@ -249,7 +248,7 @@ var _ = ginkgo.Describe("deploy samepleapp to every managed cluster", func() {
 
 				subscriptionObjlist, _ := dynamicClient.Resource(subscriptionGVR).List(context.TODO(), metav1.ListOptions{})
 				if !contains(subscriptionObjlist, subscriptionName) {
-					return fmt.Errorf(fmt.Sprintf("Missing Subscription custom resource \"%s\"", subscriptionName))
+					return fmt.Errorf("Missing Subscription custom resource \"%s\"", subscriptionName)
 				}
 				fmt.Fprintf(streams.Out, "Subscription custom resource \"%s\" created successfully in namespace %s.\n", subscriptionName, testNamespace)
 

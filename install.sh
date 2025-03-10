@@ -167,7 +167,7 @@ cleanup() {
 }
 
 installCompleted() {
-    echo -e "\nTo get started with clusteradm, please visit https://open-cluster-management.io/getting-started/"
+    echo -e "\nTo get started with clusteradm, please visit https://open-cluster-management.io/docs/getting-started/"
 }
 
 # -----------------------------------------------------------------------------

@@ -390,13 +390,15 @@ func getRegistrationDrivers(o *Options) ([]operatorv1.RegistrationDriverHub, err
 
 	for _, driver := range o.registrationDrivers {
 		if driver == "csr" {
-			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: driver, AutoApprovedIdentities: o.autoApprovedCSRIdentities}
+			csr := &operatorv1.CSRConfig{AutoApprovedIdentities: o.autoApprovedCSRIdentities}
+			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: driver, CSR: csr}
 		} else if driver == "awsirsa" {
 			hubClusterArn, err := getHubClusterArn(o)
 			if err != nil {
 				return registrationDrivers, err
 			}
-			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: driver, AutoApprovedIdentities: o.autoApprovedARNPatterns, HubClusterArn: hubClusterArn}
+			awsirsa := &operatorv1.AwsIrsaConfig{HubClusterArn: hubClusterArn, Tags: o.awsResourceTags, AutoApprovedIdentities: o.autoApprovedARNPatterns}
+			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: driver, AwsIrsa: awsirsa}
 		}
 		registrationDrivers = append(registrationDrivers, registrationDriver)
 	}

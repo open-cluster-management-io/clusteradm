@@ -90,14 +90,14 @@ func (o *Options) run() error {
 		return err
 	}
 
-	raw, err := chart.RenderClusterManagerChart(
+	crds, raw, err := chart.RenderClusterManagerChart(
 		o.clusterManagerChartConfig,
 		"open-cluster-management")
 	if err != nil {
 		return err
 	}
 
-	if err := r.ApplyRaw(raw); err != nil {
+	if err := r.ApplyRaw(crds); err != nil {
 		return err
 	}
 
@@ -107,6 +107,11 @@ func (o *Options) run() error {
 			return err
 		}
 	}
+
+	if err := r.ApplyRaw(raw); err != nil {
+		return err
+	}
+
 	if o.wait && !o.ClusteradmFlags.DryRun {
 		if err := wait.WaitUntilRegistrationOperatorReady(
 			o.Streams.Out,

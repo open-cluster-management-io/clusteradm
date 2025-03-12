@@ -7,13 +7,14 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	gherrors "github.com/pkg/errors"
 	"io"
 	"os"
 	"reflect"
 	"strings"
 	"sync/atomic"
 	"time"
+
+	gherrors "github.com/pkg/errors"
 
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
@@ -386,12 +387,12 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient opera
 		o.klusterletChartConfig.NoOperator = true
 	}
 
-	raw, err := chart.RenderKlusterletChart(o.klusterletChartConfig, OperatorNamesapce)
+	crds, raw, err := chart.RenderKlusterletChart(o.klusterletChartConfig, OperatorNamesapce)
 	if err != nil {
 		return err
 	}
 
-	if err := r.ApplyRaw(raw); err != nil {
+	if err := r.ApplyRaw(crds); err != nil {
 		return err
 	}
 
@@ -400,6 +401,10 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient opera
 			o.Streams.Out, apiExtensionsClient, "klusterlets.operator.open-cluster-management.io", o.wait); err != nil {
 			return err
 		}
+	}
+
+	if err := r.ApplyRaw(raw); err != nil {
+		return err
 	}
 
 	if !available && o.wait && !o.ClusteradmFlags.DryRun {

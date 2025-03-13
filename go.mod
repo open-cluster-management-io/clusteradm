@@ -10,8 +10,8 @@ require (
 	github.com/gofrs/flock v0.8.1
 	github.com/google/uuid v1.6.0
 	github.com/jonboulle/clockwork v0.4.0
-	github.com/onsi/ginkgo/v2 v2.22.0
-	github.com/onsi/gomega v1.36.1
+	github.com/onsi/ginkgo/v2 v2.22.2
+	github.com/onsi/gomega v1.36.2
 	github.com/openshift/library-go v0.0.0-20241107160307-0064ad7bd060
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.8.1
@@ -29,9 +29,9 @@ require (
 	k8s.io/kubectl v0.31.1
 	k8s.io/utils v0.0.0-20240921022957-49e7df575cb6
 	open-cluster-management.io/api v0.16.1
-	open-cluster-management.io/cluster-proxy v0.4.0
-	open-cluster-management.io/managed-serviceaccount v0.6.0
-	open-cluster-management.io/ocm v0.15.1-0.20250312033809-a5f3912a6632
+	open-cluster-management.io/cluster-proxy v0.7.0
+	open-cluster-management.io/managed-serviceaccount v0.8.0
+	open-cluster-management.io/ocm v0.16.0
 	open-cluster-management.io/sdk-go v0.16.0
 	sigs.k8s.io/apiserver-network-proxy v0.29.0
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.30.3
@@ -90,7 +90,7 @@ require (
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/google/pprof v0.0.0-20241029153458-d1b30febd7db // indirect
+	github.com/google/pprof v0.0.0-20241210010833-40e02aabc2ad // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
@@ -157,7 +157,7 @@ require (
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.28.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect
-	google.golang.org/protobuf v1.35.1 // indirect
+	google.golang.org/protobuf v1.36.1 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

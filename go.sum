@@ -569,8 +569,8 @@ open-cluster-management.io/cluster-proxy v0.4.0 h1:rm0UDaDWe3/P3xLzwqdHtqNksKwSz
 open-cluster-management.io/cluster-proxy v0.4.0/go.mod h1:gTvfDHAhGezhdg4BD3ECBn6jbg2Y5PbHhV2ceW5nrB0=
 open-cluster-management.io/managed-serviceaccount v0.6.0 h1:qIi5T9WQJBuoGqnYGIktXbtqfQoiN2H9XU2P/6lAQiw=
 open-cluster-management.io/managed-serviceaccount v0.6.0/go.mod h1:G4LUTbZiyrB8c0+rqi/xnDmGlsg7Rdr4T7MPLCWhyQI=
-open-cluster-management.io/ocm v0.15.1-0.20250312033809-a5f3912a6632 h1:WQTYSwv8UT1LMErff8/kTTG49zeKiWcE4pVUn0zIofE=
-open-cluster-management.io/ocm v0.15.1-0.20250312033809-a5f3912a6632/go.mod h1:M2/9PVwAYtP2Rv9ahsUEcGGXUctPPVlqhzrBKRW4Wzs=
+open-cluster-management.io/ocm v0.16.0 h1:oCxhy/Z7Xbzj35p4860dWL2rr7aBk87vSokEeNVFPdk=
+open-cluster-management.io/ocm v0.16.0/go.mod h1:M2/9PVwAYtP2Rv9ahsUEcGGXUctPPVlqhzrBKRW4Wzs=
 open-cluster-management.io/sdk-go v0.16.0 h1:Ui1jerkeLaNaJPu47xjOJ3lh+rJQgeJHD25ViQMzAMs=
 open-cluster-management.io/sdk-go v0.16.0/go.mod h1:TyOjZC5YxyM5BRNgwTmLuTbHXX6xXqzYBXllrfoVp9w=
 oras.land/oras-go v1.2.5 h1:XpYuAwAb0DfQsunIyMfeET92emK8km3W4yEzZvUbsTo=

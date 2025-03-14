@@ -152,6 +152,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 			genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeRegistrationFeatureGates),
 		ClientCertExpirationSeconds: o.clientCertExpirationSeconds,
 	}
+	o.setKlusterletRegistrationAnnotations()
 
 	// set registration auth type
 	if o.registrationAuth == AwsIrsaAuthentication {
@@ -741,4 +742,26 @@ func mergeCertificateData(caBundles ...[]byte) ([]byte, error) {
 		}
 	}
 	return b.Bytes(), nil
+}
+
+func (o *Options) setKlusterletRegistrationAnnotations() {
+	if len(o.klusterletAnnotations) == 0 {
+		return
+	}
+
+	if o.klusterletChartConfig.Klusterlet.RegistrationConfiguration.ClusterAnnotations == nil {
+		o.klusterletChartConfig.Klusterlet.RegistrationConfiguration.ClusterAnnotations = map[string]string{}
+	}
+
+	for _, a := range o.klusterletAnnotations {
+		parts := strings.Split(a, "=")
+		if len(parts) < 2 {
+			continue
+		}
+		k, v := parts[0], parts[1]
+		if !strings.HasPrefix(k, operatorv1.ClusterAnnotationsKeyPrefix) {
+			k = fmt.Sprintf("%s/%s", operatorv1.ClusterAnnotationsKeyPrefix, k)
+		}
+		o.klusterletChartConfig.Klusterlet.RegistrationConfiguration.ClusterAnnotations[k] = v
+	}
 }

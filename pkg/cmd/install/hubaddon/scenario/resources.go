@@ -44,7 +44,6 @@ var (
 				"addon/policy/propagator_clusterrolebinding.yaml",
 				"addon/policy/propagator_role.yaml",
 				"addon/policy/propagator_rolebinding.yaml",
-				"addon/policy/propagator_service.yaml",
 				"addon/policy/propagator_serviceaccount.yaml",
 				"addon/policy/clustermanagementaddon_configpolicy.yaml",
 				"addon/policy/clustermanagementaddon_policyframework.yaml",

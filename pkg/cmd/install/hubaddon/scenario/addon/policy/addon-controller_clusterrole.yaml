@@ -7,9 +7,30 @@ metadata:
   name: policy-addon-ctrl-manager-role
 rules:
   - apiGroups:
-      - addon.open-cluster-management.io
+      - ""
     resources:
-      - addondeploymentconfigs
+      - events
+    verbs:
+      - create
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resourceNames:
+      - policy-encryption-key
+    resources:
+      - secrets
     verbs:
       - get
       - list
@@ -17,6 +38,7 @@ rules:
   - apiGroups:
       - addon.open-cluster-management.io
     resources:
+      - addondeploymentconfigs
       - clustermanagementaddons
     verbs:
       - get
@@ -27,8 +49,10 @@ rules:
     resourceNames:
       - config-policy-controller
       - governance-policy-framework
+      - governance-standalone-hub-templating
     resources:
       - clustermanagementaddons/finalizers
+      - managedclusteraddons/finalizers
     verbs:
       - update
   - apiGroups:
@@ -36,8 +60,10 @@ rules:
     resourceNames:
       - config-policy-controller
       - governance-policy-framework
+      - governance-standalone-hub-templating
     resources:
       - clustermanagementaddons/status
+      - managedclusteraddons/status
     verbs:
       - patch
       - update
@@ -56,29 +82,11 @@ rules:
     resourceNames:
       - config-policy-controller
       - governance-policy-framework
+      - governance-standalone-hub-templating
     resources:
       - managedclusteraddons
     verbs:
       - delete
-  - apiGroups:
-      - addon.open-cluster-management.io
-    resourceNames:
-      - config-policy-controller
-      - governance-policy-framework
-    resources:
-      - managedclusteraddons/finalizers
-    verbs:
-      - update
-  - apiGroups:
-      - addon.open-cluster-management.io
-    resourceNames:
-      - config-policy-controller
-      - governance-policy-framework
-    resources:
-      - managedclusteraddons/status
-    verbs:
-      - patch
-      - update
   - apiGroups:
       - authorization.k8s.io
     resources:
@@ -138,6 +146,7 @@ rules:
     resourceNames:
       - config-policy-controller
       - governance-policy-framework
+      - governance-standalone-hub-templating
     resources:
       - leases
     verbs:
@@ -146,72 +155,6 @@ rules:
       - patch
       - update
       - watch
-  - apiGroups:
-      - ""
-    resources:
-      - events
-    verbs:
-      - create
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - ""
-    resources:
-      - pods
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - ""
-    resources:
-      - secrets
-    verbs:
-      - create
-  - apiGroups:
-      - ""
-    resourceNames:
-      - governance-policy-database
-      - policy-encryption-key
-    resources:
-      - secrets
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - ""
-    resourceNames:
-      - open-cluster-management-compliance-history-api-recorder
-    resources:
-      - secrets
-    verbs:
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - ""
-    resources:
-      - serviceaccounts
-    verbs:
-      - create
-  - apiGroups:
-      - ""
-    resourceNames:
-      - open-cluster-management-compliance-history-api-recorder
-    resources:
-      - serviceaccounts
-    verbs:
-      - delete
-      - get
-      - patch
-      - update
   - apiGroups:
       - policy.open-cluster-management.io
     resources:
@@ -240,18 +183,10 @@ rules:
       - update
   - apiGroups:
       - rbac.authorization.k8s.io
-    resources:
-      - clusterroles
-    verbs:
-      - create
-  - apiGroups:
-      - rbac.authorization.k8s.io
     resourceNames:
-      - open-cluster-management:compliance-history-api-recorder
-      - open-cluster-management:config-policy-controller-hub
-      - open-cluster-management:policy-framework-hub
+      - open-cluster-management:governance-standalone-hub-templating
     resources:
-      - clusterroles
+      - clusterrolebindings
     verbs:
       - delete
       - get
@@ -260,40 +195,25 @@ rules:
   - apiGroups:
       - rbac.authorization.k8s.io
     resources:
+      - clusterrolebindings
+      - clusterroles
       - rolebindings
     verbs:
       - create
   - apiGroups:
       - rbac.authorization.k8s.io
     resourceNames:
-      - open-cluster-management:compliance-history-api-recorder
       - open-cluster-management:config-policy-controller-hub
+      - open-cluster-management:governance-standalone-hub-templating
       - open-cluster-management:policy-framework-hub
     resources:
+      - clusterroles
       - rolebindings
     verbs:
       - delete
       - get
       - patch
       - update
-  - apiGroups:
-      - route.openshift.io
-    resources:
-      - routes
-    verbs:
-      - create
-  - apiGroups:
-      - route.openshift.io
-    resourceNames:
-      - governance-history-api
-    resources:
-      - routes
-    verbs:
-      - delete
-      - get
-      - list
-      - update
-      - watch
   - apiGroups:
       - work.open-cluster-management.io
     resources:

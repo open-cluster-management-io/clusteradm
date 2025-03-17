@@ -753,15 +753,24 @@ func (o *Options) setKlusterletRegistrationAnnotations() {
 		o.klusterletChartConfig.Klusterlet.RegistrationConfiguration.ClusterAnnotations = map[string]string{}
 	}
 
-	for _, a := range o.klusterletAnnotations {
-		parts := strings.Split(a, "=")
-		if len(parts) < 2 {
+	for _, annotation := range o.klusterletAnnotations {
+		i := strings.Index(annotation, "=")
+		if i == -1 {
+			klog.Warningf("Skipping malformed annotation (missing '='): %s", annotation)
 			continue
 		}
-		k, v := parts[0], parts[1]
+
+		k, v := strings.TrimSpace(annotation[:i]), strings.TrimSpace(annotation[i+1:])
+
+		if k == "" {
+			klog.Warningf("Skipping annotation with empty key: %s", annotation)
+			continue
+		}
+
 		if !strings.HasPrefix(k, operatorv1.ClusterAnnotationsKeyPrefix) {
 			k = fmt.Sprintf("%s/%s", operatorv1.ClusterAnnotationsKeyPrefix, k)
 		}
+
 		o.klusterletChartConfig.Klusterlet.RegistrationConfiguration.ClusterAnnotations[k] = v
 	}
 }

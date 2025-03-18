@@ -56,14 +56,6 @@ var _ = ginkgo.Describe("test clusteradm join with annotations", func() {
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm accept error")
 
 			ginkgo.By("verify managedcluster1 has correct annotations")
-			gomega.Eventually(func() map[string]string {
-				managedCluster, err := clusterClient.ClusterV1().ManagedClusters().Get(
-					context.TODO(), e2e.Cluster().ManagedCluster1().Name(), metav1.GetOptions{})
-				if err != nil {
-					return nil
-				}
-				return managedCluster.GetAnnotations()
-			}, time.Second*60, time.Second*2).Should(gomega.HaveKey(operatorv1.ClusterAnnotationsKeyPrefix + "foo"))
 			managedCluster, err := clusterClient.ClusterV1().ManagedClusters().Get(
 				context.TODO(), e2e.Cluster().ManagedCluster1().Name(), metav1.GetOptions{})
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())

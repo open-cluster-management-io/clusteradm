@@ -152,6 +152,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 			genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeRegistrationFeatureGates),
 		ClientCertExpirationSeconds: o.clientCertExpirationSeconds,
 	}
+	o.setKlusterletRegistrationAnnotations()
 
 	// set registration auth type
 	if o.registrationAuth == AwsIrsaAuthentication {
@@ -741,4 +742,35 @@ func mergeCertificateData(caBundles ...[]byte) ([]byte, error) {
 		}
 	}
 	return b.Bytes(), nil
+}
+
+func (o *Options) setKlusterletRegistrationAnnotations() {
+	if len(o.klusterletAnnotations) == 0 {
+		return
+	}
+
+	if o.klusterletChartConfig.Klusterlet.RegistrationConfiguration.ClusterAnnotations == nil {
+		o.klusterletChartConfig.Klusterlet.RegistrationConfiguration.ClusterAnnotations = map[string]string{}
+	}
+
+	for _, annotation := range o.klusterletAnnotations {
+		i := strings.Index(annotation, "=")
+		if i == -1 {
+			klog.Warningf("Skipping malformed annotation (missing '='): %s", annotation)
+			continue
+		}
+
+		k, v := strings.TrimSpace(annotation[:i]), strings.TrimSpace(annotation[i+1:])
+
+		if k == "" {
+			klog.Warningf("Skipping annotation with empty key: %s", annotation)
+			continue
+		}
+
+		if !strings.HasPrefix(k, operatorv1.ClusterAnnotationsKeyPrefix) {
+			k = fmt.Sprintf("%s/%s", operatorv1.ClusterAnnotationsKeyPrefix, k)
+		}
+
+		o.klusterletChartConfig.Klusterlet.RegistrationConfiguration.ClusterAnnotations[k] = v
+	}
 }

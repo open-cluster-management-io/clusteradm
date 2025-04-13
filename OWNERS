@@ -1,10 +1,10 @@
 approvers:
-- itdove
 - qiujian16
-- yue9944882
+- zhujian7
 
 reviewers:
-- itdove
-- qiujian16
-- yue9944882
 - ycyaoxdu
+
+emeritus_approvers:
+- itdove
+- yue9944882

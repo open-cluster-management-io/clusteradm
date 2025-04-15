@@ -23,7 +23,7 @@ var _ = ginkgo.Describe("addon disable", func() {
 	var cluster2Name string
 	var err error
 
-	appMgrAddonName := "application-manager"
+	appMgrAddonName := "argocd"
 
 	ginkgo.BeforeEach(func() {
 		cluster1Name = fmt.Sprintf("cluster-%s", rand.String(5))
@@ -71,7 +71,7 @@ var _ = ginkgo.Describe("addon disable", func() {
 
 	ginkgo.Context("runWithClient", func() {
 
-		ginkgo.It("Should disable application-manager ManagedClusterAddOn in ManagedCluster namespace successfully", func() {
+		ginkgo.It("Should disable argocd ManagedClusterAddOn in ManagedCluster namespace successfully", func() {
 			assertCreatingClusters(cluster1Name)
 
 			addons := []string{appMgrAddonName}
@@ -86,7 +86,7 @@ var _ = ginkgo.Describe("addon disable", func() {
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 		})
 
-		ginkgo.It("Should disable application-manager ManagedClusterAddOns in each ManagedCluster namespace successfully", func() {
+		ginkgo.It("Should disable argocd ManagedClusterAddOns in each ManagedCluster namespace successfully", func() {
 			assertCreatingClusters(cluster1Name)
 			assertCreatingClusters(cluster2Name)
 

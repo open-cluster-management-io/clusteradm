@@ -11,7 +11,6 @@ import (
 var Files embed.FS
 
 const (
-	AppMgrAddonName          = "application-manager"
 	PolicyFrameworkAddonName = "governance-policy-framework"
 )
 
@@ -53,38 +52,11 @@ var (
 				"addon/policy/policy.open-cluster-management.io_policies.yaml",
 				"addon/policy/policy.open-cluster-management.io_policyautomations.yaml",
 				"addon/policy/policy.open-cluster-management.io_policysets.yaml",
-				"addon/appmgr/crd_placementrule.yaml",
+				"addon/policy/crd_placementrule.yaml",
 			},
 			DeploymentFiles: []string{
 				"addon/policy/addon-controller_deployment.yaml",
 				"addon/policy/propagator_deployment.yaml",
-			},
-		},
-		AppMgrAddonName: {
-			ConfigFiles: []string{
-				"addon/appmgr/clustermanagementaddon_appmgr.yaml",
-				"addon/appmgr/clusterrole_agent.yaml",
-				"addon/appmgr/clusterrole_binding.yaml",
-				"addon/appmgr/clusterrole.yaml",
-				"addon/appmgr/service_account.yaml",
-				"addon/appmgr/service_metrics.yaml",
-				"addon/appmgr/service_operator.yaml",
-				"addon/appmgr/mutatingwebhookconfiguration.yaml",
-			},
-			CRDFiles: []string{
-				"addon/appmgr/crd_channel.yaml",
-				"addon/appmgr/crd_helmrelease.yaml",
-				"addon/appmgr/crd_placementrule.yaml",
-				"addon/appmgr/crd_subscription.yaml",
-				"addon/appmgr/crd_subscriptionstatuses.yaml",
-				"addon/appmgr/crd_report.yaml",
-				"addon/appmgr/crd_clusterreport.yaml",
-			},
-			DeploymentFiles: []string{
-				"addon/appmgr/deployment_channel.yaml",
-				"addon/appmgr/deployment_subscription.yaml",
-				"addon/appmgr/deployment_placementrule.yaml",
-				"addon/appmgr/deployment_appsubsummary.yaml",
 			},
 		},
 	}

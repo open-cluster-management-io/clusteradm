@@ -14,10 +14,10 @@ import (
 var example = `
 ## Application Manager
 
-# Enable application-manager addon on the given managed clusters in the specified namespace
-%[1]s addon enable --names application-manager --namespace namespace --clusters cluster1,cluster2
-# Enable application-manager addon for specified clusters
-%[1]s addon enable --names application-manager --clusters cluster1,cluster2
+# Enable argocd addon on the given managed clusters in the specified namespace
+%[1]s addon enable --names argocd --namespace namespace --clusters cluster1,cluster2
+# Enable argocd addon for specified clusters
+%[1]s addon enable --names argocd --clusters cluster1,cluster2
 
 ## Policy Framework
 

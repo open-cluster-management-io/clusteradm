@@ -230,3 +230,18 @@ func debug(format string, v ...interface{}) {
 	format = fmt.Sprintf("[debug] %s\n", format)
 	_ = log.Output(2, fmt.Sprintf(format, v...))
 }
+
+func (h *Helm) UninstallRelease(name string) error {
+	actionConfig := new(action.Configuration)
+	if err := actionConfig.Init(h.settings.RESTClientGetter(), h.settings.Namespace(), os.Getenv("HELM_DRIVER"), debug); err != nil {
+		return err
+	}
+
+	client := action.NewUninstall(actionConfig)
+	_, err := client.Run(name)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -17,6 +17,12 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
 )
 
+var (
+	argocdAddonName          = "argocd"
+	argocdReleaseName        = "argocd-pull-integration"
+	policyFrameworkAddonName = "governance-policy-framework"
+)
+
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	klog.V(1).InfoS("addon options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.names)
 	return nil
@@ -34,7 +40,7 @@ func (o *Options) validate() (err error) {
 
 	names := strings.Split(o.names, ",")
 	for _, n := range names {
-		if _, ok := scenario.AddonDeploymentFiles[n]; !ok {
+		if n != argocdAddonName && n != policyFrameworkAddonName {
 			return fmt.Errorf("invalid add-on name %s", n)
 		}
 	}
@@ -52,6 +58,22 @@ func (o *Options) run() error {
 			addons = append(addons, strings.TrimSpace(n))
 		}
 	}
+
+	var filteredAddons []string
+	for _, a := range addons {
+		if a == argocdAddonName {
+			if err := o.runWithHelmClient(a); err != nil {
+				return err
+			}
+		} else {
+			filteredAddons = append(filteredAddons, a)
+		}
+	}
+	addons = filteredAddons
+	if len(addons) == 0 {
+		return nil
+	}
+
 	o.values.HubAddons = addons
 	// this needs to be set to render the manifests, but the version value
 	// does not matter.
@@ -117,5 +139,19 @@ func (o *Options) checkExistingAddon(name string) error {
 		return fmt.Errorf("there are still addons for %s enabled on some clusters, run `cluster addon disable --names %s "+
 			"--clusters %s` to disable addons", name, name, strings.Join(enabledClusters, ","))
 	}
+	return nil
+}
+
+func (o *Options) runWithHelmClient(addon string) error {
+	if err := o.checkExistingAddon(addon); err != nil {
+		return err
+	}
+
+	if addon == argocdAddonName {
+		if err := o.Helm.UninstallRelease(argocdReleaseName); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

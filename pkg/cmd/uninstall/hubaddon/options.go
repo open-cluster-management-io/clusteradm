@@ -5,6 +5,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
+	"open-cluster-management.io/clusteradm/pkg/helpers/helm"
 )
 
 type Options struct {
@@ -16,11 +17,14 @@ type Options struct {
 	values scenario.Values
 
 	Streams genericiooptions.IOStreams
+
+	Helm *helm.Helm
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Options {
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
 		Streams:         streams,
+		Helm:            helm.NewHelm(),
 	}
 }

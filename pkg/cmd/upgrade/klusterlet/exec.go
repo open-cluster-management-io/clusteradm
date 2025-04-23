@@ -59,7 +59,7 @@ func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 			ClusterName:         k.Spec.ClusterName,
 			Namespace:           k.Spec.Namespace,
 			Mode:                k.Spec.DeployOption.Mode,
-			ResourceRequirement: *k.Spec.ResourceRequirement,
+			ResourceRequirement: k.Spec.ResourceRequirement,
 		}
 	}
 

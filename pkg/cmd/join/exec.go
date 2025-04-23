@@ -145,7 +145,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	if err != nil {
 		return err
 	}
-	o.klusterletChartConfig.Klusterlet.ResourceRequirement = *resourceRequirement
+	o.klusterletChartConfig.Klusterlet.ResourceRequirement = resourceRequirement
 
 	o.klusterletChartConfig.Klusterlet.RegistrationConfiguration = operatorv1.RegistrationConfiguration{
 		FeatureGates: genericclioptionsclusteradm.ConvertToFeatureGateAPI(

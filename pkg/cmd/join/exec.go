@@ -156,17 +156,15 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 
 	// set registration auth type
 	if o.registrationAuth == AwsIrsaAuthentication {
-		rawConfig, err := o.ClusteradmFlags.KubectlFactory.ToRawKubeConfigLoader().RawConfig()
+		managedClusterArn, err := getManagedClusterArn(o)
 		if err != nil {
-			klog.Errorf("unable to load managedcluster kubeconfig: %v", err)
 			return err
 		}
-
 		o.klusterletChartConfig.Klusterlet.RegistrationConfiguration.RegistrationDriver = operatorv1.RegistrationDriver{
 			AuthType: o.registrationAuth,
 			AwsIrsa: &operatorv1.AwsIrsa{
 				HubClusterArn:     o.hubClusterArn,
-				ManagedClusterArn: rawConfig.Contexts[rawConfig.CurrentContext].Cluster,
+				ManagedClusterArn: managedClusterArn,
 			},
 		}
 	}
@@ -773,4 +771,22 @@ func (o *Options) setKlusterletRegistrationAnnotations() {
 
 		o.klusterletChartConfig.Klusterlet.RegistrationConfiguration.ClusterAnnotations[k] = v
 	}
+}
+
+func getManagedClusterArn(o *Options) (string, error) {
+	if o.managedClusterArn != "" {
+		return o.managedClusterArn, nil
+	}
+
+	rawConfig, err := o.ClusteradmFlags.KubectlFactory.ToRawKubeConfigLoader().RawConfig()
+	if err != nil {
+		klog.Errorf("unable to load managedcluster kubeconfig: %v", err)
+		return "", err
+	}
+	managedClusterArn := rawConfig.Contexts[rawConfig.CurrentContext].Cluster
+	if managedClusterArn == "" {
+		klog.Errorf("managedClusterArn has empty value in kubeconfig")
+		return "", fmt.Errorf("unable to retrieve managedClusterArn from kubeconfig")
+	}
+	return managedClusterArn, nil
 }

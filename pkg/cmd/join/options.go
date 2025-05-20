@@ -92,6 +92,12 @@ type Options struct {
 
 	// The arn of hub cluster(i.e. EKS) to which managed-cluster will join
 	hubClusterArn string
+
+	// The arn of managed cluster(i.e. EKS) which will be joining the hub
+	managedClusterArn string
+
+	// Annotations for registration controller to set on the ManagedCluster
+	klusterletAnnotations []string
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Options {

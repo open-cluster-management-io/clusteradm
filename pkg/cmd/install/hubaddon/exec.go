@@ -4,11 +4,12 @@ package hubaddon
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os"
-	"strings"
 
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 
@@ -17,6 +18,16 @@ import (
 
 	"open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
 	"open-cluster-management.io/clusteradm/pkg/version"
+)
+
+var (
+	url                      = "https://open-cluster-management.io/helm-charts"
+	repoName                 = "ocm"
+	argocdAddonName          = "argocd"
+	argocdNamespace          = "argocd"
+	argocdReleaseName        = "argocd-pull-integration"
+	argocdChartName          = "argocd-pull-integration"
+	policyFrameworkAddonName = "governance-policy-framework"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -36,7 +47,7 @@ func (o *Options) validate() (err error) {
 
 	names := strings.Split(o.names, ",")
 	for _, n := range names {
-		if _, ok := scenario.AddonDeploymentFiles[n]; !ok {
+		if n != argocdAddonName && n != policyFrameworkAddonName {
 			return fmt.Errorf("invalid add-on name %s", n)
 		}
 	}
@@ -61,6 +72,22 @@ func (o *Options) run() error {
 			addons = append(addons, strings.TrimSpace(n))
 		}
 	}
+
+	var filteredAddons []string
+	for _, a := range addons {
+		if a == argocdAddonName {
+			if err := o.runWithHelmClient(a); err != nil {
+				return err
+			}
+		} else {
+			filteredAddons = append(filteredAddons, a)
+		}
+	}
+	addons = filteredAddons
+	if len(addons) == 0 {
+		return nil
+	}
+
 	o.values.HubAddons = addons
 
 	klog.V(3).InfoS("values:", "addon", o.values.HubAddons)
@@ -134,6 +161,23 @@ func (o *Options) createNamespace() error {
 		}
 	} else if err != nil {
 		return fmt.Errorf("failed to get namespace %s: %w", ns, err)
+	}
+
+	return nil
+}
+
+func (o *Options) runWithHelmClient(addon string) error {
+	if addon == argocdAddonName {
+		o.Helm.WithNamespace(argocdNamespace)
+		if err := o.Helm.PrepareChart(repoName, url); err != nil {
+			return err
+		}
+
+		if o.ClusteradmFlags.DryRun {
+			o.Helm.SetValue("dryRun", "true")
+		}
+
+		o.Helm.InstallChart(argocdReleaseName, repoName, argocdChartName)
 	}
 
 	return nil

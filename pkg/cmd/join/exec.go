@@ -152,20 +152,19 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 			genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeRegistrationFeatureGates),
 		ClientCertExpirationSeconds: o.clientCertExpirationSeconds,
 	}
+	o.setKlusterletRegistrationAnnotations()
 
 	// set registration auth type
 	if o.registrationAuth == AwsIrsaAuthentication {
-		rawConfig, err := o.ClusteradmFlags.KubectlFactory.ToRawKubeConfigLoader().RawConfig()
+		managedClusterArn, err := getManagedClusterArn(o)
 		if err != nil {
-			klog.Errorf("unable to load managedcluster kubeconfig: %v", err)
 			return err
 		}
-
 		o.klusterletChartConfig.Klusterlet.RegistrationConfiguration.RegistrationDriver = operatorv1.RegistrationDriver{
 			AuthType: o.registrationAuth,
 			AwsIrsa: &operatorv1.AwsIrsa{
 				HubClusterArn:     o.hubClusterArn,
-				ManagedClusterArn: rawConfig.Contexts[rawConfig.CurrentContext].Cluster,
+				ManagedClusterArn: managedClusterArn,
 			},
 		}
 	}
@@ -741,4 +740,53 @@ func mergeCertificateData(caBundles ...[]byte) ([]byte, error) {
 		}
 	}
 	return b.Bytes(), nil
+}
+
+func (o *Options) setKlusterletRegistrationAnnotations() {
+	if len(o.klusterletAnnotations) == 0 {
+		return
+	}
+
+	if o.klusterletChartConfig.Klusterlet.RegistrationConfiguration.ClusterAnnotations == nil {
+		o.klusterletChartConfig.Klusterlet.RegistrationConfiguration.ClusterAnnotations = map[string]string{}
+	}
+
+	for _, annotation := range o.klusterletAnnotations {
+		i := strings.Index(annotation, "=")
+		if i == -1 {
+			klog.Warningf("Skipping malformed annotation (missing '='): %s", annotation)
+			continue
+		}
+
+		k, v := strings.TrimSpace(annotation[:i]), strings.TrimSpace(annotation[i+1:])
+
+		if k == "" {
+			klog.Warningf("Skipping annotation with empty key: %s", annotation)
+			continue
+		}
+
+		if !strings.HasPrefix(k, operatorv1.ClusterAnnotationsKeyPrefix) {
+			k = fmt.Sprintf("%s/%s", operatorv1.ClusterAnnotationsKeyPrefix, k)
+		}
+
+		o.klusterletChartConfig.Klusterlet.RegistrationConfiguration.ClusterAnnotations[k] = v
+	}
+}
+
+func getManagedClusterArn(o *Options) (string, error) {
+	if o.managedClusterArn != "" {
+		return o.managedClusterArn, nil
+	}
+
+	rawConfig, err := o.ClusteradmFlags.KubectlFactory.ToRawKubeConfigLoader().RawConfig()
+	if err != nil {
+		klog.Errorf("unable to load managedcluster kubeconfig: %v", err)
+		return "", err
+	}
+	managedClusterArn := rawConfig.Contexts[rawConfig.CurrentContext].Cluster
+	if managedClusterArn == "" {
+		klog.Errorf("managedClusterArn has empty value in kubeconfig")
+		return "", fmt.Errorf("unable to retrieve managedClusterArn from kubeconfig")
+	}
+	return managedClusterArn, nil
 }

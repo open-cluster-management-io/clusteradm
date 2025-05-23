@@ -65,6 +65,8 @@ type Options struct {
 	autoApprovedARNPatterns []string
 	// List of tags to be added to AWS resources created by hub while processing awsirsa registration request
 	awsResourceTags []string
+	// enableSyncLabels is to enable the feature which can sync the labels from clustermanager to all hub resources.
+	enableSyncLabels bool
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Options {

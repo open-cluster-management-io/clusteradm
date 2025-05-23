@@ -99,5 +99,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		"The users or identities that can be auto approved for CSR and auto accepted to join with hub cluster")
 	cmd.Flags().StringSliceVar(&o.autoApprovedARNPatterns, "auto-approved-arn-patterns", []string{},
 		"List of AWS EKS ARN patterns so any EKS clusters with these patterns will be auto accepted to join with hub cluster")
+	cmd.Flags().BoolVar(&o.enableSyncLabels, "enable-sync-labels", false, "If true, sync the labels from clustermanager to all hub resources.")
+
 	return cmd
 }

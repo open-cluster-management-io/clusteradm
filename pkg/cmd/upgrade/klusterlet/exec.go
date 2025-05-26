@@ -44,7 +44,7 @@ func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 		return err
 	}
 
-	bundleVersion, err := version.GetVersionBundle(o.bundleVersion)
+	bundleVersion, err := version.GetVersionBundle(o.bundleVersion, o.versionBundleFile)
 	if err != nil {
 		return err
 	}

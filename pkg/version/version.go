@@ -2,7 +2,9 @@
 package version
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/version"
@@ -36,10 +38,10 @@ func Get() version.Info {
 }
 
 type VersionBundle struct {
-	OCM                      string
-	AppAddon                 string
-	PolicyAddon              string
-	MulticlusterControlplane string
+	OCM                      string `json:"ocm"`
+	AppAddon                 string `json:"app_addon"`
+	PolicyAddon              string `json:"policy_addon"`
+	MulticlusterControlplane string `json:"multicluster_controlplane"`
 }
 
 var defaultBundleVersion = "0.16.1"
@@ -48,7 +50,46 @@ func GetDefaultBundleVersion() string {
 	return defaultBundleVersion
 }
 
-func GetVersionBundle(version string) (VersionBundle, error) {
+// GetVersionBundleFromFile reads a version bundle from a file
+func GetVersionBundleFromFile(filePath string) (VersionBundle, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return VersionBundle{}, fmt.Errorf("failed to read version bundle file: %w", err)
+	}
+
+	var bundle VersionBundle
+	if err := json.Unmarshal(data, &bundle); err != nil {
+		return VersionBundle{}, fmt.Errorf("failed to unmarshal version bundle: %w", err)
+	}
+
+	var missingKeys []string
+	if bundle.OCM == "" {
+		missingKeys = append(missingKeys, "ocm")
+	}
+	if bundle.AppAddon == "" {
+		missingKeys = append(missingKeys, "app_addon")
+	}
+	if bundle.PolicyAddon == "" {
+		missingKeys = append(missingKeys, "policy_addon")
+	}
+	if bundle.MulticlusterControlplane == "" {
+		missingKeys = append(missingKeys, "multicluster_controlplane")
+	}
+	if len(missingKeys) > 0 {
+		return VersionBundle{}, fmt.Errorf(
+			"invalid version bundle file: missing required keys: [%s]",
+			strings.Join(missingKeys, ", "),
+		)
+	}
+
+	return bundle, nil
+}
+
+func GetVersionBundle(version string, versionBundleFile string) (VersionBundle, error) {
+	// If version bundle file is provided, read from it
+	if versionBundleFile != "" {
+		return GetVersionBundleFromFile(versionBundleFile)
+	}
 
 	// supporting either "x.y.z" or "vx.y.z" format version
 	version = strings.TrimPrefix(version, "v")

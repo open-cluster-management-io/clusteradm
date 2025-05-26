@@ -74,9 +74,11 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		"The credential file is the docker config json file and will be filled into the default image pull secret named open-cluster-management-image-pull-credentials.")
 	cmd.Flags().StringVar(&o.bundleVersion, "bundle-version", "default",
 		"The version of predefined compatible image versions (e.g. v0.6.0). Defaults to the latest released version. You can also set \"latest\" to install the latest development version.")
+	cmd.Flags().StringVar(&o.versionBundleFile, "version-bundle-file", "", "Path to a file containing version bundle configuration. Optional, overrides --bundle-version if provided.")
 	clusterManagerSet.BoolVar(&o.useBootstrapToken, "use-bootstrap-token", false, "If set then the bootstrap token will used instead of a service account token")
 	_ = clusterManagerSet.SetAnnotation("image-registry", "clusterManagerSet", []string{})
 	_ = clusterManagerSet.SetAnnotation("bundle-version", "clusterManagerSet", []string{})
+	_ = clusterManagerSet.SetAnnotation("bundle-version-file", "clusterManagerSet", []string{})
 	_ = clusterManagerSet.SetAnnotation("use-bootstrap-token", "clusterManagerSet", []string{})
 	cmd.Flags().AddFlagSet(clusterManagerSet)
 

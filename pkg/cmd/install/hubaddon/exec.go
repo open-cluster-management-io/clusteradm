@@ -52,7 +52,7 @@ func (o *Options) validate() (err error) {
 		}
 	}
 
-	versionBundle, err := version.GetVersionBundle(o.bundleVersion)
+	versionBundle, err := version.GetVersionBundle(o.bundleVersion, o.versionBundleFile)
 	if err != nil {
 		return err
 	}

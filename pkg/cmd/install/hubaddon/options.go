@@ -17,6 +17,8 @@ type Options struct {
 	outputFile    string
 	values        scenario.Values
 	bundleVersion string
+	// Path to a file containing version bundle configuration
+	versionBundleFile string
 
 	Streams genericiooptions.IOStreams
 

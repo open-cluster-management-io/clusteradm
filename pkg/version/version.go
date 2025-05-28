@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/version"
+	"k8s.io/klog/v2"
 )
 
 var (
@@ -50,46 +51,24 @@ func GetDefaultBundleVersion() string {
 	return defaultBundleVersion
 }
 
-// GetVersionBundleFromFile reads a version bundle from a file
-func GetVersionBundleFromFile(filePath string) (VersionBundle, error) {
-	data, err := os.ReadFile(filePath)
+// GetVersionBundle returns a version bundle for the requested version and optional overrides.
+func GetVersionBundle(version string, versionBundleFile string) (VersionBundle, error) {
+	bundle, err := getVersionBundle(version)
 	if err != nil {
-		return VersionBundle{}, fmt.Errorf("failed to read version bundle file: %w", err)
+		return VersionBundle{}, err
 	}
 
-	var bundle VersionBundle
-	if err := json.Unmarshal(data, &bundle); err != nil {
-		return VersionBundle{}, fmt.Errorf("failed to unmarshal version bundle: %w", err)
-	}
-
-	var missingKeys []string
-	if bundle.OCM == "" {
-		missingKeys = append(missingKeys, "ocm")
-	}
-	if bundle.AppAddon == "" {
-		missingKeys = append(missingKeys, "app_addon")
-	}
-	if bundle.PolicyAddon == "" {
-		missingKeys = append(missingKeys, "policy_addon")
-	}
-	if bundle.MulticlusterControlplane == "" {
-		missingKeys = append(missingKeys, "multicluster_controlplane")
-	}
-	if len(missingKeys) > 0 {
-		return VersionBundle{}, fmt.Errorf(
-			"invalid version bundle file: missing required keys: [%s]",
-			strings.Join(missingKeys, ", "),
-		)
+	if versionBundleFile != "" {
+		bundle, err = overrideVersionBundle(bundle, versionBundleFile)
+		if err != nil {
+			return VersionBundle{}, err
+		}
 	}
 
 	return bundle, nil
 }
 
-func GetVersionBundle(version string, versionBundleFile string) (VersionBundle, error) {
-	// If version bundle file is provided, read from it
-	if versionBundleFile != "" {
-		return GetVersionBundleFromFile(versionBundleFile)
-	}
+func getVersionBundle(version string) (VersionBundle, error) {
 
 	// supporting either "x.y.z" or "vx.y.z" format version
 	version = strings.TrimPrefix(version, "v")
@@ -148,4 +127,17 @@ func GetVersionBundle(version string, versionBundleFile string) (VersionBundle, 
 		return val, nil
 	}
 	return VersionBundle{}, fmt.Errorf("couldn't find the requested version bundle: %v", version)
+}
+
+func overrideVersionBundle(bundle VersionBundle, filePath string) (VersionBundle, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return VersionBundle{}, fmt.Errorf("failed to read version bundle file: %w", err)
+	}
+	if err := json.Unmarshal(data, &bundle); err != nil {
+		return VersionBundle{}, fmt.Errorf("failed to unmarshal version bundle: %w", err)
+	}
+
+	klog.V(3).InfoS("applied overrides to version bundle", "finalBundle", bundle)
+	return bundle, nil
 }

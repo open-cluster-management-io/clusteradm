@@ -149,13 +149,17 @@ Create and deploy a sample Argo CD ApplicationSet
 
 ## Version Bundles
 
-By default, clusteradm uses a built-in version bundle that defines the versions of all OCM components to be installed. You can override this by specifying a custom version bundle file using the `--version-bundle-file` flag:
+By default, clusteradm uses a built-in version bundle that defines the versions of all OCM components to be installed. You can request a specific version bundle using the `--bundle-version` flag. You can override individual component versions within the selected version bundle using the `--bundle-version-overrides` flag:
 
 ```bash
-clusteradm init --version-bundle-file /path/to/version-bundle.json
+# Override component versions within the default version bundle:
+clusteradm init --bundle-version-overrides /path/to/bundle-overrides.json
+
+# Override component versions within a specific version bundle:
+clusteradm init --bundle-version v0.16.0 --bundle-version-overrides /path/to/bundle-overrides.json
 ```
 
-The version bundle file must be a JSON file containing versions for **all** OCM components. Example:
+The version bundle override file must be a JSON file containing one or more OCM component versions. Example:
 
 ```json
 {

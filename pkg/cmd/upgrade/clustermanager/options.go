@@ -17,6 +17,8 @@ type Options struct {
 	registry string
 	//version of predefined compatible image versions
 	bundleVersion string
+	// Path to a file containing version bundle configuration
+	versionBundleFile string
 	//If set, the command will hold until the OCM control plane initialized
 	wait bool
 

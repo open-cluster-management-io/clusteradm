@@ -63,6 +63,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		"The credential file is the docker config json file and will be filled into the default image pull secret named open-cluster-management-image-pull-credentials.")
 	cmd.Flags().StringVar(&o.bundleVersion, "bundle-version", "default",
 		"The version of predefined compatible image versions (e.g. v0.6.0). Defaults to the latest released version. You can also set \"latest\" to install the latest development version.")
+	cmd.Flags().StringVar(&o.versionBundleFile, "bundle-version-overrides", "",
+		"Path to a file containing version bundle overrides. Optional. If provided, overrides component versions within the selected version bundle.")
 	cmd.Flags().BoolVar(&o.forceHubInClusterEndpointLookup, "force-internal-endpoint-lookup", false,
 		"If true, the installed klusterlet agent will be starting the cluster registration process by "+
 			"looking for the internal endpoint from the public cluster-info in the hub cluster instead of from --hub-apiserver.")

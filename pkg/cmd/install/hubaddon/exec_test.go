@@ -41,7 +41,7 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 		}
 
 		var err error
-		ocmBundleVersion, err = version.GetVersionBundle(ocmVersion)
+		ocmBundleVersion, err = version.GetVersionBundle(ocmVersion, "")
 		gomega.Expect(err).ToNot(gomega.HaveOccurred())
 	})
 

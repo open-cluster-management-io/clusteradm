@@ -28,6 +28,8 @@ type Options struct {
 
 	// version of predefined compatible image versions
 	bundleVersion string
+	// Path to a file containing version bundle configuration
+	versionBundleFile string
 
 	// If set, deploy the singleton controlplane
 	singleton     bool

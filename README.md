@@ -146,3 +146,28 @@ Enable specific add-on(s) agent deployment to the given managed clusters of the 
 Create and deploy a sample Argo CD ApplicationSet
 
 `clusteradm create sampleapp sample-appset`
+
+## Version Bundles
+
+By default, clusteradm uses a built-in version bundle that defines the versions of all OCM components to be installed. You can request a specific version bundle using the `--bundle-version` flag. You can override individual component versions within the selected version bundle using the `--bundle-version-overrides` flag:
+
+```bash
+# Override component versions within the default version bundle:
+clusteradm init --bundle-version-overrides /path/to/bundle-overrides.json
+
+# Override component versions within a specific version bundle:
+clusteradm init --bundle-version v0.16.0 --bundle-version-overrides /path/to/bundle-overrides.json
+```
+
+The version bundle override file must be a JSON file containing one or more OCM component versions. Example:
+
+```json
+{
+  "ocm": "v0.16.1",
+  "app_addon": "v0.16.0",
+  "policy_addon": "v0.16.0",
+  "multicluster_controlplane": "v0.7.0"
+}
+```
+
+This is useful when you need to use specific versions of components or when working with custom builds.

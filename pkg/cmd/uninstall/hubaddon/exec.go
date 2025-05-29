@@ -23,7 +23,7 @@ var (
 	policyFrameworkAddonName = "governance-policy-framework"
 )
 
-func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 	klog.V(1).InfoS("addon options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.names)
 	return nil
 }
@@ -77,7 +77,7 @@ func (o *Options) run() error {
 	o.values.HubAddons = addons
 	// this needs to be set to render the manifests, but the version value
 	// does not matter.
-	o.values.BundleVersion, _ = version.GetVersionBundle("default")
+	o.values.BundleVersion, _ = version.GetVersionBundle("default", "")
 
 	klog.V(3).InfoS("values:", "addon", o.values.HubAddons)
 

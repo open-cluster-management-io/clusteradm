@@ -37,6 +37,8 @@ type Options struct {
 
 	// version of predefined compatible image versions
 	bundleVersion string
+	// Path to a file containing version bundle configuration
+	versionBundleFile string
 
 	// if set, deploy the singleton agent rather than klusterlet
 	singleton bool

@@ -18,7 +18,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
 )
 
-func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun)
 
 	f := o.ClusteradmFlags.KubectlFactory
@@ -39,7 +39,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	bundleVersion, err := version.GetVersionBundle(o.bundleVersion)
+	bundleVersion, err := version.GetVersionBundle(o.bundleVersion, o.versionBundleFile)
 	if err != nil {
 		return err
 	}

@@ -96,7 +96,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		ClusterName: o.clusterName,
 	}
 
-	bundleVersion, err := version.GetVersionBundle(o.bundleVersion)
+	bundleVersion, err := version.GetVersionBundle(o.bundleVersion, o.versionBundleFile)
 	if err != nil {
 		return err
 	}

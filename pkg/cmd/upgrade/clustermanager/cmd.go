@@ -47,6 +47,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		"The name of the image registry serving OCM images, which will be applied to all the deploying OCM components.")
 	cmd.Flags().StringVar(&o.bundleVersion, "bundle-version", "default",
 		"The version of predefined compatible image versions (e.g. v0.6.0). Defaults to the latest released version. You can also set \"latest\" to install the latest development version.")
+	cmd.Flags().StringVar(&o.versionBundleFile, "bundle-version-overrides", "",
+		"Path to a file containing version bundle overrides. Optional. If provided, overrides component versions within the selected version bundle.")
 	cmd.Flags().BoolVar(&o.wait, "wait", false,
 		"If set, the command will initialize the OCM control plan in foreground.")
 	return cmd

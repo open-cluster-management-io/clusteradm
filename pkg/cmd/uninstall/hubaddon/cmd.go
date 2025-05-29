@@ -13,7 +13,7 @@ import (
 
 var example = `
 # Uninstall built-in add-ons from the hub cluster
-%[1]s uninstall hub-addon --names argocd
+%[1]s uninstall hub-addon --names application-manager
 %[1]s uninstall hub-addon --names governance-policy-framework
 `
 
@@ -47,7 +47,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		},
 	}
 
-	cmd.Flags().StringVar(&o.names, "names", "", "Names of the built-in add-on to uninstall (comma separated). The built-in add-ons are: argocd, governance-policy-framework")
+	cmd.Flags().StringVar(&o.names, "names", "", "Names of the built-in add-on to uninstall (comma separated). The built-in add-ons are: application-manager, governance-policy-framework")
 	cmd.Flags().StringVar(&o.values.Namespace, "namespace", "open-cluster-management", "Namespace of the built-in add-on to uninstall. Defaults to open-cluster-management")
 
 	return cmd

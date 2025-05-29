@@ -19,6 +19,10 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 	// Map of Hub Addons to test, mapping the Hub Addon name to
 	// an array of deployment names to check for availability
 	var hubAddons = map[string][]string{
+		"application-manager": {
+			"multicluster-operators-channel",
+			"multicluster-operators-subscription",
+		},
 		"governance-policy-framework": {
 			"governance-policy-propagator",
 			"governance-policy-addon-controller",
@@ -97,7 +101,7 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 				bundleVersion:   ocmVersion,
 				values: scenario.Values{
 					Namespace: invalidNamespace,
-					HubAddons: []string{scenario.PolicyFrameworkAddonName},
+					HubAddons: []string{scenario.AppMgrAddonName},
 				},
 				Streams: genericiooptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr},
 			}

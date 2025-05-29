@@ -1,0 +1,11 @@
+# Copyright Contributors to the Open Cluster Management project
+apiVersion: addon.open-cluster-management.io/v1alpha1
+kind: ClusterManagementAddOn
+metadata:
+  annotations:
+    addon.open-cluster-management.io/lifecycle: addon-manager
+  name: application-manager
+spec:
+  addOnMeta:
+    description: Synchronizes applications on the managed clusters from the hub.
+    displayName: Application Manager

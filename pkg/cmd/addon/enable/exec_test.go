@@ -22,7 +22,7 @@ var _ = ginkgo.Describe("addon enable", func() {
 
 	// Array of addons to check
 	var addons = []string{
-		"argocd",
+		"application-manager",
 		"governance-policy-framework",
 		"config-policy-controller",
 	}

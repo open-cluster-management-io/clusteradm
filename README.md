@@ -127,7 +127,7 @@ Clean up the multicluster hub control plane and other initialized resources on t
 
 Install specific built-in add-on(s) to the hub cluster.
 
-`clusteradm install hub-addon --names argocd`
+`clusteradm install hub-addon --names application-manager`
 
 `clusteradm install hub-addon --names governance-policy-framework`
 
@@ -135,7 +135,7 @@ Install specific built-in add-on(s) to the hub cluster.
 
 Enable specific add-on(s) agent deployment to the given managed clusters of the specified namespace
 
-`clusteradm addon enable --names argocd --namespace <namespace> --clusters <cluster1>,<cluster2>,....`
+`clusteradm addon enable --names application-manager --namespace <namespace> --clusters <cluster1>,<cluster2>,....`
 
 `clusteradm addon enable --names governance-policy-framework --namespace <namespace> --clusters <cluster1>,<cluster2>,....`
 
@@ -143,6 +143,6 @@ Enable specific add-on(s) agent deployment to the given managed clusters of the 
 
 ### create sample application
 
-Create and deploy a sample Argo CD ApplicationSet
+Create and Deploy a Sample Subscription Application
 
-`clusteradm create sampleapp sample-appset`
+`clusteradm create sampleapp sampleapp1`

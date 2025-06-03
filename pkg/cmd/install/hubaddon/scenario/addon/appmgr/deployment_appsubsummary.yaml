@@ -1,0 +1,40 @@
+# Copyright Contributors to the Open Cluster Management project
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: multicluster-operators-appsub-summary
+  namespace: {{ .Namespace }}
+  labels:
+    name: multicluster-operators-appsub-summary
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: multicluster-operators-appsub-summary
+  template:
+    metadata:
+      labels:
+        name: multicluster-operators-appsub-summary
+    spec:
+      serviceAccountName: multicluster-operators-subscription
+      containers:
+        - name: multicluster-operators-appsub-summary
+          image: quay.io/open-cluster-management/multicloud-operators-subscription:{{ .BundleVersion.AppAddon }}
+          ports:
+          - containerPort: 9443
+          command:
+          - /usr/local/bin/appsubsummary
+          - --v=1
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: WATCH_NAMESPACE
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: "multicluster-operators-appsub-summary"
+          resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi

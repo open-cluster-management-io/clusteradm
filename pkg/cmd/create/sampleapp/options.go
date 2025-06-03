@@ -17,6 +17,9 @@ type Options struct {
 	// The base name for the resources created for this sample app
 	SampleAppName string
 
+	// The specified namespace for sameple app deployment
+	Namespace string
+
 	//The file to output the resources will be sent to the file.
 	OutputFile string
 }

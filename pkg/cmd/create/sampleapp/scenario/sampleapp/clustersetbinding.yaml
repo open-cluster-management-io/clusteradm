@@ -1,0 +1,8 @@
+# Copyright Contributors to the Open Cluster Management project
+apiVersion: cluster.open-cluster-management.io/v1beta2
+kind: ManagedClusterSetBinding
+metadata:
+  name: app-{{.SampleAppName}}
+  namespace: {{.Namespace}}
+spec:
+  clusterSet: app-{{.SampleAppName}}

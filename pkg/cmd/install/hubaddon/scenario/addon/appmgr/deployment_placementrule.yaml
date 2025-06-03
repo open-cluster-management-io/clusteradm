@@ -1,0 +1,39 @@
+# Copyright Contributors to the Open Cluster Management project
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: multicluster-operators-placementrule
+  namespace: {{ .Namespace }}
+  labels:
+    name: multicluster-operators-placementrule
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: multicluster-operators-placementrule
+  template:
+    metadata:
+      labels:
+        name: multicluster-operators-placementrule
+    spec:
+      serviceAccountName: multicluster-operators-subscription
+      containers:
+        - name: multicluster-operators-placementrule
+          image: quay.io/open-cluster-management/multicloud-operators-subscription:{{ .BundleVersion.AppAddon }}
+          ports:
+          - containerPort: 6443
+          command:
+          - /usr/local/bin/multicluster-operators-placementrule
+          imagePullPolicy: Always
+          env:
+            - name: WATCH_NAMESPACE
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: "multicluster-operators-placementrule"
+          resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi

@@ -15,6 +15,8 @@ import (
 var example = `
 # Create a sample app
 %[1]s create sampleapp sampleapp1
+# Create a sample app on specified namespace
+%[1]s create sampleapp sampleapp1 --namespace namespace1
 `
 
 // NewCmd...
@@ -23,8 +25,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 
 	cmd := &cobra.Command{
 		Use:          "sampleapp",
-		Short:        "Create a sample Argo CD ApplicationSet",
-		Long:         "Create a sample Argo CD ApplicationSet",
+		Short:        "Create a sample app",
+		Long:         "Create a sample app, by generating Helm ngix deployment yamls",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRunE: func(c *cobra.Command, args []string) error {
@@ -48,6 +50,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	}
 
 	cmd.Flags().StringVar(&o.OutputFile, "output-file", "", "The generated resources will be copied in the specified file")
+	cmd.Flags().StringVarP(&o.Namespace, "namespace", "n", "default", "Specified namespace to deploy sample app")
 
 	return cmd
 }

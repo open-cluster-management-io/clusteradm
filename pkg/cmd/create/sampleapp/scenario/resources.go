@@ -7,3 +7,9 @@ import (
 
 //go:embed sampleapp
 var Files embed.FS
+
+var (
+	SampleAppFiles = []string{
+		"sampleapp/appset.yaml",
+	}
+)

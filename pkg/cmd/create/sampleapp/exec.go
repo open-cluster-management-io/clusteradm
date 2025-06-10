@@ -3,11 +3,7 @@
 package sampleapp
 
 import (
-	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
-	"runtime"
 
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 
@@ -75,32 +71,5 @@ func (o *Options) deployApp() error {
 	// Prepare deployment tools
 	r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
 
-	// Retrieve sample application manifests
-	_, currentFilePath, _, ok := runtime.Caller(0)
-	if !ok {
-		return errors.New("Error retrieving current file path")
-	}
-	appDir := filepath.Join(filepath.Dir(currentFilePath), pathToAppManifests)
-	files, err := filePathWalkDir(appDir)
-	if err != nil {
-		return err
-	}
-
-	// Apply manifests
-	return r.Apply(scenario.Files, o, files...)
-}
-
-func filePathWalkDir(root string) ([]string, error) {
-	var files []string
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
-			relPath, err := filepath.Rel(filepath.Dir(root), path)
-			if err != nil {
-				return err
-			}
-			files = append(files, relPath)
-		}
-		return nil
-	})
-	return files, err
+	return r.Apply(scenario.Files, o, scenario.SampleAppFiles...)
 }

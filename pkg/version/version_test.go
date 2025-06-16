@@ -22,10 +22,13 @@ func TestGetVersionBundle(t *testing.T) {
 		wantErr               bool
 	}{
 		{
-			name:                  "default",
-			version:               "default",
-			versionBundleFile:     "",
-			expectedVersionBundle: func() VersionBundle { return expectedVersionBundle },
+			name:              "default",
+			version:           "default",
+			versionBundleFile: "",
+			expectedVersionBundle: func() VersionBundle {
+				versionBundle, _ := getVersionBundle("default")
+				return versionBundle
+			},
 		},
 		{
 			name:              "specific version",

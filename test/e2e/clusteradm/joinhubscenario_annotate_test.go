@@ -30,6 +30,8 @@ var _ = ginkgo.Describe("test clusteradm join with annotations", func() {
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 
+			util.WaitClusterManagerApplied(operatorClient)
+
 			ginkgo.By("managedcluster1 join hub with annotations")
 			err = e2e.Clusteradm().Join(
 				"--context", e2e.Cluster().ManagedCluster1().Context(),

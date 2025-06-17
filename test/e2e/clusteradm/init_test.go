@@ -33,6 +33,8 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode"
 			cm, err := operatorClient.OperatorV1().ClusterManagers().Get(context.TODO(), "cluster-manager", metav1.GetOptions{})
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
+			util.WaitClusterManagerApplied(operatorClient)
+
 			// 2 featureGates: DefaultClusterSet and ResourceCleanup
 			gomega.Expect(len(cm.Spec.RegistrationConfiguration.FeatureGates)).Should(gomega.Equal(2))
 

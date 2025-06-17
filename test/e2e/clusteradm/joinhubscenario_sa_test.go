@@ -4,6 +4,7 @@ package clusteradme2e
 import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
+	"open-cluster-management.io/clusteradm/test/e2e/util"
 )
 
 var _ = ginkgo.Describe("test clusteradm with service account", func() {
@@ -24,6 +25,8 @@ var _ = ginkgo.Describe("test clusteradm with service account", func() {
 				"--bundle-version=latest",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
+
+			util.WaitClusterManagerApplied(operatorClient)
 
 			ginkgo.By("managedcluster1 join hub")
 			err = e2e.Clusteradm().Join(

@@ -32,7 +32,11 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode"
 
 			cm, err := operatorClient.OperatorV1().ClusterManagers().Get(context.TODO(), "cluster-manager", metav1.GetOptions{})
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
-			gomega.Expect(len(cm.Spec.RegistrationConfiguration.FeatureGates)).Should(gomega.Equal(1))
+
+			util.WaitClusterManagerApplied(operatorClient)
+
+			// 2 featureGates: DefaultClusterSet and ResourceCleanup
+			gomega.Expect(len(cm.Spec.RegistrationConfiguration.FeatureGates)).Should(gomega.Equal(2))
 
 			err = e2e.Clusteradm().Init(
 				"--use-bootstrap-token",
@@ -113,7 +117,8 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode"
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 			cm, err = operatorClient.OperatorV1().ClusterManagers().Get(context.TODO(), "cluster-manager", metav1.GetOptions{})
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
-			gomega.Expect(len(cm.Spec.RegistrationConfiguration.FeatureGates)).Should(gomega.Equal(2))
+			// 3 featureGates: ManagedClusterAutoApproval, DefaultClusterSet and ResourceCleanup
+			gomega.Expect(len(cm.Spec.RegistrationConfiguration.FeatureGates)).Should(gomega.Equal(3))
 
 			gomega.Eventually(func() error {
 				return util.ValidateImagePullSecret(kubeClient, "e30=",

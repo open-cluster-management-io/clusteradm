@@ -8,17 +8,19 @@ import (
 	"os"
 	"time"
 
-	"k8s.io/apimachinery/pkg/api/meta"
-	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
-	"open-cluster-management.io/clusteradm/pkg/config"
-
+	"github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clusterclient "open-cluster-management.io/api/client/cluster/clientset/versioned"
+	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
+	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
+	operatorv1 "open-cluster-management.io/api/operator/v1"
+	"open-cluster-management.io/clusteradm/pkg/config"
 )
 
 // WaitNamespaceDeleted receive a kubeconfigpath, a context name and a namespace name,
@@ -98,6 +100,32 @@ func DeleteClusterFinalizers(restcfg *rest.Config) error {
 	return nil
 }
 
+func WaitClustersDeleted(restcfg *rest.Config) error {
+	clientset, err := clusterclient.NewForConfig(restcfg)
+	if err != nil {
+		return err
+	}
+
+	gomega.Eventually(func() error {
+		clusterList, err := clientset.ClusterV1().ManagedClusters().List(context.TODO(), metav1.ListOptions{})
+		if errors.IsNotFound(err) || len(clusterList.Items) == 0 {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		for _, mcl := range clusterList.Items {
+			err = clientset.ClusterV1().ManagedClusters().Delete(context.TODO(), mcl.Name, metav1.DeleteOptions{})
+			if err != nil {
+				return err
+			}
+		}
+		return fmt.Errorf("wait all clusters are deleted")
+	}, time.Second*120, time.Second*2).Should(gomega.Succeed())
+
+	return nil
+}
+
 // buildConfigFromFlags build rest config for specified context in the kubeconfigfile.
 func buildConfigFromFlags(context, kubeconfigPath string) (*rest.Config, error) {
 	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
@@ -128,4 +156,25 @@ func NewTestImagePullCredentialFile(fileName string) string {
 
 func CleanupTestImagePullCredentialFile(fileName string) {
 	_ = os.Remove(fileName)
+}
+
+func WaitClusterManagerApplied(operatorClient operatorclient.Interface) {
+	gomega.Eventually(func() error {
+		cm, err := operatorClient.OperatorV1().ClusterManagers().Get(context.TODO(), "cluster-manager", metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		if !meta.IsStatusConditionTrue(cm.Status.Conditions, operatorv1.ConditionClusterManagerApplied) {
+			return fmt.Errorf("cluster manager is not applied")
+		}
+
+		con := meta.FindStatusCondition(cm.Status.Conditions, operatorv1.ConditionHubRegistrationDegraded)
+		if con == nil {
+			return fmt.Errorf("hub registration is not degraded")
+		}
+		if con.Status != metav1.ConditionFalse || con.Reason != operatorv1.ReasonRegistrationFunctional {
+			return fmt.Errorf("hub registration is not functional")
+		}
+		return nil
+	}, time.Second*60, time.Second*2).Should(gomega.Succeed())
 }

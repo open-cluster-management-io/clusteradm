@@ -98,6 +98,30 @@ func DeleteClusterFinalizers(restcfg *rest.Config) error {
 	return nil
 }
 
+func WaitClustersDeleted(restcfg *rest.Config) error {
+	clientset, err := clusterclient.NewForConfig(restcfg)
+	if err != nil {
+		return err
+	}
+
+	return wait.PollUntilContextCancel(context.TODO(), 1*time.Second, true, func(ctx context.Context) (bool, error) {
+		clusterList, err := clientset.ClusterV1().ManagedClusters().List(context.TODO(), metav1.ListOptions{})
+		if errors.IsNotFound(err) || len(clusterList.Items) == 0 {
+			return true, nil
+		}
+		if err != nil {
+			return false, err
+		}
+		for _, mcl := range clusterList.Items {
+			err = clientset.ClusterV1().ManagedClusters().Delete(context.TODO(), mcl.Name, metav1.DeleteOptions{})
+			if err != nil {
+				return false, err
+			}
+		}
+		return false, nil
+	})
+}
+
 // buildConfigFromFlags build rest config for specified context in the kubeconfigfile.
 func buildConfigFromFlags(context, kubeconfigPath string) (*rest.Config, error) {
 	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(

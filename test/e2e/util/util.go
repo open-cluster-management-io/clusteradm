@@ -65,6 +65,14 @@ func initE2E() (*TestE2eConfig, error) {
 	// clearenv set the e2e environment from initial state to empty
 	clearenv := func() error {
 		fmt.Println("cleaning hub...")
+
+		fmt.Println("deleting all clusters on the hub...")
+		// delete all clusters
+		err = WaitClustersDeleted(e2eConf.Cluster().Hub().KubeConfig())
+		if err != nil {
+			return err
+		}
+
 		fmt.Println("unjoin managedcluster1...")
 		err := e2eConf.Clusteradm().Unjoin(
 			"--context", e2eConf.Cluster().ManagedCluster1().Context(),
@@ -79,17 +87,7 @@ func initE2E() (*TestE2eConfig, error) {
 			return err
 		}
 
-		// delete cluster finalizers
-		err = DeleteClusterFinalizers(e2eConf.Cluster().Hub().KubeConfig())
-		if err != nil {
-			return err
-		}
-
-		// wait for managed cluster Available status to be "False"
-		err = WaitForManagedClusterAvailableStatusToChange(e2eConf.Cluster().Hub().KubeConfig(), e2eConf.Cluster().ManagedCluster1().Name())
-		if err != nil {
-			return err
-		}
+		fmt.Println("cleaning clusterManager CR...")
 		err = e2eConf.Clusteradm().Clean(
 			"--context", e2eConf.Cluster().Hub().Context(),
 			"--purge-operator=false",

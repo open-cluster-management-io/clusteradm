@@ -158,7 +158,20 @@ func CleanupTestImagePullCredentialFile(fileName string) {
 	_ = os.Remove(fileName)
 }
 
+func GetE2eConfig() (*TestE2eConfig, error) {
+	return NewTestE2eConfig(
+		os.Getenv("KUBECONFIG"),
+		os.Getenv("HUB_NAME"), os.Getenv("HUB_CTX"),
+		os.Getenv("MANAGED_CLUSTER1_NAME"), os.Getenv("MANAGED_CLUSTER1_CTX"))
+}
+
 func WaitClusterManagerApplied(operatorClient operatorclient.Interface) {
+	e2eConf, err := GetE2eConfig()
+	gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+	kubeClient, err := kubernetes.NewForConfig(e2eConf.Cluster().hub.kubeConfig)
+	gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
 	gomega.Eventually(func() error {
 		cm, err := operatorClient.OperatorV1().ClusterManagers().Get(context.TODO(), "cluster-manager", metav1.GetOptions{})
 		if err != nil {
@@ -175,6 +188,23 @@ func WaitClusterManagerApplied(operatorClient operatorclient.Interface) {
 		if con.Status != metav1.ConditionFalse || con.Reason != operatorv1.ReasonRegistrationFunctional {
 			return fmt.Errorf("hub registration is not functional")
 		}
+
+		deployments, err := kubeClient.AppsV1().Deployments(config.HubClusterNamespace).List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			return err
+		}
+		for _, d := range deployments.Items {
+			desiredReplicas := int32(1)
+			if d.Spec.Replicas != nil {
+				desiredReplicas = *(d.Spec.Replicas)
+			}
+
+			if desiredReplicas > d.Status.AvailableReplicas {
+				return fmt.Errorf("deployment %v is available", d.Name)
+			}
+
+		}
 		return nil
+
 	}, time.Second*60, time.Second*2).Should(gomega.Succeed())
 }

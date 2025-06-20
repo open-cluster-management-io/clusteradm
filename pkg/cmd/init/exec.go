@@ -64,6 +64,8 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
+	o.clusterManagerChartConfig.EnableSyncLabels = o.enableSyncLabels
+
 	if !o.singleton {
 		o.clusterManagerChartConfig.Images = chart.ImagesConfig{
 			Registry: o.registry,

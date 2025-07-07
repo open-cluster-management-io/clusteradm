@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
 # Copyright Contributors to the Open Cluster Management project
+#
+# Usage: ./install.sh [version]
+#
+# If no version is provided, the latest version will be installed.
+# If a version is provided, it will be installed.
+#
+# Example: ./install.sh v0.1.0
+# Example: ./install.sh latest
 
 # Clusteradm CLI location
 : "${INSTALL_DIR:=/usr/local/bin}"
@@ -186,7 +194,11 @@ checkHttpRequestCLI
 if [ -z "$1" ]; then
     TARGET_VERSION="latest"
 else
-    TARGET_VERSION=v$1
+    if [[ "$1" =~ ^v.* ]]; then
+        TARGET_VERSION="$1"
+    else
+        TARGET_VERSION="v$1"
+    fi
 fi
 
 verifySupported

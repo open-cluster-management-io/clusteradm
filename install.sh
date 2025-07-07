@@ -7,6 +7,9 @@
 # sudo is required to copy binary to INSTALL_DIR for linux
 : "${USE_SUDO:=false}"
 
+# Target architecture (optional, defaults to auto-detect)
+: "${ARCH:=}"
+
 # Http request CLI
 HTTP_REQUEST_CLI=curl
 
@@ -20,7 +23,9 @@ CLI_FILENAME=clusteradm
 CLI_FILE="${INSTALL_DIR}/${CLI_FILENAME}"
 
 getSystemInfo() {
-    ARCH=$(uname -m)
+    if [ -z "$ARCH" ]; then
+        ARCH=$(uname -m)
+    fi
     case $ARCH in
         armv7*) ARCH="arm";;
         aarch64) ARCH="arm64";;
@@ -37,16 +42,16 @@ getSystemInfo() {
 
 verifySupported() {
     local supported=(darwin-amd64 darwin-arm64 linux-amd64 linux-arm64 windows-amd64)
-    local current_osarch="${OS}-${ARCH}"
+    local target_osarch="${OS}-${ARCH}"
 
     for osarch in "${supported[@]}"; do
-        if [ "$osarch" == "$current_osarch" ]; then
-            echo "Your system is ${OS}_${ARCH}"
+        if [ "$osarch" == "$target_osarch" ]; then
+            echo "Installing clusteradm for ${OS}_${ARCH}"
             return
         fi
     done
 
-    echo "No prebuilt binary for ${current_osarch}"
+    echo "No prebuilt binary for ${target_osarch}"
     exit 1
 }
 

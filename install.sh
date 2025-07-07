@@ -194,7 +194,9 @@ checkHttpRequestCLI
 if [ -z "$1" ]; then
     TARGET_VERSION="latest"
 else
-    if [[ "$1" =~ ^v.* ]]; then
+    if [ "$1" = "latest" ]; then
+        TARGET_VERSION="latest"
+    elif [[ "$1" =~ ^v.* ]]; then
         TARGET_VERSION="$1"
     else
         TARGET_VERSION="v$1"

@@ -1,11 +1,11 @@
-# Copyright Contributors to the Open Cluster Management project
 #!/usr/bin/env bash
+# Copyright Contributors to the Open Cluster Management project
 
 # Clusteradm CLI location
-: ${INSTALL_DIR:="/usr/local/bin"}
+: "${INSTALL_DIR:=/usr/local/bin}"
 
 # sudo is required to copy binary to INSTALL_DIR for linux
-: ${USE_SUDO:="false"}
+: "${USE_SUDO:=false}"
 
 # Http request CLI
 HTTP_REQUEST_CLI=curl
@@ -27,7 +27,7 @@ getSystemInfo() {
         x86_64) ARCH="amd64";;
     esac
 
-    OS=$(echo `uname`|tr '[:upper:]' '[:lower:]')
+    OS=$(uname | tr '[:upper:]' '[:lower:]')
 
     # Most linux distro needs root permission to copy the file to /usr/local/bin
     if [[ "$OS" == "linux" || "$OS" == "darwin" ]] && [ "$INSTALL_DIR" == "/usr/local/bin" ]; then
@@ -73,7 +73,7 @@ checkExisting() {
 runAsRoot() {
     local CMD="$*"
 
-    if [ $EUID -ne 0 -a $USE_SUDO = "true" ]; then
+    if [ "$EUID" -ne 0 ] && [ "$USE_SUDO" = "true" ]; then
         CMD="sudo $CMD"
     fi
 
@@ -139,7 +139,7 @@ installFile() {
         exit 1
     fi
 
-    chmod o+x $tmp_root_cli
+    chmod o+x "$tmp_root_cli"
     runAsRoot cp "$tmp_root_cli" "$INSTALL_DIR"
 
     if [ -f "$CLI_FILE" ]; then
@@ -189,7 +189,7 @@ checkExisting
 
 echo "Installing $TARGET_VERSION OCM clusteradm CLI..."
 
-downloadFile $TARGET_VERSION
+downloadFile "$TARGET_VERSION"
 installFile
 cleanup
 

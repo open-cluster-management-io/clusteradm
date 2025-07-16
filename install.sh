@@ -1,11 +1,22 @@
-# Copyright Contributors to the Open Cluster Management project
 #!/usr/bin/env bash
+# Copyright Contributors to the Open Cluster Management project
+#
+# Usage: ./install.sh [version]
+#
+# If no version is provided, the latest version will be installed.
+# If a version is provided, it will be installed.
+#
+# Example: ./install.sh v0.1.0
+# Example: ./install.sh latest
 
 # Clusteradm CLI location
-: ${INSTALL_DIR:="/usr/local/bin"}
+: "${INSTALL_DIR:=/usr/local/bin}"
 
 # sudo is required to copy binary to INSTALL_DIR for linux
-: ${USE_SUDO:="false"}
+: "${USE_SUDO:=false}"
+
+# Target architecture (optional, defaults to auto-detect)
+: "${ARCH:=}"
 
 # Http request CLI
 HTTP_REQUEST_CLI=curl
@@ -20,14 +31,16 @@ CLI_FILENAME=clusteradm
 CLI_FILE="${INSTALL_DIR}/${CLI_FILENAME}"
 
 getSystemInfo() {
-    ARCH=$(uname -m)
+    if [ -z "$ARCH" ]; then
+        ARCH=$(uname -m)
+    fi
     case $ARCH in
         armv7*) ARCH="arm";;
         aarch64) ARCH="arm64";;
         x86_64) ARCH="amd64";;
     esac
 
-    OS=$(echo `uname`|tr '[:upper:]' '[:lower:]')
+    OS=$(uname | tr '[:upper:]' '[:lower:]')
 
     # Most linux distro needs root permission to copy the file to /usr/local/bin
     if [[ "$OS" == "linux" || "$OS" == "darwin" ]] && [ "$INSTALL_DIR" == "/usr/local/bin" ]; then
@@ -37,16 +50,16 @@ getSystemInfo() {
 
 verifySupported() {
     local supported=(darwin-amd64 darwin-arm64 linux-amd64 linux-arm64 windows-amd64)
-    local current_osarch="${OS}-${ARCH}"
+    local target_osarch="${OS}-${ARCH}"
 
     for osarch in "${supported[@]}"; do
-        if [ "$osarch" == "$current_osarch" ]; then
-            echo "Your system is ${OS}_${ARCH}"
+        if [ "$osarch" == "$target_osarch" ]; then
+            echo "Installing clusteradm for ${OS}_${ARCH}"
             return
         fi
     done
 
-    echo "No prebuilt binary for ${current_osarch}"
+    echo "No prebuilt binary for ${target_osarch}"
     exit 1
 }
 
@@ -73,7 +86,7 @@ checkExisting() {
 runAsRoot() {
     local CMD="$*"
 
-    if [ $EUID -ne 0 -a $USE_SUDO = "true" ]; then
+    if [ "$EUID" -ne 0 ] && [ "$USE_SUDO" = "true" ]; then
         CMD="sudo $CMD"
     fi
 
@@ -139,7 +152,7 @@ installFile() {
         exit 1
     fi
 
-    chmod o+x $tmp_root_cli
+    chmod o+x "$tmp_root_cli"
     runAsRoot cp "$tmp_root_cli" "$INSTALL_DIR"
 
     if [ -f "$CLI_FILE" ]; then
@@ -181,7 +194,13 @@ checkHttpRequestCLI
 if [ -z "$1" ]; then
     TARGET_VERSION="latest"
 else
-    TARGET_VERSION=v$1
+    if [ "$1" = "latest" ]; then
+        TARGET_VERSION="latest"
+    elif [[ "$1" =~ ^v.* ]]; then
+        TARGET_VERSION="$1"
+    else
+        TARGET_VERSION="v$1"
+    fi
 fi
 
 verifySupported
@@ -189,7 +208,7 @@ checkExisting
 
 echo "Installing $TARGET_VERSION OCM clusteradm CLI..."
 
-downloadFile $TARGET_VERSION
+downloadFile "$TARGET_VERSION"
 installFile
 cleanup
 

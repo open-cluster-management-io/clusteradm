@@ -16,7 +16,7 @@ clean-e2e:
 # start clusters and set context variables
 start-cluster: 
 	kind create cluster --name ${MANAGED_CLUSTER1_NAME}
-	kind create cluster --name ${HUB_NAME} --image kindest/node:v1.24.0
+	kind create cluster --name ${HUB_NAME} --image kindest/node:v1.33.0
 .PHONY: start-cluster 
 
 test-e2e: clean-e2e ensure-kubebuilder-tools ensure-ginkgo start-cluster deps install

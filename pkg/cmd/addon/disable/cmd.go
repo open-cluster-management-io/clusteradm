@@ -12,28 +12,22 @@ import (
 )
 
 var example = `
-# Disable argocd addon on specified clusters
+# Disable argocd addon on specified cluster
+%[1]s addon disable --names argocd --cluster cluster1
+# Disable argocd addon on multiple clusters
 %[1]s addon disable --names argocd --clusters cluster1,cluster2
-# Disable argocd addon on all clusters
-%[1]s addon disable --names argocd --all-clusters
-# Disable argocd addon to the given managed clusters in the specified namespace
-%[1]s addon disable --names argocd --namespace <namespace> --clusters <cluster1>
 
 ## Policy Framework
 
-# Disable governance-policy-framework addon on specified clusters
+# Disable governance-policy-framework addon on specified cluster
+%[1]s addon disable --names governance-policy-framework --cluster cluster1
+# Disable governance-policy-framework addon on multiple clusters
 %[1]s addon disable --names governance-policy-framework --clusters cluster1,cluster2
-# Disable governance-policy-framework addon on all clusters
-%[1]s addon disable --names governance-policy-framework --all-clusters
-# Disable governance-policy-framework addon to the given managed clusters in the specified namespace
-%[1]s addon disable --names governance-policy-framework --namespace <namespace> --clusters <cluster1>
 
-# Disable config-policy-controller addon on specified clusters
+# Disable config-policy-controller addon on specified cluster
+%[1]s addon disable --names config-policy-controller --cluster cluster1
+# Disable config-policy-controller addon on multiple clusters
 %[1]s addon disable --names config-policy-controller --clusters cluster1,cluster2
-# Disable config-policy-controller addon on all clusters
-%[1]s addon disable --names config-policy-controller --all-clusters
-# Disable config-policy-controller addon to the given managed clusters in the specified namespace
-%[1]s addon disable --names config-policy-controller --namespace <namespace> --clusters <cluster1>
 `
 
 // NewCmd...

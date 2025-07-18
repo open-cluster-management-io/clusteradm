@@ -136,7 +136,7 @@ func (o *Options) checkExistingAddon(name string) error {
 		for _, addon := range addons.Items {
 			enabledClusters = append(enabledClusters, addon.Namespace)
 		}
-		return fmt.Errorf("there are still addons for %s enabled on some clusters, run `cluster addon disable --names %s "+
+		return fmt.Errorf("there are still addons for %s enabled on some clusters, run `clusteradm addon disable --names %s "+
 			"--clusters %s` to disable addons", name, name, strings.Join(enabledClusters, ","))
 	}
 	return nil

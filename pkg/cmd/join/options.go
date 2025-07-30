@@ -100,6 +100,10 @@ type Options struct {
 
 	// Annotations for registration controller to set on the ManagedCluster
 	klusterletAnnotations []string
+
+	// klusterletFile is the path to a YAML file containing a Klusterlet custom resource
+	// whose spec will be merged into the klusterletChartConfig
+	klusterletFile string
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Options {

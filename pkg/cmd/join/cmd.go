@@ -87,5 +87,6 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().StringVar(&o.hubClusterArn, "hub-cluster-arn", "", "The arn of the hub cluster(i.e. EKS cluster) to which managed-cluster will join")
 	cmd.Flags().StringVar(&o.managedClusterArn, "managed-cluster-arn", "", "The arn of the managed cluster(i.e. EKS cluster) which will be joining the hub")
 	cmd.Flags().StringArrayVar(&o.klusterletAnnotations, "klusterlet-annotation", []string{}, fmt.Sprintf("Annotations to set on the ManagedCluster, in key=value format. Note: each key will be automatically prefixed with '%s/', if not set.", operatorv1.ClusterAnnotationsKeyPrefix))
+	cmd.Flags().StringVar(&o.klusterletFile, "klusterlet-file", "", "The path to a YAML file containing a Klusterlet custom resource. The spec from the file will be merged into the klusterlet chart configuration.")
 	return cmd
 }

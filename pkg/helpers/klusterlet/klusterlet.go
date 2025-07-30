@@ -4,7 +4,6 @@ package klusterlet
 import (
 	"fmt"
 	"os"
-	"reflect"
 
 	"github.com/ghodss/yaml"
 	"k8s.io/klog/v2"
@@ -38,7 +37,7 @@ func MergeKlusterletFile(klusterletFile string, klusterletChartConfig *chart.Klu
 	if len(spec.ExternalServerURLs) > 0 {
 		klusterletChartConfig.Klusterlet.ExternalServerURLs = spec.ExternalServerURLs
 	}
-	if !reflect.DeepEqual(spec.NodePlacement, operatorv1.NodePlacement{}) {
+	if spec.NodePlacement.NodeSelector != nil || spec.NodePlacement.Tolerations != nil {
 		klusterletChartConfig.Klusterlet.NodePlacement = spec.NodePlacement
 	}
 	if spec.RegistrationConfiguration != nil {

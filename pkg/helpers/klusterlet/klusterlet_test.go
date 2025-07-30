@@ -33,6 +33,7 @@ spec:
     featureGates:
     - feature: ManifestWorkReplicaSet
       mode: Enable
+    statusSyncInterval: 60s
   resourceRequirement:
     type: ResourceRequirement
     resourceRequirements:
@@ -77,6 +78,13 @@ spec:
 
 	if len(chartConfig.Klusterlet.WorkConfiguration.FeatureGates) != 1 {
 		t.Errorf("Expected 1 work feature gate, got %d", len(chartConfig.Klusterlet.WorkConfiguration.FeatureGates))
+	}
+
+	if chartConfig.Klusterlet.WorkConfiguration.StatusSyncInterval != nil {
+		expectedInterval := "&Duration{Duration:1m0s,}"
+		if chartConfig.Klusterlet.WorkConfiguration.StatusSyncInterval.String() != expectedInterval {
+			t.Errorf("Expected StatusSyncInterval to be '%s', got '%s'", expectedInterval, chartConfig.Klusterlet.WorkConfiguration.StatusSyncInterval.String())
+		}
 	}
 
 	if chartConfig.PriorityClassName != "system-cluster-critical" {

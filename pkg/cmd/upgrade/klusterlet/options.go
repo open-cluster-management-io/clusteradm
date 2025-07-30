@@ -23,6 +23,10 @@ type Options struct {
 	//If set, the command will hold until the OCM control plane initialized
 	wait bool
 
+	// klusterletFile is the path to a YAML file containing a Klusterlet custom resource
+	// whose spec will be merged into the klusterletChartConfig
+	klusterletFile string
+
 	Streams genericiooptions.IOStreams
 }
 

@@ -4,8 +4,9 @@ package clusteradme2e
 import (
 	"context"
 	"fmt"
-	"open-cluster-management.io/clusteradm/test/e2e/util"
 	"time"
+
+	"open-cluster-management.io/clusteradm/test/e2e/util"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
@@ -17,7 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var _ = ginkgo.Describe("test clusteradm with addon create", func() {
+var _ = ginkgo.Describe("test clusteradm with addon create", ginkgo.Label("addon-create"), func() {
 	ginkgo.BeforeEach(func() {
 		ginkgo.By("clear e2e environment...")
 		err := e2e.ClearEnv()

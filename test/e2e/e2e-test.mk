@@ -20,7 +20,9 @@ start-cluster:
 .PHONY: start-cluster 
 
 test-e2e: clean-e2e ensure-kubebuilder-tools ensure-ginkgo start-cluster deps install
-	$(GINKGO) -v --timeout 3600s ./test/e2e/clusteradm
+	$(GINKGO) -v --timeout 3600s \
+		$(if $(GINKGO_LABEL_FILTER),--label-filter="$(GINKGO_LABEL_FILTER)") \
+		./test/e2e/clusteradm
 .PHONY: test-e2e
 
 test-only:

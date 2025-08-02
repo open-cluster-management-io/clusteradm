@@ -7,7 +7,7 @@ import (
 	"open-cluster-management.io/clusteradm/test/e2e/util"
 )
 
-var _ = ginkgo.Describe("test clusteradm with service account", func() {
+var _ = ginkgo.Describe("test clusteradm with service account", ginkgo.Label("join-hub-sa"), func() {
 	ginkgo.BeforeEach(func() {
 		ginkgo.By("clear e2e environment...")
 		err := e2e.ClearEnv()

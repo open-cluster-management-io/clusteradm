@@ -385,8 +385,7 @@ func (o *Options) deploySingletonControlplane(kubeClient kubernetes.Interface) e
 			return err
 		}
 
-		fmt.Fprintf(o.Streams.Out, "The multicluster controlplane has been initialized successfully!\n"+
-			"You can use "+fmt.Sprintf("\"kubectl --kubeconfig %s\"", kubeconfigfile)+" to access control plane.\n\n")
+		fmt.Fprintf(o.Streams.Out, "The multicluster controlplane has been initialized successfully!\nYou can use \"kubectl --kubeconfig %s\" to access control plane.\n\n", kubeconfigfile)
 	}
 	return nil
 }

@@ -252,7 +252,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 
 	// If a klusterlet file was provided, read and merge it
 	if o.klusterletFile != "" {
-		if err := klusterlet.MergeKlusterletFile(o.klusterletFile, o.klusterletChartConfig); err != nil {
+		if err := klusterlet.MergeKlusterletFileJoin(o.klusterletFile, o.klusterletChartConfig); err != nil {
 			return fmt.Errorf("failed to merge klusterlet file: %v", err)
 		}
 	}

@@ -50,9 +50,9 @@ spec:
 	chartConfig := chart.NewDefaultKlusterletChartConfig()
 
 	// Test the merge function
-	err := MergeKlusterletFile(klusterletFile, chartConfig)
+	err := MergeKlusterletFileJoin(klusterletFile, chartConfig)
 	if err != nil {
-		t.Fatalf("MergeKlusterletFile failed: %v", err)
+		t.Fatalf("MergeKlusterletFileJoin failed: %v", err)
 	}
 
 	// Verify the merge results
@@ -95,7 +95,7 @@ spec:
 func TestMergeKlusterletFileNotFound(t *testing.T) {
 	chartConfig := chart.NewDefaultKlusterletChartConfig()
 
-	err := MergeKlusterletFile("/nonexistent/file.yaml", chartConfig)
+	err := MergeKlusterletFileJoin("/nonexistent/file.yaml", chartConfig)
 	if err == nil {
 		t.Error("Expected error for non-existent file, got nil")
 	}
@@ -112,7 +112,7 @@ func TestMergeKlusterletFileInvalidYAML(t *testing.T) {
 
 	chartConfig := chart.NewDefaultKlusterletChartConfig()
 
-	err := MergeKlusterletFile(klusterletFile, chartConfig)
+	err := MergeKlusterletFileJoin(klusterletFile, chartConfig)
 	if err == nil {
 		t.Error("Expected error for invalid YAML, got nil")
 	}

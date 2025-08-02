@@ -90,7 +90,7 @@ var _ = ginkgo.Describe("test clusteradm join with klusterlet file", ginkgo.Labe
 
 				// Verify work configuration from the klusterlet file is used
 				if klusterlet.Spec.WorkConfiguration == nil {
-					return fmt.Errorf("expected work configuration to be set from file after upgrade")
+					return fmt.Errorf("expected work configuration to be set from file after join")
 				}
 				foundFeatureGate := false
 				for _, featureGate := range klusterlet.Spec.WorkConfiguration.FeatureGates {
@@ -99,7 +99,7 @@ var _ = ginkgo.Describe("test clusteradm join with klusterlet file", ginkgo.Labe
 					}
 				}
 				if !foundFeatureGate {
-					return fmt.Errorf("expected feature gate %s to be set after upgrade", feature.RawFeedbackJsonString)
+					return fmt.Errorf("expected feature gate %s to be set after join", feature.RawFeedbackJsonString)
 				}
 
 				return nil

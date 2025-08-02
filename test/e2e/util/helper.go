@@ -223,7 +223,7 @@ func CheckOperatorAndAgentVersion(mcl1KubeClient *kubernetes.Clientset, version 
 		return err
 	}
 	if registration.Spec.Template.Spec.Containers[0].Image != fmt.Sprintf("quay.io/open-cluster-management/registration:%s", version) {
-		return fmt.Errorf("version of the registration agent is not correct, get %s", operator.Spec.Template.Spec.Containers[0].Image)
+		return fmt.Errorf("version of the registration agent is not correct, get %s", registration.Spec.Template.Spec.Containers[0].Image)
 	}
 	return nil
 }

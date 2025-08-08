@@ -1,13 +1,8 @@
 # Copyright Contributors to the Open Cluster Management project
-apiVersion: operator.open-cluster-management.io/v1
-kind: Klusterlet
-metadata:
-  name: klusterlet
-spec:
-  namespace: open-cluster-management-agent-advanced
+klusterlet:
   clusterName: clusteradm-e2e-test-c1
-  deployOption:
-    mode: Default
+  namespace: open-cluster-management-agent-advanced
+  mode: Default
   nodePlacement:
     nodeSelector:
       node-role.kubernetes.io/control-plane: ""
@@ -15,15 +10,8 @@ spec:
     - key: node-role.kubernetes.io/control-plane
       operator: Exists
       effect: NoSchedule
-  registrationConfiguration:
-    featureGates:
-    - feature: ClusterClaim
-      mode: Enable
-  workConfiguration:
-    featureGates:
-    - feature: RawFeedbackJsonString
-      mode: Enable
   resourceRequirement:
+    type: ResourceRequirement
     resourceRequirements:
       requests:
         cpu: 200m
@@ -31,3 +19,14 @@ spec:
       limits:
         cpu: 500m
         memory: 512Mi
+  registrationConfiguration:
+    clientCertExpirationSeconds: 86400
+    featureGates:
+    - feature: ClusterClaim
+      mode: Enable
+  workConfiguration:
+    featureGates:
+    - feature: RawFeedbackJsonString
+      mode: Enable
+    statusSyncInterval: 60s
+priorityClassName: system-cluster-critical

@@ -74,10 +74,10 @@ func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 		o.klusterletChartConfig.Klusterlet.WorkConfiguration = *k.Spec.WorkConfiguration
 	}
 
-	// If a klusterlet file was provided, read and merge it
-	if o.klusterletFile != "" {
-		if err := klusterlet.MergeKlusterletFileUpgrade(o.klusterletFile, o.klusterletChartConfig); err != nil {
-			return fmt.Errorf("failed to merge klusterlet file: %v", err)
+	// If a klusterlet values file was provided, read and merge it
+	if o.klusterletValuesFile != "" {
+		if err := klusterlet.MergeKlusterletValues(o.klusterletValuesFile, o.klusterletChartConfig); err != nil {
+			return fmt.Errorf("failed to merge klusterlet values file: %v", err)
 		}
 	}
 

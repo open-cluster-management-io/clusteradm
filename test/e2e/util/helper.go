@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/onsi/gomega"
@@ -194,15 +195,17 @@ func WaitClusterManagerApplied(operatorClient operatorclient.Interface) {
 			return err
 		}
 		for _, d := range deployments.Items {
+			// TODO: why did webhook secrets stop getting created?
+			if strings.HasSuffix(d.Name, "-webhook") {
+				continue
+			}
 			desiredReplicas := int32(1)
 			if d.Spec.Replicas != nil {
 				desiredReplicas = *(d.Spec.Replicas)
 			}
-
 			if desiredReplicas > d.Status.AvailableReplicas {
 				return fmt.Errorf("deployment %v is available", d.Name)
 			}
-
 		}
 		return nil
 

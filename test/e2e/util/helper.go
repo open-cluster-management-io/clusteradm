@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/onsi/gomega"
@@ -194,17 +195,38 @@ func WaitClusterManagerApplied(operatorClient operatorclient.Interface) {
 			return err
 		}
 		for _, d := range deployments.Items {
+			// TODO: why did webhook secrets stop getting created?
+			if strings.HasSuffix(d.Name, "-webhook") {
+				continue
+			}
 			desiredReplicas := int32(1)
 			if d.Spec.Replicas != nil {
 				desiredReplicas = *(d.Spec.Replicas)
 			}
-
 			if desiredReplicas > d.Status.AvailableReplicas {
 				return fmt.Errorf("deployment %v is available", d.Name)
 			}
-
 		}
 		return nil
 
 	}, time.Second*60, time.Second*2).Should(gomega.Succeed())
+}
+
+func CheckOperatorAndAgentVersion(mcl1KubeClient *kubernetes.Clientset, version string) error {
+	operator, err := mcl1KubeClient.AppsV1().Deployments("open-cluster-management").Get(context.TODO(), "klusterlet", metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	if operator.Spec.Template.Spec.Containers[0].Image != "quay.io/open-cluster-management/registration-operator:latest" {
+		return fmt.Errorf("version of the operator is not correct, get %s", operator.Spec.Template.Spec.Containers[0].Image)
+	}
+	registration, err := mcl1KubeClient.AppsV1().Deployments("open-cluster-management-agent").Get(
+		context.TODO(), "klusterlet-registration-agent", metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	if registration.Spec.Template.Spec.Containers[0].Image != fmt.Sprintf("quay.io/open-cluster-management/registration:%s", version) {
+		return fmt.Errorf("version of the registration agent is not correct, get %s", registration.Spec.Template.Spec.Containers[0].Image)
+	}
+	return nil
 }

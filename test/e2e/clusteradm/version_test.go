@@ -6,7 +6,7 @@ import (
 	"github.com/onsi/gomega"
 )
 
-var _ = ginkgo.Describe("test clusteradm version", func() {
+var _ = ginkgo.Describe("test clusteradm version", ginkgo.Label("version"), func() {
 	var err error
 
 	ginkgo.It("write your tests here", func() {

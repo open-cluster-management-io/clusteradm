@@ -100,6 +100,10 @@ type Options struct {
 
 	// Annotations for registration controller to set on the ManagedCluster
 	klusterletAnnotations []string
+
+	// klusterletValuesFile is the path to a YAML file containing klusterlet Helm chart values.
+	// The values from the file override the default klusterlet chart values.
+	klusterletValuesFile string
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Options {

@@ -3,7 +3,10 @@ package clusteradme2e
 
 import (
 	"os"
+	"testing"
 
+	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -14,11 +17,9 @@ import (
 	clusterv1client "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 	clusterv1 "open-cluster-management.io/api/cluster/v1"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	"testing"
-
-	"github.com/onsi/ginkgo/v2"
-	"github.com/onsi/gomega"
 	"open-cluster-management.io/clusteradm/test/e2e/util"
 )
 
@@ -48,6 +49,8 @@ func TestE2EClusteradm(t *testing.T) {
 var _ = ginkgo.BeforeSuite(func() {
 	ginkgo.By("Starting e2e test environment")
 
+	logger := zap.New(zap.WriteTo(ginkgo.GinkgoWriter), zap.UseDevMode(true))
+	logf.SetLogger(logger)
 	var err error
 
 	// set cluster info and start clusters.

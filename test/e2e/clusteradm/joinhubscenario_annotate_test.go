@@ -12,7 +12,7 @@ import (
 	"open-cluster-management.io/clusteradm/test/e2e/util"
 )
 
-var _ = ginkgo.Describe("test clusteradm join with annotations", func() {
+var _ = ginkgo.Describe("test clusteradm join with annotations", ginkgo.Label("join-hub-annotate"), func() {
 	ginkgo.BeforeEach(func() {
 		ginkgo.By("clear e2e environment...")
 		err := e2e.ClearEnv()

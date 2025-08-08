@@ -10,7 +10,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
+
 	"open-cluster-management.io/clusteradm/pkg/helpers"
+	"open-cluster-management.io/clusteradm/pkg/helpers/klusterlet"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
 	"open-cluster-management.io/clusteradm/pkg/version"
@@ -70,6 +72,13 @@ func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 	}
 	if k.Spec.WorkConfiguration != nil {
 		o.klusterletChartConfig.Klusterlet.WorkConfiguration = *k.Spec.WorkConfiguration
+	}
+
+	// If a klusterlet values file was provided, read and merge it
+	if o.klusterletValuesFile != "" {
+		if err := klusterlet.MergeKlusterletValues(o.klusterletValuesFile, o.klusterletChartConfig); err != nil {
+			return fmt.Errorf("failed to merge klusterlet values file: %v", err)
+		}
 	}
 
 	return nil

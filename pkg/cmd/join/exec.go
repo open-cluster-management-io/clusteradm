@@ -36,9 +36,11 @@ import (
 	clusterv1 "open-cluster-management.io/api/cluster/v1"
 	ocmfeature "open-cluster-management.io/api/feature"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
+
 	"open-cluster-management.io/clusteradm/pkg/cmd/join/preflight"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
+	"open-cluster-management.io/clusteradm/pkg/helpers/klusterlet"
 	preflightinterface "open-cluster-management.io/clusteradm/pkg/helpers/preflight"
 	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
@@ -247,8 +249,15 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	if err := o.capiOptions.Complete(cmd, args); err != nil {
 		return err
 	}
-	return nil
 
+	// If a klusterlet chart values file was provided, read and merge it
+	if o.klusterletValuesFile != "" {
+		if err := klusterlet.MergeKlusterletValues(o.klusterletValuesFile, o.klusterletChartConfig); err != nil {
+			return fmt.Errorf("failed to merge klusterlet values file: %v", err)
+		}
+	}
+
+	return nil
 }
 
 func (o *Options) validate() error {

@@ -12,7 +12,7 @@ import (
 	"open-cluster-management.io/clusteradm/test/e2e/util"
 )
 
-var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode", func() {
+var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode", ginkgo.Label("init"), func() {
 	ginkgo.BeforeEach(func() {
 		ginkgo.By("clear e2e environment...")
 		err := e2e.ClearEnv()

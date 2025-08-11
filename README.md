@@ -1,11 +1,32 @@
 [comment]: # ( Copyright Contributors to the Open Cluster Management project )
-# clusteradm CLI & CLI Plugin
 
-A CLI and kubernetes CLI plugin that allows you to interact with open-cluster-management to manage your Hybrid Cloud presence from the command-line.
+# clusteradm
 
-## Quick start
+[![Go Report Card](https://goreportcard.com/badge/open-cluster-management.io/clusteradm)](https://goreportcard.com/report/open-cluster-management.io/clusteradm)
+[![License](https://img.shields.io/github/license/open-cluster-management-io/clusteradm)](/LICENSE)
+[![GitHub release](https://img.shields.io/github/release/open-cluster-management-io/clusteradm.svg)](https://github.com/open-cluster-management-io/clusteradm/releases/)
 
-### Install the clusteradm command-line:
+**clusteradm** is the command-line tool for [Open Cluster Management (OCM)](https://open-cluster-management.io/), providing a unified interface to manage multi-cluster Kubernetes environments from the command line.
+
+## Overview
+
+[Open Cluster Management (OCM)](https://open-cluster-management.io/) is a CNCF sandbox project that enables end-to-end visibility and control across your Kubernetes clusters using a powerful hub-agent architecture. OCM provides:
+
+- **Cluster Lifecycle Management**: Register, manage, and monitor multiple Kubernetes clusters
+- **Application Distribution**: Deploy and manage applications across multiple clusters
+- **Policy & Governance**: Enforce security policies and compliance across your fleet
+- **Add-on Extensibility**: Extend functionality with a rich ecosystem of add-ons
+
+**clusteradm** serves as the primary CLI tool for interacting with OCM, enabling administrators to:
+- Initialize hub clusters and register managed clusters
+- Deploy and manage multi-cluster applications
+- Configure policies and governance
+- Manage cluster sets and placements
+- Install and configure add-ons
+
+## Quick Start
+
+### Installation
 
 #### From install script:
 
@@ -13,153 +34,212 @@ A CLI and kubernetes CLI plugin that allows you to interact with open-cluster-ma
 curl -L https://raw.githubusercontent.com/open-cluster-management-io/clusteradm/main/install.sh | bash
 ```
 
-#### From go install:
+#### From Go:
 
 ```shell
-go install open-cluster-management.io/clusteradm/cmd/clusteradm
+go install open-cluster-management.io/clusteradm/cmd/clusteradm@latest
 ```
 
-#### From binaries:
+#### From releases:
 
-The binaries for several platforms are available [here](https://github.com/open-cluster-management-io/clusteradm/releases).
-- Download the compressed file from [here](https://github.com/open-cluster-management-io/clusteradm/releases)
-- Uncompress the file and place the output in a directory of your $PATH
+Download the latest binary from [GitHub Releases](https://github.com/open-cluster-management-io/clusteradm/releases) and add it to your `$PATH`.
 
 #### From source:
 
-Go 1.17 is required in order to build or contribute on this project as it leverage the `go:embed` tip.
-The binary will be installed in `$GOPATH/bin`
+Go 1.24+ is required to build from source.
 
 ```bash
 git clone https://github.com/open-cluster-management-io/clusteradm.git
 cd clusteradm
 make build
-clusteradm
+./bin/clusteradm
 ```
 
-### Initialize a hub and join a cluster
+### Basic Usage
+
+Set up a multi-cluster environment in three steps:
 
 ```bash
-# Initialize the hub
-kubectl config use-context <hub cluster context> # kubectl config use-context kind-hub
+# 1. Initialize the hub cluster
+kubectl config use-context <hub-cluster-context>
 clusteradm init
 
-# Request a managed cluster to join the hub
-kubectl config use-context <managed cluster context> # kubectl config use-context kind-managed-cluster
-clusteradm join --hub-token <token> --hub-apiserver <api server url> --cluster-name <cluster name>
+# 2. Join a managed cluster to the hub
+kubectl config use-context <managed-cluster-context>
+clusteradm join --hub-token <token> --hub-apiserver <hub-api-url> --cluster-name <cluster-name>
 
-# Accept the managed cluster request on the hub
-kubectl config use-context <hub cluster context> # kubectl config use-context kind-hub
-clusteradm accept --clusters <list of clusters> # clusteradm accept --clusters c1,c2,...
+# 3. Accept the managed cluster on the hub
+kubectl config use-context <hub-cluster-context>
+clusteradm accept --clusters <cluster-name>
 ```
 
-After each above clusteradm command, the clusteradm will print out the next clusteradm command to execute which can be copy/paste.
-
-## Contributing
-
-See our [Contributing Document](CONTRIBUTING.md) for more information.
+After each command, clusteradm provides the next command to execute, making the process seamless.
 
 ## Commands
 
-The commands are composed of a verb and a noun and then a number of parameters.
-Logs can be gather by setting the klog flag `-v`.
-To get the logs in a separate file:
+clusteradm organizes commands into logical groups for different aspects of cluster management.
+
+### General Commands
+
+| Command | Description |
+|---------|-------------|
+| `create` | Create OCM resources (placements, cluster sets, sample apps, work) |
+| `delete` | Delete OCM resources (cluster sets, tokens, work) |
+| `get` | Display OCM resources (clusters, hub info, tokens, placements, work, add-ons) |
+| `install` | Install hub add-ons |
+| `uninstall` | Uninstall hub add-ons |
+| `upgrade` | Upgrade cluster manager or klusterlet |
+| `version` | Display clusteradm and cluster version information |
+
+### Registration Commands
+
+| Command | Description |
+|---------|-------------|
+| `init` | Initialize a hub cluster |
+| `join` | Join a cluster to the hub as a managed cluster |
+| `accept` | Accept cluster join requests on the hub |
+| `unjoin` | Remove a cluster from the hub |
+| `clean` | Clean up OCM components from the hub cluster |
+
+### Cluster Management Commands
+
+| Command | Description |
+|---------|-------------|
+| `addon` | Manage add-ons (enable, disable, create) |
+| `clusterset` | Manage cluster sets (bind, unbind, set) |
+| `proxy` | Access managed clusters through the cluster proxy |
+
+### Logging and Debugging
+
+Get detailed logs by setting the klog flag:
+
+```bash
+# Basic logging
+clusteradm <command> -v 2 > logfile.log
+
+# Verbose logging to file
+clusteradm <command> -v 99 --logtostderr=false --log-file=debug.log
 ```
-clusteradm <subcommand> -v 2 > <your_logfile>
+
+## Detailed Command Reference
+
+### Cluster Lifecycle
+
+#### Initialize a Hub Cluster
+
+```bash
+clusteradm init [--use-bootstrap-token]
 ```
-or
+
+Deploys OCM hub components and returns the join command for managed clusters.
+
+> **Note**: Do not run `init` against a [multicluster-controlplane](https://github.com/open-cluster-management-io/multicluster-controlplane) instance. Use `clusteradm get token --use-bootstrap-token` instead.
+
+#### Get Join Token
+
+```bash
+clusteradm get token [--use-bootstrap-token]
 ```
-clusteradm <subcommand> -v 99 --logtostderr=false --log-file=<your_log_file>
+
+Retrieves the latest token for joining managed clusters.
+
+#### Join a Managed Cluster
+
+```bash
+clusteradm join --hub-token <token> --hub-apiserver <hub-url> --cluster-name <name> \
+  [--ca-file <ca-file>] [--force-internal-endpoint-lookup]
 ```
 
-### version
+Installs the klusterlet agent on a managed cluster.
 
-Display the clusteradm version and the kubeversion
+**Options:**
+- `--ca-file`: Provide a custom CA file for hub verification
+- `--force-internal-endpoint-lookup`: Required for clusters behind NAT (e.g., kind clusters)
 
-`clusteradm version`
+#### Accept Cluster Registration
 
-### init
+```bash
+clusteradm accept --clusters <cluster1>,<cluster2>,...
+```
 
-Initialize the hub by deploying the hub side resources to manage clusters.
+Approves cluster join requests on the hub.
 
-`clusteradm init [--use-bootstrap-token]`
+#### Remove a Managed Cluster
 
-it returns the command line to launch on the spoke to join the hub.
-> NOTE: Do not run init command against a [multicluster-controlplane](https://github.com/open-cluster-management-io/multicluster-controlplane) instance. It is already an initialized hub on start. Instead, use `clusteradm get token --use-bootstrap-token` to get the join command.
+```bash
+clusteradm unjoin --cluster-name <cluster-name>
+```
 
-### get token
+Removes klusterlet components from a managed cluster.
 
-Get the latest token to import a new managed cluster.
+### Add-on Management
 
-`clusteradm get token --context ${CTX_HUB_CLUSTER}`
-### join
+#### Install Hub Add-ons
 
-Install the agent on the spoke.
+```bash
+# Install specific add-ons
+clusteradm install hub-addon --names argocd
+clusteradm install hub-addon --names governance-policy-framework
+```
 
-`clusteradm join --hub-token <token> --hub-apiserver <hub_apiserver_url> --cluster-name c1 [--ca-file <path-to-ca-file>] [--force-internal-endpoint-lookup]`
+#### Enable Add-ons on Managed Clusters
 
-it returns the command line to launch on the hub the accept the spoke onboarding.
+```bash
+clusteradm addon enable --names <addon-name> --namespace <namespace> --clusters <clusters>
 
-> NOTE: The `--ca-file` flag is used to provide a valid CA for hub. The ca data is fetched from cluster-info configmap in kube-public namespace of the hub cluster, then from kube-root-ca.crt configmap in kube-public namespace if the cluster-info configmap does not exist.
+# Examples
+clusteradm addon enable --names argocd --namespace argocd --clusters cluster1,cluster2
+clusteradm addon enable --names governance-policy-framework --namespace open-cluster-management-agent-addon --clusters cluster1
+```
 
-> NOTE: If you're trying to join a hub cluster which is initialized from a kind cluster, please set the `--force-internal-endpoint-lookup` flag.
+### Cluster Sets and Placement
 
-### accept
+#### Create Cluster Sets
 
-Accept the CSRs on the hub to approve the spoke clusters to join the hub.
+```bash
+clusteradm create clusterset <clusterset-name>
+```
 
-`clusteradm accept --clusters <cluster1>, <cluster2>,....`
+#### Bind Clusters to Sets
 
-### unjoin
+```bash
+clusteradm clusterset bind <clusterset-name> --clusters <cluster1>,<cluster2>
+```
 
-Uninstall the agent on the spoke
+#### Create Placements
 
-`clusteradm unjoin --cluster-name c1`
-> Note: the applied resources on managed cluster would be checked and prompt a warning if still exist any.
+```bash
+clusteradm create placement <placement-name> --clusters <cluster1>,<cluster2>
+```
 
-### clean
+### Application Deployment
 
-Clean up the multicluster hub control plane and other initialized resources on the hub cluster
+#### Create Sample Applications
 
-`clusteradm clean --context ${CTX_HUB_CLUSTER}`
+```bash
+clusteradm create sampleapp <app-name>
+```
 
-### install hub-addon
+Creates and deploys sample applications using Argo CD ApplicationSets.
 
-Install specific built-in add-on(s) to the hub cluster.
+### Cluster Proxy
 
-`clusteradm install hub-addon --names argocd`
+Access managed clusters through the cluster proxy:
 
-`clusteradm install hub-addon --names governance-policy-framework`
-
-### enable addons
-
-Enable specific add-on(s) agent deployment to the given managed clusters of the specified namespace
-
-`clusteradm addon enable --names argocd --namespace <namespace> --clusters <cluster1>,<cluster2>,....`
-
-`clusteradm addon enable --names governance-policy-framework --namespace <namespace> --clusters <cluster1>,<cluster2>,....`
-
-`clusteradm addon enable --names config-policy-controller --namespace <namespace> --clusters <cluster1>,<cluster2>,....`
-
-### create sample application
-
-Create and deploy a sample Argo CD ApplicationSet
-
-`clusteradm create sampleapp sample-appset`
+```bash
+clusteradm proxy health --cluster-name <cluster-name>
+clusteradm proxy kubectl --cluster-name <cluster-name> -- <kubectl-args>
+```
 
 ## Version Bundles
 
-By default, clusteradm uses a built-in version bundle that defines the versions of all OCM components to be installed. You can request a specific version bundle using the `--bundle-version` flag. You can override individual component versions within the selected version bundle using the `--bundle-version-overrides` flag:
+clusteradm uses version bundles to ensure compatibility between OCM components. You can:
 
-```bash
-# Override component versions within the default version bundle:
-clusteradm init --bundle-version-overrides /path/to/bundle-overrides.json
+- Use the default bundle: `clusteradm init`
+- Specify a version: `clusteradm init --bundle-version v0.16.0`
+- Override component versions: `clusteradm init --bundle-version-overrides /path/to/overrides.json`
 
-# Override component versions within a specific version bundle:
-clusteradm init --bundle-version v0.16.0 --bundle-version-overrides /path/to/bundle-overrides.json
-```
-
-The version bundle override file must be a JSON file containing one or more OCM component versions. Example:
+Example override file:
 
 ```json
 {
@@ -170,4 +250,64 @@ The version bundle override file must be a JSON file containing one or more OCM 
 }
 ```
 
-This is useful when you need to use specific versions of components or when working with custom builds.
+## Examples
+
+### Multi-cluster Application Deployment
+
+```bash
+# 1. Create a cluster set
+clusteradm create clusterset production
+
+# 2. Bind clusters to the set
+clusteradm clusterset bind production --clusters web-cluster,api-cluster
+
+# 3. Create a placement for the application
+clusteradm create placement web-app-placement --clusterset production
+
+# 4. Deploy using ManifestWork or Argo CD
+clusteradm create work my-web-app --clusters web-cluster,api-cluster
+```
+
+### Policy Enforcement
+
+```bash
+# 1. Install policy framework
+clusteradm install hub-addon --names governance-policy-framework
+
+# 2. Enable on managed clusters
+clusteradm addon enable --names governance-policy-framework \
+  --namespace open-cluster-management-agent-addon \
+  --clusters cluster1,cluster2
+
+# 3. Enable config policy controller
+clusteradm addon enable --names config-policy-controller \
+  --namespace open-cluster-management-agent-addon \
+  --clusters cluster1,cluster2
+```
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on:
+
+- Code contribution process
+- Development environment setup
+- Testing guidelines
+- Community guidelines
+
+## Community & Support
+
+### Get Connected
+
+- **Website**: [open-cluster-management.io](https://open-cluster-management.io/)
+- **Slack**: [#open-cluster-mgmt](https://kubernetes.slack.com/archives/C01GE7YSUUF) on Kubernetes Slack
+- **Mailing List**: [open-cluster-management@googlegroups.com](https://groups.google.com/g/open-cluster-management)
+- **YouTube**: [OCM Community](https://www.youtube.com/channel/UC7xxOh2jBM5Jfwt3fsBzOZw)
+- **Community Meetings**: [Calendar](https://calendar.google.com/calendar/u/0/embed?src=openclustermanagement@gmail.com)
+
+## License
+
+This project is licensed under the [Apache License 2.0](LICENSE).
+
+---
+
+Built by the [Open Cluster Management community](https://github.com/open-cluster-management-io)

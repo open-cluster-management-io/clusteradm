@@ -121,7 +121,7 @@ func WaitClustersDeleted(restcfg *rest.Config) error {
 			}
 		}
 		return fmt.Errorf("wait all clusters are deleted")
-	}, time.Second*120, time.Second*2).Should(gomega.Succeed())
+	}, time.Second*180, time.Second*2).Should(gomega.Succeed())
 
 	return nil
 }

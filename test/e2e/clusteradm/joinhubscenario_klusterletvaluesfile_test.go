@@ -38,7 +38,7 @@ var _ = ginkgo.Describe("test clusteradm join with klusterlet values file", gink
 
 			ginkgo.By("managedcluster1 join hub with klusterlet values file")
 
-			klusterletValuesFile, err := filepath.Abs(filepath.Join("testdata", "klusterlet-values.yaml"))
+			klusterletValuesFile, err := filepath.Abs(filepath.Join("testdata", "klusterlet-values-join.yaml"))
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get absolute path for klusterlet values file")
 
 			err = e2e.Clusteradm().Join(

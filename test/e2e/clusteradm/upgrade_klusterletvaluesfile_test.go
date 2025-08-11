@@ -72,7 +72,7 @@ var _ = ginkgo.Describe("test clusteradm upgrade klusterlet with klusterlet valu
 
 			ginkgo.By("upgrade klusterlet with advanced klusterlet file")
 
-			klusterletValuesFile, err := filepath.Abs(filepath.Join("testdata", "klusterlet-values.yaml"))
+			klusterletValuesFile, err := filepath.Abs(filepath.Join("testdata", "klusterlet-values-upgrade.yaml"))
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get absolute path for klusterlet values file")
 
 			err = e2e.Clusteradm().Upgrade(

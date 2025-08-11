@@ -77,7 +77,7 @@ var _ = ginkgo.Describe("test clusteradm upgrade clustermanager and klusterlets"
 		ginkgo.By("Check the version of operator and agent")
 		expectedVersion := fmt.Sprintf("v%s", version.GetDefaultBundleVersion())
 		gomega.Eventually(func() error {
-			err := util.CheckOperatorAndAgentVersion(mcl1KubeClient, expectedVersion)
+			err := util.CheckOperatorAndAgentVersion(mcl1KubeClient, "latest", expectedVersion)
 			if err != nil {
 				logf.Log.Error(err, "failed to check operator and agent version")
 			}

@@ -5,7 +5,7 @@ on:
     repository_dispatch:
         types: [ocm_changes]
 env:
-  GO_VERSION: '1.23'
+  GO_VERSION: '1.24'
 
 jobs:
     e2e-test:

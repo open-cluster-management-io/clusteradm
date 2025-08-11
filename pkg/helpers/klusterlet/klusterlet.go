@@ -10,7 +10,14 @@ import (
 	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
 )
 
-// MergeKlusterletValues merges a klusterlet values file into the klusterlet chart config.
+// MergeKlusterletValues merges a values file for the klusterlet Helm chart into a klusterlet chart config.
+//
+// The klusterlet chart config is a combination of default chart values and values set by clusteradm flags,
+// e.g., --cluster-name, --resource-limits, --mode, etc.
+//
+// The values file can contain any number of valid (or invalid) klusterlet chart values. It does not necessarily
+// include all values. Invalid values are ignored. Valid values override both the default chart values and the values
+// set by flags.
 func MergeKlusterletValues(klusterletValuesFile string, klusterletChartConfig *chart.KlusterletChartConfig) error {
 	values, err := os.ReadFile(klusterletValuesFile)
 	if err != nil {

@@ -46,7 +46,7 @@ Download the latest binary from [GitHub Releases](https://github.com/open-cluste
 
 #### From source:
 
-Go 1.23+ is required to build from source.
+Go 1.24+ is required to build from source.
 
 ```bash
 git clone https://github.com/open-cluster-management-io/clusteradm.git

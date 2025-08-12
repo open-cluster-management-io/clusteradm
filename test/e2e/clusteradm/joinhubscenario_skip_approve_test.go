@@ -20,7 +20,7 @@ import (
 	"open-cluster-management.io/clusteradm/test/e2e/clusteradm/scenario"
 )
 
-var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", func() {
+var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", ginkgo.Label("join-hub-skip-approve"), func() {
 	ginkgo.BeforeEach(func() {
 		err := e2e.ClearEnv()
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())

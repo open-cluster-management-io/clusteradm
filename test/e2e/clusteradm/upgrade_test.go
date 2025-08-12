@@ -10,10 +10,13 @@ import (
 	"github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+
 	"open-cluster-management.io/clusteradm/pkg/version"
+	"open-cluster-management.io/clusteradm/test/e2e/util"
 )
 
-var _ = ginkgo.Describe("test clusteradm upgrade clustermanager and Klusterlets", ginkgo.Ordered, func() {
+var _ = ginkgo.Describe("test clusteradm upgrade clustermanager and klusterlets", ginkgo.Ordered, ginkgo.Label("upgrade"), func() {
 
 	ginkgo.BeforeAll(func() {
 		ginkgo.By("reset e2e environment...")
@@ -72,23 +75,13 @@ var _ = ginkgo.Describe("test clusteradm upgrade clustermanager and Klusterlets"
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 		ginkgo.By("Check the version of operator and agent")
+		expectedVersion := fmt.Sprintf("v%s", version.GetDefaultBundleVersion())
 		gomega.Eventually(func() error {
-			operator, err := mcl1KubeClient.AppsV1().Deployments("open-cluster-management").Get(context.TODO(), "klusterlet", metav1.GetOptions{})
+			err := util.CheckOperatorAndAgentVersion(mcl1KubeClient, "latest", expectedVersion)
 			if err != nil {
-				return err
+				logf.Log.Error(err, "failed to check operator and agent version")
 			}
-			if operator.Spec.Template.Spec.Containers[0].Image != "quay.io/open-cluster-management/registration-operator:latest" {
-				return fmt.Errorf("version of the operator is not correct, get %s", operator.Spec.Template.Spec.Containers[0].Image)
-			}
-			registration, err := mcl1KubeClient.AppsV1().Deployments("open-cluster-management-agent").Get(
-				context.TODO(), "klusterlet-registration-agent", metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
-			if registration.Spec.Template.Spec.Containers[0].Image != "quay.io/open-cluster-management/registration:v"+version.GetDefaultBundleVersion() {
-				return fmt.Errorf("version of the registration agent is not correct, get %s", operator.Spec.Template.Spec.Containers[0].Image)
-			}
-			return nil
+			return err
 		}, 120*time.Second, 5*time.Second).Should(gomega.Succeed())
 
 		err = e2e.Clusteradm().Upgrade(
@@ -124,7 +117,6 @@ var _ = ginkgo.Describe("test clusteradm upgrade clustermanager and Klusterlets"
 			"--bundle-version=latest",
 			"--context", e2e.Cluster().ManagedCluster1().Context(),
 		)
-
 		gomega.Expect(err).NotTo(gomega.HaveOccurred(), "klusterlet upgrade error")
 
 		gomega.Eventually(func() error {

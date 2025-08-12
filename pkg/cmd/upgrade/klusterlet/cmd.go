@@ -51,5 +51,6 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		"Path to a file containing version bundle overrides. Optional. If provided, overrides component versions within the selected version bundle.")
 	cmd.Flags().BoolVar(&o.wait, "wait", false,
 		"If set, the command will initialize the OCM control plan in foreground.")
+	cmd.Flags().StringVar(&o.klusterletValuesFile, "klusterlet-values-file", "", "The path to a YAML file containing klusterlet Helm chart values. The values from the file override both the default klusterlet chart values and the values from other flags.")
 	return cmd
 }

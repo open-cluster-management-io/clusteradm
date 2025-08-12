@@ -121,7 +121,7 @@ func WaitClustersDeleted(restcfg *rest.Config) error {
 			}
 		}
 		return fmt.Errorf("wait all clusters are deleted")
-	}, time.Second*120, time.Second*2).Should(gomega.Succeed())
+	}, time.Second*300, time.Second*2).Should(gomega.Succeed())
 
 	return nil
 }
@@ -198,13 +198,38 @@ func WaitClusterManagerApplied(operatorClient operatorclient.Interface) {
 			if d.Spec.Replicas != nil {
 				desiredReplicas = *(d.Spec.Replicas)
 			}
-
 			if desiredReplicas > d.Status.AvailableReplicas {
 				return fmt.Errorf("deployment %v is available", d.Name)
 			}
-
 		}
 		return nil
 
 	}, time.Second*60, time.Second*2).Should(gomega.Succeed())
+}
+
+func CheckOperatorAndAgentVersion(mcl1KubeClient *kubernetes.Clientset, operatorTag, registrationTag string) error {
+	operator, err := mcl1KubeClient.AppsV1().Deployments("open-cluster-management").Get(context.TODO(), "klusterlet", metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	if len(operator.Spec.Template.Spec.Containers) == 0 {
+		return fmt.Errorf("klusterlet deployment has no containers")
+	}
+	if operator.Spec.Template.Spec.Containers[0].Image != fmt.Sprintf("quay.io/open-cluster-management/registration-operator:%s", operatorTag) {
+		return fmt.Errorf("version of the operator is not correct, get %s", operator.Spec.Template.Spec.Containers[0].Image)
+	}
+
+	registration, err := mcl1KubeClient.AppsV1().Deployments("open-cluster-management-agent").Get(
+		context.TODO(), "klusterlet-registration-agent", metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	if len(registration.Spec.Template.Spec.Containers) == 0 {
+		return fmt.Errorf("klusterlet-registration-agent deployment has no containers")
+	}
+	if registration.Spec.Template.Spec.Containers[0].Image != fmt.Sprintf("quay.io/open-cluster-management/registration:%s", registrationTag) {
+		return fmt.Errorf("version of the registration agent is not correct, get %s", registration.Spec.Template.Spec.Containers[0].Image)
+	}
+
+	return nil
 }

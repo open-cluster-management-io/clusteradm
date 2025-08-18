@@ -34,11 +34,24 @@ func NewClusterAddonInfo(cn string, o *Options, an string) (*addonv1alpha1.Manag
 		}
 		annos[annoSlice[0]] = annoSlice[1]
 	}
+
+	// Parse provided labels
+	labels := map[string]string{}
+	for _, labelString := range o.Labels {
+		labelSlice := strings.Split(labelString, "=")
+		if len(labelSlice) != 2 {
+			return nil,
+				fmt.Errorf("error parsing label '%s'. Expected to be of the form: key=value", labelString)
+		}
+		labels[labelSlice[0]] = labelSlice[1]
+	}
+
 	return &addonv1alpha1.ManagedClusterAddOn{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        an,
 			Namespace:   cn,
 			Annotations: annos,
+			Labels:      labels,
 		},
 		Spec: addonv1alpha1.ManagedClusterAddOnSpec{
 			InstallNamespace: o.Namespace,
@@ -144,6 +157,7 @@ func ApplyAddon(addonClient addonclientset.Interface, addon *addonv1alpha1.Manag
 	}
 
 	originalAddon.Annotations = addon.Annotations
+	originalAddon.Labels = addon.Labels
 	originalAddon.Spec.InstallNamespace = addon.Spec.InstallNamespace
 	_, err = addonClient.AddonV1alpha1().ManagedClusterAddOns(addon.Namespace).Update(context.TODO(), originalAddon, metav1.UpdateOptions{})
 	return err

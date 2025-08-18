@@ -69,6 +69,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().StringVarP(&o.Namespace, "namespace", "n", "open-cluster-management-agent-addon", "Specified namespace to deploy addon")
 	cmd.Flags().StringVar(&o.OutputFile, "output-file", "", "The generated resources will be copied in the specified file")
 	cmd.Flags().StringSliceVar(&o.Annotate, "annotate", []string{}, "Annotations to add to the ManagedClusterAddon (eg. key1=value1,key2=value2)")
+	cmd.Flags().StringSliceVar(&o.Labels, "labels", []string{}, "Labels to add to the ManagedClusterAddon (eg. key1=value1,key2=value2)")
 
 	return cmd
 }

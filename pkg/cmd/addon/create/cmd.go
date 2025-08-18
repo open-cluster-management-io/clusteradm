@@ -51,6 +51,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().BoolVar(&o.EnableHubRegistration, "hub-registration", false, "Enable the agent to register to the hub cluster")
 	cmd.Flags().StringVar(&o.ClusterRoleBindingRef, "cluster-role-bind", "", "The rolebinding to the clusterrole in "+
 		"the cluster namespace for the addon agent")
+	cmd.Flags().StringSliceVar(&o.Labels, "labels", []string{}, "Labels to add to the ClusterManagementAddOn and AddOnTemplate resources (eg. key1=value1,key2=value2)")
 	o.FileNameFlags.AddFlags(cmd.Flags())
 
 	return cmd

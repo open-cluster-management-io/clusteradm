@@ -14,6 +14,7 @@ import (
 	addonv1alpha1 "open-cluster-management.io/api/addon/v1alpha1"
 	addonclientset "open-cluster-management.io/api/client/addon/clientset/versioned"
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
+	"open-cluster-management.io/clusteradm/pkg/helpers/parse"
 )
 
 type ClusterAddonInfo struct {
@@ -36,14 +37,9 @@ func NewClusterAddonInfo(cn string, o *Options, an string) (*addonv1alpha1.Manag
 	}
 
 	// Parse provided labels
-	labels := map[string]string{}
-	for _, labelString := range o.Labels {
-		labelSlice := strings.Split(labelString, "=")
-		if len(labelSlice) != 2 {
-			return nil,
-				fmt.Errorf("error parsing label '%s'. Expected to be of the form: key=value", labelString)
-		}
-		labels[labelSlice[0]] = labelSlice[1]
+	labels, err := parse.ParseLabels(o.Labels)
+	if err != nil {
+		return nil, err
 	}
 
 	return &addonv1alpha1.ManagedClusterAddOn{

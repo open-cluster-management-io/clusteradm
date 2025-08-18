@@ -4,7 +4,6 @@ package create
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -14,6 +13,8 @@ import (
 	addonv1alpha1 "open-cluster-management.io/api/addon/v1alpha1"
 	addonclientset "open-cluster-management.io/api/client/addon/clientset/versioned"
 	workapiv1 "open-cluster-management.io/api/work/v1"
+
+	"open-cluster-management.io/clusteradm/pkg/helpers/parse"
 )
 
 func newAddonTemplate(o *Options) (*addonv1alpha1.AddOnTemplate, error) {
@@ -246,13 +247,5 @@ func (o *Options) readManifests() ([]workapiv1.Manifest, error) {
 
 // parseLabels parses the labels flag and returns a map of labels
 func (o *Options) parseLabels() (map[string]string, error) {
-	labelMap := make(map[string]string)
-	for _, labelString := range o.Labels {
-		labelSlice := strings.Split(labelString, "=")
-		if len(labelSlice) != 2 {
-			return nil, fmt.Errorf("error parsing label '%s'. Expected to be of the form: key=value", labelString)
-		}
-		labelMap[labelSlice[0]] = labelSlice[1]
-	}
-	return labelMap, nil
+	return parse.ParseLabels(o.Labels)
 }

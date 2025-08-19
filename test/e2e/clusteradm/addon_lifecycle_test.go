@@ -4,6 +4,8 @@ package clusteradme2e
 import (
 	"context"
 	"fmt"
+	"reflect"
+	"strings"
 	"time"
 
 	"open-cluster-management.io/clusteradm/test/e2e/util"
@@ -17,6 +19,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
+
+var addonLabels = map[string]string{
+	"foo.example.com/created-by": "clusteradm",
+	"foo":                        "bar",
+}
 
 var _ = ginkgo.Describe("test clusteradm with addon create", ginkgo.Label("addon-create"), func() {
 	ginkgo.BeforeEach(func() {
@@ -76,6 +83,12 @@ var _ = ginkgo.Describe("test clusteradm with addon create", ginkgo.Label("addon
 				gomega.Expect(err).NotTo(gomega.HaveOccurred(), "create configmap-reader clusterrole error")
 			}
 
+			var pairs []string
+			for k, v := range addonLabels {
+				pairs = append(pairs, fmt.Sprintf("%s=%s", k, v))
+			}
+			labelsString := strings.Join(pairs, ",")
+
 			ginkgo.By("hub create addon")
 			err = e2e.Clusteradm().Addon(
 				"create",
@@ -85,8 +98,32 @@ var _ = ginkgo.Describe("test clusteradm with addon create", ginkgo.Label("addon
 				"--hub-registration",
 				"--cluster-role-bind",
 				"configmap-reader",
+				"--labels",
+				labelsString,
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+			gomega.Eventually(func() error {
+				cma, err := addonClient.AddonV1alpha1().ClusterManagementAddOns().Get(
+					context.TODO(), "test-nginx", metav1.GetOptions{})
+				if err != nil {
+					return err
+				}
+				if !reflect.DeepEqual(cma.Labels, addonLabels) {
+					return fmt.Errorf("clusterManagementAddOns does not have expected labels. have: %v, want: %v", cma.Labels, addonLabels)
+				}
+
+				addonT, err := addonClient.AddonV1alpha1().AddOnTemplates().Get(
+					context.TODO(), "test-nginx", metav1.GetOptions{})
+				if err != nil {
+					return err
+				}
+				if !reflect.DeepEqual(addonT.Labels, addonLabels) {
+					return fmt.Errorf("addOnTemplate does not have expected labels. have: %v, want: %v", addonT.Labels, addonLabels)
+				}
+
+				return nil
+			}, 120*time.Second, 1*time.Second).ShouldNot(gomega.HaveOccurred())
 
 			ginkgo.By("hub enable addon")
 			err = e2e.Clusteradm().Addon(
@@ -96,6 +133,8 @@ var _ = ginkgo.Describe("test clusteradm with addon create", ginkgo.Label("addon
 				"test-nginx",
 				"--clusters",
 				e2e.Cluster().ManagedCluster1().Name(),
+				"--labels",
+				labelsString,
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
@@ -104,6 +143,9 @@ var _ = ginkgo.Describe("test clusteradm with addon create", ginkgo.Label("addon
 					context.TODO(), "test-nginx", metav1.GetOptions{})
 				if err != nil {
 					return err
+				}
+				if !reflect.DeepEqual(mca.Labels, addonLabels) {
+					return fmt.Errorf("managedClusterAddOn does not have expected labels. have: %v, want: %v", mca.Labels, addonLabels)
 				}
 
 				if meta.IsStatusConditionTrue(mca.Status.Conditions, "Available") {

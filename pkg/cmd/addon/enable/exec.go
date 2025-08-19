@@ -14,6 +14,7 @@ import (
 	addonv1alpha1 "open-cluster-management.io/api/addon/v1alpha1"
 	addonclientset "open-cluster-management.io/api/client/addon/clientset/versioned"
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
+	"open-cluster-management.io/clusteradm/pkg/helpers/parse"
 )
 
 type ClusterAddonInfo struct {
@@ -34,11 +35,19 @@ func NewClusterAddonInfo(cn string, o *Options, an string) (*addonv1alpha1.Manag
 		}
 		annos[annoSlice[0]] = annoSlice[1]
 	}
+
+	// Parse provided labels
+	labels, err := parse.ParseLabels(o.Labels)
+	if err != nil {
+		return nil, err
+	}
+
 	return &addonv1alpha1.ManagedClusterAddOn{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        an,
 			Namespace:   cn,
 			Annotations: annos,
+			Labels:      labels,
 		},
 		Spec: addonv1alpha1.ManagedClusterAddOnSpec{
 			InstallNamespace: o.Namespace,
@@ -144,6 +153,7 @@ func ApplyAddon(addonClient addonclientset.Interface, addon *addonv1alpha1.Manag
 	}
 
 	originalAddon.Annotations = addon.Annotations
+	originalAddon.Labels = addon.Labels
 	originalAddon.Spec.InstallNamespace = addon.Spec.InstallNamespace
 	_, err = addonClient.AddonV1alpha1().ManagedClusterAddOns(addon.Namespace).Update(context.TODO(), originalAddon, metav1.UpdateOptions{})
 	return err

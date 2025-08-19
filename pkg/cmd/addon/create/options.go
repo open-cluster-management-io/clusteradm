@@ -24,6 +24,9 @@ type Options struct {
 	// registration only supports clusterRoleBinding with cluster namespace
 	ClusterRoleBindingRef string
 
+	//Labels to add to created resources
+	Labels []string
+
 	FileNameFlags genericclioptions.FileNameFlags
 	//
 	Streams genericiooptions.IOStreams

@@ -13,6 +13,8 @@ import (
 	addonv1alpha1 "open-cluster-management.io/api/addon/v1alpha1"
 	addonclientset "open-cluster-management.io/api/client/addon/clientset/versioned"
 	workapiv1 "open-cluster-management.io/api/work/v1"
+
+	"open-cluster-management.io/clusteradm/pkg/helpers/parse"
 )
 
 func newAddonTemplate(o *Options) (*addonv1alpha1.AddOnTemplate, error) {
@@ -20,9 +22,17 @@ func newAddonTemplate(o *Options) (*addonv1alpha1.AddOnTemplate, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Parse labels
+	labels, err := o.parseLabels()
+	if err != nil {
+		return nil, err
+	}
+
 	addon := &addonv1alpha1.AddOnTemplate{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: o.templateName(),
+			Name:   o.templateName(),
+			Labels: labels,
 		},
 		Spec: addonv1alpha1.AddOnTemplateSpec{
 			AddonName: o.Name,
@@ -59,10 +69,17 @@ func newAddonTemplate(o *Options) (*addonv1alpha1.AddOnTemplate, error) {
 	return addon, nil
 }
 
-func newClusterManagementAddon(o *Options) *addonv1alpha1.ClusterManagementAddOn {
+func newClusterManagementAddon(o *Options) (*addonv1alpha1.ClusterManagementAddOn, error) {
+	// Parse labels
+	labels, err := o.parseLabels()
+	if err != nil {
+		return nil, err
+	}
+
 	cma := &addonv1alpha1.ClusterManagementAddOn{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: o.Name,
+			Name:   o.Name,
+			Labels: labels,
 			Annotations: map[string]string{
 				"addon.open-cluster-management.io/lifecycle": "addon-manager",
 			},
@@ -85,7 +102,7 @@ func newClusterManagementAddon(o *Options) *addonv1alpha1.ClusterManagementAddOn
 		},
 	}
 
-	return cma
+	return cma, nil
 }
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -142,7 +159,10 @@ func (o *Options) templateName() string {
 }
 
 func (o *Options) applyCMA(addonClient addonclientset.Interface) error {
-	cma := newClusterManagementAddon(o)
+	cma, err := newClusterManagementAddon(o)
+	if err != nil {
+		return err
+	}
 
 	// apply cma at first
 	originalCMA, err := addonClient.AddonV1alpha1().ClusterManagementAddOns().Get(context.TODO(), o.Name, metav1.GetOptions{})
@@ -223,4 +243,9 @@ func (o *Options) readManifests() ([]workapiv1.Manifest, error) {
 	}
 
 	return manifests, nil
+}
+
+// parseLabels parses the labels flag and returns a map of labels
+func (o *Options) parseLabels() (map[string]string, error) {
+	return parse.ParseLabels(o.Labels)
 }

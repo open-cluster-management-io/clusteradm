@@ -19,6 +19,8 @@ type Options struct {
 	OutputFile string
 	//Annotations to add to the addon
 	Annotate []string
+	//Labels to add to the addon
+	Labels []string
 	//
 	Streams genericiooptions.IOStreams
 }

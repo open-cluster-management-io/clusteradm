@@ -114,7 +114,7 @@ var _ = ginkgo.Describe("test clusteradm with addon create", ginkgo.Label("addon
 				}
 
 				addonT, err := addonClient.AddonV1alpha1().AddOnTemplates().Get(
-					context.TODO(), "test-nginx", metav1.GetOptions{})
+					context.TODO(), "test-nginx-0.0.1", metav1.GetOptions{})
 				if err != nil {
 					return err
 				}

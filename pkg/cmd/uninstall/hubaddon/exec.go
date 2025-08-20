@@ -19,6 +19,7 @@ import (
 
 var (
 	argocdAddonName          = "argocd"
+	argocdNamespace          = "argocd"
 	argocdReleaseName        = "argocd-pull-integration"
 	policyFrameworkAddonName = "governance-policy-framework"
 )
@@ -148,6 +149,7 @@ func (o *Options) runWithHelmClient(addon string) error {
 	}
 
 	if addon == argocdAddonName {
+		o.Helm.WithNamespace(argocdNamespace)
 		if err := o.Helm.UninstallRelease(argocdReleaseName); err != nil {
 			return err
 		}

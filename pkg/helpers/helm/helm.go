@@ -29,8 +29,9 @@ import (
 const HelmFlagSetAnnotation = "HelmSet"
 
 type Helm struct {
-	settings *cli.EnvSettings
-	values   *values.Options
+	settings        *cli.EnvSettings
+	values          *values.Options
+	createNamespace bool
 }
 
 func NewHelm() *Helm {
@@ -46,6 +47,10 @@ func NewHelm() *Helm {
 
 func (h *Helm) WithNamespace(ns string) {
 	h.settings.SetNamespace(ns)
+}
+
+func (h *Helm) WithCreateNamespace(createNS bool) {
+	h.createNamespace = createNS
 }
 
 func (h *Helm) AddFlags(fs *pflag.FlagSet) {
@@ -157,6 +162,7 @@ func (h *Helm) InstallChart(name, repo, chart string) {
 		log.Fatal(err)
 	}
 	client := action.NewInstall(actionConfig)
+	client.CreateNamespace = h.createNamespace
 
 	if client.Version == "" && client.Devel {
 		client.Version = ">0.0.0-0"

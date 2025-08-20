@@ -169,6 +169,7 @@ func (o *Options) createNamespace() error {
 func (o *Options) runWithHelmClient(addon string) error {
 	if addon == argocdAddonName {
 		o.Helm.WithNamespace(argocdNamespace)
+		o.Helm.WithCreateNamespace(o.values.CreateNamespace)
 		if err := o.Helm.PrepareChart(repoName, url); err != nil {
 			return err
 		}

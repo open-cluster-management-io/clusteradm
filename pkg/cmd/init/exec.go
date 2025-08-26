@@ -20,6 +20,7 @@ import (
 	ocmfeature "open-cluster-management.io/api/feature"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/preflight"
+	"open-cluster-management.io/clusteradm/pkg/config"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/helm"
@@ -234,7 +235,8 @@ func (o *Options) run() error {
 			if err := helperwait.WaitUntilRegistrationOperatorReady(
 				o.Streams.Out,
 				o.ClusteradmFlags.KubectlFactory,
-				int64(o.ClusteradmFlags.Timeout)); err != nil {
+				int64(o.ClusteradmFlags.Timeout),
+				config.ClusterManagerName); err != nil {
 				return err
 			}
 		}

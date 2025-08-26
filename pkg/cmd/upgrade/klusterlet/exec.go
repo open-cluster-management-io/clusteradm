@@ -11,17 +11,13 @@ import (
 	"k8s.io/klog/v2"
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 
+	"open-cluster-management.io/clusteradm/pkg/config"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/klusterlet"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
 	"open-cluster-management.io/clusteradm/pkg/version"
 	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
-)
-
-//nolint:deadcode,varcheck
-const (
-	klusterletName = "klusterlet"
 )
 
 func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
@@ -41,7 +37,7 @@ func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 		return err
 	}
 
-	k, err := operatorClient.OperatorV1().Klusterlets().Get(context.TODO(), klusterletName, metav1.GetOptions{})
+	k, err := operatorClient.OperatorV1().Klusterlets().Get(context.TODO(), config.KlusterletName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -141,7 +137,8 @@ func (o *Options) run() error {
 		if err := wait.WaitUntilRegistrationOperatorReady(
 			o.Streams.Out,
 			o.ClusteradmFlags.KubectlFactory,
-			int64(o.ClusteradmFlags.Timeout)); err != nil {
+			int64(o.ClusteradmFlags.Timeout),
+			config.KlusterletName); err != nil {
 			return err
 		}
 	}

@@ -18,6 +18,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/kubectl/pkg/cmd/util"
+	"open-cluster-management.io/clusteradm/pkg/config"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 )
@@ -35,7 +36,7 @@ func WaitUntilCRDReady(w io.Writer, apiExtensionsClient apiextensionsclient.Inte
 	return helpers.WaitCRDToBeReady(apiExtensionsClient, crdName, b, wait)
 }
 
-func WaitUntilRegistrationOperatorReady(w io.Writer, f util.Factory, timeout int64) error {
+func WaitUntilRegistrationOperatorReady(w io.Writer, f util.Factory, timeout int64, appLabel string) error {
 	var restConfig *rest.Config
 	restConfig, err := f.ToRESTConfig()
 	if err != nil {
@@ -65,7 +66,7 @@ func WaitUntilRegistrationOperatorReady(w io.Writer, f util.Factory, timeout int
 			return client.CoreV1().Pods("open-cluster-management").
 				Watch(context.TODO(), metav1.ListOptions{
 					TimeoutSeconds: &timeout,
-					LabelSelector:  "app=cluster-manager",
+					LabelSelector:  fmt.Sprintf("%v=%v", config.LabelApp, appLabel),
 				})
 		},
 		func(event watch.Event) bool {

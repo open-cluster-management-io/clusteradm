@@ -88,6 +88,7 @@ var _ = ginkgo.Describe("test clusteradm upgrade clustermanager and klusterlets"
 			"clustermanager",
 			"--bundle-version=latest",
 			"--context", e2e.Cluster().Hub().Context(),
+			"--wait",
 		)
 
 		gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm upgrade error")
@@ -116,6 +117,7 @@ var _ = ginkgo.Describe("test clusteradm upgrade clustermanager and klusterlets"
 			"klusterlet",
 			"--bundle-version=latest",
 			"--context", e2e.Cluster().ManagedCluster1().Context(),
+			"--wait",
 		)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred(), "klusterlet upgrade error")
 

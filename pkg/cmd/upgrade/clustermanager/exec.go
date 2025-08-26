@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
+	"open-cluster-management.io/clusteradm/pkg/config"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"open-cluster-management.io/clusteradm/pkg/version"
 	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
@@ -116,7 +117,8 @@ func (o *Options) run() error {
 		if err := wait.WaitUntilRegistrationOperatorReady(
 			o.Streams.Out,
 			o.ClusteradmFlags.KubectlFactory,
-			int64(o.ClusteradmFlags.Timeout)); err != nil {
+			int64(o.ClusteradmFlags.Timeout),
+			config.ClusterManagerName); err != nil {
 			return err
 		}
 	}

@@ -9,6 +9,7 @@ const (
 	BootstrapClusterRoleBindingSAName = "agent-registration-bootstrap"
 	BootstrapClusterRoleName          = "open-cluster-management:bootstrap"
 	ClusterManagerName                = "cluster-manager"
+	KlusterletName                    = "klusterlet"
 	LabelApp                          = "app"
 	BootstrapSecretPrefix             = "bootstrap-token-"
 	HubClusterNamespace               = "open-cluster-management-hub"

@@ -32,6 +32,11 @@ var example = `
 %[1]s addon enable --names config-policy-controller --namespace namespace --clusters cluster1,cluster2
 # Enable config-policy-controller addon for specified clusters
 %[1]s addon enable --names config-policy-controller --clusters cluster1,cluster2
+
+## With Configuration File
+
+# Enable addon with configurations from a file
+%[1]s addon enable --names my-addon --clusters cluster1 --config-file addon-config.yaml
 `
 
 // NewCmd...
@@ -70,6 +75,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().StringVar(&o.OutputFile, "output-file", "", "The generated resources will be copied in the specified file")
 	cmd.Flags().StringSliceVar(&o.Annotate, "annotate", []string{}, "Annotations to add to the ManagedClusterAddon (eg. key1=value1,key2=value2)")
 	cmd.Flags().StringSliceVar(&o.Labels, "labels", []string{}, "Labels to add to the ManagedClusterAddon (eg. key1=value1,key2=value2)")
+	cmd.Flags().StringVar(&o.ConfigFile, "config-file", "", "Path to the configuration file containing addon configs (YAML format with group, resource, namespace, and name)")
 
 	return cmd
 }

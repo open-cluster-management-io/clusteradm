@@ -21,6 +21,8 @@ type Options struct {
 	Annotate []string
 	//Labels to add to the addon
 	Labels []string
+	//The config file to load addon configurations from
+	ConfigFile string
 	//
 	Streams genericiooptions.IOStreams
 }

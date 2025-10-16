@@ -2,14 +2,21 @@
 package enable
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/klog/v2"
 	addonv1alpha1 "open-cluster-management.io/api/addon/v1alpha1"
 	addonclientset "open-cluster-management.io/api/client/addon/clientset/versioned"
@@ -24,7 +31,95 @@ type ClusterAddonInfo struct {
 	Annotations map[string]string
 }
 
-func NewClusterAddonInfo(cn string, o *Options, an string) (*addonv1alpha1.ManagedClusterAddOn, error) {
+// applyConfigFileAndBuildReferences reads the config file, applies the resources to the cluster,
+// and builds AddOnConfig references from the applied resources
+func applyConfigFileAndBuildReferences(o *Options) ([]addonv1alpha1.AddOnConfig, error) {
+	if o.ConfigFile == "" {
+		return nil, nil
+	}
+
+	// Read the config file
+	data, err := os.ReadFile(o.ConfigFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config file %s: %w", o.ConfigFile, err)
+	}
+
+	yamlReader := yaml.NewYAMLReader(bufio.NewReader(bytes.NewReader(data)))
+	var rawResources [][]byte
+
+	for {
+		doc, err := yamlReader.Read()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return nil, fmt.Errorf("failed to parse config file %s: %w", o.ConfigFile, err)
+		}
+		if len(bytes.TrimSpace(doc)) == 0 {
+			continue
+		}
+		rawResources = append(rawResources, doc)
+	}
+
+	if len(rawResources) == 0 {
+		return nil, nil
+	}
+
+	// Apply the resources to the cluster using ResourceReader
+	r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
+	if err := r.ApplyRaw(rawResources); err != nil {
+		return nil, fmt.Errorf("failed to apply config resources: %w", err)
+	}
+
+	// Parse each applied resource to build AddOnConfig references
+	var configs []addonv1alpha1.AddOnConfig
+	restMapper, err := o.ClusteradmFlags.KubectlFactory.ToRESTMapper()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get REST mapper: %w", err)
+	}
+
+	for _, rawResource := range rawResources {
+		// Decode the YAML to unstructured object
+		obj := &unstructured.Unstructured{}
+		decoder := yaml.NewYAMLOrJSONDecoder(strings.NewReader(string(rawResource)), 4096)
+		if err := decoder.Decode(obj); err != nil {
+			klog.Warningf("failed to decode resource: %v", err)
+			continue
+		}
+
+		if obj.GetKind() == "" {
+			continue
+		}
+
+		// Get the GVK from the object
+		gvk := obj.GroupVersionKind()
+
+		// Use REST mapper to get the resource name (plural form)
+		mapping, err := restMapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+		if err != nil {
+			klog.Warningf("failed to get REST mapping for %s: %v", gvk.String(), err)
+			continue
+		}
+
+		// Build AddOnConfig
+		config := addonv1alpha1.AddOnConfig{
+			ConfigGroupResource: addonv1alpha1.ConfigGroupResource{
+				Group:    gvk.Group,
+				Resource: mapping.Resource.Resource,
+			},
+			ConfigReferent: addonv1alpha1.ConfigReferent{
+				Namespace: obj.GetNamespace(),
+				Name:      obj.GetName(),
+			},
+		}
+
+		configs = append(configs, config)
+	}
+
+	return configs, nil
+}
+
+func NewClusterAddonInfo(cn string, o *Options, an string, configs []addonv1alpha1.AddOnConfig) (*addonv1alpha1.ManagedClusterAddOn, error) {
 	// Parse provided annotations
 	annos := map[string]string{}
 	for _, annoString := range o.Annotate {
@@ -51,6 +146,7 @@ func NewClusterAddonInfo(cn string, o *Options, an string) (*addonv1alpha1.Manag
 		},
 		Spec: addonv1alpha1.ManagedClusterAddOnSpec{
 			InstallNamespace: o.Namespace,
+			Configs:          configs,
 		},
 	}, nil
 }
@@ -115,6 +211,12 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 		}
 	}
 
+	// Apply config file and build AddOnConfig references once for all addons
+	configs, err := applyConfigFileAndBuildReferences(o)
+	if err != nil {
+		return err
+	}
+
 	for _, addon := range addons {
 		_, err := addonClient.AddonV1alpha1().ClusterManagementAddOns().Get(context.TODO(), addon, metav1.GetOptions{})
 		if err != nil {
@@ -125,7 +227,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 		}
 
 		for _, clusterName := range clusters {
-			cai, err := NewClusterAddonInfo(clusterName, o, addon)
+			cai, err := NewClusterAddonInfo(clusterName, o, addon, configs)
 			if err != nil {
 				return err
 			}
@@ -155,6 +257,9 @@ func ApplyAddon(addonClient addonclientset.Interface, addon *addonv1alpha1.Manag
 	originalAddon.Annotations = addon.Annotations
 	originalAddon.Labels = addon.Labels
 	originalAddon.Spec.InstallNamespace = addon.Spec.InstallNamespace
+	if addon.Spec.Configs != nil {
+		originalAddon.Spec.Configs = addon.Spec.Configs
+	}
 	_, err = addonClient.AddonV1alpha1().ManagedClusterAddOns(addon.Namespace).Update(context.TODO(), originalAddon, metav1.UpdateOptions{})
 	return err
 }

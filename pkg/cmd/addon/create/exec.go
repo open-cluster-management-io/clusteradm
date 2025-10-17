@@ -4,6 +4,7 @@ package create
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -76,6 +77,29 @@ func newClusterManagementAddon(o *Options) (*addonv1alpha1.ClusterManagementAddO
 		return nil, err
 	}
 
+	// Parse placement reference
+	placementNamespace, placementName, err := o.parsePlacementRef()
+	if err != nil {
+		return nil, err
+	}
+
+	installStrategy := addonv1alpha1.InstallStrategy{
+		Type: addonv1alpha1.AddonInstallStrategyManual,
+	}
+
+	// If placement-ref is provided, change install strategy to Placements
+	if placementNamespace != "" && placementName != "" {
+		installStrategy.Type = addonv1alpha1.AddonInstallStrategyPlacements
+		installStrategy.Placements = []addonv1alpha1.PlacementStrategy{
+			{
+				PlacementRef: addonv1alpha1.PlacementRef{
+					Namespace: placementNamespace,
+					Name:      placementName,
+				},
+			},
+		}
+	}
+
 	cma := &addonv1alpha1.ClusterManagementAddOn{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   o.Name,
@@ -96,9 +120,7 @@ func newClusterManagementAddon(o *Options) (*addonv1alpha1.ClusterManagementAddO
 					},
 				},
 			},
-			InstallStrategy: addonv1alpha1.InstallStrategy{
-				Type: addonv1alpha1.AddonInstallStrategyManual,
-			},
+			InstallStrategy: installStrategy,
 		},
 	}
 
@@ -131,6 +153,14 @@ func (o *Options) Validate() (err error) {
 
 	if len(*o.FileNameFlags.Filenames) == 0 {
 		return fmt.Errorf("manifest files must be specified")
+	}
+
+	// Validate placement-ref format if provided
+	if o.PlacementRef != "" {
+		_, _, err := o.parsePlacementRef()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -248,4 +278,25 @@ func (o *Options) readManifests() ([]workapiv1.Manifest, error) {
 // parseLabels parses the labels flag and returns a map of labels
 func (o *Options) parseLabels() (map[string]string, error) {
 	return parse.ParseLabels(o.Labels)
+}
+
+// parsePlacementRef parses the placement-ref flag and returns namespace and name
+func (o *Options) parsePlacementRef() (namespace, name string, err error) {
+	if o.PlacementRef == "" {
+		return "", "", nil
+	}
+
+	parts := strings.Split(o.PlacementRef, "/")
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("placement-ref must be in the format 'namespace/name'")
+	}
+
+	namespace = strings.TrimSpace(parts[0])
+	name = strings.TrimSpace(parts[1])
+
+	if namespace == "" || name == "" {
+		return "", "", fmt.Errorf("placement-ref namespace and name cannot be empty")
+	}
+
+	return namespace, name, nil
 }

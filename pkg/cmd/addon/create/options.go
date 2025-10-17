@@ -27,6 +27,9 @@ type Options struct {
 	//Labels to add to created resources
 	Labels []string
 
+	// PlacementRef is the namespace/name reference to a Placement resource
+	PlacementRef string
+
 	FileNameFlags genericclioptions.FileNameFlags
 	//
 	Streams genericiooptions.IOStreams

@@ -52,6 +52,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().StringVar(&o.ClusterRoleBindingRef, "cluster-role-bind", "", "The rolebinding to the clusterrole in "+
 		"the cluster namespace for the addon agent")
 	cmd.Flags().StringSliceVar(&o.Labels, "labels", []string{}, "Labels to add to the ClusterManagementAddOn and AddOnTemplate resources (eg. key1=value1,key2=value2)")
+	cmd.Flags().StringVar(&o.PlacementRef, "placement-ref", "", "The namespace/name reference to a Placement resource for automatic addon installation (eg. namespace/placement-name)")
 	o.FileNameFlags.AddFlags(cmd.Flags())
 
 	return cmd

@@ -41,14 +41,16 @@ spec:
             properties:
               agentInstallNamespace:
                 default: open-cluster-management-agent-addon
-                description: AgentInstallNamespace is the namespace where the add-on
-                  agent should be installed on the managed cluster.
+                description: |-
+                  AgentInstallNamespace is the namespace where the add-on agent should be installed on the managed cluster.
+                  For template-type addons: set to empty string "" to use the namespace defined in the addonTemplate.
+                  For non-template addons: defaults to "open-cluster-management-agent-addon" if not specified.
                 maxLength: 63
-                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?)?$
                 type: string
               customizedVariables:
                 description: |-
-                  CustomizedVariables is a list of name-value variables for the current add-on deployment.
+                  customizedVariables is a list of name-value variables for the current add-on deployment.
                   The add-on implementation can use these variables to render its add-on deployment.
                   The default is an empty list.
                 items:
@@ -73,7 +75,7 @@ spec:
                 x-kubernetes-list-type: map
               nodePlacement:
                 description: |-
-                  NodePlacement enables explicit control over the scheduling of the add-on agents on the
+                  nodePlacement enables explicit control over the scheduling of the add-on agents on the
                   managed cluster.
                   All add-on agent pods are expected to comply with this node placement.
                   If the placement is nil, the placement is not specified, it will be omitted.
@@ -156,7 +158,7 @@ spec:
                 type: object
               registries:
                 description: |-
-                  Registries describes how to override images used by the addon agent on the managed cluster.
+                  registries describes how to override images used by the addon agent on the managed cluster.
                   the following example will override image "quay.io/open-cluster-management/addon-agent" to
                   "quay.io/ocm/addon-agent" when deploying the addon agent
 

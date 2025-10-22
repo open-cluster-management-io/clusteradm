@@ -21,7 +21,7 @@ type AddOnDeploymentConfig struct {
 }
 
 type AddOnDeploymentConfigSpec struct {
-	// CustomizedVariables is a list of name-value variables for the current add-on deployment.
+	// customizedVariables is a list of name-value variables for the current add-on deployment.
 	// The add-on implementation can use these variables to render its add-on deployment.
 	// The default is an empty list.
 	// +optional
@@ -29,7 +29,7 @@ type AddOnDeploymentConfigSpec struct {
 	// +listMapKey=name
 	CustomizedVariables []CustomizedVariable `json:"customizedVariables,omitempty"`
 
-	// NodePlacement enables explicit control over the scheduling of the add-on agents on the
+	// nodePlacement enables explicit control over the scheduling of the add-on agents on the
 	// managed cluster.
 	// All add-on agent pods are expected to comply with this node placement.
 	// If the placement is nil, the placement is not specified, it will be omitted.
@@ -37,7 +37,7 @@ type AddOnDeploymentConfigSpec struct {
 	// +optional
 	NodePlacement *NodePlacement `json:"nodePlacement,omitempty"`
 
-	// Registries describes how to override images used by the addon agent on the managed cluster.
+	// registries describes how to override images used by the addon agent on the managed cluster.
 	// the following example will override image "quay.io/open-cluster-management/addon-agent" to
 	// "quay.io/ocm/addon-agent" when deploying the addon agent
 	//
@@ -54,10 +54,12 @@ type AddOnDeploymentConfigSpec struct {
 	ProxyConfig ProxyConfig `json:"proxyConfig,omitempty"`
 
 	// AgentInstallNamespace is the namespace where the add-on agent should be installed on the managed cluster.
+	// For template-type addons: set to empty string "" to use the namespace defined in the addonTemplate.
+	// For non-template addons: defaults to "open-cluster-management-agent-addon" if not specified.
 	// +optional
 	// +kubebuilder:default=open-cluster-management-agent-addon
 	// +kubebuilder:validation:MaxLength=63
-	// +kubebuilder:validation:Pattern=^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+	// +kubebuilder:validation:Pattern=^([a-z0-9]([-a-z0-9]*[a-z0-9])?)?$
 	AgentInstallNamespace string `json:"agentInstallNamespace,omitempty"`
 
 	// ResourceRequirements specify the resources required by add-on agents.

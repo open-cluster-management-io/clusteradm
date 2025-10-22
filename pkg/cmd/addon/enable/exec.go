@@ -256,7 +256,7 @@ func ApplyAddon(addonClient addonclientset.Interface, addon *addonv1alpha1.Manag
 
 	originalAddon.Annotations = addon.Annotations
 	originalAddon.Labels = addon.Labels
-	originalAddon.Spec.InstallNamespace = addon.Spec.InstallNamespace
+	originalAddon.Spec.InstallNamespace = addon.Spec.InstallNamespace // nolint:staticcheck
 	if addon.Spec.Configs != nil {
 		originalAddon.Spec.Configs = addon.Spec.Configs
 	}

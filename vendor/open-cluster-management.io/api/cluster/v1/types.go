@@ -63,13 +63,13 @@ type ManagedClusterSpec struct {
 	// +optional
 	HubAcceptsClient bool `json:"hubAcceptsClient"`
 
-	// LeaseDurationSeconds is used to coordinate the lease update time of Klusterlet agents on the managed cluster.
+	// leaseDurationSeconds is used to coordinate the lease update time of Klusterlet agents on the managed cluster.
 	// If its value is zero, the Klusterlet agent will update its lease every 60 seconds by default
 	// +optional
 	// +kubebuilder:default=60
 	LeaseDurationSeconds int32 `json:"leaseDurationSeconds,omitempty"`
 
-	// Taints is a property of managed cluster that allow the cluster to be repelled when scheduling.
+	// taints is a property of managed cluster that allow the cluster to be repelled when scheduling.
 	// Taints, including 'ManagedClusterUnavailable' and 'ManagedClusterUnreachable', can not be added/removed by agent
 	// running on the managed cluster; while it's fine to add/remove other taints from either hub cluser or managed cluster.
 	// +optional
@@ -92,24 +92,24 @@ type ClientConfig struct {
 // The managed cluster this Taint is attached to has the "effect" on
 // any placement that does not tolerate the Taint.
 type Taint struct {
-	// Key is the taint key applied to a cluster. e.g. bar or foo.example.com/bar.
+	// key is the taint key applied to a cluster. e.g. bar or foo.example.com/bar.
 	// The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern=`^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$`
 	// +kubebuilder:validation:MaxLength=316
 	// +required
 	Key string `json:"key"`
-	// Value is the taint value corresponding to the taint key.
+	// value is the taint value corresponding to the taint key.
 	// +kubebuilder:validation:MaxLength=1024
 	// +optional
 	Value string `json:"value,omitempty"`
-	// Effect indicates the effect of the taint on placements that do not tolerate the taint.
+	// effect indicates the effect of the taint on placements that do not tolerate the taint.
 	// Valid effects are NoSelect, PreferNoSelect and NoSelectIfNew.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum:=NoSelect;PreferNoSelect;NoSelectIfNew
 	// +required
 	Effect TaintEffect `json:"effect"`
-	// TimeAdded represents the time at which the taint was added.
+	// timeAdded represents the time at which the taint was added.
 	// +nullable
 	// +optional
 	TimeAdded metav1.Time `json:"timeAdded"`
@@ -144,48 +144,77 @@ const (
 
 // ManagedClusterStatus represents the current status of joined managed cluster.
 type ManagedClusterStatus struct {
-	// Conditions contains the different condition statuses for this managed cluster.
+	// conditions contains the different condition statuses for this managed cluster.
 	Conditions []metav1.Condition `json:"conditions"`
 
-	// Capacity represents the total resource capacity from all nodeStatuses
+	// capacity represents the total resource capacity from all nodeStatuses
 	// on the managed cluster.
 	Capacity ResourceList `json:"capacity,omitempty"`
 
-	// Allocatable represents the total allocatable resources on the managed cluster.
+	// allocatable represents the total allocatable resources on the managed cluster.
 	Allocatable ResourceList `json:"allocatable,omitempty"`
 
-	// Version represents the kubernetes version of the managed cluster.
+	// version represents the kubernetes version of the managed cluster.
 	Version ManagedClusterVersion `json:"version,omitempty"`
 
-	// ClusterClaims represents cluster information that a managed cluster claims,
+	// clusterClaims represents cluster information that a managed cluster claims,
 	// for example a unique cluster identifier (id.k8s.io) and kubernetes version
 	// (kubeversion.open-cluster-management.io). They are written from the managed
 	// cluster. The set of claims is not uniform across a fleet, some claims can be
 	// vendor or version specific and may not be included from all managed clusters.
 	// +optional
 	ClusterClaims []ManagedClusterClaim `json:"clusterClaims,omitempty"`
+
+	// managedNamespaces are a list of namespaces managed by the clustersets the
+	// cluster belongs to.
+	// +optional
+	// +listType=map
+	// +listMapKey=clusterSet
+	// +listMapKey=name
+	ManagedNamespaces []ClusterSetManagedNamespaceConfig `json:"managedNamespaces,omitempty"`
 }
 
 // ManagedClusterVersion represents version information about the managed cluster.
 // TODO add managed agent versions
 type ManagedClusterVersion struct {
-	// Kubernetes is the kubernetes version of managed cluster.
+	// kubernetes is the kubernetes version of managed cluster.
 	// +optional
 	Kubernetes string `json:"kubernetes,omitempty"`
 }
 
 // ManagedClusterClaim represents a ClusterClaim collected from a managed cluster.
 type ManagedClusterClaim struct {
-	// Name is the name of a ClusterClaim resource on managed cluster. It's a well known
+	// name is the name of a ClusterClaim resource on managed cluster. It's a well known
 	// or customized name to identify the claim.
 	// +kubebuilder:validation:MaxLength=253
 	// +kubebuilder:validation:MinLength=1
 	Name string `json:"name,omitempty"`
 
-	// Value is a claim-dependent string
+	// value is a claim-dependent string
 	// +kubebuilder:validation:MaxLength=1024
 	// +kubebuilder:validation:MinLength=1
 	Value string `json:"value,omitempty"`
+}
+
+// managedNamespaces defines a namespace on the managedclusters across the
+// clusterset to be managed by this clusterset.
+type ManagedNamespaceConfig struct {
+	// name is the name of the namespace.
+	// +required
+	// +kubebuilder:validation:MaxLength=63
+	// +kubebuilder:validation:Pattern=^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+	Name string `json:"name"`
+}
+
+type ClusterSetManagedNamespaceConfig struct {
+	ManagedNamespaceConfig `json:",inline"`
+
+	// clusterSet represents the name of the cluster set.
+	// +required
+	ClusterSet string `json:"clusterSet"`
+
+	// conditions are the status conditions of the managed namespace
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 const (

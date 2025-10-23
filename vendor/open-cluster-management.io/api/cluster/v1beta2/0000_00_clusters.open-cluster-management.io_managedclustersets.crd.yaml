@@ -65,10 +65,10 @@ spec:
               clusterSelector:
                 default:
                   selectorType: ExclusiveClusterSetLabel
-                description: ClusterSelector represents a selector of ManagedClusters
+                description: clusterSelector represents a selector of ManagedClusters
                 properties:
                   labelSelector:
-                    description: LabelSelector define the general labelSelector which
+                    description: labelSelector define the general labelSelector which
                       clusterset will use to select target managedClusters
                     properties:
                       matchExpressions:
@@ -117,7 +117,7 @@ spec:
                   selectorType:
                     default: ExclusiveClusterSetLabel
                     description: |-
-                      SelectorType could only be "ExclusiveClusterSetLabel" or "LabelSelector"
+                      selectorType could only be "ExclusiveClusterSetLabel" or "LabelSelector"
                       "ExclusiveClusterSetLabel" means to use label "cluster.open-cluster-management.io/clusterset:<ManagedClusterSet Name>"" to select target clusters.
                       "LabelSelector" means use labelSelector to select target managedClusters
                     enum:
@@ -127,6 +127,27 @@ spec:
                 required:
                 - selectorType
                 type: object
+              managedNamespaces:
+                description: |-
+                  managedNamespaces defines the list of namespace on the managedclusters
+                  across the clusterset to be managed.
+                items:
+                  description: |-
+                    managedNamespaces defines a namespace on the managedclusters across the
+                    clusterset to be managed by this clusterset.
+                  properties:
+                    name:
+                      description: name is the name of the namespace.
+                      maxLength: 63
+                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - name
+                x-kubernetes-list-type: map
             type: object
           status:
             description: Status represents the current status of the ManagedClusterSet

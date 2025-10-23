@@ -3,6 +3,7 @@ package v1beta2
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "open-cluster-management.io/api/cluster/v1"
 )
 
 // ExclusiveClusterSetLabel LabelKey
@@ -44,15 +45,22 @@ type ManagedClusterSet struct {
 
 // ManagedClusterSetSpec describes the attributes of the ManagedClusterSet
 type ManagedClusterSetSpec struct {
-	// ClusterSelector represents a selector of ManagedClusters
+	// clusterSelector represents a selector of ManagedClusters
 	// +optional
 	// +kubebuilder:default:={selectorType: ExclusiveClusterSetLabel}
 	ClusterSelector ManagedClusterSelector `json:"clusterSelector,omitempty"`
+
+	// managedNamespaces defines the list of namespace on the managedclusters
+	// across the clusterset to be managed.
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	ManagedNamespaces []v1.ManagedNamespaceConfig `json:"managedNamespaces,omitempty"`
 }
 
 // ManagedClusterSelector represents a selector of ManagedClusters
 type ManagedClusterSelector struct {
-	// SelectorType could only be "ExclusiveClusterSetLabel" or "LabelSelector"
+	// selectorType could only be "ExclusiveClusterSetLabel" or "LabelSelector"
 	// "ExclusiveClusterSetLabel" means to use label "cluster.open-cluster-management.io/clusterset:<ManagedClusterSet Name>"" to select target clusters.
 	// "LabelSelector" means use labelSelector to select target managedClusters
 	// +kubebuilder:validation:Enum=ExclusiveClusterSetLabel;LabelSelector
@@ -60,7 +68,7 @@ type ManagedClusterSelector struct {
 	// +required
 	SelectorType SelectorType `json:"selectorType,omitempty"`
 
-	// LabelSelector define the general labelSelector which clusterset will use to select target managedClusters
+	// labelSelector define the general labelSelector which clusterset will use to select target managedClusters
 	// +optional
 	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty"`
 }

@@ -21,6 +21,8 @@ var example = `
 %[1]s join --hub-token <tokenID.tokenSecret> --hub-apiserver <hub_apiserver_url> --cluster-name <cluster_name> --registration-auth awsirsa --hub-cluster-arn arn:aws:eks:us-west-2:123456789012:cluster/hub-cluster-1
 # Join a cluster to the hub and annotate the ManagedCluster
 %[1]s join --hub-token <tokenID.tokenSecret> --hub-apiserver <hub_apiserver_url> --cluster-name <cluster_name> --klusterlet-annotation foo=bar --klusterlet-annotation bar=foo
+# Join a cluster to the hub via gRPC
+%[1]s join --hub-token <tokenID.tokenSecret> --hub-apiserver <hub_apiserver_url> --cluster-name <cluster_name> --registration-auth grpc --grpc-server <grpc_server_address>
 `
 
 // NewCmd ...
@@ -83,10 +85,12 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().BoolVar(&o.createNameSpace, "create-namespace", true, "If true, create the operator namespace(open-cluster-management) and the agent namespace(open-cluster-management-agent for Default mode, <klusterlet-name> for Hosted mode), otherwise use existing one")
 	cmd.Flags().BoolVar(&o.enableSyncLabels, "enable-sync-labels", false, "If true, sync the labels from klusterlet to all agent resources.")
 	cmd.Flags().Int32Var(&o.clientCertExpirationSeconds, "client-cert-expiration-seconds", 31536000, "clientCertExpirationSeconds represents the seconds of a client certificate to expire.")
-	cmd.Flags().StringVar(&o.registrationAuth, "registration-auth", "", "The type of authentication to use for registering and authenticating with hub")
+	cmd.Flags().StringVar(&o.registrationAuth, "registration-auth", "csr", "The type of authentication to use for registering and authenticating with hub. The supported types including: csr, grpc and awsirsa. The default type is csr.")
 	cmd.Flags().StringVar(&o.hubClusterArn, "hub-cluster-arn", "", "The arn of the hub cluster(i.e. EKS cluster) to which managed-cluster will join")
 	cmd.Flags().StringVar(&o.managedClusterArn, "managed-cluster-arn", "", "The arn of the managed cluster(i.e. EKS cluster) which will be joining the hub")
 	cmd.Flags().StringArrayVar(&o.klusterletAnnotations, "klusterlet-annotation", []string{}, fmt.Sprintf("Annotations to set on the ManagedCluster, in key=value format. Note: each key will be automatically prefixed with '%s/', if not set.", operatorv1.ClusterAnnotationsKeyPrefix))
 	cmd.Flags().StringVar(&o.klusterletValuesFile, "klusterlet-values-file", "", "The path to a YAML file containing klusterlet Helm chart values. The values from the file override both the default klusterlet chart values and the values from other flags.")
+	cmd.Flags().StringVar(&o.grpcServer, "grpc-server", "", "The gRPC server address of the hub")
+	cmd.Flags().StringVar(&o.grpcCAFile, "grpc-ca-file", "", "Path to gRPC server CA PEM; required if --grpc-server is set")
 	return cmd
 }

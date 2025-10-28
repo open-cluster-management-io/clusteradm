@@ -19,8 +19,15 @@ type Options struct {
 	token string
 	// The external hub apiserver url (https://<host>:<port>)
 	hubAPIServer string
+	// The grpc server of the hub cluster
+	grpcServer string
+
 	// The hub ca-file(optional)
 	caFile string
+
+	// The grpc ca file which can be found in the configmap ca-bundle-configmap in open-cluster-management-hub ns
+	grpcCAFile string
+
 	// the name under the cluster must be imported
 	clusterName string
 
@@ -58,13 +65,16 @@ type Options struct {
 	forceManagedInClusterEndpointLookup bool
 	hubInClusterEndpoint                string
 
-	// Values below are tempoary data
-	// HubCADate: data in hub ca file
-	HubCADate []byte
+	// Values below are temporary data
+	// HubCAData: data in hub ca file
+	HubCAData []byte
 	// hub config
 	HubConfig *clientcmdapiv1.Config
 
-	// The URL of a forward proxy server which will be used by agnets on the managed cluster
+	// grpcCAData: ca data used by the GRPC server
+	grpcCAData []byte
+
+	// The URL of a forward proxy server which will be used by agents on the managed cluster
 	// to connect to the hub cluster (optional)
 	proxyURL string
 	// The proxy server ca-file(optional)

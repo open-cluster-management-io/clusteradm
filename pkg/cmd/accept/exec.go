@@ -28,7 +28,9 @@ const (
 	groupNameBootstrap               = "system:bootstrappers:managedcluster"
 	userNameSignatureBootstrapPrefix = "system:bootstrap:"
 	userNameSignatureSA              = "system:serviceaccount:open-cluster-management:agent-registration-bootstrap"
+	userNameGRPCSignatureSA          = "system:serviceaccount:open-cluster-management-hub:grpc-server-sa"
 	groupNameSA                      = "system:serviceaccounts:open-cluster-management"
+	groupNameGRPC                    = "system:serviceaccounts:open-cluster-management-hub"
 	clusterLabel                     = "open-cluster-management.io/cluster-name"
 )
 
@@ -143,13 +145,15 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 		for _, item := range csrs.Items {
 			// Does not have the correct name prefix
 			if !strings.HasPrefix(item.Spec.Username, userNameSignatureBootstrapPrefix) &&
-				!strings.HasPrefix(item.Spec.Username, userNameSignatureSA) {
+				!strings.HasPrefix(item.Spec.Username, userNameSignatureSA) &&
+				!strings.HasPrefix(item.Spec.Username, userNameGRPCSignatureSA) {
 				continue
 			}
 			// Check groups
 			groups := sets.NewString(item.Spec.Groups...)
 			if !groups.Has(groupNameBootstrap) &&
-				!groups.Has(groupNameSA) {
+				!groups.Has(groupNameSA) &&
+				!groups.Has(groupNameGRPC) {
 				continue
 			}
 			passedCSRs = append(passedCSRs, item)

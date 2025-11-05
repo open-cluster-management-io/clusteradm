@@ -73,7 +73,7 @@ func initE2E() (*TestE2eConfig, error) {
 			return err
 		}
 
-		fmt.Println("unjoin managedcluster1...")
+		fmt.Println("unjoin managedCluster on the spoke cluster...")
 		err := e2eConf.Clusteradm().Unjoin(
 			"--context", e2eConf.Cluster().ManagedCluster1().Context(),
 			"--cluster-name", e2eConf.Cluster().ManagedCluster1().Name(),

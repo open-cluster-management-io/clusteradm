@@ -40,6 +40,8 @@ var (
 	releaseName = "multicluster-controlplane"
 )
 
+var validRegistrationDriver = sets.New[string](operatorv1.CSRAuthType, operatorv1.AwsIrsaAuthType, operatorv1.GRPCAuthType)
+
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun, "force", o.force, "output-file", o.outputFile)
 
@@ -94,6 +96,25 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 				FeatureGates: genericclioptionsclusteradm.ConvertToFeatureGateAPI(
 					genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubAddonManagerFeatureGates),
 			},
+		}
+		if sets.New[string](o.registrationDrivers...).Has(operatorv1.GRPCAuthType) {
+			if o.grpcServer == "" {
+				return fmt.Errorf("grpc server should not be empty if registration driver has grpc type")
+			}
+
+			o.clusterManagerChartConfig.ClusterManager.ServerConfiguration = operatorv1.ServerConfiguration{
+				EndpointsExposure: []operatorv1.EndpointExposure{
+					{
+						Protocol: operatorv1.GRPCAuthType,
+						GRPC: &operatorv1.Endpoint{
+							Type: operatorv1.EndpointTypeHostname,
+							Hostname: &operatorv1.HostnameConfig{
+								Host: o.grpcServer,
+							},
+						},
+					},
+				},
+			}
 		}
 		o.clusterManagerChartConfig.CreateBootstrapToken = o.useBootstrapToken
 
@@ -155,25 +176,29 @@ func (o *Options) validate() error {
 		return fmt.Errorf("registry should not be empty")
 	}
 
-	validRegistrationDriver := sets.New[string]("csr", "awsirsa")
 	for _, driver := range o.registrationDrivers {
 		if !validRegistrationDriver.Has(driver) {
-			return fmt.Errorf("only csr and awsirsa are valid drivers")
+			return fmt.Errorf("only csr,awsirsa and grpc are valid drivers")
 		}
 	}
 
 	if genericclioptionsclusteradm.HubMutableFeatureGate.Enabled("ManagedClusterAutoApproval") {
 		// If hub registration does not accept awsirsa, we stop user if they also pass in a list of patterns for AWS EKS ARN.
 
-		if len(o.autoApprovedARNPatterns) > 0 && !sets.New[string](o.registrationDrivers...).Has("awsirsa") {
+		if len(o.autoApprovedARNPatterns) > 0 && !sets.New[string](o.registrationDrivers...).Has(operatorv1.AwsIrsaAuthType) {
 			return fmt.Errorf("should not provide list of patterns for aws eks arn if not initializing hub with awsirsa registration")
 		}
 
 		// If hub registration does not accept csr, we stop user if they also pass in a list of users for CSR auto approval.
-		if len(o.autoApprovedCSRIdentities) > 0 && !sets.New[string](o.registrationDrivers...).Has("csr") {
+		if len(o.autoApprovedCSRIdentities) > 0 && !sets.New[string](o.registrationDrivers...).Has(operatorv1.CSRAuthType) {
 			return fmt.Errorf("should not provide list of users for csr to auto approve if not initializing hub with csr registration")
 		}
-	} else if len(o.autoApprovedARNPatterns) > 0 || len(o.autoApprovedCSRIdentities) > 0 {
+
+		if len(o.autoApprovedGRPCIdentities) > 0 && !sets.New[string](o.registrationDrivers...).Has(operatorv1.GRPCAuthType) {
+			return fmt.Errorf("should not provide list of users or identities for grpc cluster to auto approve if not initializing hub with grpc registration")
+		}
+
+	} else if len(o.autoApprovedARNPatterns) > 0 || len(o.autoApprovedCSRIdentities) > 0 || len(o.autoApprovedGRPCIdentities) > 0 {
 		return fmt.Errorf("should enable feature gate ManagedClusterAutoApproval before passing list of identities")
 	}
 
@@ -394,22 +419,38 @@ func (o *Options) deploySingletonControlplane(kubeClient kubernetes.Interface) e
 
 func getRegistrationDrivers(o *Options) ([]operatorv1.RegistrationDriverHub, error) {
 	registrationDrivers := []operatorv1.RegistrationDriverHub{}
-	var registrationDriver operatorv1.RegistrationDriverHub
 
 	for _, driver := range o.registrationDrivers {
-		if driver == "csr" {
-			csr := &operatorv1.CSRConfig{AutoApprovedIdentities: o.autoApprovedCSRIdentities}
-			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: driver, CSR: csr}
-		} else if driver == "awsirsa" {
+		var registrationDriver operatorv1.RegistrationDriverHub
+		switch driver {
+		case operatorv1.CSRAuthType:
+			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: operatorv1.CSRAuthType}
+			if len(o.autoApprovedCSRIdentities) != 0 {
+				registrationDriver.CSR = &operatorv1.CSRConfig{
+					AutoApprovedIdentities: o.autoApprovedCSRIdentities,
+				}
+			}
+		case operatorv1.AwsIrsaAuthType:
 			hubClusterArn, err := getHubClusterArn(o)
 			if err != nil {
 				return registrationDrivers, err
 			}
 			awsirsa := &operatorv1.AwsIrsaConfig{HubClusterArn: hubClusterArn, Tags: o.awsResourceTags, AutoApprovedIdentities: o.autoApprovedARNPatterns}
-			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: driver, AwsIrsa: awsirsa}
+			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: operatorv1.AwsIrsaAuthType, AwsIrsa: awsirsa}
+		case operatorv1.GRPCAuthType:
+			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: operatorv1.GRPCAuthType}
+			if len(o.autoApprovedGRPCIdentities) != 0 {
+				registrationDriver.GRPC = &operatorv1.GRPCRegistrationConfig{
+					AutoApprovedIdentities: o.autoApprovedGRPCIdentities,
+				}
+			}
+		default:
+			return registrationDrivers, fmt.Errorf("unknown registration-drivers type: %s", driver)
 		}
+
 		registrationDrivers = append(registrationDrivers, registrationDriver)
 	}
+
 	return registrationDrivers, nil
 }
 

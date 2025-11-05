@@ -21,6 +21,19 @@ images:
   # Please set the userName/password or the dockerConfigJson if you use a private image registry.
   # The registry will be set in the generated credential if you set userName/password.
   # Suggest to use dockerConfigJson if you set overrides here.
+  # For example: 
+  # --set-file images.imageCredentials.dockerConfigJson=<your dockerConfigJson file> ,
+  # or set the json context in values.yaml file 
+  # dockerConfigJson: |
+  #   {
+  #     "auths": {
+  #       "<your registry>": {
+  #         "auth": "xxx",
+  #         "email": "xxx"
+  #     }
+  #   }
+  # }
+  #
   # The image pull secret is fixed into the serviceAccount, you can also set
   # `createImageCredentials` to `false` and create the pull secret manually.
   imageCredentials:
@@ -100,9 +113,20 @@ clusterManager:
       mode: Enable
     registrationDrivers:
     - authType: csr
+#   - authType: grpc
+#   grpc:
+#     autoApprovedIdentities:
+#     - system:serviceaccount:open-cluster-management:agent-registration-bootstrap
   workConfiguration:
     workDriver: kube
   addOnManagerConfiguration: {}
 #   featureGates:
 #     - feature: ""
 #       mode: ""
+# serverConfiguration:
+#   endpointsExposure:
+#   - protocol: grpc
+#     grpc:
+#       type: hostname
+#       hostname:
+#         host: grpc-server-open-cluster-management-hub.apps.server-foundation-sno-lite-w8rlq.dev04.red-chesterfield.com

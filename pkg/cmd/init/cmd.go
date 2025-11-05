@@ -16,7 +16,7 @@ var example = `
 %[1]s init
 
 # Initialize the hub cluster with the type of authentication. Either or both of csr,awsirsa
-%[1]s init --registration-drivers "awsirsa,csr"
+%[1]s init --registration-drivers "awsirsa,csr,grpc"
     --hubClusterArn arn:aws:eks:us-west-2:123456789012:cluster/hub-cluster1
 	--aws-resource-tags product:v1:tenant:app-name=My-App,product:v1:tenant:created-by=Team-1
     --auto-approved-csr-identities="user1,user2"
@@ -89,7 +89,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	o.Helm.AddFlags(singletonSet)
 	cmd.Flags().AddFlagSet(singletonSet)
 	cmd.Flags().StringSliceVar(&o.registrationDrivers, "registration-drivers", []string{},
-		"The type of authentication to use for registering and authenticating with hub. Only csr and awsirsa are accepted as valid inputs. This flag can be repeated to specify multiple authentication types.")
+		"The type of authentication to use for registering and authenticating with hub. Only csr, awsirsa and grpc are accepted as valid inputs. This flag can be repeated to specify multiple authentication types.")
 	cmd.Flags().StringVar(&o.hubClusterArn, "hub-cluster-arn", "",
 		"The hubCluster ARN to be passed if awsirsa is one of the registrationAuths and the cluster name in EKS kubeconfig doesn't contain hubClusterArn")
 	cmd.Flags().StringSliceVar(&o.awsResourceTags, "aws-resource-tags", []string{},
@@ -100,6 +100,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().StringSliceVar(&o.autoApprovedARNPatterns, "auto-approved-arn-patterns", []string{},
 		"List of AWS EKS ARN patterns so any EKS clusters with these patterns will be auto accepted to join with hub cluster")
 	cmd.Flags().BoolVar(&o.enableSyncLabels, "enable-sync-labels", false, "If true, sync the labels from clustermanager to all hub resources.")
-
+	cmd.Flags().StringVar(&o.grpcServer, "grpc-server", "", "The gRPC server address of the hub")
+	cmd.Flags().StringSliceVar(&o.autoApprovedGRPCIdentities, "auto-approved-grpc-identities", []string{},
+		"List of users or identities that are accepted and whatever matches can be auto accepted to join hub for grpc clusters")
 	return cmd
 }

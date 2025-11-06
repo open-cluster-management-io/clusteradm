@@ -67,6 +67,12 @@ type Options struct {
 	awsResourceTags []string
 	// enableSyncLabels is to enable the feature which can sync the labels from clustermanager to all hub resources.
 	enableSyncLabels bool
+
+	// grpcServer is the gRPC server of the hub.
+	grpcServer string
+	// autoApprovedGRPCIdentities are a list of users or identities that are accepted and whatever matches can
+	// be auto accepted to join hub for grpc clusters.
+	autoApprovedGRPCIdentities []string
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Options {

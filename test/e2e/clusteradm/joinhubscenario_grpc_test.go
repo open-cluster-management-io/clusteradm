@@ -38,58 +38,27 @@ var _ = ginkgo.Describe("test clusteradm join with grpc", ginkgo.Label("join-hub
 			ginkgo.By("init hub")
 			err = e2e.Clusteradm().Init(
 				"--context", e2e.Cluster().Hub().Context(),
+				"--registration-drivers", "csr,grpc",
+				"--grpc-server", "cluster-manager-grpc-server.open-cluster-management-hub.svc:8090",
+				"--feature-gates=ManagedClusterAutoApproval=true",
+				"--auto-approved-grpc-identities", "system:serviceaccount:open-cluster-management:agent-registration-bootstrap",
 				"--bundle-version=latest",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
+			util.WaitClusterManagerApplied(operatorClient)
 
-			ginkgo.By("wait for cluster-manager CR to be created and update cluster-manager to enable grpc")
 			var clusterManager *operatorv1.ClusterManager
 			gomega.Eventually(func() error {
-				clusterManager, err = operatorClient.OperatorV1().ClusterManagers().Get(
-					context.TODO(), "cluster-manager", metav1.GetOptions{})
-				if err != nil {
-					return err
-				}
-
-				// Enable ManagedClusterAutoApproval feature gate
-				if clusterManager.Spec.RegistrationConfiguration == nil {
-					clusterManager.Spec.RegistrationConfiguration = &operatorv1.RegistrationHubConfiguration{}
-				}
-				clusterManager.Spec.RegistrationConfiguration.FeatureGates = append(
-					clusterManager.Spec.RegistrationConfiguration.FeatureGates,
-					operatorv1.FeatureGate{
-						Feature: "ManagedClusterAutoApproval",
-						Mode:    operatorv1.FeatureGateModeTypeEnable,
-					},
-				)
-
-				// Add grpc authType in registrationDrivers
-				clusterManager.Spec.RegistrationConfiguration.RegistrationDrivers = []operatorv1.RegistrationDriverHub{
-					{
-						AuthType: operatorv1.GRPCAuthType,
-						GRPC: &operatorv1.GRPCRegistrationConfig{
-							AutoApprovedIdentities: []string{
-								"system:serviceaccount:open-cluster-management:agent-registration-bootstrap",
-							},
-						},
-					},
-				}
-
-				// Add serverConfiguration with grpc protocol
-				clusterManager.Spec.ServerConfiguration = &operatorv1.ServerConfiguration{
-					EndpointsExposure: []operatorv1.EndpointExposure{
-						{
-							Protocol: "grpc",
-						},
-					},
-				}
-
-				_, err = operatorClient.OperatorV1().ClusterManagers().Update(
-					context.TODO(), clusterManager, metav1.UpdateOptions{})
+				clusterManager, err = operatorClient.OperatorV1().ClusterManagers().Get(context.TODO(),
+					"cluster-manager", metav1.GetOptions{})
 				return err
-			}, time.Second*30, time.Second*2).Should(gomega.Succeed())
+			}, time.Second*60, time.Second*2).Should(gomega.Succeed())
 
-			util.WaitClusterManagerApplied(operatorClient)
+			gomega.Expect(len(clusterManager.Spec.RegistrationConfiguration.RegistrationDrivers)).To(
+				gomega.Equal(2), "should have 2 registration drivers")
+
+			gomega.Expect(clusterManager.Spec.ServerConfiguration.EndpointsExposure[0].Protocol).To(
+				gomega.Equal("grpc"), "server config endpoint exposure protocol should be grpc")
 
 			ginkgo.By(fmt.Sprintf("join hub as managedCluster %s with grpc", e2e.Cluster().Hub().Name()))
 			err = e2e.Clusteradm().Join(

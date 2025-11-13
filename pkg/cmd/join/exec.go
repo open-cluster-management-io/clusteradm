@@ -36,8 +36,8 @@ import (
 	clusterv1 "open-cluster-management.io/api/cluster/v1"
 	ocmfeature "open-cluster-management.io/api/feature"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
-
 	"open-cluster-management.io/clusteradm/pkg/cmd/join/preflight"
+	"open-cluster-management.io/clusteradm/pkg/config"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/klusterlet"
@@ -48,13 +48,14 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
 	"open-cluster-management.io/clusteradm/pkg/version"
 	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
+	"open-cluster-management.io/sdk-go/pkg/cloudevents/generic/options/cert"
+	sdkgrpc "open-cluster-management.io/sdk-go/pkg/cloudevents/generic/options/grpc"
 	sdkhelpers "open-cluster-management.io/sdk-go/pkg/helpers"
 )
 
 const (
-	AgentNamespacePrefix = "open-cluster-management-"
-
-	OperatorNamesapce     = "open-cluster-management"
+	AgentNamespacePrefix  = "open-cluster-management-"
+	OperatorNamespace     = "open-cluster-management"
 	DefaultOperatorName   = "klusterlet"
 	AwsIrsaAuthentication = "awsirsa"
 )
@@ -191,7 +192,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		if err != nil {
 			return err
 		}
-		o.HubCADate = cabytes
+		o.HubCAData = cabytes
 	}
 
 	// code logic of building hub client in join process:
@@ -210,6 +211,12 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	o.HubConfig, err = o.createClientcmdapiv1Config(externalClientUnSecure, bootstrapExternalConfigUnSecure)
 	if err != nil {
 		return err
+	}
+
+	if o.grpcServer != "" {
+		if err = o.getGRPCCAData(externalClientUnSecure); err != nil {
+			return err
+		}
 	}
 
 	// get managed cluster externalServerURL
@@ -284,6 +291,11 @@ func (o *Options) validate() error {
 		return err
 	}
 
+	err = o.setGRPCConfig()
+	if err != nil {
+		return err
+	}
+
 	// get ManagedKubeconfig from given file
 	if o.mode == string(operatorv1.InstallModeHosted) {
 		managedConfig, err := os.ReadFile(o.managedKubeconfigFile)
@@ -323,8 +335,19 @@ func (o *Options) validate() error {
 		return err
 	}
 
-	if (o.registrationAuth == AwsIrsaAuthentication) && (o.hubClusterArn == "") {
-		return gherrors.New("hubClusterArn cannot be empty if registrationAuth type is awsirsa")
+	switch o.registrationAuth {
+	case operatorv1.AwsIrsaAuthType:
+		if o.hubClusterArn == "" {
+			return gherrors.New("hub-cluster-arn is required when registration-auth type is awsirsa")
+		}
+	case operatorv1.GRPCAuthType:
+		if o.grpcServer == "" {
+			return gherrors.New("grpc-server is required when registration-auth type is grpc")
+		}
+	case operatorv1.CSRAuthType:
+		// default auth type. do nothing
+	default:
+		return gherrors.New("invalid registration-Auth type")
 	}
 
 	return nil
@@ -395,7 +418,7 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient opera
 		o.klusterletChartConfig.NoOperator = true
 	}
 
-	crds, raw, err := chart.RenderKlusterletChart(o.klusterletChartConfig, OperatorNamesapce)
+	crds, raw, err := chart.RenderKlusterletChart(o.klusterletChartConfig, OperatorNamespace)
 	if err != nil {
 		return err
 	}
@@ -457,7 +480,7 @@ func checkIfRegistrationOperatorAvailable(f util.Factory) (bool, error) {
 		return false, err
 	}
 
-	deploy, err := client.AppsV1().Deployments(OperatorNamesapce).
+	deploy, err := client.AppsV1().Deployments(OperatorNamespace).
 		Get(context.TODO(), DefaultOperatorName, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -550,7 +573,7 @@ func waitUntilRegistrationOperatorConditionIsTrue(w io.Writer, f util.Factory, t
 
 	return helpers.WatchUntil(
 		func() (watch.Interface, error) {
-			return client.CoreV1().Pods(OperatorNamesapce).
+			return client.CoreV1().Pods(OperatorNamespace).
 				Watch(context.TODO(), metav1.ListOptions{
 					TimeoutSeconds: &timeout,
 					LabelSelector:  "app=klusterlet",
@@ -664,9 +687,9 @@ func (o *Options) createClientcmdapiv1Config(externalClientUnSecure *kubernetes.
 	bootstrapConfig := bootstrapExternalConfigUnSecure.DeepCopy()
 	bootstrapConfig.Clusters[0].Cluster.InsecureSkipTLSVerify = false
 	bootstrapConfig.Clusters[0].Cluster.Server = o.hubAPIServer
-	if o.HubCADate != nil {
+	if o.HubCAData != nil {
 		// directly set ca-data if --ca-file is set
-		bootstrapConfig.Clusters[0].Cluster.CertificateAuthorityData = o.HubCADate
+		bootstrapConfig.Clusters[0].Cluster.CertificateAuthorityData = o.HubCAData
 	} else {
 		// get ca data from externalClientUnsecure, ca may empty(cluster-info exists with no ca data)
 		ca, err := sdkhelpers.GetCACert(externalClientUnSecure)
@@ -710,6 +733,59 @@ func (o *Options) setKubeconfig() error {
 	}
 
 	o.klusterletChartConfig.BootstrapHubKubeConfig = string(bootstrapConfigBytes)
+	return nil
+}
+
+func (o *Options) setGRPCConfig() error {
+	if o.registrationAuth != operatorv1.GRPCAuthType {
+		return nil
+	}
+
+	gRPCConfig := sdkgrpc.GRPCConfig{
+		CertConfig: cert.CertConfig{
+			CAData: cert.Bytes(o.grpcCAData),
+		},
+		URL:   o.grpcServer,
+		Token: o.token,
+	}
+
+	configStr, err := yaml.Marshal(gRPCConfig)
+	if err != nil {
+		return fmt.Errorf("failed to marshal GRPC server configuration. %v", err)
+	}
+
+	o.klusterletChartConfig.GRPCConfig = string(configStr)
+	o.klusterletChartConfig.Klusterlet.RegistrationConfiguration.RegistrationDriver = operatorv1.RegistrationDriver{
+		AuthType: operatorv1.GRPCAuthType,
+	}
+	return nil
+}
+
+func (o *Options) getGRPCCAData(kubeClient kubernetes.Interface) error {
+	if o.grpcCAFile != "" {
+		caData, err := os.ReadFile(o.grpcCAFile)
+		if err != nil {
+			return fmt.Errorf("--grpc-ca-file %q read failed: %w", o.grpcCAFile, err)
+		}
+		if len(caData) == 0 {
+			return fmt.Errorf("--grpc-ca-file %q is empty", o.grpcCAFile)
+		}
+		o.grpcCAData = caData
+		return nil
+	}
+
+	cm, err := kubeClient.CoreV1().ConfigMaps(config.HubClusterNamespace).Get(context.TODO(),
+		config.CABundleConfigMap, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to get CA bundle configmap for gRPC server: %w", err)
+	}
+
+	caBundle, ok := cm.Data["ca-bundle.crt"]
+	if !ok || len(strings.TrimSpace(caBundle)) == 0 {
+		return fmt.Errorf("ConfigMap %s/%s is missing or has empty key 'ca-bundle.crt'",
+			config.HubClusterNamespace, config.CABundleConfigMap)
+	}
+	o.grpcCAData = []byte(caBundle)
 	return nil
 }
 

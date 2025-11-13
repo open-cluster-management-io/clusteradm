@@ -16,4 +16,5 @@ const (
 	ManagedClusterNamespace           = "open-cluster-management-agent"
 	ManagedProxyConfigurationName     = "cluster-proxy"
 	ImagePullSecret                   = "open-cluster-management-image-pull-credentials"
+	CABundleConfigMap                 = "ca-bundle-configmap"
 )

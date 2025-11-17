@@ -109,7 +109,7 @@ func getVersionBundle(version string) (VersionBundle, error) {
 	versionBundleList["1.1.1"] = VersionBundle{
 		OCM:                      "v1.1.1",
 		AppAddon:                 "v0.16.0",
-		PolicyAddon:              "v0.16.0",
+		PolicyAddon:              "v0.17.0",
 		MulticlusterControlplane: "v0.7.0",
 	}
 

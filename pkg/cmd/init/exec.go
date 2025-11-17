@@ -97,25 +97,38 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 					genericclioptionsclusteradm.HubMutableFeatureGate, ocmfeature.DefaultHubAddonManagerFeatureGates),
 			},
 		}
+
 		if sets.New[string](o.registrationDrivers...).Has(operatorv1.GRPCAuthType) {
-			if o.grpcServer == "" {
-				return fmt.Errorf("grpc server should not be empty if registration driver has grpc type")
+			endpoint := operatorv1.EndpointExposure{Protocol: operatorv1.GRPCAuthType}
+			switch o.grpcEndpointType {
+			case string(operatorv1.EndpointTypeHostname):
+				if o.grpcServer == "" {
+					return fmt.Errorf("grpc server should not be empty if the grpc endpoint type is hostname")
+				}
+				endpoint.GRPC = &operatorv1.Endpoint{
+					Type: operatorv1.EndpointTypeHostname,
+					Hostname: &operatorv1.HostnameConfig{
+						Host: o.grpcServer,
+					},
+				}
+			case string(operatorv1.EndpointTypeLoadBalancer):
+				endpoint.GRPC = &operatorv1.Endpoint{
+					Type: operatorv1.EndpointTypeLoadBalancer,
+					LoadBalancer: &operatorv1.LoadBalancerConfig{
+						Host: o.grpcServer,
+					},
+				}
+			default:
+				return fmt.Errorf("unknown grpc endpoint type %s", o.grpcEndpointType)
 			}
 
 			o.clusterManagerChartConfig.ClusterManager.ServerConfiguration = operatorv1.ServerConfiguration{
 				EndpointsExposure: []operatorv1.EndpointExposure{
-					{
-						Protocol: operatorv1.GRPCAuthType,
-						GRPC: &operatorv1.Endpoint{
-							Type: operatorv1.EndpointTypeHostname,
-							Hostname: &operatorv1.HostnameConfig{
-								Host: o.grpcServer,
-							},
-						},
-					},
+					endpoint,
 				},
 			}
 		}
+
 		o.clusterManagerChartConfig.CreateBootstrapToken = o.useBootstrapToken
 
 		if o.imagePullCredFile != "" {

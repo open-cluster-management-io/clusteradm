@@ -70,6 +70,8 @@ type Options struct {
 
 	// grpcServer is the gRPC server of the hub.
 	grpcServer string
+	// grpcEndpointType is the type of gRPC server endpoint. The supported types are hostname and loadBalancer.
+	grpcEndpointType string
 	// autoApprovedGRPCIdentities are a list of users or identities that are accepted and whatever matches can
 	// be auto accepted to join hub for grpc clusters.
 	autoApprovedGRPCIdentities []string

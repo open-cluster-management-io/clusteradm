@@ -101,6 +101,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		"List of AWS EKS ARN patterns so any EKS clusters with these patterns will be auto accepted to join with hub cluster")
 	cmd.Flags().BoolVar(&o.enableSyncLabels, "enable-sync-labels", false, "If true, sync the labels from clustermanager to all hub resources.")
 	cmd.Flags().StringVar(&o.grpcServer, "grpc-server", "", "The gRPC server address of the hub")
+	cmd.Flags().StringVar(&o.grpcEndpointType, "grpc-endpoint-type", "hostname", "The gRPC server endpoint type. The supported types are hostname and loadBalancer. The default type is hostname.")
 	cmd.Flags().StringSliceVar(&o.autoApprovedGRPCIdentities, "auto-approved-grpc-identities", []string{},
 		"List of users or identities that are accepted and whatever matches can be auto accepted to join hub for grpc clusters")
 	return cmd

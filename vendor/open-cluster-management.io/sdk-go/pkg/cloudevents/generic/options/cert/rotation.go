@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"os"
 	"reflect"
 	"sync"
 	"time"
@@ -26,8 +27,31 @@ type Connection interface {
 
 type reloadFunc func(*tls.CertificateRequestInfo) (*tls.Certificate, error)
 
-// CertCallbackRefreshDuration is exposed so that integration tests can crank up the reload speed.
+// CertCallbackRefreshDuration controls how frequently certificate callbacks reload.
+// Default is 5 minutes.
+//
+// NOTE: This can be overridden via the environment variable
+//
+//	CERT_CALLBACK_REFRESH_DURATION **for testing only**.
+//	Do NOT rely on this environment variable in production.
 var CertCallbackRefreshDuration = 5 * time.Minute
+
+func init() {
+	// TEST-ONLY OVERRIDE:
+	// Allow integration tests to reduce reload intervals by setting
+	// CERT_CALLBACK_REFRESH_DURATION to a valid Go duration string (e.g., "10s").
+	//
+	// If the variable is not set or is invalid, the default (5m) is preserved.
+	if v := os.Getenv("CERT_CALLBACK_REFRESH_DURATION"); v != "" {
+		d, err := time.ParseDuration(v)
+		if err != nil {
+			// Optional: log or print a warning
+			klog.Warningf("invalid CERT_CALLBACK_REFRESH_DURATION (%q): %v, using default\n", v, err)
+			return
+		}
+		CertCallbackRefreshDuration = d
+	}
+}
 
 type clientCertRotating struct {
 	sync.RWMutex
@@ -60,10 +84,12 @@ func (c *clientCertRotating) run(ctx context.Context) {
 	defer utilruntime.HandleCrash()
 	defer c.queue.ShutDown()
 
-	klog.V(3).Infof("Starting client certificate rotation controller")
-	defer klog.V(3).Infof("Shutting down client certificate rotation controller")
+	logger := klog.FromContext(ctx)
 
-	go wait.Until(c.runWorker, time.Second, ctx.Done())
+	logger.V(3).Info("Starting client certificate rotation controller")
+	defer logger.V(3).Info("Shutting down client certificate rotation controller")
+
+	go wait.UntilWithContext(ctx, c.runWorker, time.Second)
 
 	go func() {
 		if err := wait.PollUntilContextCancel(
@@ -82,19 +108,19 @@ func (c *clientCertRotating) run(ctx context.Context) {
 	<-ctx.Done()
 }
 
-func (c *clientCertRotating) runWorker() {
-	for c.processNextWorkItem() {
+func (c *clientCertRotating) runWorker(ctx context.Context) {
+	for c.processNextWorkItem(ctx) {
 	}
 }
 
-func (c *clientCertRotating) processNextWorkItem() bool {
+func (c *clientCertRotating) processNextWorkItem(ctx context.Context) bool {
 	dsKey, quit := c.queue.Get()
 	if quit {
 		return false
 	}
 	defer c.queue.Done(dsKey)
 
-	err := c.loadClientCert()
+	err := c.loadClientCert(ctx)
 	if err == nil {
 		c.queue.Forget(dsKey)
 		return true
@@ -107,7 +133,8 @@ func (c *clientCertRotating) processNextWorkItem() bool {
 }
 
 // loadClientCert calls the callback and rotates connections if needed
-func (c *clientCertRotating) loadClientCert() error {
+func (c *clientCertRotating) loadClientCert(ctx context.Context) error {
+	logger := klog.FromContext(ctx)
 	cert, err := c.reload(nil)
 	if err != nil {
 		return err
@@ -135,7 +162,7 @@ func (c *clientCertRotating) loadClientCert() error {
 		return fmt.Errorf("no connection close function set")
 	}
 
-	klog.V(1).Infof("certificate rotation detected, shutting down client connections to start using new credentials")
+	logger.V(1).Info("certificate rotation detected, shutting down client connections to start using new credentials")
 	c.conn.Close()
 
 	return nil

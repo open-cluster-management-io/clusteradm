@@ -92,6 +92,7 @@ func (o *Options) run() error {
 	}
 
 	crds, raw, err := chart.RenderClusterManagerChart(
+		context.TODO(),
 		o.clusterManagerChartConfig,
 		"open-cluster-management")
 	if err != nil {

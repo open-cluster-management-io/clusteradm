@@ -248,6 +248,7 @@ func (o *Options) run() error {
 
 		r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
 		crds, raw, err := chart.RenderClusterManagerChart(
+			context.TODO(),
 			o.clusterManagerChartConfig,
 			"open-cluster-management")
 		if err != nil {

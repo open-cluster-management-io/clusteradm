@@ -418,7 +418,7 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient opera
 		o.klusterletChartConfig.NoOperator = true
 	}
 
-	crds, raw, err := chart.RenderKlusterletChart(o.klusterletChartConfig, OperatorNamespace)
+	crds, raw, err := chart.RenderKlusterletChart(context.TODO(), o.klusterletChartConfig, OperatorNamespace)
 	if err != nil {
 		return err
 	}

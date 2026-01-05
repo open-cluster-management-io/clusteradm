@@ -112,6 +112,7 @@ func (o *Options) run() error {
 	}
 
 	crds, raw, err := chart.RenderKlusterletChart(
+		context.TODO(),
 		o.klusterletChartConfig,
 		"open-cluster-management")
 	if err != nil {

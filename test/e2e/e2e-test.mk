@@ -7,6 +7,7 @@ export MANAGED_CLUSTER1_NAME := ${PROJECT_NAME}-e2e-test-c1
 export HUB_CTX := kind-${HUB_NAME}
 export MANAGED_CLUSTER1_CTX := kind-${MANAGED_CLUSTER1_NAME}
 
+BUNDLE_VERSION?=latest
 
 clean-e2e: 
 	kind delete cluster --name ${HUB_NAME}
@@ -20,9 +21,9 @@ start-cluster:
 .PHONY: start-cluster 
 
 test-e2e: clean-e2e ensure-kubebuilder-tools ensure-ginkgo start-cluster deps install
-	$(GINKGO) -v --timeout 3600s \
-		$(if $(GINKGO_LABEL_FILTER),--label-filter="$(GINKGO_LABEL_FILTER)") \
-		./test/e2e/clusteradm
+	go test -c ./test/e2e/clusteradm
+	./clusteradm.test -test.v -ginkgo.v -test.timeout=3600s \
+	$(if $(GINKGO_LABEL_FILTER),-ginkgo.label-filter="$(GINKGO_LABEL_FILTER)") -bundle-version=$(BUNDLE_VERSION)
 .PHONY: test-e2e
 
 test-only:

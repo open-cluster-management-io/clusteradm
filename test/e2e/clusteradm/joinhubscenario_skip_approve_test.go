@@ -30,13 +30,12 @@ var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", ginkgo.La
 		var err error
 		ginkgo.It("should managedclusters join and accepted successfully", func() {
 			ginkgo.By("init hub with manual bootstrap token")
-			err = e2e.Clusteradm().Init(
+			clusterAdm := e2e.Clusteradm()
+			err = clusterAdm.Init(
 				"--timeout", "400",
 				"--context", e2e.Cluster().Hub().Context(),
-				"--bundle-version=latest",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
-			time.Sleep(1000000)
 			ginkgo.By("init files with manual bootstrap token")
 			files := []string{
 				"init/namespace.yaml",
@@ -48,7 +47,7 @@ var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", ginkgo.La
 			)
 
 			kubeConfigFlags := &genericclioptions.ConfigFlags{
-				KubeConfig: ptr.To[string](e2e.Kubeconfigpath),
+				KubeConfig: ptr.To[string](e2e.KubeConfigPath),
 				Context:    ptr.To[string](e2e.Cluster().Hub().Context()),
 			}
 			r := reader.NewResourceReader(cmdutil.NewFactory(kubeConfigFlags), false, genericiooptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr})
@@ -78,10 +77,9 @@ var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", ginkgo.La
 				return e2e.Clusteradm().Join(
 					"--context", e2e.Cluster().ManagedCluster1().Context(),
 					"--hub-token", token,
-					"--hub-apiserver", e2e.CommandResult().Host(),
+					"--hub-apiserver", clusterAdm.Result().Host(),
 					"--force-internal-endpoint-lookup",
 					"--cluster-name", e2e.Cluster().ManagedCluster1().Name(),
-					"--bundle-version=latest",
 					"--wait",
 				)
 			}, 2*time.Minute, 10*time.Second).Should(gomega.BeNil(), "managedcluster1 join error")

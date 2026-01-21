@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"open-cluster-management.io/clusteradm/pkg/version"
 	"os"
 	"time"
 
@@ -18,7 +19,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	clusterclient "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
-	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 	"open-cluster-management.io/clusteradm/pkg/config"
 )
@@ -44,28 +44,6 @@ func WaitNamespaceDeleted(restcfg *rest.Config, namespace string) error {
 	})
 }
 
-func WaitForManagedClusterAvailableStatusToChange(restcfg *rest.Config, clusterName string) error {
-	klusterClient, err := clusterclient.NewForConfig(restcfg)
-	if err != nil {
-		return err
-	}
-	return wait.PollUntilContextCancel(context.TODO(), 1*time.Second, true, func(ctx context.Context) (bool, error) {
-		managedCluster, err := klusterClient.ClusterV1().ManagedClusters().Get(context.TODO(), clusterName, metav1.GetOptions{})
-		if errors.IsNotFound(err) {
-			return true, nil
-		}
-		if err != nil {
-			return false, err
-		}
-
-		if !meta.IsStatusConditionTrue(managedCluster.Status.Conditions, clusterapiv1.ManagedClusterConditionAvailable) {
-			return true, nil
-		}
-
-		return false, nil
-	})
-}
-
 func DeleteClusterCSRs(restcfg *rest.Config) error {
 	clientset, err := kubernetes.NewForConfig(restcfg)
 	if err != nil {
@@ -75,29 +53,6 @@ func DeleteClusterCSRs(restcfg *rest.Config) error {
 	return clientset.CertificatesV1().CertificateSigningRequests().DeleteCollection(context.TODO(), metav1.DeleteOptions{}, metav1.ListOptions{
 		LabelSelector: "open-cluster-management.io/cluster-name",
 	})
-}
-
-func DeleteClusterFinalizers(restcfg *rest.Config) error {
-	clientset, err := clusterclient.NewForConfig(restcfg)
-	if err != nil {
-		return err
-	}
-
-	clusterList, err := clientset.ClusterV1().ManagedClusters().List(context.TODO(), metav1.ListOptions{})
-	if errors.IsNotFound(err) {
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-	for _, mcl := range clusterList.Items {
-		mcl.Finalizers = []string{}
-		_, err := clientset.ClusterV1().ManagedClusters().Update(context.TODO(), &mcl, metav1.UpdateOptions{})
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func WaitClustersDeleted(restcfg *rest.Config) error {
@@ -120,8 +75,6 @@ func WaitClustersDeleted(restcfg *rest.Config) error {
 				return err
 			}
 		}
-
-		fmt.Printf("wait for all clusters to be deleted: %+v\n", clusterList.Items)
 		return fmt.Errorf("not all clusters are deleted")
 	}, time.Second*300, time.Second*2).Should(gomega.Succeed())
 
@@ -160,17 +113,8 @@ func CleanupTestImagePullCredentialFile(fileName string) {
 	_ = os.Remove(fileName)
 }
 
-func GetE2eConfig() (*TestE2eConfig, error) {
-	return NewTestE2eConfig(
-		os.Getenv("KUBECONFIG"),
-		os.Getenv("HUB_NAME"), os.Getenv("HUB_CTX"),
-		os.Getenv("MANAGED_CLUSTER1_NAME"), os.Getenv("MANAGED_CLUSTER1_CTX"))
-}
-
-func WaitClusterManagerApplied(operatorClient operatorclient.Interface) {
-	e2eConf, err := GetE2eConfig()
-	gomega.Expect(err).NotTo(gomega.HaveOccurred())
-
+func WaitClusterManagerApplied(operatorClient operatorclient.Interface, e2eConf *TestE2eConfig) {
+	gomega.Expect(e2eConf).NotTo(gomega.BeNil())
 	kubeClient, err := kubernetes.NewForConfig(e2eConf.Cluster().hub.kubeConfig)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
@@ -209,16 +153,27 @@ func WaitClusterManagerApplied(operatorClient operatorclient.Interface) {
 	}, time.Second*60, time.Second*2).Should(gomega.Succeed())
 }
 
-func CheckOperatorAndAgentVersion(mcl1KubeClient *kubernetes.Clientset, operatorTag, registrationTag string) error {
+func CheckOperatorAndAgentVersion(mcl1KubeClient kubernetes.Interface, operatorBundleVersion, registrationBundleVersion string) error {
 	operator, err := mcl1KubeClient.AppsV1().Deployments("open-cluster-management").Get(context.TODO(), "klusterlet", metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
+
+	operatorVersion, err := version.GetVersionBundle(operatorBundleVersion, "")
+	if err != nil {
+		return err
+	}
+
 	if len(operator.Spec.Template.Spec.Containers) == 0 {
 		return fmt.Errorf("klusterlet deployment has no containers")
 	}
-	if operator.Spec.Template.Spec.Containers[0].Image != fmt.Sprintf("quay.io/open-cluster-management/registration-operator:%s", operatorTag) {
+	if operator.Spec.Template.Spec.Containers[0].Image != fmt.Sprintf("quay.io/open-cluster-management/registration-operator:%s", operatorVersion.OCM) {
 		return fmt.Errorf("version of the operator is not correct, get %s", operator.Spec.Template.Spec.Containers[0].Image)
+	}
+
+	registrationVersion, err := version.GetVersionBundle(registrationBundleVersion, "")
+	if err != nil {
+		return err
 	}
 
 	registration, err := mcl1KubeClient.AppsV1().Deployments("open-cluster-management-agent").Get(
@@ -229,8 +184,46 @@ func CheckOperatorAndAgentVersion(mcl1KubeClient *kubernetes.Clientset, operator
 	if len(registration.Spec.Template.Spec.Containers) == 0 {
 		return fmt.Errorf("klusterlet-registration-agent deployment has no containers")
 	}
-	if registration.Spec.Template.Spec.Containers[0].Image != fmt.Sprintf("quay.io/open-cluster-management/registration:%s", registrationTag) {
+	if registration.Spec.Template.Spec.Containers[0].Image != fmt.Sprintf("quay.io/open-cluster-management/registration:%s", registrationVersion.OCM) {
 		return fmt.Errorf("version of the registration agent is not correct, get %s", registration.Spec.Template.Spec.Containers[0].Image)
+	}
+
+	return nil
+}
+
+func CheckOperatorAndManagerVersion(hubKubeClient kubernetes.Interface, operatorBundleVersion, registrationBundleVersion string) error {
+	operator, err := hubKubeClient.AppsV1().Deployments("open-cluster-management").Get(context.TODO(), "cluster-manager", metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	operatorVersion, err := version.GetVersionBundle(operatorBundleVersion, "")
+	if err != nil {
+		return err
+	}
+
+	if len(operator.Spec.Template.Spec.Containers) == 0 {
+		return fmt.Errorf("cluster manager deployment has no containers")
+	}
+	if operator.Spec.Template.Spec.Containers[0].Image != fmt.Sprintf("quay.io/open-cluster-management/registration-operator:%s", operatorVersion.OCM) {
+		return fmt.Errorf("version of the operator is not correct, get %s", operator.Spec.Template.Spec.Containers[0].Image)
+	}
+
+	registrationVersion, err := version.GetVersionBundle(registrationBundleVersion, "")
+	if err != nil {
+		return err
+	}
+
+	registration, err := hubKubeClient.AppsV1().Deployments("open-cluster-management-hub").Get(
+		context.TODO(), "cluster-manager-registration-controller", metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	if len(registration.Spec.Template.Spec.Containers) == 0 {
+		return fmt.Errorf("cluster-manager-registration-controller deployment has no containers")
+	}
+	if registration.Spec.Template.Spec.Containers[0].Image != fmt.Sprintf("quay.io/open-cluster-management/registration:%s", registrationVersion.OCM) {
+		return fmt.Errorf("version of the registration controller is not correct, get %s", registration.Spec.Template.Spec.Containers[0].Image)
 	}
 
 	return nil

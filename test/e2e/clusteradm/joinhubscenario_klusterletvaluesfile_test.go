@@ -28,27 +28,26 @@ var _ = ginkgo.Describe("test clusteradm join with klusterlet values file", gink
 
 		ginkgo.It("should join with klusterlet chart values file", func() {
 			ginkgo.By("init hub")
-			err = e2e.Clusteradm().Init(
+			clusterAdm := e2e.Clusteradm()
+			err = clusterAdm.Init(
 				"--context", e2e.Cluster().Hub().Context(),
-				"--bundle-version=latest",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 
-			util.WaitClusterManagerApplied(operatorClient)
+			util.WaitClusterManagerApplied(operatorClient, e2e)
 
 			ginkgo.By("managedcluster1 join hub with klusterlet values file")
 
-			klusterletValuesFile, err := filepath.Abs(filepath.Join("testdata", "klusterlet-values-join.yaml"))
+			klusterletValuesFile, err := filepath.Abs(filepath.Join("test", "e2e", "clusteradm", "testdata", "klusterlet-values-join.yaml"))
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get absolute path for klusterlet values file")
 
 			err = e2e.Clusteradm().Join(
 				"--context", e2e.Cluster().ManagedCluster1().Context(),
-				"--hub-token", e2e.CommandResult().Token(),
-				"--hub-apiserver", e2e.CommandResult().Host(),
+				"--hub-token", clusterAdm.Result().Token(),
+				"--hub-apiserver", clusterAdm.Result().Host(),
 				"--cluster-name", e2e.Cluster().ManagedCluster1().Name(),
 				"--klusterlet-values-file", klusterletValuesFile,
 				"--wait",
-				"--bundle-version=latest",
 				"--force-internal-endpoint-lookup",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "managedcluster1 join with klusterlet values file error")

@@ -3,16 +3,15 @@ package util
 
 import (
 	"fmt"
+	"open-cluster-management.io/clusteradm/pkg/config"
 	"os"
 	"path"
 	"path/filepath"
-
-	"open-cluster-management.io/clusteradm/pkg/config"
 )
 
 // PrepareE2eEnvironment will init the e2e environment and join managedcluster1 to hub.
-func PrepareE2eEnvironment() (*TestE2eConfig, error) {
-	conf, err := initE2E()
+func PrepareE2eEnvironment(version string) (*TestE2eConfig, error) {
+	conf, err := initE2E(version)
 	if err != nil {
 		return nil, err
 	}
@@ -25,41 +24,63 @@ func PrepareE2eEnvironment() (*TestE2eConfig, error) {
 }
 
 // initE2E get environment variables and init e2e environment.
-func initE2E() (*TestE2eConfig, error) {
+func initE2E(version string) (*TestE2eConfig, error) {
 
 	pwd, err := os.Getwd()
 	if err != nil {
 		return nil, err
 	}
 	projectName := path.Base(path.Clean(path.Join(pwd, "..", "..", "..")))
-	if v := os.Getenv("HUB_NAME"); v == "" {
-		os.Setenv("HUB_NAME", projectName+"-e2e-test-hub")
-	}
-	if v := os.Getenv("HUB_CTX"); v == "" {
-		os.Setenv("HUB_CTX", "kind-"+os.Getenv("HUB_NAME"))
-	}
-	if v := os.Getenv("MANAGED_CLUSTER1_NAME"); v == "" {
-		os.Setenv("MANAGED_CLUSTER1_NAME", projectName+"-e2e-test-c1")
-	}
-	if v := os.Getenv("MANAGED_CLUSTER1_CTX"); v == "" {
-		os.Setenv("MANAGED_CLUSTER1_CTX", "kind-"+os.Getenv("MANAGED_CLUSTER1_NAME"))
-	}
 
-	if v := os.Getenv("KUBECONFIG"); v == "" {
+	var hubCtx, mcl1Ctx, kubeConfigPath, hubName, mcl1Name string
+
+	if hubName = os.Getenv("HUB_NAME"); hubName == "" {
+		hubName = projectName + "-e2e-test-hub"
+	}
+	if hubCtx = os.Getenv("HUB_CTX"); hubCtx == "" {
+		hubCtx = "kind-" + hubName
+	}
+	if mcl1Name = os.Getenv("MANAGED_CLUSTER1_NAME"); mcl1Name == "" {
+		mcl1Name = projectName + "-e2e-test-c1"
+	}
+	if mcl1Ctx = os.Getenv("MANAGED_CLUSTER1_CTX"); mcl1Ctx == "" {
+		mcl1Ctx = "kind-" + mcl1Name
+	}
+	if kubeConfigPath = os.Getenv("KUBECONFIG"); kubeConfigPath == "" {
 		home, err := os.UserHomeDir()
 		if err != nil {
 			return nil, err
 		}
-		os.Setenv("KUBECONFIG", filepath.Join(home, ".kube", "config"))
+		kubeConfigPath = filepath.Join(home, ".kube", "config")
 	}
 
-	e2eConf, err := NewTestE2eConfig(
-		os.Getenv("KUBECONFIG"),
-		os.Getenv("HUB_NAME"), os.Getenv("HUB_CTX"),
-		os.Getenv("MANAGED_CLUSTER1_NAME"), os.Getenv("MANAGED_CLUSTER1_CTX"),
-	)
+	hubConfig, err := buildConfigFromFlags(hubCtx, kubeConfigPath)
 	if err != nil {
 		return nil, err
+	}
+	mcl1Config, err := buildConfigFromFlags(mcl1Ctx, kubeConfigPath)
+	if err != nil {
+		return nil, err
+	}
+	ctx := clusterValues{
+		hub: &clusterConfig{
+			name:       hubName,
+			context:    hubCtx,
+			kubeConfig: hubConfig,
+		},
+		mcl1: &clusterConfig{
+			name:       mcl1Name,
+			context:    mcl1Ctx,
+			kubeConfig: mcl1Config,
+		},
+	}
+
+	e2eConf := &TestE2eConfig{
+		values: &values{
+			cv: &ctx,
+		},
+		version:        version,
+		KubeConfigPath: kubeConfigPath,
 	}
 
 	// clearenv set the e2e environment from initial state to empty
@@ -105,8 +126,6 @@ func initE2E() (*TestE2eConfig, error) {
 			return err
 		}
 
-		// clear token and apiserver value
-		e2eConf.clusteradm.h = HandledOutput{}
 		return nil
 	}
 	// ClearEnv will unjoin managed cluster1 and clean hub.
@@ -118,17 +137,17 @@ func initE2E() (*TestE2eConfig, error) {
 func (tec *TestE2eConfig) ResetEnv() error {
 	// ensure hub is initialized, and token and apiserver is set.
 	fmt.Println("ensure hub is initialized...")
-	err := tec.Clusteradm().Init(
+	clusterAdm := tec.Clusteradm()
+	err := clusterAdm.Init(
 		"--context", tec.Cluster().Hub().Context(),
 		"--use-bootstrap-token",
-		"--bundle-version=latest",
 		"--wait",
 	)
 	if err != nil {
 		return err
 	}
 
-	if tec.CommandResult() == nil || len(tec.CommandResult().RawCommand()) == 0 {
+	if clusterAdm.Result() == nil || len(clusterAdm.Result().RawCommand()) == 0 {
 		err = tec.Clusteradm().Get("token")
 		if err != nil {
 			return err
@@ -137,11 +156,10 @@ func (tec *TestE2eConfig) ResetEnv() error {
 
 	// ensure managed cluster1 is join-accepted
 	fmt.Println("ensure managed cluster1 is join and accepted...")
-	err = tec.Clusteradm().Join(
+	err = clusterAdm.Join(
 		"--context", tec.Cluster().ManagedCluster1().Context(),
-		"--hub-token", tec.CommandResult().Token(), "--hub-apiserver", tec.CommandResult().Host(),
+		"--hub-token", clusterAdm.Result().Token(), "--hub-apiserver", clusterAdm.Result().Host(),
 		"--cluster-name", tec.Cluster().ManagedCluster1().Name(),
-		"--bundle-version=latest",
 		"--wait",
 		"--force-internal-endpoint-lookup",
 	)
@@ -149,7 +167,7 @@ func (tec *TestE2eConfig) ResetEnv() error {
 		return err
 	}
 
-	err = tec.Clusteradm().Accept(
+	err = clusterAdm.Accept(
 		"--clusters", tec.Cluster().ManagedCluster1().Name(),
 		"--wait",
 		"--context", tec.Cluster().Hub().Context(),

@@ -14,10 +14,13 @@ import (
 var example = `
 ## Application Manager
 
-# Enable argocd addon on the given managed clusters in the specified namespace
+# Enable argocd addon (basic pull model) on the given managed clusters in the specified namespace
 %[1]s addon enable --names argocd --namespace namespace --clusters cluster1,cluster2
-# Enable argocd addon for specified clusters
+# Enable argocd addon (basic pull model) for specified clusters
 %[1]s addon enable --names argocd --clusters cluster1,cluster2
+
+# Enable argocd-agent-addon (advanced pull model) for specified clusters
+%[1]s addon enable --names argocd-agent-addon --clusters cluster1,cluster2
 
 ## Policy Framework
 

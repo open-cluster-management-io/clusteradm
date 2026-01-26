@@ -22,10 +22,19 @@ type clusteradmInterface interface {
 	Proxy(args ...string) error
 	Unjoin(args ...string) error
 	Upgrade(args ...string) error
+
+	WithVersion(string) clusteradmInterface
+	Result() *HandledOutput
 }
 
 type clusteradm struct {
-	h HandledOutput
+	h       HandledOutput
+	version string
+}
+
+func (adm *clusteradm) WithVersion(version string) clusteradmInterface {
+	adm.version = version
+	return adm
 }
 
 func (adm *clusteradm) Version() error {
@@ -34,11 +43,17 @@ func (adm *clusteradm) Version() error {
 }
 
 func (adm *clusteradm) Init(args ...string) error {
+	if adm.version != "" {
+		args = append(args, "--bundle-version="+adm.version)
+	}
 	fmt.Fprintln(os.Stdout, "clusteradm init ", args)
 	return newClusteradmCmd(true, &adm.h, "init", args...)
 }
 
 func (adm *clusteradm) Join(args ...string) error {
+	if adm.version != "" {
+		args = append(args, "--bundle-version="+adm.version)
+	}
 	fmt.Fprintln(os.Stdout, "clusteradm join ", args)
 	return newClusteradmCmd(false, &adm.h, "join", args...)
 }
@@ -84,8 +99,15 @@ func (adm *clusteradm) Unjoin(args ...string) error {
 }
 
 func (adm *clusteradm) Upgrade(args ...string) error {
+	if adm.version != "" {
+		args = append(args, "--bundle-version="+adm.version)
+	}
 	fmt.Fprintln(os.Stdout, "clusteradm upgrade", args)
 	return newClusteradmCmd(false, &adm.h, "upgrade", args...)
+}
+
+func (adm *clusteradm) Result() *HandledOutput {
+	return &adm.h
 }
 
 func newClusteradmCmd(flag bool, handled *HandledOutput, subcommand string, args ...string) error {

@@ -36,16 +36,16 @@ var _ = ginkgo.Describe("test clusteradm join with grpc", ginkgo.Label("join-hub
 
 		ginkgo.It("should managedCluster join with grpc", func() {
 			ginkgo.By("init hub")
-			err = e2e.Clusteradm().Init(
+			clusterAdm := e2e.Clusteradm()
+			err = clusterAdm.Init(
 				"--context", e2e.Cluster().Hub().Context(),
 				"--registration-drivers", "csr,grpc",
 				"--grpc-server", "cluster-manager-grpc-server.open-cluster-management-hub.svc:8090",
 				"--feature-gates=ManagedClusterAutoApproval=true",
 				"--auto-approved-grpc-identities", "system:serviceaccount:open-cluster-management:agent-registration-bootstrap",
-				"--bundle-version=latest",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
-			util.WaitClusterManagerApplied(operatorClient)
+			util.WaitClusterManagerApplied(operatorClient, e2e)
 
 			var clusterManager *operatorv1.ClusterManager
 			gomega.Eventually(func() error {
@@ -63,12 +63,11 @@ var _ = ginkgo.Describe("test clusteradm join with grpc", ginkgo.Label("join-hub
 			ginkgo.By(fmt.Sprintf("join hub as managedCluster %s with grpc", e2e.Cluster().Hub().Name()))
 			err = e2e.Clusteradm().Join(
 				"--context", e2e.Cluster().Hub().Context(),
-				"--hub-token", e2e.CommandResult().Token(),
-				"--hub-apiserver", e2e.CommandResult().Host(),
+				"--hub-token", clusterAdm.Result().Token(),
+				"--hub-apiserver", clusterAdm.Result().Host(),
 				"--registration-auth", operatorv1.GRPCAuthType,
 				"--grpc-server", "cluster-manager-grpc-server.open-cluster-management-hub.svc:8090",
 				"--cluster-name", e2e.Cluster().Hub().Name(),
-				"--bundle-version=latest",
 				"--force-internal-endpoint-lookup",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "managedCluster join error")

@@ -26,14 +26,13 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode"
 			err := e2e.Clusteradm().Init(
 				"--use-bootstrap-token",
 				"--context", e2e.Cluster().Hub().Context(),
-				"--bundle-version=latest",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 
 			cm, err := operatorClient.OperatorV1().ClusterManagers().Get(context.TODO(), "cluster-manager", metav1.GetOptions{})
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
-			util.WaitClusterManagerApplied(operatorClient)
+			util.WaitClusterManagerApplied(operatorClient, e2e)
 
 			// 2 featureGates: DefaultClusterSet and ResourceCleanup
 			gomega.Expect(len(cm.Spec.RegistrationConfiguration.FeatureGates)).Should(gomega.Equal(2))
@@ -41,7 +40,6 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode"
 			err = e2e.Clusteradm().Init(
 				"--use-bootstrap-token",
 				"--context", e2e.Cluster().Hub().Context(),
-				"--bundle-version=latest",
 				"--registration-drivers=awsirsa",
 				"--hub-cluster-arn=arn:aws:eks:us-west-2:123456789012:cluster/hub-cluster1",
 			)
@@ -56,7 +54,6 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode"
 			err = e2e.Clusteradm().Init(
 				"--use-bootstrap-token",
 				"--context", e2e.Cluster().Hub().Context(),
-				"--bundle-version=latest",
 				"--registration-drivers=awsirsa,csr",
 				"--hub-cluster-arn=arn:aws:eks:us-west-2:123456789012:cluster/hub-cluster1",
 				"--aws-resource-tags=product:v1:tenant:app-name=My-App,product:v1:tenant:created-by=Team-1",
@@ -82,7 +79,6 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode"
 			err = e2e.Clusteradm().Init(
 				"--use-bootstrap-token",
 				"--context", e2e.Cluster().Hub().Context(),
-				"--bundle-version=latest",
 				"--registration-drivers=awsirsa,csr",
 				"--hub-cluster-arn=arn:aws:eks:us-west-2:123456789012:cluster/hub-cluster1",
 				"--feature-gates=ManagedClusterAutoApproval=true",
@@ -112,7 +108,6 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode"
 				"--use-bootstrap-token",
 				"--context", e2e.Cluster().Hub().Context(),
 				"--feature-gates=ManagedClusterAutoApproval=true",
-				"--bundle-version=latest",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 			cm, err = operatorClient.OperatorV1().ClusterManagers().Get(context.TODO(), "cluster-manager", metav1.GetOptions{})
@@ -131,7 +126,6 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode"
 				"--use-bootstrap-token",
 				"--context", e2e.Cluster().Hub().Context(),
 				"--feature-gates=ManagedClusterAutoApproval=true",
-				"--bundle-version=latest",
 				"--image-pull-credential-file=./config.json",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")

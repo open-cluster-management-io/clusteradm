@@ -37,22 +37,21 @@ var _ = ginkgo.Describe("test clusteradm with addon create", ginkgo.Label("addon
 
 		ginkgo.It("should managedclusters join and accepted successfully", func() {
 			ginkgo.By("init hub with bootstrap token")
-			err = e2e.Clusteradm().Init(
+			clusterAdm := e2e.Clusteradm()
+			err = clusterAdm.Init(
 				"--use-bootstrap-token",
 				"--context", e2e.Cluster().Hub().Context(),
-				"--bundle-version=latest",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 
-			util.WaitClusterManagerApplied(operatorClient)
+			util.WaitClusterManagerApplied(operatorClient, e2e)
 
 			ginkgo.By("managedcluster1 join hub")
 			err = e2e.Clusteradm().Join(
 				"--context", e2e.Cluster().ManagedCluster1().Context(),
-				"--hub-token", e2e.CommandResult().Token(), "--hub-apiserver", e2e.CommandResult().Host(),
+				"--hub-token", clusterAdm.Result().Token(), "--hub-apiserver", clusterAdm.Result().Host(),
 				"--cluster-name", e2e.Cluster().ManagedCluster1().Name(),
 				"--wait",
-				"--bundle-version=latest",
 				"--force-internal-endpoint-lookup",
 				"--singleton",
 			)
@@ -94,7 +93,7 @@ var _ = ginkgo.Describe("test clusteradm with addon create", ginkgo.Label("addon
 				"create",
 				"test-nginx",
 				"-f",
-				"scenario/addon/nginx.yaml",
+				"test/e2e/clusteradm/scenario/addon/nginx.yaml",
 				"--hub-registration",
 				"--cluster-role-bind",
 				"configmap-reader",

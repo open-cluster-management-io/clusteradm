@@ -64,4 +64,6 @@ jobs:
       with:
         go-version: ${{ env.GO_VERSION }}
     - name: E2E Tests
-      run: make test-e2e
+      run: |
+        BUNDLE_VERSION=$([[ "${{ github.base_ref }}" == "main" ]] && echo latest || echo default) \
+        make test-e2e

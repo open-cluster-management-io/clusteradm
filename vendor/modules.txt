@@ -1270,12 +1270,12 @@ open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versio
 open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned/scheme
 open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned/typed/authentication/v1alpha1
 open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned/typed/authentication/v1beta1
-# open-cluster-management.io/ocm v1.1.1-0.20251105064423-d80ec55608e7
+# open-cluster-management.io/ocm v1.1.2
 ## explicit; go 1.24.0
 open-cluster-management.io/ocm/deploy/cluster-manager/chart
 open-cluster-management.io/ocm/deploy/klusterlet/chart
 open-cluster-management.io/ocm/pkg/operator/helpers/chart
-# open-cluster-management.io/sdk-go v1.1.0
+# open-cluster-management.io/sdk-go v1.1.1
 ## explicit; go 1.24.0
 open-cluster-management.io/sdk-go/pkg/apis/cluster/v1beta1
 open-cluster-management.io/sdk-go/pkg/apis/cluster/v1beta2

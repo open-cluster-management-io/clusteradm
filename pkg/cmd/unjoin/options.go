@@ -17,7 +17,11 @@ type Options struct {
 	purgeOperator bool
 	//The file to output the resources will be sent to the file.
 	outputFile string
-	values     Values
+	//Enable hub-side ManagedCluster cleanup
+	cleanupHub bool
+	//Path to hub kubeconfig file for hub cleanup
+	hubKubeconfig string
+	values        Values
 
 	Streams genericiooptions.IOStreams
 }

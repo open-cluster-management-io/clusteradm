@@ -12,10 +12,15 @@ import (
 )
 
 var example = `
-# Disable argocd addon on specified cluster
+# Disable argocd addon (basic pull model) on specified cluster
 %[1]s addon disable --names argocd --cluster cluster1
-# Disable argocd addon on multiple clusters
+# Disable argocd addon (basic pull model) on multiple clusters
 %[1]s addon disable --names argocd --clusters cluster1,cluster2
+
+# Disable argocd-agent-addon (advanced pull model) on specified cluster
+%[1]s addon disable --names argocd-agent-addon --cluster cluster1
+# Disable argocd-agent-addon (advanced pull model) on multiple clusters
+%[1]s addon disable --names argocd-agent-addon --clusters cluster1,cluster2
 
 ## Policy Framework
 

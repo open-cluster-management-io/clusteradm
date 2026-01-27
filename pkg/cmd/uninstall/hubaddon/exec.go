@@ -21,6 +21,8 @@ var (
 	argocdAddonName          = "argocd"
 	argocdNamespace          = "argocd"
 	argocdReleaseName        = "argocd-pull-integration"
+	argocdAgentAddonName     = "argocd-agent"
+	argocdAgentReleaseName   = "argocd-agent-addon"
 	policyFrameworkAddonName = "governance-policy-framework"
 )
 
@@ -41,7 +43,7 @@ func (o *Options) validate() (err error) {
 
 	names := strings.Split(o.names, ",")
 	for _, n := range names {
-		if n != argocdAddonName && n != policyFrameworkAddonName {
+		if n != argocdAddonName && n != argocdAgentAddonName && n != policyFrameworkAddonName {
 			return fmt.Errorf("invalid add-on name %s", n)
 		}
 	}
@@ -62,7 +64,7 @@ func (o *Options) run() error {
 
 	var filteredAddons []string
 	for _, a := range addons {
-		if a == argocdAddonName {
+		if a == argocdAddonName || a == argocdAgentAddonName {
 			if err := o.runWithHelmClient(a); err != nil {
 				return err
 			}
@@ -144,13 +146,24 @@ func (o *Options) checkExistingAddon(name string) error {
 }
 
 func (o *Options) runWithHelmClient(addon string) error {
-	if err := o.checkExistingAddon(addon); err != nil {
-		return err
-	}
-
 	if addon == argocdAddonName {
+		// Check for existing ManagedClusterAddOn named "argocd"
+		if err := o.checkExistingAddon(argocdAddonName); err != nil {
+			return err
+		}
 		o.Helm.WithNamespace(argocdNamespace)
 		if err := o.Helm.UninstallRelease(argocdReleaseName); err != nil {
+			return err
+		}
+	}
+
+	if addon == argocdAgentAddonName {
+		// Check for existing ManagedClusterAddOn named "argocd-agent-addon"
+		if err := o.checkExistingAddon(argocdAgentReleaseName); err != nil {
+			return err
+		}
+		o.Helm.WithNamespace(argocdNamespace)
+		if err := o.Helm.UninstallRelease(argocdAgentReleaseName); err != nil {
 			return err
 		}
 	}

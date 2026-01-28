@@ -192,6 +192,9 @@ spec:
                   - type
                   type: object
                 type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
               configReferences:
                 description: |-
                   configReferences is a list of current add-on configuration references.
@@ -279,6 +282,16 @@ spec:
                     - Customized
                     type: string
                 type: object
+              kubeClientDriver:
+                description: |-
+                  kubeClientDriver specifies the authentication driver used by the ManagedClusterAddOn
+                  for kubeClient registration when the signer name is `kubernetes.io/kube-apiserver-client`.
+                  Supported values are `csr` and `token`.
+                  The field is set by the agent to declare which authentication driver it is using.
+                enum:
+                - csr
+                - token
+                type: string
               namespace:
                 description: |-
                   namespace is the namespace on the managedcluster to put registration secret or lease for the addon. It is

@@ -172,6 +172,11 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		}
 	}
 
+	// set addon kubeclient registration driver (only if not using default csr)
+	if o.addonKubeClientRegistrationAuth != "csr" {
+		o.setAddonKubeClientRegistrationDriver()
+	}
+
 	o.klusterletChartConfig.Klusterlet.WorkConfiguration = operatorv1.WorkAgentConfiguration{
 		FeatureGates: genericclioptionsclusteradm.ConvertToFeatureGateAPI(
 			genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeWorkFeatureGates),
@@ -348,6 +353,18 @@ func (o *Options) validate() error {
 		// default auth type. do nothing
 	default:
 		return gherrors.New("invalid registration-Auth type")
+	}
+
+	// Validate addon kubeclient registration auth
+	switch o.addonKubeClientRegistrationAuth {
+	case "csr":
+		// default, no additional validation needed
+	case "token":
+		if o.addonTokenExpirationSeconds < 0 {
+			return gherrors.New("addon-token-expiration-seconds must be non-negative")
+		}
+	default:
+		return gherrors.New("invalid addon-kubeclient-registration-auth type. Must be 'csr' or 'token'")
 	}
 
 	return nil
@@ -874,4 +891,18 @@ func getManagedClusterArn(o *Options) (string, error) {
 		return "", fmt.Errorf("unable to retrieve managedClusterArn from kubeconfig")
 	}
 	return managedClusterArn, nil
+}
+
+func (o *Options) setAddonKubeClientRegistrationDriver() {
+	addonDriver := &operatorv1.AddOnRegistrationDriver{
+		AuthType: o.addonKubeClientRegistrationAuth,
+	}
+
+	if o.addonKubeClientRegistrationAuth == "token" && o.addonTokenExpirationSeconds > 0 {
+		addonDriver.Token = &operatorv1.TokenConfig{
+			ExpirationSeconds: o.addonTokenExpirationSeconds,
+		}
+	}
+
+	o.klusterletChartConfig.Klusterlet.RegistrationConfiguration.AddOnKubeClientRegistrationDriver = addonDriver
 }

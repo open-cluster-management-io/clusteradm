@@ -114,6 +114,12 @@ type Options struct {
 	// klusterletValuesFile is the path to a YAML file containing klusterlet Helm chart values.
 	// The values from the file override the default klusterlet chart values.
 	klusterletValuesFile string
+
+	// The type of authentication to use for kubeClient type addon registration
+	addonKubeClientRegistrationAuth string
+
+	// Token expiration seconds for addon registration
+	addonTokenExpirationSeconds int64
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Options {

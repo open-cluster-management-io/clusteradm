@@ -3,6 +3,7 @@ package v1beta1
 
 import (
 	"fmt"
+
 	certificates "k8s.io/api/certificates/v1"
 	"k8s.io/apimachinery/pkg/conversion"
 	"open-cluster-management.io/api/addon/v1alpha1"
@@ -98,9 +99,37 @@ func Convert_v1alpha1_ManagedClusterAddOnSpec_To_v1beta1_ManagedClusterAddOnSpec
 	return nil
 }
 
+func Convert_v1beta1_ManagedClusterAddOnStatus_To_v1alpha1_ManagedClusterAddOnStatus(in *ManagedClusterAddOnStatus, out *v1alpha1.ManagedClusterAddOnStatus, s conversion.Scope) error {
+	if err := autoConvert_v1beta1_ManagedClusterAddOnStatus_To_v1alpha1_ManagedClusterAddOnStatus(in, out, s); err != nil {
+		return err
+	}
+
+	// Extract the kubeClientDriver from kubeClient registration config to status level
+	for i := range in.Registrations {
+		if in.Registrations[i].Type == KubeClient && in.Registrations[i].KubeClient != nil {
+			out.KubeClientDriver = in.Registrations[i].KubeClient.Driver
+			break
+		}
+	}
+
+	return nil
+}
+
 func Convert_v1alpha1_ManagedClusterAddOnStatus_To_v1beta1_ManagedClusterAddOnStatus(in *v1alpha1.ManagedClusterAddOnStatus, out *ManagedClusterAddOnStatus, s conversion.Scope) error {
 	if err := autoConvert_v1alpha1_ManagedClusterAddOnStatus_To_v1beta1_ManagedClusterAddOnStatus(in, out, s); err != nil {
 		return err
+	}
+
+	// Set the kubeClientDriver from status level to the kubeClient registration config
+	if in.KubeClientDriver != "" {
+		for i := range out.Registrations {
+			if out.Registrations[i].Type == KubeClient {
+				if out.Registrations[i].KubeClient == nil {
+					out.Registrations[i].KubeClient = &KubeClientConfig{}
+				}
+				out.Registrations[i].KubeClient.Driver = in.KubeClientDriver
+			}
+		}
 	}
 
 	return nil
@@ -117,12 +146,13 @@ func Convert_v1beta1_RegistrationConfig_To_v1alpha1_RegistrationConfig(in *Regis
 			User:   in.KubeClient.Subject.User,
 			Groups: in.KubeClient.Subject.Groups,
 		}
+		// Driver is now handled at status level, not in RegistrationConfig
 	} else {
-		if in.CSR == nil {
-			return fmt.Errorf("nil CSR")
+		if in.CustomSigner == nil {
+			return fmt.Errorf("nil CustomSigner")
 		}
-		out.SignerName = in.CSR.SignerName
-		if err := Convert_v1beta1_Subject_To_v1alpha1_Subject(&in.CSR.Subject, &out.Subject, s); err != nil {
+		out.SignerName = in.CustomSigner.SignerName
+		if err := Convert_v1beta1_Subject_To_v1alpha1_Subject(&in.CustomSigner.Subject, &out.Subject, s); err != nil {
 			return err
 		}
 	}
@@ -141,10 +171,11 @@ func Convert_v1alpha1_RegistrationConfig_To_v1beta1_RegistrationConfig(in *v1alp
 					Groups: in.Subject.Groups,
 				},
 			},
+			// Driver is now handled at status level, not in RegistrationConfig
 		}
 	} else {
-		out.Type = CSR
-		out.CSR = &CSRConfig{
+		out.Type = CustomSigner
+		out.CustomSigner = &CustomSignerConfig{
 			SignerName: in.SignerName,
 			Subject: Subject{
 				BaseSubject: BaseSubject{

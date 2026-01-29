@@ -83,7 +83,7 @@ func (o *Options) convertToTree(obj runtime.Object, tree *printer.TreePrinter) *
 
 	if csList, ok := obj.(*clusterapiv1beta2.ManagedClusterSetList); ok {
 		for _, clusterset := range csList.Items {
-			boundNs, status := getFileds(clusterset, bindingMap[clusterset.Name])
+			boundNs, status, managedNs := getFileds(clusterset, bindingMap[clusterset.Name])
 			clusters, err := getter.listClustersByClusterSet(&clusterset)
 			if err != nil {
 				klog.Fatalf("Failed to list cluster in clusterset %s: %v", clusterset.Name, err)
@@ -92,6 +92,7 @@ func (o *Options) convertToTree(obj runtime.Object, tree *printer.TreePrinter) *
 			mp[".BoundNamespace"] = boundNs
 			mp[".Status"] = status
 			mp[".Clusters"] = clusters
+			mp[".ManagedNamespaces"] = managedNs
 			tree.AddFileds(clusterset.Name, &mp)
 		}
 	}
@@ -118,15 +119,16 @@ func (o *Options) converToTable(obj runtime.Object) *metav1.Table {
 			{Name: "Name", Type: "string"},
 			{Name: "Bound Namespaces", Type: "string"},
 			{Name: "Status", Type: "string"},
+			{Name: "Managed Namespaces", Type: "string"},
 		},
 		Rows: []metav1.TableRow{},
 	}
 
 	if csList, ok := obj.(*clusterapiv1beta2.ManagedClusterSetList); ok {
 		for _, clusterset := range csList.Items {
-			boundNs, status := getFileds(clusterset, bindingMap[clusterset.Name])
+			boundNs, status, managedNs := getFileds(clusterset, bindingMap[clusterset.Name])
 			row := metav1.TableRow{
-				Cells:  []interface{}{clusterset.Name, boundNs, status},
+				Cells:  []interface{}{clusterset.Name, boundNs, status, managedNs},
 				Object: runtime.RawExtension{Object: &clusterset},
 			}
 
@@ -137,9 +139,14 @@ func (o *Options) converToTable(obj runtime.Object) *metav1.Table {
 	return table
 }
 
-func getFileds(clusterset clusterapiv1beta2.ManagedClusterSet, bindings []string) (boundNs, status string) {
+func getFileds(clusterset clusterapiv1beta2.ManagedClusterSet, bindings []string) (boundNs, status string, managedNs []string) {
 	boundNs = strings.Join(bindings, ",")
 
+	managedNameSpace := clusterset.Spec.ManagedNamespaces
+	managedNs = make([]string, 0, len(managedNameSpace))
+	for _, ns := range managedNameSpace {
+		managedNs = append(managedNs, ns.Name)
+	}
 	emptyCond := meta.FindStatusCondition(clusterset.Status.Conditions, clusterapiv1beta2.ManagedClusterSetConditionEmpty)
 	if emptyCond != nil {
 		status = emptyCond.Message

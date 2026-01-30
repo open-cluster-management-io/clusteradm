@@ -4,6 +4,8 @@ package hubaddon
 import (
 	"context"
 	"fmt"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"os"
 	"strings"
 
@@ -24,14 +26,29 @@ var (
 	url                      = "https://open-cluster-management.io/helm-charts"
 	repoName                 = "ocm"
 	argocdAddonName          = "argocd"
-	argocdNamespace          = "argocd"
-	argocdReleaseName        = "argocd-pull-integration"
-	argocdChartName          = "argocd-pull-integration"
 	argocdAgentAddonName     = "argocd-agent"
-	argocdAgentReleaseName   = "argocd-agent-addon"
-	argocdAgentChartName     = "argocd-agent-addon"
 	policyFrameworkAddonName = "governance-policy-framework"
 )
+
+type addonChart struct {
+	chartName   string
+	releaseName string
+	namespace   string
+	version     string
+}
+
+var addonCharts = map[string]addonChart{
+	argocdAddonName: {
+		chartName:   "argocd-pull-integration",
+		releaseName: "argocd-pull-integration",
+		namespace:   "argocd",
+	},
+	argocdAgentAddonName: {
+		chartName:   "argocd-agent-addon",
+		releaseName: "argocd-agent-addon",
+		namespace:   "argocd",
+	},
+}
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	klog.V(1).InfoS("addon options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.names, "output-file", o.outputFile)
@@ -48,13 +65,6 @@ func (o *Options) validate() (err error) {
 		return fmt.Errorf("names is missing")
 	}
 
-	names := strings.Split(o.names, ",")
-	for _, n := range names {
-		if n != argocdAddonName && n != argocdAgentAddonName && n != policyFrameworkAddonName {
-			return fmt.Errorf("invalid add-on name %s", n)
-		}
-	}
-
 	versionBundle, err := version.GetVersionBundle(o.bundleVersion, o.versionBundleFile)
 	if err != nil {
 		return err
@@ -66,68 +76,54 @@ func (o *Options) validate() (err error) {
 }
 
 func (o *Options) run() error {
-	alreadyProvidedAddons := make(map[string]bool)
-	addons := make([]string, 0)
+	addonsToInstall := sets.New[string]()
 	names := strings.Split(o.names, ",")
 	for _, n := range names {
-		if _, ok := alreadyProvidedAddons[n]; !ok {
-			alreadyProvidedAddons[n] = true
-			addons = append(addons, strings.TrimSpace(n))
-		}
+		addonsToInstall.Insert(n)
 	}
 
-	var filteredAddons []string
-	for _, a := range addons {
-		if a == argocdAddonName || a == argocdAgentAddonName {
-			if err := o.runWithHelmClient(a); err != nil {
-				return err
+	var errs []error
+	for addon := range addonsToInstall {
+		if addon == policyFrameworkAddonName {
+			if err := o.installPolicyAddon(); err != nil {
+				errs = append(errs, err)
 			}
 		} else {
-			filteredAddons = append(filteredAddons, a)
+			if err := o.runWithHelmClient(addon); err != nil {
+				errs = append(errs, err)
+			}
 		}
 	}
-	addons = filteredAddons
-	if len(addons) == 0 {
-		return nil
-	}
 
-	o.values.HubAddons = addons
+	return utilerrors.NewAggregate(errs)
+}
 
-	klog.V(3).InfoS("values:", "addon", o.values.HubAddons)
-
+func (o *Options) installPolicyAddon() error {
 	if o.values.CreateNamespace {
 		if err := o.createNamespace(); err != nil {
 			return err
 		}
 	}
 
-	return o.runWithClient()
-}
-
-func (o *Options) runWithClient() error {
-
 	r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
-
-	for _, addon := range o.values.HubAddons {
-		files, ok := scenario.AddonDeploymentFiles[addon]
-		if !ok {
-			continue
-		}
-		err := r.Apply(scenario.Files, o.values, files.CRDFiles...)
-		if err != nil {
-			return fmt.Errorf("Error deploying %s CRDs: %w", addon, err)
-		}
-		err = r.Apply(scenario.Files, o.values, files.ConfigFiles...)
-		if err != nil {
-			return fmt.Errorf("Error deploying %s dependencies: %w", addon, err)
-		}
-		err = r.Apply(scenario.Files, o.values, files.DeploymentFiles...)
-		if err != nil {
-			return fmt.Errorf("Error deploying %s deployments: %w", addon, err)
-		}
-
-		fmt.Fprintf(o.Streams.Out, "Installing built-in %s add-on to the Hub cluster...\n", addon)
+	files, ok := scenario.AddonDeploymentFiles[policyFrameworkAddonName]
+	if !ok {
+		return fmt.Errorf("no policy framework addon")
 	}
+	err := r.Apply(scenario.Files, o.values, files.CRDFiles...)
+	if err != nil {
+		return fmt.Errorf("Error deploying %s CRDs: %w", policyFrameworkAddonName, err)
+	}
+	err = r.Apply(scenario.Files, o.values, files.ConfigFiles...)
+	if err != nil {
+		return fmt.Errorf("Error deploying %s dependencies: %w", policyFrameworkAddonName, err)
+	}
+	err = r.Apply(scenario.Files, o.values, files.DeploymentFiles...)
+	if err != nil {
+		return fmt.Errorf("Error deploying %s deployments: %w", policyFrameworkAddonName, err)
+	}
+
+	fmt.Fprintf(o.Streams.Out, "Installing built-in %s add-on to the Hub cluster...\n", policyFrameworkAddonName)
 
 	if len(o.outputFile) > 0 {
 		sh, err := os.OpenFile(o.outputFile, os.O_CREATE|os.O_WRONLY, 0755)
@@ -170,33 +166,29 @@ func (o *Options) createNamespace() error {
 }
 
 func (o *Options) runWithHelmClient(addon string) error {
-	if addon == argocdAddonName {
-		o.Helm.WithNamespace(argocdNamespace)
-		o.Helm.WithCreateNamespace(o.values.CreateNamespace)
-		if err := o.Helm.PrepareChart(repoName, url); err != nil {
-			return err
+	addonChartToInstall, ok := addonCharts[addon]
+	if !ok {
+		addonChartToInstall = addonChart{
+			chartName:   addon,
+			releaseName: addon,
+			namespace:   o.values.Namespace,
 		}
-
-		if o.ClusteradmFlags.DryRun {
-			o.Helm.SetValue("dryRun", "true")
-		}
-
-		o.Helm.InstallChart(argocdReleaseName, repoName, argocdChartName)
 	}
 
-	if addon == argocdAgentAddonName {
-		o.Helm.WithNamespace(argocdNamespace)
-		o.Helm.WithCreateNamespace(o.values.CreateNamespace)
-		if err := o.Helm.PrepareChart(repoName, url); err != nil {
-			return err
-		}
-
-		if o.ClusteradmFlags.DryRun {
-			o.Helm.SetValue("dryRun", "true")
-		}
-
-		o.Helm.InstallChart(argocdAgentReleaseName, repoName, argocdAgentChartName)
+	if addonChartToInstall.namespace != "" {
+		o.Helm.WithNamespace(addonChartToInstall.namespace)
 	}
+	o.Helm.WithCreateNamespace(o.values.CreateNamespace)
+
+	if err := o.Helm.PrepareChart(repoName, url); err != nil {
+		return err
+	}
+
+	if o.ClusteradmFlags.DryRun {
+		o.Helm.SetValue("dryRun", "true")
+	}
+
+	o.Helm.InstallChart(addonChartToInstall.releaseName, repoName, addonChartToInstall.chartName)
 
 	return nil
 }

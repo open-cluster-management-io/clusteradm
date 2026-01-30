@@ -94,7 +94,7 @@ func (o *Options) Run() (err error) {
 }
 
 func (o *Options) handleManagedNamespaces(clusterClient *clusterclientset.Clientset, clusterSet *clusterv1beta2.ManagedClusterSet) error {
-	fmt.Printf("Processing managed namespaces: %v\n", o.Namespaces)
+	fmt.Fprintf(o.Streams.Out, "Processing managed namespaces: %v\n", o.Namespaces)
 
 	// Initialize ManagedNamespaces slice if nil
 	if clusterSet.Spec.ManagedNamespaces == nil {
@@ -111,6 +111,7 @@ func (o *Options) handleManagedNamespaces(clusterClient *clusterclientset.Client
 	var existingNamespaces []string
 
 	for _, namespace := range o.Namespaces {
+		namespace = strings.TrimSpace(namespace)
 		// Validate namespace name (basic validation)
 		if len(namespace) == 0 {
 			fmt.Fprintf(o.Streams.ErrOut, "Warning: Empty namespace name provided, skipping\n")

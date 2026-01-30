@@ -23,7 +23,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd := &cobra.Command{
 		Use:   "set",
 		Short: "set clusters or managed namespaces to a clusterset",
-		Long: "after setting clusters or managed namespaces to a clusterset, the clusterset will contain the specified resources" +
+		Long: "after setting clusters or managed namespaces to a clusterset, the clusterset will contain the specified resources " +
 			"and in order to operate that clusterset we are supposed to bind it to an existing namespace",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
 		SilenceUsage: true,

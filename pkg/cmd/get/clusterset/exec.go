@@ -127,8 +127,9 @@ func (o *Options) converToTable(obj runtime.Object) *metav1.Table {
 	if csList, ok := obj.(*clusterapiv1beta2.ManagedClusterSetList); ok {
 		for _, clusterset := range csList.Items {
 			boundNs, status, managedNs := getFileds(clusterset, bindingMap[clusterset.Name])
+			managedNsStr := strings.Join(managedNs, ", ")
 			row := metav1.TableRow{
-				Cells:  []interface{}{clusterset.Name, boundNs, status, managedNs},
+				Cells:  []interface{}{clusterset.Name, boundNs, status, managedNsStr},
 				Object: runtime.RawExtension{Object: &clusterset},
 			}
 

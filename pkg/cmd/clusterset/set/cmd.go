@@ -22,9 +22,9 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 
 	cmd := &cobra.Command{
 		Use:   "set",
-		Short: "set clusters to a clusterset",
-		Long: "after setting cluster to a clusterset, clusterset contains 1 valid cluster, and in order to " +
-			"operate that clusterset we are supposed to bind it to an existing namespace",
+		Short: "set clusters or managed namespaces to a clusterset",
+		Long: "after setting clusters or managed namespaces to a clusterset, the clusterset will contain the specified resources" +
+			"and in order to operate that clusterset we are supposed to bind it to an existing namespace",
 		Example:      fmt.Sprintf(example, clusteradmhelpers.GetExampleHeader()),
 		SilenceUsage: true,
 		PreRunE: func(c *cobra.Command, args []string) error {
@@ -48,6 +48,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	}
 
 	cmd.Flags().StringSliceVar(&o.Clusters, "clusters", []string{}, "Names of the managed cluster to set to the clusterset (comma separated)")
+	cmd.Flags().StringSliceVar(&o.Namespaces, "namespaces", []string{}, "Managed namespaces to bind the clusterset to (comma separated)")
 
 	return cmd
 }

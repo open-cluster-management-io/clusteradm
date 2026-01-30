@@ -31,8 +31,8 @@ require (
 	open-cluster-management.io/api v1.2.0
 	open-cluster-management.io/cluster-proxy v0.7.0
 	open-cluster-management.io/managed-serviceaccount v0.8.0
-	open-cluster-management.io/ocm v1.1.1-0.20260128054152-9d1a993e2c6f
-	open-cluster-management.io/sdk-go v1.1.1-0.20260127092137-c07e0fafa331
+	open-cluster-management.io/ocm v1.2.0
+	open-cluster-management.io/sdk-go v1.2.0
 	sigs.k8s.io/apiserver-network-proxy v0.29.0
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.31.2
 	sigs.k8s.io/controller-runtime v0.22.4
@@ -134,16 +134,16 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.45.0 // indirect
-	golang.org/x/mod v0.29.0 // indirect
+	golang.org/x/crypto v0.46.0 // indirect
+	golang.org/x/mod v0.30.0 // indirect
 	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/oauth2 v0.32.0 // indirect
-	golang.org/x/sync v0.18.0 // indirect
-	golang.org/x/sys v0.38.0 // indirect
-	golang.org/x/term v0.37.0 // indirect
-	golang.org/x/text v0.31.0 // indirect
+	golang.org/x/sync v0.19.0 // indirect
+	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/term v0.38.0 // indirect
+	golang.org/x/text v0.32.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
-	golang.org/x/tools v0.38.0 // indirect
+	golang.org/x/tools v0.39.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251029180050-ab9386a59fda // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect

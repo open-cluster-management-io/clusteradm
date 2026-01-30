@@ -8,8 +8,7 @@ import (
 
 func TestGetVersionBundle(t *testing.T) {
 	expectedVersionBundle := VersionBundle{
-		OCM:                      "v0.16.1",
-		AppAddon:                 "v0.16.0",
+		OCM:                      "v1.1.1",
 		PolicyAddon:              "v0.16.0",
 		MulticlusterControlplane: "v0.7.0",
 	}
@@ -32,17 +31,17 @@ func TestGetVersionBundle(t *testing.T) {
 		},
 		{
 			name:              "specific version",
-			version:           "v0.16.0",
+			version:           "v1.1.0",
 			versionBundleFile: "",
 			expectedVersionBundle: func() VersionBundle {
 				b := expectedVersionBundle
-				b.OCM = "v0.16.0"
+				b.OCM = "v1.1.0"
 				return b
 			},
 		},
 		{
 			name:                  "override",
-			version:               "v0.16.0",
+			version:               "v1.1.0",
 			versionBundleFile:     "testdata/bundle-overrides.json",
 			expectedVersionBundle: func() VersionBundle { return expectedVersionBundle },
 		},

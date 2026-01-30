@@ -22,7 +22,6 @@ type AddonDeploymentFile struct {
 
 // Values: The values used in the template
 type Values struct {
-	HubAddons []string
 	// Namespace to install
 	Namespace string
 	// Version to install

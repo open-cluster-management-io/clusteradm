@@ -61,6 +61,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		"If set, the command will initialize the OCM control plan in foreground.")
 	cmd.Flags().StringVarP(&o.output, "output", "o", "text", "output foramt, should be json or text")
 	cmd.Flags().BoolVar(&o.singleton, "singleton", false, "If true, deploy singleton controlplane instead of cluster-manager. This is an alpha stage flag.")
+	_ = cmd.Flags().MarkDeprecated("singleton", "install via helm chart directly")
 	cmd.Flags().StringVar(&o.resourceQosClass, "resource-qos-class", "Default", "the resource QoS class of all the containers managed by the cluster manager and the cluster manager operator. Can be one of Default, BestEffort or ResourceRequirement.")
 	cmd.Flags().StringToStringVar(&o.resourceLimits, "resource-limits", nil, "the resource limits of all the containers managed by the cluster manager and the cluster manager operator, for example: cpu=800m,memory=800Mi")
 	cmd.Flags().StringToStringVar(&o.resourceRequests, "resource-requests", nil, "the resource requests of all the containers managed by the cluster manager and the cluster manager operator, for example: cpu=500m,memory=500Mi")
@@ -85,6 +86,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 
 	singletonSet := pflag.NewFlagSet("singletonSet", pflag.ExitOnError)
 	singletonSet.StringVar(&o.SingletonName, "singleton-name", "singleton-controlplane", "The name of the singleton control plane")
+	_ = cmd.Flags().MarkDeprecated("singleton-name", "install via helm chart directly")
 	_ = clusterManagerSet.SetAnnotation("singleton-name", "singletonSet", []string{})
 	o.Helm.AddFlags(singletonSet)
 	cmd.Flags().AddFlagSet(singletonSet)

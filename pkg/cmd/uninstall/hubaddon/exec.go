@@ -6,25 +6,18 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/klog/v2"
 
 	addonclientset "open-cluster-management.io/api/client/addon/clientset/versioned"
+	"open-cluster-management.io/clusteradm/pkg/helpers/parse"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"open-cluster-management.io/clusteradm/pkg/version"
 
-	"github.com/spf13/cobra"
-	"k8s.io/klog/v2"
-
+	clusteradmhubaddoninstall "open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon"
 	"open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
-)
-
-var (
-	argocdAddonName          = "argocd"
-	argocdNamespace          = "argocd"
-	argocdReleaseName        = "argocd-pull-integration"
-	argocdAgentAddonName     = "argocd-agent"
-	argocdAgentReleaseName   = "argocd-agent-addon"
-	policyFrameworkAddonName = "governance-policy-framework"
 )
 
 func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
@@ -38,13 +31,17 @@ func (o *Options) validate() (err error) {
 		return err
 	}
 
-	if len(o.names) == 0 {
+	addonNames := parse.ParseUniqueNames(o.names)
+	if len(addonNames) == 0 {
 		return fmt.Errorf("names is missing")
 	}
 
-	for _, n := range o.names {
-		if n != argocdAddonName && n != argocdAgentAddonName && n != policyFrameworkAddonName {
-			return fmt.Errorf("invalid add-on name %s", n)
+	for _, addonName := range addonNames {
+		if addonName == clusteradmhubaddoninstall.DeprecatedArgocdAgent {
+			// TODO: Remove following v1.5
+			klog.Warningf("'argocd-agent' is now 'argocd-agent-addon'. Update your scripts as needed.")
+		} else if _, ok := clusteradmhubaddoninstall.AddonCharts[addonName]; !ok {
+			klog.Warningf("provided addon name is not recognized: %s", addonName)
 		}
 	}
 
@@ -52,67 +49,78 @@ func (o *Options) validate() (err error) {
 }
 
 func (o *Options) run(ctx context.Context) error {
-	alreadyProvidedAddons := make(map[string]bool)
-	addons := make([]string, 0)
-	for _, n := range o.names {
-		if _, ok := alreadyProvidedAddons[n]; !ok {
-			alreadyProvidedAddons[n] = true
-			addons = append(addons, strings.TrimSpace(n))
+	var errs []error
+	for _, a := range parse.ParseUniqueNames(o.names) {
+		// TODO: Remove following v1.5
+		if a == clusteradmhubaddoninstall.DeprecatedArgocdAgent {
+			a = clusteradmhubaddoninstall.ArgocdAgentAddonName
 		}
-	}
-
-	var filteredAddons []string
-	for _, a := range addons {
-		if a == argocdAddonName || a == argocdAgentAddonName {
-			if err := o.runWithHelmClient(ctx, a); err != nil {
-				return err
+		if err := o.checkExistingAddon(ctx, a); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		if a == clusteradmhubaddoninstall.PolicyFrameworkAddonName {
+			err := o.uninstallPolicy()
+			if err != nil {
+				errs = append(errs, err)
 			}
 		} else {
-			filteredAddons = append(filteredAddons, a)
+			err := o.runWithHelmClient(a)
+			if err != nil {
+				errs = append(errs, err)
+			}
 		}
 	}
-	addons = filteredAddons
-	if len(addons) == 0 {
-		return nil
+
+	return utilerrors.NewAggregate(errs)
+}
+
+func (o *Options) uninstallPolicy() error {
+
+	r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
+
+	files, ok := scenario.AddonDeploymentFiles[clusteradmhubaddoninstall.PolicyFrameworkAddonName]
+	if !ok {
+		return fmt.Errorf("no add-ons found in files")
 	}
 
-	o.values.HubAddons = addons
 	// this needs to be set to render the manifests, but the version value
 	// does not matter.
 	o.values.BundleVersion, _ = version.GetVersionBundle("default", "")
 
-	klog.V(3).InfoS("values:", "addon", o.values.HubAddons)
-
-	return o.runWithClient(ctx)
-}
-
-func (o *Options) runWithClient(ctx context.Context) error {
-
-	r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
-
-	for _, addon := range o.values.HubAddons {
-		if err := o.checkExistingAddon(ctx, addon); err != nil {
-			return err
-		}
-		files, ok := scenario.AddonDeploymentFiles[addon]
-		if !ok {
-			continue
-		}
-
-		err := r.Delete(scenario.Files, o.values, files.ConfigFiles...)
-		if err != nil {
-			return err
-		}
-
-		err = r.Delete(scenario.Files, o.values, files.DeploymentFiles...)
-		if err != nil {
-			return err
-		}
-
-		fmt.Fprintf(o.Streams.Out, "Uninstalling built-in %s add-on from the Hub cluster...\n", addon)
+	err := r.Delete(scenario.Files, o.values, files.ConfigFiles...)
+	if err != nil {
+		return err
 	}
 
+	err = r.Delete(scenario.Files, o.values, files.DeploymentFiles...)
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprintf(o.Streams.Out, "Uninstalling built-in governance-policy-framework add-on from the Hub cluster...\n")
+
 	return nil
+}
+
+func (o *Options) runWithHelmClient(addon string) error {
+	addonChart, ok := clusteradmhubaddoninstall.AddonCharts[addon]
+	if !ok {
+		addonChart = clusteradmhubaddoninstall.AddonChart{
+			ReleaseName: addon,
+		}
+	}
+
+	if addonChart.ReleaseName == "" {
+		addonChart.ReleaseName = addonChart.ChartName
+	}
+
+	if addonChart.Namespace == "" {
+		addonChart.Namespace = o.values.Namespace
+	}
+
+	o.Helm.WithNamespace(addonChart.Namespace)
+	return o.Helm.UninstallRelease(addonChart.ReleaseName)
 }
 
 func (o *Options) checkExistingAddon(ctx context.Context, name string) error {
@@ -138,34 +146,9 @@ func (o *Options) checkExistingAddon(ctx context.Context, name string) error {
 		for _, addon := range addons.Items {
 			enabledClusters = append(enabledClusters, addon.Namespace)
 		}
-		return fmt.Errorf("there are still addons for %s enabled on some clusters, run `clusteradm addon disable --names %s "+
-			"--clusters %s` to disable addons", name, name, strings.Join(enabledClusters, ","))
+		return fmt.Errorf("there are still addons for %s enabled on some clusters. "+
+			"Run `clusteradm addon disable --names %s --clusters %s` to disable addons",
+			name, name, strings.Join(enabledClusters, ","))
 	}
-	return nil
-}
-
-func (o *Options) runWithHelmClient(ctx context.Context, addon string) error {
-	if addon == argocdAddonName {
-		// Check for existing ManagedClusterAddOn named "argocd"
-		if err := o.checkExistingAddon(ctx, argocdAddonName); err != nil {
-			return err
-		}
-		o.Helm.WithNamespace(argocdNamespace)
-		if err := o.Helm.UninstallRelease(argocdReleaseName); err != nil {
-			return err
-		}
-	}
-
-	if addon == argocdAgentAddonName {
-		// Check for existing ManagedClusterAddOn named "argocd-agent-addon"
-		if err := o.checkExistingAddon(ctx, argocdAgentReleaseName); err != nil {
-			return err
-		}
-		o.Helm.WithNamespace(argocdNamespace)
-		if err := o.Helm.UninstallRelease(argocdAgentReleaseName); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }

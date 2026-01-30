@@ -26,10 +26,8 @@ import (
 )
 
 const (
-	eventuallyTimeout    = 30 // seconds
-	eventuallyInterval   = 1  // seconds
-	consistentlyTimeout  = 3  // seconds
-	consistentlyInterval = 1  // seconds
+	eventuallyTimeout  = 30 // seconds
+	eventuallyInterval = 1  // seconds
 )
 
 var (

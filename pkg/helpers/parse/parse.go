@@ -18,3 +18,19 @@ func ParseLabels(labels []string) (map[string]string, error) {
 	}
 	return labelMap, nil
 }
+
+// ParseUniqueNames parses a comma-separated list
+// of names and returns a slice of unique non-empty names.
+func ParseUniqueNames(names []string) []string {
+	sawName := map[string]bool{}
+	nameList := []string{}
+	for _, n := range names {
+		name := strings.TrimSpace(n)
+		if name == "" || sawName[name] {
+			continue
+		}
+		sawName[name] = true
+		nameList = append(nameList, name)
+	}
+	return nameList
+}

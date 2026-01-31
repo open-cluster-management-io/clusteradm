@@ -509,7 +509,7 @@ go.yaml.in/yaml/v2
 # go.yaml.in/yaml/v3 v3.0.4
 ## explicit; go 1.16
 go.yaml.in/yaml/v3
-# golang.org/x/crypto v0.45.0
+# golang.org/x/crypto v0.46.0
 ## explicit; go 1.24.0
 golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blowfish
@@ -523,7 +523,7 @@ golang.org/x/crypto/openpgp/packet
 golang.org/x/crypto/openpgp/s2k
 golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/scrypt
-# golang.org/x/mod v0.29.0
+# golang.org/x/mod v0.30.0
 ## explicit; go 1.24.0
 golang.org/x/mod/semver
 # golang.org/x/net v0.47.0
@@ -553,20 +553,20 @@ golang.org/x/oauth2/google/internal/stsexchange
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sync v0.18.0
+# golang.org/x/sync v0.19.0
 ## explicit; go 1.24.0
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
-# golang.org/x/sys v0.38.0
+# golang.org/x/sys v0.39.0
 ## explicit; go 1.24.0
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
-# golang.org/x/term v0.37.0
+# golang.org/x/term v0.38.0
 ## explicit; go 1.24.0
 golang.org/x/term
-# golang.org/x/text v0.31.0
+# golang.org/x/text v0.32.0
 ## explicit; go 1.24.0
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
@@ -599,7 +599,7 @@ golang.org/x/text/unicode/norm
 # golang.org/x/time v0.14.0
 ## explicit; go 1.24.0
 golang.org/x/time/rate
-# golang.org/x/tools v0.38.0
+# golang.org/x/tools v0.39.0
 ## explicit; go 1.24.0
 golang.org/x/tools/cover
 golang.org/x/tools/go/ast/edge
@@ -1419,12 +1419,12 @@ open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versio
 open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned/scheme
 open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned/typed/authentication/v1alpha1
 open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned/typed/authentication/v1beta1
-# open-cluster-management.io/ocm v1.1.1-0.20260128054152-9d1a993e2c6f
+# open-cluster-management.io/ocm v1.2.0
 ## explicit; go 1.25.0
 open-cluster-management.io/ocm/deploy/cluster-manager/chart
 open-cluster-management.io/ocm/deploy/klusterlet/chart
 open-cluster-management.io/ocm/pkg/operator/helpers/chart
-# open-cluster-management.io/sdk-go v1.1.1-0.20260127092137-c07e0fafa331
+# open-cluster-management.io/sdk-go v1.2.0
 ## explicit; go 1.25.0
 open-cluster-management.io/sdk-go/pkg/apis/cluster/v1beta1
 open-cluster-management.io/sdk-go/pkg/apis/cluster/v1beta2

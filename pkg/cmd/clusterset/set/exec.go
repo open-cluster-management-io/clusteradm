@@ -4,10 +4,13 @@ package set
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
+	clusterapiv1 "open-cluster-management.io/api/cluster/v1"
+	clusterv1beta2 "open-cluster-management.io/api/cluster/v1beta2"
 )
 
 func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
@@ -30,8 +33,8 @@ func (o *Options) Validate() (err error) {
 		return err
 	}
 
-	if len(o.Clusters) == 0 {
-		return fmt.Errorf("cluster name must be specified in --clusters")
+	if len(o.Clusters) == 0 && len(o.Namespaces) == 0 {
+		return fmt.Errorf("at least one cluster (--clusters) or namespace (--namespaces) must be specified")
 	}
 
 	return nil
@@ -47,7 +50,7 @@ func (o *Options) Run() (err error) {
 		return err
 	}
 
-	_, err = clusterClient.ClusterV1beta2().ManagedClusterSets().Get(context.TODO(), o.Clusterset, metav1.GetOptions{})
+	clusterSet, err := clusterClient.ClusterV1beta2().ManagedClusterSets().Get(context.TODO(), o.Clusterset, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -81,5 +84,78 @@ func (o *Options) Run() (err error) {
 		}
 	}
 
+	if len(o.Namespaces) > 0 {
+		if err := o.handleManagedNamespaces(clusterClient, clusterSet); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (o *Options) handleManagedNamespaces(clusterClient *clusterclientset.Clientset, clusterSet *clusterv1beta2.ManagedClusterSet) error {
+	fmt.Fprintf(o.Streams.Out, "Processing managed namespaces: %v\n", o.Namespaces)
+
+	// Initialize ManagedNamespaces slice if nil
+	if clusterSet.Spec.ManagedNamespaces == nil {
+		clusterSet.Spec.ManagedNamespaces = []clusterapiv1.ManagedNamespaceConfig{}
+	}
+
+	// Build lookup map of existing namespace names
+	existingMap := make(map[string]struct{}, len(clusterSet.Spec.ManagedNamespaces))
+	for _, ns := range clusterSet.Spec.ManagedNamespaces {
+		existingMap[ns.Name] = struct{}{}
+	}
+
+	var addedNamespaces []string
+	var existingNamespaces []string
+
+	for _, namespace := range o.Namespaces {
+		namespace = strings.TrimSpace(namespace)
+		// Validate namespace name (basic validation)
+		if len(namespace) == 0 {
+			fmt.Fprintf(o.Streams.ErrOut, "Warning: Empty namespace name provided, skipping\n")
+			continue
+		}
+
+		// Check if namespace already exists
+		if _, exists := existingMap[namespace]; exists {
+			existingNamespaces = append(existingNamespaces, namespace)
+			fmt.Fprintf(o.Streams.Out, "Managed namespace %s already exists in Clusterset %s\n", namespace, o.Clusterset)
+			continue
+		}
+
+		// Add the new managed namespace
+		clusterSet.Spec.ManagedNamespaces = append(clusterSet.Spec.ManagedNamespaces,
+			clusterapiv1.ManagedNamespaceConfig{
+				Name: namespace,
+			})
+
+		existingMap[namespace] = struct{}{}
+		addedNamespaces = append(addedNamespaces, namespace)
+	}
+	if len(addedNamespaces) > 0 {
+		// Update the clusterset with new managed namespaces
+		updatedClusterSet, err := clusterClient.ClusterV1beta2().ManagedClusterSets().Update(
+			context.TODO(),
+			clusterSet,
+			metav1.UpdateOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to update clusterset with managed namespaces: %v", err)
+		}
+
+		// Print success messages
+		fmt.Fprintf(o.Streams.Out, "\nSuccessfully updated Clusterset %s\n", o.Clusterset)
+		fmt.Fprintf(o.Streams.Out, "Added %d managed namespace(s): %s\n",
+			len(addedNamespaces), strings.Join(addedNamespaces, ", "))
+
+		// Show total managed namespaces
+		fmt.Fprintf(o.Streams.Out, "Total managed namespaces in clusterset: %d\n",
+			len(updatedClusterSet.Spec.ManagedNamespaces))
+	} else if len(existingNamespaces) > 0 {
+		fmt.Fprintf(o.Streams.Out, "\nAll specified namespaces already exist in Clusterset %s\n", o.Clusterset)
+	} else {
+		fmt.Fprintf(o.Streams.Out, "\nNo changes made to Clusterset %s\n", o.Clusterset)
+	}
 	return nil
 }

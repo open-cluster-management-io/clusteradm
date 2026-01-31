@@ -14,6 +14,8 @@ type Options struct {
 
 	Clusters []string
 
+	Namespaces []string
+
 	Clusterset string
 }
 
@@ -22,5 +24,6 @@ func NewOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, st
 		ClusteradmFlags: clusteradmFlags,
 		Streams:         streams,
 		Clusters:        []string{},
+		Namespaces:      []string{},
 	}
 }

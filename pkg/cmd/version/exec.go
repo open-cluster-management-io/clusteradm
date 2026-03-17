@@ -3,13 +3,12 @@ package version
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"open-cluster-management.io/clusteradm/pkg/version"
 )
 
-func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 	return nil
 }
 
@@ -18,18 +17,10 @@ func (o *Options) validate() error {
 }
 
 func (o *Options) run() (err error) {
-	fmt.Printf("client\t\tversion\t:%s\n", strings.Trim(version.Get().GitVersion, "\n"))
-	discoveryClient, err := o.ClusteradmFlags.KubectlFactory.ToDiscoveryClient()
-	if err != nil {
-		return err
-	}
-	serverVersion, err := discoveryClient.ServerVersion()
-	if err != nil {
-		return err
-	}
-	fmt.Printf("server release\tversion\t:%s\n", serverVersion.GitVersion)
-
 	bundleVersion := version.GetDefaultBundleVersion()
+
+	fmt.Printf("clusteradm\tversion\t:%s\n", version.Get().GitVersion)
 	fmt.Printf("default bundle\tversion\t:%s\n", bundleVersion)
+
 	return nil
 }

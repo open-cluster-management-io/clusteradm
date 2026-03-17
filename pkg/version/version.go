@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"runtime/debug"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/version"
@@ -29,13 +30,50 @@ var (
 // Get returns the overall codebase version. It's for detecting
 // what code a binary was built from.
 func Get() version.Info {
+	gitVersion := versionFromGit
+	gitCommit := commitFromGit
+
+	if gitVersion == "" {
+		if info, ok := debug.ReadBuildInfo(); ok {
+			gitVersion, gitCommit = versionFromBuildInfo(info, gitCommit)
+		}
+	}
+	gitVersion = strings.Trim(gitVersion, "\n")
+
 	return version.Info{
 		Major:      majorFromGit,
 		Minor:      minorFromGit,
-		GitCommit:  commitFromGit,
-		GitVersion: versionFromGit,
+		GitCommit:  gitCommit,
+		GitVersion: gitVersion,
 		BuildDate:  buildDate,
 	}
+}
+
+// versionFromBuildInfo extracts version and commit information from
+// Go's embedded build metadata, used as a fallback when ldflags are
+// not set (e.g. binary installed via go install).
+func versionFromBuildInfo(info *debug.BuildInfo, fallbackCommit string) (string, string) {
+	gitVersion := ""
+	gitCommit := fallbackCommit
+
+	if info.Main.Version != "" && info.Main.Version != "(devel)" {
+		gitVersion = info.Main.Version
+	}
+
+	for _, s := range info.Settings {
+		switch s.Key {
+		case "vcs.revision":
+			if gitCommit == "" && len(s.Value) >= 7 {
+				gitCommit = s.Value[:7]
+			}
+		case "vcs.modified":
+			if s.Value == "true" && gitVersion != "" {
+				gitVersion += "-dirty"
+			}
+		}
+	}
+
+	return gitVersion, gitCommit
 }
 
 type VersionBundle struct {
@@ -43,7 +81,7 @@ type VersionBundle struct {
 	PolicyAddon string `json:"policy_addon"`
 }
 
-var defaultBundleVersion = "1.2.0"
+var defaultBundleVersion = "1.2.1"
 
 func GetDefaultBundleVersion() string {
 	return defaultBundleVersion
@@ -98,6 +136,11 @@ func getVersionBundle(version string) (VersionBundle, error) {
 
 	versionBundleList["1.2.0"] = VersionBundle{
 		OCM:         "v1.2.0",
+		PolicyAddon: "v0.18.0",
+	}
+
+	versionBundleList["1.2.1"] = VersionBundle{
+		OCM:         "v1.2.1",
 		PolicyAddon: "v0.18.0",
 	}
 

@@ -77,9 +77,8 @@ func versionFromBuildInfo(info *debug.BuildInfo, fallbackCommit string) (string,
 }
 
 type VersionBundle struct {
-	OCM                      string `json:"ocm"`
-	PolicyAddon              string `json:"policy_addon"`
-	MulticlusterControlplane string `json:"multicluster_controlplane"`
+	OCM         string `json:"ocm"`
+	PolicyAddon string `json:"policy_addon"`
 }
 
 var defaultBundleVersion = "1.2.0"
@@ -114,35 +113,30 @@ func getVersionBundle(version string) (VersionBundle, error) {
 
 	// latest
 	versionBundleList["latest"] = VersionBundle{
-		OCM:                      "latest",
-		PolicyAddon:              "latest",
-		MulticlusterControlplane: "latest",
+		OCM:         "latest",
+		PolicyAddon: "latest",
 	}
 
 	// predefined bundle version
 	// TODO: automated version tracking
 	versionBundleList["1.0.0"] = VersionBundle{
-		OCM:                      "v1.0.0",
-		PolicyAddon:              "v0.16.0",
-		MulticlusterControlplane: "v0.7.0",
+		OCM:         "v1.0.0",
+		PolicyAddon: "v0.16.0",
 	}
 
 	versionBundleList["1.1.0"] = VersionBundle{
-		OCM:                      "v1.1.0",
-		PolicyAddon:              "v0.16.0",
-		MulticlusterControlplane: "v0.7.0",
+		OCM:         "v1.1.0",
+		PolicyAddon: "v0.16.0",
 	}
 
 	versionBundleList["1.1.1"] = VersionBundle{
-		OCM:                      "v1.1.1",
-		PolicyAddon:              "v0.17.0",
-		MulticlusterControlplane: "v0.7.0",
+		OCM:         "v1.1.1",
+		PolicyAddon: "v0.17.0",
 	}
 
 	versionBundleList["1.2.0"] = VersionBundle{
-		OCM:                      "v1.2.0",
-		PolicyAddon:              "v0.18.0",
-		MulticlusterControlplane: "v0.7.0",
+		OCM:         "v1.2.0",
+		PolicyAddon: "v0.18.0",
 	}
 
 	// default

@@ -121,9 +121,8 @@ func TestVersionFromBuildInfo(t *testing.T) {
 
 func TestGetVersionBundle(t *testing.T) {
 	expectedVersionBundle := VersionBundle{
-		OCM:                      "v1.1.1",
-		PolicyAddon:              "v0.16.0",
-		MulticlusterControlplane: "v0.7.0",
+		OCM:         "v1.1.1",
+		PolicyAddon: "v0.16.0",
 	}
 
 	tests := []struct {

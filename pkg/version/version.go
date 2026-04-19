@@ -124,6 +124,11 @@ func getVersionBundle(version string) (VersionBundle, error) {
 		PolicyAddon: "v0.16.0",
 	}
 
+	versionBundleList["1.0.1"] = VersionBundle{
+		OCM:         "v1.0.1",
+		PolicyAddon: "v0.16.0",
+	}
+
 	versionBundleList["1.1.0"] = VersionBundle{
 		OCM:         "v1.1.0",
 		PolicyAddon: "v0.16.0",
@@ -131,6 +136,11 @@ func getVersionBundle(version string) (VersionBundle, error) {
 
 	versionBundleList["1.1.1"] = VersionBundle{
 		OCM:         "v1.1.1",
+		PolicyAddon: "v0.17.0",
+	}
+
+	versionBundleList["1.1.3"] = VersionBundle{
+		OCM:         "v1.1.3",
 		PolicyAddon: "v0.17.0",
 	}
 

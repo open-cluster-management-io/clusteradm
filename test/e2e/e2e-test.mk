@@ -20,7 +20,7 @@ start-cluster:
 	kind create cluster --name ${HUB_NAME} --image kindest/node:v1.24.0
 .PHONY: start-cluster 
 
-test-e2e: clean-e2e ensure-kubebuilder-tools ensure-ginkgo start-cluster deps install
+test-e2e: clean-e2e envtest-setup ensure-ginkgo start-cluster deps install
 	go test -c ./test/e2e/clusteradm
 	./clusteradm.test -test.v -ginkgo.v -test.timeout=3600s \
 	$(if $(GINKGO_LABEL_FILTER),-ginkgo.label-filter="$(GINKGO_LABEL_FILTER)") -bundle-version=$(BUNDLE_VERSION)

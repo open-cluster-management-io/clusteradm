@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	certutil "k8s.io/client-go/util/cert"
 	"k8s.io/klog/v2"
@@ -245,6 +246,12 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	}
 
 	klusterletApiserver, err := sdkhelpers.GetAPIServer(kubeClient)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			o.createClusterInfoConfigMapIfMissing(kubeClient)
+			klusterletApiserver, err = sdkhelpers.GetAPIServer(kubeClient)
+		}
+	}
 	if err != nil {
 		klog.Warningf("Failed looking for cluster endpoint for the registering klusterlet: %v", err)
 		klusterletApiserver = ""
@@ -686,6 +693,77 @@ func (o *Options) createExternalBootstrapConfig() clientcmdapiv1.Config {
 		},
 		CurrentContext: "bootstrap",
 	}
+}
+
+func (o *Options) createClusterInfoConfigMapIfMissing(kubeClient kubernetes.Interface) {
+	currentCluster, err := o.loadCurrentManagedCluster()
+	if err != nil {
+		klog.Warningf("Failed to load cluster info from kubeconfig for creating ConfigMap/cluster-info in namespace kube-public: %v", err)
+		return
+	}
+
+	kubeconfig := &clientcmdapi.Config{Clusters: map[string]*clientcmdapi.Cluster{"": currentCluster}}
+	if err := clientcmdapi.FlattenConfig(kubeconfig); err != nil {
+		klog.Warningf("Failed to flatten kubeconfig for ConfigMap/cluster-info in namespace kube-public: %v", err)
+		return
+	}
+
+	kubeconfigBytes, err := clientcmd.Write(*kubeconfig)
+	if err != nil {
+		klog.Warningf("Failed to write kubeconfig for ConfigMap/cluster-info in namespace kube-public: %v", err)
+		return
+	}
+
+	immutable := true
+	clusterInfo := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "cluster-info",
+			Namespace: metav1.NamespacePublic,
+		},
+		Immutable: &immutable,
+		Data: map[string]string{
+			"kubeconfig": string(kubeconfigBytes),
+		},
+	}
+
+	if _, err := kubeClient.CoreV1().ConfigMaps(metav1.NamespacePublic).Create(context.TODO(), clusterInfo, metav1.CreateOptions{}); err != nil {
+		if errors.IsAlreadyExists(err) {
+			return
+		}
+		klog.Warningf("Failed to create ConfigMap/cluster-info in namespace kube-public: %v", err)
+		return
+	}
+	klog.Infof("Created ConfigMap/cluster-info in namespace kube-public")
+}
+
+func (o *Options) loadCurrentManagedCluster() (*clientcmdapi.Cluster, error) {
+	switch o.mode {
+	case string(operatorv1.InstallModeHosted):
+		config, err := clientcmd.LoadFromFile(o.managedKubeconfigFile)
+		if err != nil {
+			return nil, err
+		}
+		return loadCurrentCluster(config)
+	default:
+		config, err := o.ClusteradmFlags.KubectlFactory.ToRawKubeConfigLoader().RawConfig()
+		if err != nil {
+			return nil, err
+		}
+		return loadCurrentCluster(&config)
+	}
+}
+
+func loadCurrentCluster(config *clientcmdapi.Config) (*clientcmdapi.Cluster, error) {
+	currentCtx, exists := config.Contexts[config.CurrentContext]
+	if !exists {
+		return nil, fmt.Errorf("failed to find current context in kubeconfig")
+	}
+
+	currentCluster, exists := config.Clusters[currentCtx.Cluster]
+	if !exists {
+		return nil, fmt.Errorf("failed to find current cluster in kubeconfig")
+	}
+	return currentCluster, nil
 }
 
 func (o *Options) createClientcmdapiv1Config(externalClientUnSecure *kubernetes.Clientset,

@@ -37,6 +37,9 @@ func TestMergeClusterManagerValues(t *testing.T) {
 				if !cfg.EnableSyncLabels {
 					t.Error("EnableSyncLabels: want true")
 				}
+				if !cfg.ClusterManager.Create {
+					t.Error("ClusterManager.Create: want default true preserved (merge into existing config, not replace)")
+				}
 			},
 		},
 		{

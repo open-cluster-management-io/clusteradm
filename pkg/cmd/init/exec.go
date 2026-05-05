@@ -23,6 +23,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/config"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
+	"open-cluster-management.io/clusteradm/pkg/helpers/clustermanager"
 	"open-cluster-management.io/clusteradm/pkg/helpers/helm"
 	clusteradmjson "open-cluster-management.io/clusteradm/pkg/helpers/json"
 	preflightinterface "open-cluster-management.io/clusteradm/pkg/helpers/preflight"
@@ -244,6 +245,12 @@ func (o *Options) run() error {
 			o.clusterManagerChartConfig.CreateBootstrapSA = true
 		} else {
 			o.clusterManagerChartConfig.CreateBootstrapToken = true
+		}
+
+		if o.clusterManagerValuesFile != "" {
+			if err := clustermanager.MergeClusterManagerValues(o.clusterManagerValuesFile, o.clusterManagerChartConfig); err != nil {
+				return fmt.Errorf("failed to merge cluster-manager values file: %w", err)
+			}
 		}
 
 		r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)

@@ -253,6 +253,18 @@ func (o *Options) run() error {
 			}
 		}
 
+		// A values file can set both createBootstrapSA and createBootstrapToken to false, which matches the chart
+		// but breaks join token retrieval below (it follows --use-bootstrap-token, not the chart defaults).
+		if !o.ClusteradmFlags.DryRun && !o.clusterManagerChartConfig.CreateBootstrapSA && !o.clusterManagerChartConfig.CreateBootstrapToken {
+			klog.V(1).InfoS("cluster-manager values disabled both bootstrap resources; reapplying bootstrap settings from --use-bootstrap-token for join token retrieval",
+				"useBootstrapToken", o.useBootstrapToken)
+			if !o.useBootstrapToken {
+				o.clusterManagerChartConfig.CreateBootstrapSA = true
+			} else {
+				o.clusterManagerChartConfig.CreateBootstrapToken = true
+			}
+		}
+
 		r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
 		crds, raw, err := chart.RenderClusterManagerChart(
 			context.TODO(),

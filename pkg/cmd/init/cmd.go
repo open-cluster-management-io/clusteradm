@@ -79,7 +79,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		"Path to a file containing version bundle overrides. Optional. If provided, overrides component versions within the selected version bundle.")
 	clusterManagerSet.BoolVar(&o.useBootstrapToken, "use-bootstrap-token", false, "If set then the bootstrap token will used instead of a service account token")
 	clusterManagerSet.StringVar(&o.clusterManagerValuesFile, "cluster-manager-values-file", "",
-		"The path to a YAML file containing cluster-manager Helm chart values. The values from the file override both the default chart values and the values from other flags.")
+		"The path to a YAML file containing cluster-manager Helm chart values. The values from the file override both the default chart values and the values from other flags. Does not apply to singleton controlplane.")
 	_ = clusterManagerSet.SetAnnotation("image-registry", "clusterManagerSet", []string{})
 	_ = clusterManagerSet.SetAnnotation("bundle-version", "clusterManagerSet", []string{})
 	_ = clusterManagerSet.SetAnnotation("bundle-version-file", "clusterManagerSet", []string{})

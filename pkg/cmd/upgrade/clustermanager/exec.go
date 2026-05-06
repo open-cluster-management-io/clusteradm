@@ -9,6 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 	"open-cluster-management.io/clusteradm/pkg/config"
+	"open-cluster-management.io/clusteradm/pkg/helpers/clustermanager"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"open-cluster-management.io/clusteradm/pkg/version"
 	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
@@ -65,6 +66,12 @@ func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 	}
 	if cm.Spec.AddOnManagerConfiguration != nil {
 		o.clusterManagerChartConfig.ClusterManager.AddOnManagerConfiguration = *cm.Spec.AddOnManagerConfiguration
+	}
+
+	if o.clusterManagerValuesFile != "" {
+		if err := clustermanager.MergeClusterManagerValues(o.clusterManagerValuesFile, o.clusterManagerChartConfig); err != nil {
+			return fmt.Errorf("failed to merge cluster-manager values file: %w", err)
+		}
 	}
 
 	return nil

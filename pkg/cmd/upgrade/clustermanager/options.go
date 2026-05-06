@@ -22,6 +22,10 @@ type Options struct {
 	//If set, the command will hold until the OCM control plane initialized
 	wait bool
 
+	// clusterManagerValuesFile is the path to a YAML file containing cluster-manager Helm chart values.
+	// The values from the file override the default chart values, values reconstructed from the hub, and values from other flags.
+	clusterManagerValuesFile string
+
 	Streams genericiooptions.IOStreams
 }
 

@@ -68,6 +68,10 @@ type Options struct {
 	// enableSyncLabels is to enable the feature which can sync the labels from clustermanager to all hub resources.
 	enableSyncLabels bool
 
+	// clusterManagerValuesFile is the path to a YAML file containing cluster-manager Helm chart values.
+	// The values from the file override the default cluster-manager chart values and values from other flags.
+	clusterManagerValuesFile string
+
 	// grpcServer is the gRPC server of the hub.
 	grpcServer string
 	// grpcEndpointType is the type of gRPC server endpoint. The supported types are hostname and loadBalancer.

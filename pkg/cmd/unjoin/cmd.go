@@ -14,6 +14,9 @@ import (
 var example = `
 # UnJoin a cluster from a hub
 %[1]s unjoin --cluster-name <cluster_name>
+
+# UnJoin and cleanup ManagedCluster from hub
+%[1]s unjoin --cluster-name <cluster_name> --cleanup-hub --hub-kubeconfig <hub_kubeconfig_path>
 `
 
 // NewCmd ...
@@ -46,5 +49,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().StringVar(&o.clusterName, "cluster-name", "", "The name of the joining cluster")
 	cmd.Flags().BoolVar(&o.purgeOperator, "purge-operator", true, "Purge the operator")
 	cmd.Flags().StringVar(&o.outputFile, "output-file", "", "The generated resources will be copied in the specified file")
+	cmd.Flags().BoolVar(&o.cleanupHub, "cleanup-hub", false, "Cleanup ManagedCluster resource from hub")
+	cmd.Flags().StringVar(&o.hubKubeconfig, "hub-kubeconfig", "", "Path to hub kubeconfig file (required when --cleanup-hub is enabled)")
 	return cmd
 }

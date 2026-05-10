@@ -246,7 +246,8 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 
 	klusterletApiserver, err := sdkhelpers.GetAPIServer(kubeClient)
 	if err != nil {
-		klog.Warningf("Failed looking for cluster endpoint for the registering klusterlet: %v", err)
+		detail := fmt.Sprintf(": %v", err)
+		klog.Warningf("Join continues without an external API server URL for the klusterlet because %s", detail)
 		klusterletApiserver = ""
 	} else if !preflight.ValidAPIHost(klusterletApiserver) {
 		klog.Warningf("ConfigMap/cluster-info.data.kubeconfig.clusters[0].cluster.server field [%s] in namespace kube-public should start with http:// or https://", klusterletApiserver)

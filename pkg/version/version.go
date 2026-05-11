@@ -81,7 +81,7 @@ type VersionBundle struct {
 	PolicyAddon string `json:"policy_addon"`
 }
 
-var defaultBundleVersion = "1.2.1"
+var defaultBundleVersion = "1.3.0"
 
 func GetDefaultBundleVersion() string {
 	return defaultBundleVersion
@@ -119,16 +119,6 @@ func getVersionBundle(version string) (VersionBundle, error) {
 
 	// predefined bundle version
 	// TODO: automated version tracking
-	versionBundleList["1.0.0"] = VersionBundle{
-		OCM:         "v1.0.0",
-		PolicyAddon: "v0.16.0",
-	}
-
-	versionBundleList["1.0.1"] = VersionBundle{
-		OCM:         "v1.0.1",
-		PolicyAddon: "v0.16.0",
-	}
-
 	versionBundleList["1.1.0"] = VersionBundle{
 		OCM:         "v1.1.0",
 		PolicyAddon: "v0.16.0",
@@ -151,6 +141,11 @@ func getVersionBundle(version string) (VersionBundle, error) {
 
 	versionBundleList["1.2.1"] = VersionBundle{
 		OCM:         "v1.2.1",
+		PolicyAddon: "v0.18.0",
+	}
+
+	versionBundleList["1.3.0"] = VersionBundle{
+		OCM:         "v1.3.0",
 		PolicyAddon: "v0.18.0",
 	}
 

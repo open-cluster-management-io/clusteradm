@@ -7,7 +7,7 @@ export MANAGED_CLUSTER1_NAME := ${PROJECT_NAME}-e2e-test-c1
 export HUB_CTX := kind-${HUB_NAME}
 export MANAGED_CLUSTER1_CTX := kind-${MANAGED_CLUSTER1_NAME}
 
-BUNDLE_VERSION := default
+BUNDLE_VERSION?=latest
 
 clean-e2e: 
 	kind delete cluster --name ${HUB_NAME}

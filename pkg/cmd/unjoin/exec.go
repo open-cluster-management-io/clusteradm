@@ -16,11 +16,13 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
+	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	klusterletclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 	appliedworkclient "open-cluster-management.io/api/client/work/clientset/versioned"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/check"
+	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 )
 
 const (
@@ -46,10 +48,22 @@ func (o *Options) validate() error {
 	if o.values.ClusterName == "" {
 		return fmt.Errorf("name is missing")
 	}
+	if o.cleanupHub && o.hubKubeconfig == "" {
+		return fmt.Errorf("--hub-kubeconfig is required when --cleanup-hub is enabled")
+	}
 	return nil
 }
 
 func (o *Options) run() error {
+	// Hub cleanup if enabled
+	if o.cleanupHub {
+		fmt.Fprintf(o.Streams.Out, "Deleting ManagedCluster %s from hub...\n", o.clusterName)
+		if err := o.deleteHubManagedCluster(); err != nil {
+			return fmt.Errorf("failed to cleanup hub: %v", err)
+		}
+		fmt.Fprintf(o.Streams.Out, "ManagedCluster %s deleted from hub successfully\n", o.clusterName)
+	}
+
 	// 1. get klusterlet cr by clustername
 	// 2. check if any applied work still running
 	// 3. delete klusterlet cr
@@ -111,7 +125,7 @@ func (o *Options) run() error {
 	amws := isAppliedManifestWorkExist(appliedWorkClient)
 	if len(amws) != 0 {
 		fmt.Fprintf(o.Streams.Out, "appliedManifestWorks %v still exist on the managed cluster,"+
-			"you should manually clean them, uninstall kluster will cause those works out of control.", amws)
+			"you should manually clean them, uninstall klusterlet will cause those works out of control.", amws)
 		return nil
 	}
 
@@ -259,4 +273,78 @@ func WaitResourceToBeDelete(context context.Context, client klusterletclient.Int
 	})
 	return errGet
 
+}
+
+func (o *Options) deleteHubManagedCluster() error {
+	// Load hub kubeconfig
+	restConfig, err := clientcmd.BuildConfigFromFlags("", o.hubKubeconfig)
+	if err != nil {
+		return fmt.Errorf("failed to load hub kubeconfig: %v", err)
+	}
+
+	// Create cluster client
+	clusterClient, err := clusterclientset.NewForConfig(restConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create cluster client: %v", err)
+	}
+
+	// Check if dry-run
+	if o.ClusteradmFlags.DryRun {
+		fmt.Fprintf(o.Streams.Out, "Dry-run: would delete ManagedCluster %s from hub\n", o.values.ClusterName)
+		return nil
+	}
+
+	// Delete ManagedCluster
+	err = clusterClient.ClusterV1().ManagedClusters().Delete(
+		context.Background(),
+		o.values.ClusterName,
+		metav1.DeleteOptions{},
+	)
+	if errors.IsNotFound(err) {
+		fmt.Fprintf(o.Streams.Out, "ManagedCluster %s not found on hub (may already be deleted)\n", o.values.ClusterName)
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("failed to delete ManagedCluster: %v", err)
+	}
+
+	// Wait for deletion with spinner
+	spinner := printer.NewSpinner(
+		o.Streams.Out,
+		fmt.Sprintf("Waiting for ManagedCluster %s to be deleted from hub...", o.values.ClusterName),
+		time.Millisecond*500,
+	)
+	spinner.Start()
+	defer spinner.Stop()
+
+	// Use a context with timeout from ClusteradmFlags (default 300 seconds)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(o.ClusteradmFlags.Timeout)*time.Second)
+	defer cancel()
+
+	b := retry.DefaultBackoff
+	b.Duration = 5 * time.Second
+	b.Steps = o.ClusteradmFlags.Timeout / 5 // Retry every 5 seconds until timeout
+
+	err = WaitManagedClusterToBeDeleted(ctx, clusterClient, o.values.ClusterName, b)
+	if err != nil {
+		return fmt.Errorf("timeout waiting for ManagedCluster deletion: %v", err)
+	}
+
+	return nil
+}
+
+func WaitManagedClusterToBeDeleted(ctx context.Context, client clusterclientset.Interface, name string, b wait.Backoff) error {
+	errGet := retry.OnError(b, func(err error) bool {
+		return true
+	}, func() error {
+		_, err := client.ClusterV1().ManagedClusters().Get(ctx, name, metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			return nil
+		}
+		if err == nil {
+			return fmt.Errorf("ManagedCluster still exists")
+		}
+		return err
+	})
+	return errGet
 }

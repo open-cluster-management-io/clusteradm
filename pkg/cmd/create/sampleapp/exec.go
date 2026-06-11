@@ -8,6 +8,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 
 	"github.com/spf13/cobra"
+
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	"open-cluster-management.io/clusteradm/pkg/cmd/create/sampleapp/scenario"
 )
@@ -17,7 +18,7 @@ const (
 	pathToAppManifests   = "scenario/sampleapp"
 )
 
-func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+func (o *Options) complete(_ *cobra.Command, args []string) (err error) {
 
 	if len(args) > 1 {
 		return fmt.Errorf("only one sample app name can be specified")
@@ -56,7 +57,7 @@ func (o *Options) Run() (err error) {
 	return o.runWithClient(clusterClient, o.ClusteradmFlags.DryRun)
 }
 
-func (o *Options) runWithClient(clusterClient clusterclientset.Interface, dryRun bool) error {
+func (o *Options) runWithClient(_ clusterclientset.Interface, _ bool) error {
 
 	// Apply sample application manifest to hub cluster
 	err := o.deployApp()

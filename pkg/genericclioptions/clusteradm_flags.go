@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/pflag"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	"open-cluster-management.io/clusteradm/pkg/helpers/check"
 )
@@ -55,11 +56,11 @@ func (f *ClusteradmFlags) ValidateManagedCluster() error {
 func (f *ClusteradmFlags) buildClusterClientset() (*clusterclientset.Clientset, error) {
 	config, err := f.KubectlFactory.ToRESTConfig()
 	if err != nil {
-		return nil, fmt.Errorf("Build ClusteradmFlags failed: %v", err)
+		return nil, fmt.Errorf("build ClusteradmFlags failed: %v", err)
 	}
 	client, err := clusterclientset.NewForConfig(config)
 	if err != nil {
-		return nil, fmt.Errorf("Build ClusteradmFlags failed: %v", err)
+		return nil, fmt.Errorf("build ClusteradmFlags failed: %v", err)
 	}
 	return client, nil
 }

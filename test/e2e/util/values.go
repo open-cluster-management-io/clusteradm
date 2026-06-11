@@ -35,6 +35,6 @@ func (cv *clusterValues) ManagedCluster1() *clusterConfig {
 }
 
 type values struct {
-	// cv stores the clusters infomation
+	// cv stores the clusters information
 	cv *clusterValues
 }

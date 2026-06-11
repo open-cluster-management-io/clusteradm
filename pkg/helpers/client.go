@@ -16,7 +16,6 @@ import (
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
@@ -29,6 +28,7 @@ import (
 	"k8s.io/client-go/util/retry"
 	"k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/utils/ptr"
+
 	"open-cluster-management.io/clusteradm/pkg/config"
 )
 
@@ -84,9 +84,9 @@ func WaitCRDToBeReady(apiExtensionsClient apiextensionsclient.Interface, name st
 				metav1.GetOptions{})
 		if established := apiextensionshelpers.IsCRDConditionTrue(crd, apiextensionsv1.Established); !established {
 			if wait {
-				fmt.Printf("Wait for %s crd to be established\n", name)
+				fmt.Printf("wait for %s crd to be established\n", name)
 			}
-			return fmt.Errorf("Wait for %s crd to be established", name)
+			return fmt.Errorf("wait for %s crd to be established", name)
 		}
 
 		return err
@@ -190,7 +190,7 @@ func IsClusterManagerInstalled(apiExtensionsClient apiextensionsclient.Interface
 func IsKlusterletsInstalled(apiExtensionsClient apiextensionsclient.Interface) (bool, error) {
 	_, err := apiExtensionsClient.ApiextensionsV1().
 		CustomResourceDefinitions().
-		Get(context.TODO(), "klusterlets.operator.open-cluster-management.io", v1.GetOptions{})
+		Get(context.TODO(), "klusterlets.operator.open-cluster-management.io", metav1.GetOptions{})
 	if err == nil {
 		return true, nil
 	}

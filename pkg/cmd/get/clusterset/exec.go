@@ -8,19 +8,21 @@ import (
 
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/klog/v2"
+
 	v1 "open-cluster-management.io/api/cluster/v1"
 
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	clusterapiv1beta2 "open-cluster-management.io/api/cluster/v1beta2"
 	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 	clustersdkv1beta2 "open-cluster-management.io/sdk-go/pkg/apis/cluster/v1beta2"
 )
 
-func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err

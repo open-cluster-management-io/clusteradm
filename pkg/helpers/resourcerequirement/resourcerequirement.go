@@ -7,6 +7,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 )
 

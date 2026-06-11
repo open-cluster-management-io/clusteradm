@@ -13,12 +13,13 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
+
 	addonclient "open-cluster-management.io/api/client/addon/clientset/versioned"
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 )
 
-func (o *Options) complete(cmd *cobra.Command, args []string) error {
+func (o *Options) complete(_ *cobra.Command, _ []string) error {
 	klog.V(1).InfoS("disable options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.Names, "clusters", o.ClusterOptions.AllClusters())
 
 	return nil
@@ -72,7 +73,7 @@ func (o *Options) Run() (err error) {
 			return err
 		}
 		for _, item := range mcllist.Items {
-			clusters.Insert(item.ObjectMeta.Name)
+			clusters.Insert(item.Name)
 		}
 	} else {
 		clusters = o.ClusterOptions.AllClusters()
@@ -85,10 +86,10 @@ func (o *Options) Run() (err error) {
 
 func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 	addonClient addonclient.Interface,
-	kubeClient kubernetes.Interface,
-	apiExtensionsClient apiextensionsclient.Interface,
-	dynamicClient dynamic.Interface,
-	dryRun bool,
+	_ kubernetes.Interface,
+	_ apiextensionsclient.Interface,
+	_ dynamic.Interface,
+	_ bool,
 	addons []string,
 	clusters []string) error {
 
@@ -109,9 +110,8 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 			if err != nil {
 				if !errors.IsNotFound(err) {
 					return err
-				} else {
-					fmt.Fprintf(o.Streams.Out, "%s add-on not found in cluster: %s.\n", addon, clusterName)
 				}
+				fmt.Fprintf(o.Streams.Out, "%s add-on not found in cluster: %s.\n", addon, clusterName)
 			} else {
 				fmt.Fprintf(o.Streams.Out, "Undeploying %s add-on in managed cluster: %s.\n", addon, clusterName)
 			}

@@ -8,11 +8,12 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	clusterapiv1beta2 "open-cluster-management.io/api/cluster/v1beta2"
 )
 
-func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+func (o *Options) complete(_ *cobra.Command, args []string) (err error) {
 	if len(args) == 0 {
 		return fmt.Errorf("the name of the clusterset must be specified")
 	}

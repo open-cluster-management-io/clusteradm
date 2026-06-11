@@ -7,6 +7,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"k8s.io/klog/v2"
+
 	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
 )
 

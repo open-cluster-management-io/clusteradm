@@ -13,7 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/tools/clientcmd/api"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
@@ -36,6 +35,7 @@ func (c SingletonControlplaneCheck) Name() string {
 	return "SingletonControlplane check"
 }
 
+//nolint:revive
 type HubApiServerCheck struct {
 	Config clientcmd.ClientConfig
 }
@@ -119,7 +119,7 @@ func (c ClusterInfoCheck) Name() string {
 
 // loadCurrentCluster will load kubeconfig from file and return the current cluster.
 // The default file path is ~/.kube/config.
-func loadCurrentCluster(currentConfig clientcmdapi.Config) (*api.Cluster, error) {
+func loadCurrentCluster(currentConfig clientcmdapi.Config) (*clientcmdapi.Cluster, error) {
 	context := currentConfig.CurrentContext
 	currentCtx, exists := currentConfig.Contexts[context]
 	if !exists {

@@ -12,8 +12,8 @@ import (
 )
 
 var example = `
-# Get palcements.
-%[1]s get palcements
+# Get placements.
+%[1]s get placements
 `
 
 // NewCmd...

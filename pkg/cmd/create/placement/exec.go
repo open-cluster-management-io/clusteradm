@@ -11,11 +11,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
+
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	clusterv1beta1 "open-cluster-management.io/api/cluster/v1beta1"
 )
 
-func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+func (o *Options) complete(_ *cobra.Command, args []string) (err error) {
 	if len(args) == 0 {
 		return fmt.Errorf("placement name must be specified")
 	}
@@ -142,7 +143,7 @@ func parsePrioritizer(s string) (*clusterv1beta1.PrioritizerConfig, error) {
 		}, nil
 	}
 
-	return nil, fmt.Errorf("unkown prioritizer type %s for %s", ps[0], s)
+	return nil, fmt.Errorf("unknown prioritizer type %s for %s", ps[0], s)
 }
 
 func (o *Options) applyPlacement(clusterClient clusterclientset.Interface, placement *clusterv1beta1.Placement) error {

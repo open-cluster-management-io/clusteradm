@@ -11,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/resource"
+
 	addonv1alpha1 "open-cluster-management.io/api/addon/v1alpha1"
 	addonclientset "open-cluster-management.io/api/client/addon/clientset/versioned"
 	workapiv1 "open-cluster-management.io/api/work/v1"
@@ -127,7 +128,7 @@ func newClusterManagementAddon(o *Options) (*addonv1alpha1.ClusterManagementAddO
 	return cma, nil
 }
 
-func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+func (o *Options) complete(_ *cobra.Command, args []string) (err error) {
 	if len(args) == 0 {
 		return fmt.Errorf("addon name must be specified")
 	}

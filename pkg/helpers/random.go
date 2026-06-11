@@ -13,8 +13,10 @@ func init() {
 	r = rand.New(rand.NewSource(time.Now().UnixNano()))
 }
 
+//nolint:revive
 var letterRunes_az09 = []rune("abcdefghijklmnopqrstuvwxyz0123456789")
 
+//nolint:revive
 func RandStringRunes_az09(n int) string {
 	return randStringRunes(n, letterRunes_az09)
 }

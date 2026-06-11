@@ -4,18 +4,20 @@ package work
 import (
 	"context"
 	"fmt"
-	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"time"
+
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
+
 	workclientset "open-cluster-management.io/api/client/work/clientset/versioned"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 )
 
-func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+func (o *Options) complete(_ *cobra.Command, args []string) (err error) {
 	if len(args) == 0 {
 		return fmt.Errorf("work name must be specified")
 	}
@@ -114,8 +116,8 @@ func (o *Options) deleteWork(workClient *workclientset.Clientset, cluster string
 
 		// if any finalizer exists, remove it.
 		// if not, do nothing and wait for delete event.
-		if len(work.ObjectMeta.Finalizers) != 0 {
-			work.ObjectMeta.Finalizers = work.ObjectMeta.Finalizers[:0]
+		if len(work.Finalizers) != 0 {
+			work.Finalizers = work.Finalizers[:0]
 
 			_, err = workClient.WorkV1().ManifestWorks(cluster).Update(context.TODO(), work, metav1.UpdateOptions{})
 			if err != nil {

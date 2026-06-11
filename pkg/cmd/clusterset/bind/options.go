@@ -3,6 +3,7 @@ package bind
 
 import (
 	"k8s.io/cli-runtime/pkg/genericiooptions"
+
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 

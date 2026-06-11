@@ -73,7 +73,7 @@ func (h *Helm) SetValue(key, value string) {
 }
 
 // PrepareChart prepares the chart for installation
-func (h *Helm) PrepareChart(repoName, repoUrl string) error {
+func (h *Helm) PrepareChart(repoName, repoURL string) error {
 	// add repo
 	repoFile := h.settings.RepositoryConfig
 
@@ -114,7 +114,7 @@ func (h *Helm) PrepareChart(repoName, repoUrl string) error {
 	if !f.Has(repoName) {
 		c := repo.Entry{
 			Name: repoName,
-			URL:  repoUrl,
+			URL:  repoURL,
 		}
 
 		r, err := repo.NewChartRepository(&c, getter.All(h.settings))
@@ -123,7 +123,7 @@ func (h *Helm) PrepareChart(repoName, repoUrl string) error {
 		}
 
 		if _, err := r.DownloadIndexFile(); err != nil {
-			err := errors.Wrapf(err, "looks like %q is not a valid chart repository or cannot be reached", repoUrl)
+			err := errors.Wrapf(err, "looks like %q is not a valid chart repository or cannot be reached", repoURL)
 			log.Fatal(err)
 		}
 
@@ -168,7 +168,7 @@ func (h *Helm) InstallChart(name, repo, chart string) {
 		client.Version = ">0.0.0-0"
 	}
 	client.ReleaseName = name
-	cp, err := client.ChartPathOptions.LocateChart(fmt.Sprintf("%s/%s", repo, chart), h.settings)
+	cp, err := client.LocateChart(fmt.Sprintf("%s/%s", repo, chart), h.settings)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -201,7 +201,7 @@ func (h *Helm) InstallChart(name, repo, chart string) {
 				man := &downloader.Manager{
 					Out:              os.Stdout,
 					ChartPath:        cp,
-					Keyring:          client.ChartPathOptions.Keyring,
+					Keyring:          client.Keyring,
 					SkipUpdate:       false,
 					Getters:          p,
 					RepositoryConfig: h.settings.RepositoryConfig,

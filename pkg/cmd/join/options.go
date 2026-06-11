@@ -4,6 +4,7 @@ package join
 import (
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
+
 	"open-cluster-management.io/clusteradm/pkg/clusterprovider/capi"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"

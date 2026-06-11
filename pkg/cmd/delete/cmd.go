@@ -4,6 +4,7 @@ package get
 import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
+
 	"open-cluster-management.io/clusteradm/pkg/cmd/delete/clusterset"
 	"open-cluster-management.io/clusteradm/pkg/cmd/delete/token"
 	"open-cluster-management.io/clusteradm/pkg/cmd/delete/work"

@@ -4,6 +4,7 @@ package upgrade
 import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
+
 	"open-cluster-management.io/clusteradm/pkg/cmd/upgrade/clustermanager"
 	"open-cluster-management.io/clusteradm/pkg/cmd/upgrade/klusterlet"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"

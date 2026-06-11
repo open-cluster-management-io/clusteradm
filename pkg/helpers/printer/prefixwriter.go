@@ -10,6 +10,7 @@ import (
 	"github.com/fatih/color"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 )
 
@@ -26,6 +27,8 @@ type PrefixWriter interface {
 }
 
 // Each level has 2 spaces for PrefixWriter
+//
+//nolint:revive
 const (
 	LEVEL_0 = iota
 	LEVEL_1

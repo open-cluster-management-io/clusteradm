@@ -27,7 +27,7 @@ func (e *Error) Preflight() bool {
 }
 
 // RunChecks runs each check, display it's check/errors,
-// and once all are processed will exist if any errors occured.
+// and once all are processed will exist if any errors occurred.
 func RunChecks(checks []Checker, ww io.Writer) error {
 	var errsBuffer bytes.Buffer
 	for _, check := range checks {
@@ -37,7 +37,7 @@ func RunChecks(checks []Checker, ww io.Writer) error {
 			_, _ = io.WriteString(ww, fmt.Sprintf("\t[WARNING %s]: %v\n", name, warning))
 		}
 		for _, err := range errs {
-			_, _ = errsBuffer.WriteString(fmt.Sprintf("\t[ERROR %s]: %v\n", name, err.Error()))
+			_, _ = fmt.Fprintf(&errsBuffer, "\t[ERROR %s]: %v\n", name, err.Error())
 		}
 		_, _ = io.WriteString(ww, printCheckResult(name, warnings, errs))
 	}

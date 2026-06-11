@@ -18,11 +18,13 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/kubectl/pkg/cmd/util"
+
 	"open-cluster-management.io/clusteradm/pkg/config"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 )
 
+//nolint:revive
 func WaitUntilCRDReady(w io.Writer, apiExtensionsClient apiextensionsclient.Interface, crdName string, wait bool) error {
 	b := retry.DefaultBackoff
 	b.Duration = 200 * time.Millisecond
@@ -36,6 +38,7 @@ func WaitUntilCRDReady(w io.Writer, apiExtensionsClient apiextensionsclient.Inte
 	return helpers.WaitCRDToBeReady(apiExtensionsClient, crdName, b, wait)
 }
 
+//nolint:revive
 func WaitUntilRegistrationOperatorReady(w io.Writer, f util.Factory, timeout int64, appLabel string) error {
 	var restConfig *rest.Config
 	restConfig, err := f.ToRESTConfig()
@@ -88,6 +91,7 @@ func WaitUntilRegistrationOperatorReady(w io.Writer, f util.Factory, timeout int
 		})
 }
 
+//nolint:revive
 func WaitUntilClusterManagerRegistrationReady(w io.Writer, f util.Factory, timeout int64) error {
 	var restConfig *rest.Config
 	restConfig, err := f.ToRESTConfig()
@@ -140,6 +144,7 @@ func WaitUntilClusterManagerRegistrationReady(w io.Writer, f util.Factory, timeo
 		})
 }
 
+//nolint:revive
 func WaitUntilMulticlusterControlplaneReady(w io.Writer, f util.Factory, ns string, timeout int64) error {
 	var restConfig *rest.Config
 	restConfig, err := f.ToRESTConfig()
@@ -191,6 +196,7 @@ func WaitUntilMulticlusterControlplaneReady(w io.Writer, f util.Factory, ns stri
 		})
 }
 
+//nolint:revive
 func WaitUntilMulticlusterControlplaneKubeconfigReady(f util.Factory, ns string, b wait.Backoff) error {
 	var restConfig *rest.Config
 	restConfig, err := f.ToRESTConfig()

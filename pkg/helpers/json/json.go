@@ -13,6 +13,7 @@ type HubInfo struct {
 	HubApiserver string `json:"hub-apiserver"`
 }
 
+//nolint:revive
 func WriteJsonOutput(w io.Writer, val interface{}) error {
 	b, err := json.Marshal(val)
 	if err != nil {

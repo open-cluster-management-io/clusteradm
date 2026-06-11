@@ -11,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+
 	clusterv1beta1 "open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1beta1"
 	"open-cluster-management.io/api/cluster/v1beta1"
 	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
@@ -18,7 +19,7 @@ import (
 
 const placementLabel = "cluster.open-cluster-management.io/placement"
 
-func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 	o.printer.Competele()
 
 	return nil
@@ -96,7 +97,7 @@ func (o *Options) convertToTree(obj runtime.Object, tree *printer.TreePrinter) *
 	// save decisions into a map
 	selectedClusters := make(map[string][]v1beta1.ClusterDecision)
 	for _, decision := range decisionList.Items {
-		placementName := decision.ObjectMeta.Labels[placementLabel]
+		placementName := decision.Labels[placementLabel]
 		selectedClusters[placementName] = decision.Status.Decisions
 	}
 
@@ -111,7 +112,7 @@ func (o *Options) convertToTree(obj runtime.Object, tree *printer.TreePrinter) *
 			mp[".Status.Conditions.PlacementConditionMisconfigured"] = misconfig
 			mp[".PlacementDecision"] = decision
 
-			tree.AddFileds(pla.ObjectMeta.Name, &mp)
+			tree.AddFileds(pla.Name, &mp)
 		}
 	}
 
@@ -139,7 +140,7 @@ func getFileds(placement v1beta1.Placement, selectedClusters map[string][]v1beta
 
 	number = int(placement.Status.NumberOfSelectedClusters)
 
-	clusters, ok := selectedClusters[placement.ObjectMeta.Name]
+	clusters, ok := selectedClusters[placement.Name]
 	if !ok {
 		decision = []string{"NoClusterSelected"}
 	} else {
@@ -148,7 +149,7 @@ func getFileds(placement v1beta1.Placement, selectedClusters map[string][]v1beta
 		}
 	}
 
-	return
+	return namespace, clusterset, satisfied, misconfig, number, decision
 }
 
 func (o *Options) converToTable(obj runtime.Object) *metav1.Table {
@@ -160,7 +161,7 @@ func (o *Options) converToTable(obj runtime.Object) *metav1.Table {
 	// save decisions into a map
 	selectedClusters := make(map[string][]v1beta1.ClusterDecision)
 	for _, decision := range decisionList.Items {
-		placementName := decision.ObjectMeta.Labels[placementLabel]
+		placementName := decision.Labels[placementLabel]
 		selectedClusters[placementName] = decision.Status.Decisions
 	}
 
@@ -176,8 +177,8 @@ func (o *Options) converToTable(obj runtime.Object) *metav1.Table {
 
 	if placementList, ok := obj.(*v1beta1.PlacementList); ok {
 		for _, placement := range placementList.Items {
-			var clusters []string
-			for _, i := range selectedClusters[placement.ObjectMeta.Name] {
+			clusters := make([]string, 0, len(selectedClusters[placement.Name]))
+			for _, i := range selectedClusters[placement.Name] {
 				clusters = append(clusters, i.ClusterName)
 			}
 

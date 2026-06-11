@@ -4,13 +4,15 @@ package clusterset
 import (
 	"context"
 	"fmt"
+
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	clusterapiv1beta2 "open-cluster-management.io/api/cluster/v1beta2"
 )
 
-func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+func (o *Options) complete(_ *cobra.Command, args []string) (err error) {
 	o.Clustersets = args
 
 	return nil

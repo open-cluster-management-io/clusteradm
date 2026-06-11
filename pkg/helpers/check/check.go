@@ -7,6 +7,7 @@ import (
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	clusterclient "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 	clusterv1 "open-cluster-management.io/api/cluster/v1"
@@ -20,6 +21,7 @@ const (
 	ClusterClaimResourceName   = "clusterclaims"
 )
 
+//nolint:revive
 func CheckForHub(client clusterclient.Interface) error {
 	msg := "hub oriented command should not running against non-hub cluster"
 
@@ -39,6 +41,7 @@ func CheckForHub(client clusterclient.Interface) error {
 	return errors.New(msg)
 }
 
+//nolint:revive
 func CheckForKlusterletCRD(client operatorclient.Interface) error {
 	msg := "klusterlet crd not found"
 
@@ -53,6 +56,7 @@ func CheckForKlusterletCRD(client operatorclient.Interface) error {
 	return errors.New(msg)
 }
 
+//nolint:revive
 func CheckForManagedCluster(client clusterclient.Interface) error {
 	msg := "managed cluster oriented command should not running against non-managed cluster"
 

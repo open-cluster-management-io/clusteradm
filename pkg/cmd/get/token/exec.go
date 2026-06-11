@@ -6,11 +6,12 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	clusteradmjson "open-cluster-management.io/clusteradm/pkg/helpers/json"
 )
 
-func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 	o.values = Values{
 		Hub: Hub{
 			TokenID:     helpers.RandStringRunes_az09(6),

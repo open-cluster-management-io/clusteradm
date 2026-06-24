@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+
 	"open-cluster-management.io/clusteradm/pkg/version"
 )
 

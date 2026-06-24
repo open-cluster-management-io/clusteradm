@@ -22,6 +22,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/klog/v2"
+
 	addonv1alpha1client "open-cluster-management.io/api/client/addon/clientset/versioned"
 	clusterv1 "open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1"
 	proxyv1alpha1 "open-cluster-management.io/cluster-proxy/pkg/apis/proxy/v1alpha1"
@@ -107,7 +108,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 			defer portForwardClose()
 
 			// Run a http-proxy-server in goroutine
-			hps, err := newHttpProxyServer(
+			hps, err := newHTTPProxyServer(
 				cmd.Context(),
 				o.ClusterOption.Cluster,
 				int32(8090), // TODO make it configurable or random later
@@ -156,7 +157,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 					// We are using combinedoutput, so err msg should include in result, no need to handle err
 					result, _ := runKubectlCommand(tmpKubeconfigFilePath, strings.TrimRight(input, "\n"))
 					if _, err = streams.Out.Write(result); err != nil {
-						return errors.Wrap(err, "streams out write failed, exist the interactive mode.")
+						return errors.Wrap(err, "streams out write failed, exit the interactive mode")
 					}
 				}
 			} else {

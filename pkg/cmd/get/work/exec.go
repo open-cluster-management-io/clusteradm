@@ -9,13 +9,14 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	workclient "open-cluster-management.io/api/client/work/clientset/versioned"
 	workapiv1 "open-cluster-management.io/api/work/v1"
 	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 )
 
-func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+func (o *Options) complete(_ *cobra.Command, args []string) (err error) {
 	if len(args) > 1 {
 		return fmt.Errorf("can only specify one manifestwork")
 	}

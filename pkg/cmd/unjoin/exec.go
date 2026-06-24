@@ -16,6 +16,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
+
 	klusterletclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 	appliedworkclient "open-cluster-management.io/api/client/work/clientset/versioned"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
@@ -29,7 +30,7 @@ const (
 	managedKubeconfigSecretName = "external-managed-kubeconfig"
 )
 
-func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 	klog.V(1).InfoS("unjoin  options:", "dry-run", o.ClusteradmFlags.DryRun, "cluster", o.clusterName, o.outputFile)
 
 	o.values = Values{
@@ -140,7 +141,7 @@ func (o *Options) run() error {
 
 }
 
-func (o *Options) getKlusterlet(kubeClient kubernetes.Interface, klusterletClient klusterletclient.Interface) error {
+func (o *Options) getKlusterlet(_ kubernetes.Interface, klusterletClient klusterletclient.Interface) error {
 	list, err := klusterletClient.OperatorV1().Klusterlets().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return err

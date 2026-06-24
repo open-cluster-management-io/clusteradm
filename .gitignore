@@ -31,3 +31,6 @@ launch.json
 
 # used in e2e test
 config.json
+
+# build output and tools
+_output/

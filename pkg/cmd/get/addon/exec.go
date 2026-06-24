@@ -4,7 +4,9 @@ package addon
 import (
 	"context"
 	"fmt"
+
 	"k8s.io/apimachinery/pkg/runtime"
+
 	workapiv1 "open-cluster-management.io/api/work/v1"
 
 	"github.com/fatih/color"
@@ -13,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/klog/v2"
+
 	addonv1alpha1 "open-cluster-management.io/api/addon/v1alpha1"
 	addonclient "open-cluster-management.io/api/client/addon/clientset/versioned"
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
@@ -20,7 +23,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 )
 
-func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+func (o *Options) complete(_ *cobra.Command, args []string) (err error) {
 	o.printer.Competele()
 	klog.V(1).InfoS("addon options:", "dry-run", o.ClusteradmFlags.DryRun, "clusters", o.ClusterOptions.AllClusters().UnsortedList())
 	o.addons = args
@@ -72,7 +75,7 @@ func (o *Options) run() (err error) {
 		}
 
 		for _, item := range mcllist.Items {
-			clusters.Insert(item.ObjectMeta.Name)
+			clusters.Insert(item.Name)
 		}
 	} else {
 		clusters = o.ClusterOptions.AllClusters()

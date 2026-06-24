@@ -28,6 +28,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
+	konnectivity "sigs.k8s.io/apiserver-network-proxy/konnectivity-client/pkg/client"
+	proxyutil "sigs.k8s.io/apiserver-network-proxy/pkg/util"
+
 	addonv1alpha1 "open-cluster-management.io/api/addon/v1alpha1"
 	addonv1alpha1client "open-cluster-management.io/api/client/addon/clientset/versioned"
 	clusterv1 "open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1"
@@ -36,11 +39,9 @@ import (
 	"open-cluster-management.io/cluster-proxy/pkg/generated/clientset/versioned"
 	"open-cluster-management.io/cluster-proxy/pkg/util"
 	"open-cluster-management.io/clusteradm/pkg/config"
-	konnectivity "sigs.k8s.io/apiserver-network-proxy/konnectivity-client/pkg/client"
-	proxyutil "sigs.k8s.io/apiserver-network-proxy/pkg/util"
 )
 
-func (o *Options) complete(cmd *cobra.Command, args []string) error {
+func (o *Options) complete(_ *cobra.Command, _ []string) error {
 	if len(o.proxyClientCACertPath) > 0 && len(o.proxyClientCertPath) > 0 && len(o.proxyClientKeyPath) > 0 {
 		o.isProxyServerAddressProvided = true
 	}
@@ -253,7 +254,7 @@ func (o *Options) visit(
 	// doesn't sign the managed cluster name into its server certificate's SAN, the
 	// client will be failing due to server hostname validation.
 	// TODO: Securing the proxied requests.
-	copiedCfg.TLSClientConfig.Insecure = true
+	copiedCfg.Insecure = true
 
 	rt, err := rest.TransportFor(copiedCfg)
 	if err != nil {
@@ -284,7 +285,7 @@ func (o *Options) visit(
 
 	end := time.Now()
 	data, _ := io.ReadAll(resp.Body)
-	if "ok" == string(data) {
+	if string(data) == "ok" {
 		health = "True"
 		latency = end.Sub(start).String()
 	}

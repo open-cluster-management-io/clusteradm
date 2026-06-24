@@ -17,6 +17,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
+
 	ocmfeature "open-cluster-management.io/api/feature"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 	"open-cluster-management.io/clusteradm/pkg/cmd/init/preflight"
@@ -43,7 +44,7 @@ var (
 
 var validRegistrationDriver = sets.New[string](operatorv1.CSRAuthType, operatorv1.AwsIrsaAuthType, operatorv1.GRPCAuthType)
 
-func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+func (o *Options) complete(cmd *cobra.Command, _ []string) (err error) {
 	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun, "force", o.force, "output-file", o.outputFile)
 
 	// ensure the flags are set correctly

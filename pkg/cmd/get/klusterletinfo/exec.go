@@ -10,12 +10,13 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 	v1 "open-cluster-management.io/api/operator/v1"
 	"open-cluster-management.io/clusteradm/pkg/helpers/printer"
 )
 
-func (o *Options) complete(cmd *cobra.Command, args []string) error {
+func (o *Options) complete(_ *cobra.Command, _ []string) error {
 	cfg, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err

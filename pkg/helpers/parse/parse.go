@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+//nolint:revive
 func ParseLabels(labels []string) (map[string]string, error) {
 	labelMap := make(map[string]string)
 	for _, labelString := range labels {

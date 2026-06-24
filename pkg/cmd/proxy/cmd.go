@@ -4,6 +4,7 @@ package proxy
 import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
+
 	"open-cluster-management.io/clusteradm/pkg/cmd/proxy/health"
 	"open-cluster-management.io/clusteradm/pkg/cmd/proxy/kubectl"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"

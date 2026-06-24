@@ -12,6 +12,7 @@ type TestE2eConfig struct {
 	ClearEnv func() error
 }
 
+//nolint:revive
 func (tec *TestE2eConfig) Cluster() *clusterValues {
 	return tec.values.cv
 }

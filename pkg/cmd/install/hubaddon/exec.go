@@ -33,7 +33,7 @@ var (
 	policyFrameworkAddonName = "governance-policy-framework"
 )
 
-func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 	klog.V(1).InfoS("addon options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.names, "output-file", o.outputFile)
 	return nil
 }
@@ -115,15 +115,15 @@ func (o *Options) runWithClient() error {
 		}
 		err := r.Apply(scenario.Files, o.values, files.CRDFiles...)
 		if err != nil {
-			return fmt.Errorf("Error deploying %s CRDs: %w", addon, err)
+			return fmt.Errorf("error deploying %s CRDs: %w", addon, err)
 		}
 		err = r.Apply(scenario.Files, o.values, files.ConfigFiles...)
 		if err != nil {
-			return fmt.Errorf("Error deploying %s dependencies: %w", addon, err)
+			return fmt.Errorf("error deploying %s dependencies: %w", addon, err)
 		}
 		err = r.Apply(scenario.Files, o.values, files.DeploymentFiles...)
 		if err != nil {
-			return fmt.Errorf("Error deploying %s deployments: %w", addon, err)
+			return fmt.Errorf("error deploying %s deployments: %w", addon, err)
 		}
 
 		fmt.Fprintf(o.Streams.Out, "Installing built-in %s add-on to the Hub cluster...\n", addon)

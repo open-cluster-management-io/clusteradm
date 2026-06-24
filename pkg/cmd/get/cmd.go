@@ -4,6 +4,7 @@ package get
 import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
+
 	"open-cluster-management.io/clusteradm/pkg/cmd/get/addon"
 	"open-cluster-management.io/clusteradm/pkg/cmd/get/cluster"
 	"open-cluster-management.io/clusteradm/pkg/cmd/get/clusterset"

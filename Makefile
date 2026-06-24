@@ -35,10 +35,11 @@ export GOPACKAGES   = $(shell go list ./... | grep -v /vendor | grep -v /build |
 clean: clean-test clean-e2e
 
 .PHONY: verify
-verify:
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.6
-	go vet ./...
-	golangci-lint run --timeout=3m --modules-download-mode vendor -E gofmt ./...
+verify: lint
+
+.PHONY: lint
+lint:
+	@bash -o pipefail -c 'curl -fsSL https://raw.githubusercontent.com/open-cluster-management-io/sdk-go/main/ci/lint/run-lint.sh | bash'
 
 .PHONY: deps
 deps:

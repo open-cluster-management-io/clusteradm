@@ -2,8 +2,9 @@
 package kubectl
 
 import (
-	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"sigs.k8s.io/kustomize/kyaml/errors"
+
+	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
 // Options: only support use in-cluster certificates

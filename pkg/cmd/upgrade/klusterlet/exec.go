@@ -9,6 +9,7 @@ import (
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
+
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 
 	"open-cluster-management.io/clusteradm/pkg/config"

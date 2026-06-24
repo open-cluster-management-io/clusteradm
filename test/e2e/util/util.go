@@ -3,10 +3,11 @@ package util
 
 import (
 	"fmt"
-	"open-cluster-management.io/clusteradm/pkg/config"
 	"os"
 	"path"
 	"path/filepath"
+
+	"open-cluster-management.io/clusteradm/pkg/config"
 )
 
 // PrepareE2eEnvironment will init the e2e environment and join managedcluster1 to hub.

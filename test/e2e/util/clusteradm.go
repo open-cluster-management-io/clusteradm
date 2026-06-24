@@ -111,7 +111,8 @@ func (adm *clusteradm) Result() *HandledOutput {
 }
 
 func newClusteradmCmd(flag bool, handled *HandledOutput, subcommand string, args ...string) error {
-	cmdargs := []string{subcommand}
+	cmdargs := make([]string, 0, 1+len(args))
+	cmdargs = append(cmdargs, subcommand)
 	cmdargs = append(cmdargs, args...)
 	c := exec.Command("clusteradm", cmdargs...)
 

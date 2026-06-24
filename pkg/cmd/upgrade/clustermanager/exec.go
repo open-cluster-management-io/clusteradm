@@ -7,6 +7,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 	"open-cluster-management.io/clusteradm/pkg/config"
 	"open-cluster-management.io/clusteradm/pkg/helpers/clustermanager"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
+
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
 )

@@ -4,6 +4,7 @@ package clusterset
 import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
+
 	"open-cluster-management.io/clusteradm/pkg/cmd/clusterset/bind"
 	"open-cluster-management.io/clusteradm/pkg/cmd/clusterset/set"
 	"open-cluster-management.io/clusteradm/pkg/cmd/clusterset/unbind"

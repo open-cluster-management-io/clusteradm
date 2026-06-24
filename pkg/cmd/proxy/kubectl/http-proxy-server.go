@@ -27,7 +27,7 @@ type httpProxyServer struct {
 	cluster         string
 }
 
-func newHttpProxyServer(
+func newHTTPProxyServer(
 	ctx context.Context,
 	cluster string,
 	proxyServerPort int32,
@@ -143,7 +143,7 @@ func (s *httpProxyServer) handle(wr http.ResponseWriter, req *http.Request) {
 	}
 
 	proxy.ErrorHandler = func(rw http.ResponseWriter, r *http.Request, e error) {
-		_, err = rw.Write([]byte(fmt.Sprintf("proxy to anp-proxy-server failed because %v", e)))
+		_, err = fmt.Fprintf(rw, "proxy to anp-proxy-server failed because %v", e)
 		if err != nil {
 			klog.Errorf("response write fail %v", e)
 			return

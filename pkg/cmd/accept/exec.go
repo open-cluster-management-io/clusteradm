@@ -20,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
+
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 )
@@ -34,7 +35,7 @@ const (
 	clusterLabel                     = "open-cluster-management.io/cluster-name"
 )
 
-func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
+func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 	o.Values.Clusters = o.ClusterOptions.AllClusters().UnsortedList()
 	klog.V(1).InfoS("accept options:", "dry-run", o.ClusteradmFlags.DryRun, "clusters", o.Values.Clusters, "wait", o.Wait)
 	return nil
@@ -103,7 +104,7 @@ func (o *Options) accept(kubeClient *kubernetes.Clientset, clusterClient *cluste
 		return false, fmt.Errorf("fail to get managedcluster %s: %v", clusterName, err)
 	}
 	// when a managed cluster registers with hub using awsirsa registration-auth, it will add this annotation
-	// to ManagedCluster resource, presense of which is used to decide the requested authentication type.
+	// to ManagedCluster resource, presence of which is used to decide the requested authentication type.
 	// awrirsa authentication doesn't create CSR on hub, hence there is nothing to approve
 	_, hasEksArn := managedCluster.Annotations["agent.open-cluster-management.io/managed-cluster-arn"]
 

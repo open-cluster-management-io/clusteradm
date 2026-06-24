@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
+
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 )
 
@@ -87,7 +88,7 @@ func (c DeployModeCheck) Check() (warningList []string, errorList []error) {
 		if !c.InternalEndpoint {
 			err := helpers.ValidateKubeconfigFile(c.ManagedKubeconfigFile)
 			if err != nil {
-				return nil, []error{errors.New(fmt.Sprintf("validate managed kubeconfig file failed: %v", err))}
+				return nil, []error{fmt.Errorf("validate managed kubeconfig file failed: %v", err)}
 			}
 		}
 	}

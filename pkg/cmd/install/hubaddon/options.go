@@ -20,6 +20,8 @@ type Options struct {
 	//The file to output the resources will be sent to the file.
 	outputFile    string
 	bundleVersion string
+	// The chart version to use when deploying the hub add-on(s)
+	chartVersion string
 	// Path to a file containing version bundle configuration
 	versionBundleFile string
 

@@ -59,7 +59,7 @@ func (o *Options) run(ctx context.Context) error {
 	return utilerrors.NewAggregate(errs)
 }
 
-func GetAddonCharts(addon string, namespace string) []AddonChart {
+func GetAddonCharts(addon string, namespace string, chartVersion string) []AddonChart {
 	addonChartList, ok := AddonCharts[addon]
 	if !ok {
 		addonChartList = []AddonChart{{
@@ -80,6 +80,10 @@ func GetAddonCharts(addon string, namespace string) []AddonChart {
 		if addonChart.Namespace == "" {
 			addonChartList[i].Namespace = namespace
 		}
+
+		if addonChart.Version == "" {
+			addonChart.Version = chartVersion
+		}
 	}
 
 	return addonChartList
@@ -88,7 +92,7 @@ func GetAddonCharts(addon string, namespace string) []AddonChart {
 func (o *Options) runWithHelmClient(ctx context.Context, addon string) error {
 	var errs []error
 
-	for _, addonChart := range GetAddonCharts(addon, o.namespace) {
+	for _, addonChart := range GetAddonCharts(addon, o.namespace, o.chartVersion) {
 		o.Helm.WithNamespace(addonChart.Namespace)
 		o.Helm.WithCreateNamespace(o.createNamespace)
 
@@ -108,7 +112,7 @@ func (o *Options) runWithHelmClient(ctx context.Context, addon string) error {
 			}
 		}
 
-		if err := o.Helm.InstallChart(ctx, addonChart.ReleaseName, chartRepoName, addonChart.ChartName); err != nil {
+		if err := o.Helm.InstallChart(ctx, addonChart.ReleaseName, chartRepoName, addonChart.ChartName, addonChart.Version); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -127,7 +131,7 @@ func (o *Options) installCRDChart(ctx context.Context, addonChart AddonChart) er
 	}
 	switch status {
 	case "":
-		err = o.Helm.InstallChart(ctx, addonChart.CRDReleaseName, chartRepoName, addonChart.CRDChartName)
+		err = o.Helm.InstallChart(ctx, addonChart.CRDReleaseName, chartRepoName, addonChart.CRDChartName, addonChart.Version)
 	case release.StatusDeployed:
 		// Already installed, reuse it.
 	default:

@@ -2,54 +2,20 @@
 package hubaddon
 
 import (
-	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
-
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
-
-	"open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
-	"open-cluster-management.io/clusteradm/pkg/version"
 )
 
-var (
-	url                      = "https://open-cluster-management.io/helm-charts"
-	repoName                 = "ocm"
-	ArgocdAddonName          = "argocd"
-	ArgocdAgentAddonName     = "argocd-agent"
-	PolicyFrameworkAddonName = "governance-policy-framework"
+const (
+	chartRepoURL  = "https://open-cluster-management.io/helm-charts"
+	chartRepoName = "ocm"
 )
-
-type AddonChart struct {
-	ChartName   string
-	ReleaseName string
-	Namespace   string
-	Version     string
-}
-
-var AddonCharts = map[string]AddonChart{
-	ArgocdAddonName: {
-		ChartName:   "argocd-pull-integration",
-		ReleaseName: "argocd-pull-integration",
-		Namespace:   "argocd",
-	},
-	ArgocdAgentAddonName: {
-		ChartName:   "argocd-agent-addon",
-		ReleaseName: "argocd-agent-addon",
-		Namespace:   "argocd",
-	},
-}
 
 func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 	klog.V(1).InfoS("addon options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.names, "output-file", o.outputFile)
@@ -66,131 +32,63 @@ func (o *Options) validate() (err error) {
 		return fmt.Errorf("names is missing")
 	}
 
-	versionBundle, err := version.GetVersionBundle(o.bundleVersion, o.versionBundleFile)
-	if err != nil {
-		return err
-	}
-
-	o.values.BundleVersion = versionBundle
-
 	return nil
 }
 
 func (o *Options) run() error {
 	addonsToInstall := sets.New[string]()
-	names := strings.Split(o.names, ",")
-	for _, n := range names {
+	names := strings.SplitSeq(o.names, ",")
+	for n := range names {
 		addonsToInstall.Insert(n)
 	}
 
 	var errs []error
 	for addon := range addonsToInstall {
-		if addon == PolicyFrameworkAddonName {
-			if err := o.installPolicyAddon(); err != nil {
-				errs = append(errs, err)
-			}
-		} else {
-			if err := o.runWithHelmClient(addon); err != nil {
-				errs = append(errs, err)
-			}
+		if err := o.runWithHelmClient(addon); err != nil {
+			errs = append(errs, err)
 		}
 	}
 
 	return utilerrors.NewAggregate(errs)
 }
 
-func (o *Options) installPolicyAddon() error {
-	if o.values.CreateNamespace {
-		if err := o.createNamespace(); err != nil {
-			return err
-		}
-	}
-
-	r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
-	files, ok := scenario.AddonDeploymentFiles[PolicyFrameworkAddonName]
+func GetAddonCharts(addon string, namespace string) []AddonChart {
+	addonChart, ok := AddonCharts[addon]
 	if !ok {
-		return fmt.Errorf("no policy framework addon")
-	}
-	err := r.Apply(scenario.Files, o.values, files.CRDFiles...)
-	if err != nil {
-		return fmt.Errorf("Error deploying %s CRDs: %w", PolicyFrameworkAddonName, err)
-	}
-	err = r.Apply(scenario.Files, o.values, files.ConfigFiles...)
-	if err != nil {
-		return fmt.Errorf("Error deploying %s dependencies: %w", PolicyFrameworkAddonName, err)
-	}
-	err = r.Apply(scenario.Files, o.values, files.DeploymentFiles...)
-	if err != nil {
-		return fmt.Errorf("Error deploying %s deployments: %w", PolicyFrameworkAddonName, err)
+		addonChart = []AddonChart{{
+			ChartName:   addon,
+			ReleaseName: addon,
+		}}
 	}
 
-	fmt.Fprintf(o.Streams.Out, "Installing built-in %s add-on to the Hub cluster...\n", PolicyFrameworkAddonName)
-
-	if len(o.outputFile) > 0 {
-		sh, err := os.OpenFile(o.outputFile, os.O_CREATE|os.O_WRONLY, 0755)
-		if err != nil {
-			return err
-		}
-		_, err = fmt.Fprintf(sh, "%s", string(r.RawAppliedResources()))
-		if err != nil {
-			return err
-		}
-		if err := sh.Close(); err != nil {
-			return err
+	for _, addonChart := range addonChart {
+		if addonChart.Namespace == "" {
+			addonChart.Namespace = namespace
 		}
 	}
 
-	return nil
-}
-
-func (o *Options) createNamespace() error {
-	clientSet, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
-	if err != nil {
-		return fmt.Errorf("failed to create kubernetes clientSet")
-	}
-
-	ns, err := clientSet.CoreV1().Namespaces().Get(context.Background(), o.values.Namespace, metav1.GetOptions{})
-	if err != nil && errors.IsNotFound(err) {
-		ns, err = clientSet.CoreV1().Namespaces().Create(context.Background(), &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: o.values.Namespace,
-			},
-		}, metav1.CreateOptions{})
-		if err != nil {
-			return fmt.Errorf("failed to create namespace %s: %w", ns, err)
-		}
-	} else if err != nil {
-		return fmt.Errorf("failed to get namespace %s: %w", ns, err)
-	}
-
-	return nil
+	return addonChart
 }
 
 func (o *Options) runWithHelmClient(addon string) error {
-	addonChartToInstall, ok := AddonCharts[addon]
-	if !ok {
-		addonChartToInstall = AddonChart{
-			ChartName:   addon,
-			ReleaseName: addon,
+	var errs []error
+
+	for _, addonChart := range GetAddonCharts(addon, o.namespace) {
+		o.Helm.WithNamespace(addonChart.Namespace)
+		o.Helm.WithCreateNamespace(o.createNamespace)
+
+		if err := o.Helm.PrepareChart(chartRepoName, chartRepoURL); err != nil {
+			errs = append(errs, err)
+
+			continue
 		}
+
+		if o.ClusteradmFlags.DryRun {
+			o.Helm.SetValue("dryRun", "true")
+		}
+
+		o.Helm.InstallChart(addonChart.ReleaseName, chartRepoName, addonChart.ChartName)
 	}
 
-	if addonChartToInstall.Namespace == "" {
-		addonChartToInstall.Namespace = o.values.Namespace
-	}
-
-	o.Helm.WithNamespace(addonChartToInstall.Namespace)
-	o.Helm.WithCreateNamespace(o.values.CreateNamespace)
-
-	if err := o.Helm.PrepareChart(repoName, url); err != nil {
-		return err
-	}
-
-	if o.ClusteradmFlags.DryRun {
-		o.Helm.SetValue("dryRun", "true")
-	}
-
-	o.Helm.InstallChart(addonChartToInstall.ReleaseName, repoName, addonChartToInstall.ChartName)
-
-	return nil
+	return utilerrors.NewAggregate(errs)
 }

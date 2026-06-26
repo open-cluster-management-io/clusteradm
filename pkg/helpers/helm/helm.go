@@ -173,12 +173,13 @@ func (h *Helm) PrepareChart(repoName, repoURL string) error {
 }
 
 // InstallChart installs the chart
-func (h *Helm) InstallChart(name, repo, chart string) {
+func (h *Helm) InstallChart(name, repo, chart, version string) {
 	actionConfig := new(action.Configuration)
 	if err := actionConfig.Init(h.restClientGetterOrDefault(), h.settings.Namespace(), os.Getenv("HELM_DRIVER"), debug); err != nil {
 		log.Fatal(err)
 	}
 	client := action.NewInstall(actionConfig)
+	client.Version = version
 	client.CreateNamespace = h.createNamespace
 	if h.clusteradmFlags.DryRun {
 		client.DryRun = true

@@ -56,6 +56,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		"The image version tag to use when deploying the hub add-on(s) (e.g. v0.6.0). Defaults to the latest released version. You can also set \"latest\" to install the latest development version.")
 	cmd.Flags().StringVar(&o.versionBundleFile, "bundle-version-overrides", "",
 		"Path to a file containing version bundle overrides. Optional. If provided, overrides component versions within the selected version bundle.")
+	cmd.Flags().StringVar(&o.chartVersion, "chart-version", "", "The chart version to use when deploying the hub add-on(s) (e.g. 0.6.0). Defaults to an empty string, which will fetch the latest released version.")
 
 	return cmd
 }

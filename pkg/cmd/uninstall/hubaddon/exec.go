@@ -51,7 +51,7 @@ func (o *Options) run() error {
 func (o *Options) runWithHelmClient(addon string) error {
 	var errs []error
 
-	for _, addonChart := range hubaddoninstall.GetAddonCharts(addon, o.namespace) {
+	for _, addonChart := range hubaddoninstall.GetAddonCharts(addon, o.namespace, "") {
 		o.Helm.WithNamespace(addonChart.Namespace)
 
 		if err := o.Helm.UninstallRelease(addonChart.ReleaseName); err != nil {

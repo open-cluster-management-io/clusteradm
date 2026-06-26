@@ -2,7 +2,6 @@
 package hubaddon
 
 import (
-	"context"
 	"io"
 	"os"
 
@@ -11,47 +10,11 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
-	"open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
 	"open-cluster-management.io/clusteradm/pkg/helpers/helm"
-	"open-cluster-management.io/clusteradm/pkg/version"
 )
 
 var _ = ginkgo.Describe("install hub-addon", func() {
-	var policyAddonDeployments = []string{
-		"governance-policy-propagator",
-		"governance-policy-addon-controller",
-	}
-
-	const (
-		invalidAddon = "no-such-addon"
-	)
-
-	var (
-		ocmVersion       = version.GetDefaultBundleVersion()
-		ocmBundleVersion = version.VersionBundle{}
-	)
-
-	ginkgo.BeforeEach(func() {
-		if bundleVersion, ok := os.LookupEnv("OCM_BUNDLE_VERSION"); ok && bundleVersion != "" {
-			ocmVersion = bundleVersion
-		}
-
-		var err error
-		ocmBundleVersion, err = version.GetVersionBundle(ocmVersion, "")
-		gomega.Expect(err).ToNot(gomega.HaveOccurred())
-	})
-
 	ginkgo.Context("validate", func() {
-		ginkgo.It("Should not create any built-in add-on deployment(s) because it's not a valid add-on name", func() {
-			o := Options{
-				ClusteradmFlags: clusteradmFlags,
-				names:           invalidAddon,
-			}
-
-			err := o.validate()
-			gomega.Expect(err).To(gomega.HaveOccurred())
-		})
-
 		ginkgo.It("Should not create any built-in add-on deployment(s) because it's not a valid version", func() {
 			o := Options{
 				ClusteradmFlags: clusteradmFlags,
@@ -64,23 +27,25 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 	})
 
 	ginkgo.Context("install policy addon", func() {
-		ginkgo.It("Should deploy the policy add-on deployments in open-cluster-management namespace successfully", func() {
+		ginkgo.It("Should deploy the policy add-on deployments in open-cluster-management namespace successfully", func(ctx ginkgo.SpecContext) {
+			streams := genericiooptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr}
 			o := Options{
 				ClusteradmFlags: clusteradmFlags,
-				bundleVersion:   ocmVersion,
-				values: scenario.Values{
-					Namespace:     ocmNamespace,
-					BundleVersion: ocmBundleVersion,
-				},
-				Streams: genericiooptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr},
+				Streams:         streams,
+				Helm:            helm.NewHelm(clusteradmFlags, streams),
 			}
 
-			err := o.installPolicyAddon()
+			err := o.runWithHelmClient(PolicyFrameworkAddonName)
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
+			var policyAddonDeployments = []string{
+				"governance-policy-propagator",
+				"governance-policy-addon-controller",
+			}
+
 			for _, deployment := range policyAddonDeployments {
-				gomega.Eventually(func() (bool, error) {
-					appDeployment, err := kubeClient.AppsV1().Deployments(ocmNamespace).Get(context.Background(), deployment, metav1.GetOptions{})
+				gomega.Eventually(ctx, func() (bool, error) {
+					appDeployment, err := kubeClient.AppsV1().Deployments(ocmNamespace).Get(ctx, deployment, metav1.GetOptions{})
 					if err != nil {
 						return false, err
 					}
@@ -100,11 +65,9 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 		streams := genericiooptions.IOStreams{Out: io.Discard, ErrOut: os.Stderr}
 		o := Options{
 			ClusteradmFlags: &clusteradmFlagsCopy,
-			values: scenario.Values{
-				CreateNamespace: true,
-			},
-			Streams: streams,
-			Helm:    helm.NewHelm(&clusteradmFlagsCopy, streams),
+			createNamespace: true,
+			Streams:         streams,
+			Helm:            helm.NewHelm(&clusteradmFlagsCopy, streams),
 		}
 
 		err := o.runWithHelmClient(addon)

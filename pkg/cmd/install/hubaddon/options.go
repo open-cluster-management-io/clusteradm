@@ -4,20 +4,19 @@ package hubaddon
 import (
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 
-	"open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"open-cluster-management.io/clusteradm/pkg/helpers/helm"
 )
 
 type Options struct {
-	//ClusteradmFlags: The generic options from the clusteradm cli-runtime.
+	//ClusteradmFlags: The generic options from the clusteradm cli-runtime
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 	//A list of comma separated addon names
 	names string
-	//The file to output the resources will be sent to the file.
-	outputFile    string
-	values        scenario.Values
-	bundleVersion string
+	// The namespace in which to install the hub add-on(s)
+	namespace string
+	// Whether to create the hub add-on namespace during install
+	createNamespace bool
 	// The chart version to use when deploying the hub add-on(s)
 	chartVersion string
 

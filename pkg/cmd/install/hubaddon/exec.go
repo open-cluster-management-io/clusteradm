@@ -18,7 +18,7 @@ const (
 )
 
 func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
-	klog.V(1).InfoS("addon options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.names, "output-file", o.outputFile)
+	klog.V(1).InfoS("addon options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.names)
 	return nil
 }
 

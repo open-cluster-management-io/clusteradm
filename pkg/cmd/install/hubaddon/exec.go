@@ -52,7 +52,7 @@ func (o *Options) run() error {
 	return utilerrors.NewAggregate(errs)
 }
 
-func GetAddonCharts(addon string, namespace string) []AddonChart {
+func GetAddonCharts(addon string, namespace string, chartVersion string) []AddonChart {
 	addonChart, ok := AddonCharts[addon]
 	if !ok {
 		addonChart = []AddonChart{{
@@ -65,6 +65,10 @@ func GetAddonCharts(addon string, namespace string) []AddonChart {
 		if addonChart.Namespace == "" {
 			addonChart.Namespace = namespace
 		}
+
+		if addonChart.Version == "" {
+			addonChart.Version = chartVersion
+		}
 	}
 
 	return addonChart
@@ -73,7 +77,7 @@ func GetAddonCharts(addon string, namespace string) []AddonChart {
 func (o *Options) runWithHelmClient(addon string) error {
 	var errs []error
 
-	for _, addonChart := range GetAddonCharts(addon, o.namespace) {
+	for _, addonChart := range GetAddonCharts(addon, o.namespace, o.chartVersion) {
 		o.Helm.WithNamespace(addonChart.Namespace)
 		o.Helm.WithCreateNamespace(o.createNamespace)
 
@@ -87,7 +91,7 @@ func (o *Options) runWithHelmClient(addon string) error {
 			o.Helm.SetValue("dryRun", "true")
 		}
 
-		o.Helm.InstallChart(addonChart.ReleaseName, chartRepoName, addonChart.ChartName)
+		o.Helm.InstallChart(addonChart.ReleaseName, chartRepoName, addonChart.ChartName, addonChart.Version)
 	}
 
 	return utilerrors.NewAggregate(errs)

@@ -18,8 +18,8 @@ type Options struct {
 	outputFile    string
 	values        scenario.Values
 	bundleVersion string
-	// Path to a file containing version bundle configuration
-	versionBundleFile string
+	// The chart version to use when deploying the hub add-on(s)
+	chartVersion string
 
 	Streams genericiooptions.IOStreams
 

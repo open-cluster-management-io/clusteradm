@@ -49,7 +49,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	}
 
 	cmd.Flags().StringVar(&o.names, "names", "", "Names of the built-in add-on to uninstall (comma separated). The built-in add-ons are: argocd, argocd-agent, governance-policy-framework")
-	cmd.Flags().StringVar(&o.values.Namespace, "namespace", "open-cluster-management", "Namespace of the built-in add-on to uninstall. Defaults to open-cluster-management")
+	cmd.Flags().StringVar(&o.namespace, "namespace", "open-cluster-management", "Namespace of the built-in add-on to uninstall. Defaults to open-cluster-management")
 
 	return cmd
 }

@@ -5,63 +5,24 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
+	"github.com/spf13/cobra"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/repo"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
-
-	corev1 "k8s.io/api/core/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-
-	"open-cluster-management.io/clusteradm/pkg/helpers"
-	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
-
-	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 
-	"open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
-	"open-cluster-management.io/clusteradm/pkg/version"
+	"open-cluster-management.io/clusteradm/pkg/helpers"
 )
 
-var (
-	url                      = "https://open-cluster-management.io/helm-charts"
-	repoName                 = "ocm"
-	ArgocdAddonName          = "argocd"
-	ArgocdAgentAddonName     = "argocd-agent"
-	PolicyFrameworkAddonName = "governance-policy-framework"
+const (
+	chartRepoURL  = "https://open-cluster-management.io/helm-charts"
+	chartRepoName = "ocm"
 )
-
-type AddonChart struct {
-	ChartName      string
-	ReleaseName    string
-	Namespace      string
-	CRDChartName   string
-	CRDReleaseName string
-	CRDs           []string
-	Version        string
-}
-
-var AddonCharts = map[string]AddonChart{
-	ArgocdAddonName: {
-		ChartName: "argocd-pull-integration",
-		Namespace: "argocd",
-	},
-	ArgocdAgentAddonName: {
-		ChartName:    "argocd-agent-addon",
-		CRDChartName: "argocd-agent-addon-crds",
-		CRDs: []string{
-			"argocds.argoproj.io",
-			"gitopsclusters.apps.open-cluster-management.io",
-		},
-		Namespace: "argocd",
-	},
-}
 
 func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 	klog.V(1).InfoS("addon options:", "dry-run", o.ClusteradmFlags.DryRun, "names", o.names, "output-file", o.outputFile)
@@ -78,145 +39,81 @@ func (o *Options) validate() (err error) {
 		return fmt.Errorf("names is missing")
 	}
 
-	versionBundle, err := version.GetVersionBundle(o.bundleVersion, o.versionBundleFile)
-	if err != nil {
-		return err
-	}
-
-	o.values.BundleVersion = versionBundle
-
 	return nil
 }
 
 func (o *Options) run(ctx context.Context) error {
 	addonsToInstall := sets.New[string]()
-	names := strings.Split(o.names, ",")
-	for _, n := range names {
+	names := strings.SplitSeq(o.names, ",")
+	for n := range names {
 		addonsToInstall.Insert(n)
 	}
 
 	var errs []error
 	for addon := range addonsToInstall {
-		if addon == PolicyFrameworkAddonName {
-			if err := o.installPolicyAddon(ctx); err != nil {
-				errs = append(errs, err)
-			}
-		} else {
-			if err := o.runWithHelmClient(ctx, addon); err != nil {
-				errs = append(errs, err)
-			}
+		if err := o.runWithHelmClient(ctx, addon); err != nil {
+			errs = append(errs, err)
 		}
 	}
 
 	return utilerrors.NewAggregate(errs)
 }
 
-func (o *Options) installPolicyAddon(ctx context.Context) error {
-	if o.values.CreateNamespace {
-		if err := o.createNamespace(ctx); err != nil {
-			return err
-		}
-	}
-
-	r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
-	files, ok := scenario.AddonDeploymentFiles[PolicyFrameworkAddonName]
+func GetAddonCharts(addon string, namespace string) []AddonChart {
+	addonChartList, ok := AddonCharts[addon]
 	if !ok {
-		return fmt.Errorf("no policy framework addon")
-	}
-	err := r.Apply(scenario.Files, o.values, files.CRDFiles...)
-	if err != nil {
-		return fmt.Errorf("error deploying %s CRDs: %w", PolicyFrameworkAddonName, err)
-	}
-	err = r.Apply(scenario.Files, o.values, files.ConfigFiles...)
-	if err != nil {
-		return fmt.Errorf("error deploying %s dependencies: %w", PolicyFrameworkAddonName, err)
-	}
-	err = r.Apply(scenario.Files, o.values, files.DeploymentFiles...)
-	if err != nil {
-		return fmt.Errorf("error deploying %s deployments: %w", PolicyFrameworkAddonName, err)
+		addonChartList = []AddonChart{{
+			ChartName:   addon,
+			ReleaseName: addon,
+		}}
 	}
 
-	fmt.Fprintf(o.Streams.Out, "Installing built-in %s add-on to the Hub cluster...\n", PolicyFrameworkAddonName)
+	for i, addonChart := range addonChartList {
+		if addonChart.ReleaseName == "" {
+			addonChartList[i].ReleaseName = addonChartList[i].ChartName
+		}
 
-	if len(o.outputFile) > 0 {
-		sh, err := os.OpenFile(o.outputFile, os.O_CREATE|os.O_WRONLY, 0755)
-		if err != nil {
-			return err
+		if addonChart.CRDReleaseName == "" {
+			addonChartList[i].CRDReleaseName = addonChartList[i].CRDChartName
 		}
-		_, err = fmt.Fprintf(sh, "%s", string(r.RawAppliedResources()))
-		if err != nil {
-			return err
-		}
-		if err := sh.Close(); err != nil {
-			return err
+
+		if addonChart.Namespace == "" {
+			addonChartList[i].Namespace = namespace
 		}
 	}
 
-	return nil
-}
-
-func (o *Options) createNamespace(ctx context.Context) error {
-	clientSet, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
-	if err != nil {
-		return fmt.Errorf("failed to create kubernetes clientSet")
-	}
-
-	ns, err := clientSet.CoreV1().Namespaces().Get(ctx, o.values.Namespace, metav1.GetOptions{})
-	if err != nil && k8serrors.IsNotFound(err) {
-		ns, err = clientSet.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: o.values.Namespace,
-			},
-		}, metav1.CreateOptions{})
-		if err != nil {
-			return fmt.Errorf("failed to create namespace %s: %w", ns, err)
-		}
-	} else if err != nil {
-		return fmt.Errorf("failed to get namespace %s: %w", ns, err)
-	}
-
-	return nil
+	return addonChartList
 }
 
 func (o *Options) runWithHelmClient(ctx context.Context, addon string) error {
-	addonChartToInstall, ok := AddonCharts[addon]
-	if !ok {
-		addonChartToInstall = AddonChart{
-			ChartName:   addon,
-			ReleaseName: addon,
+	var errs []error
+
+	for _, addonChart := range GetAddonCharts(addon, o.namespace) {
+		o.Helm.WithNamespace(addonChart.Namespace)
+		o.Helm.WithCreateNamespace(o.createNamespace)
+
+		if err := o.Helm.PrepareChart(ctx, chartRepoName, chartRepoURL); err != nil {
+			errs = append(errs, err)
+
+			continue
+		}
+
+		if o.ClusteradmFlags.DryRun {
+			o.Helm.SetValue("dryRun", "true")
+		}
+
+		if addonChart.CRDReleaseName != "" {
+			if err := o.installCRDChart(ctx, addonChart); err != nil {
+				return err
+			}
+		}
+
+		if err := o.Helm.InstallChart(ctx, addonChart.ReleaseName, chartRepoName, addonChart.ChartName); err != nil {
+			errs = append(errs, err)
 		}
 	}
 
-	if addonChartToInstall.ReleaseName == "" {
-		addonChartToInstall.ReleaseName = addonChartToInstall.ChartName
-	}
-
-	if addonChartToInstall.CRDReleaseName == "" {
-		addonChartToInstall.CRDReleaseName = addonChartToInstall.CRDChartName
-	}
-
-	if addonChartToInstall.Namespace == "" {
-		addonChartToInstall.Namespace = o.values.Namespace
-	}
-
-	o.Helm.WithNamespace(addonChartToInstall.Namespace)
-	o.Helm.WithCreateNamespace(o.values.CreateNamespace)
-
-	if err := o.Helm.PrepareChart(ctx, repoName, url); err != nil {
-		return err
-	}
-
-	if o.ClusteradmFlags.DryRun {
-		o.Helm.SetValue("dryRun", "true")
-	}
-
-	if addonChartToInstall.CRDReleaseName != "" {
-		if err := o.installCRDChart(ctx, addonChartToInstall); err != nil {
-			return err
-		}
-	}
-
-	return o.Helm.InstallChart(ctx, addonChartToInstall.ReleaseName, repoName, addonChartToInstall.ChartName)
+	return utilerrors.NewAggregate(errs)
 }
 
 func (o *Options) installCRDChart(ctx context.Context, addonChart AddonChart) error {
@@ -230,7 +127,7 @@ func (o *Options) installCRDChart(ctx context.Context, addonChart AddonChart) er
 	}
 	switch status {
 	case "":
-		err = o.Helm.InstallChart(ctx, addonChart.CRDReleaseName, repoName, addonChart.CRDChartName)
+		err = o.Helm.InstallChart(ctx, addonChart.CRDReleaseName, chartRepoName, addonChart.CRDChartName)
 	case release.StatusDeployed:
 		// Already installed, reuse it.
 	default:
@@ -241,7 +138,7 @@ func (o *Options) installCRDChart(ctx context.Context, addonChart AddonChart) er
 	switch {
 	case errors.Is(err, repo.ErrNoChartName):
 		klog.Warningf("chart %s not found in the %s repository, installing %s with its own CRDs",
-			addonChart.CRDChartName, repoName, addonChart.ChartName)
+			addonChart.CRDChartName, chartRepoName, addonChart.ChartName)
 	case err != nil:
 		return err
 	case !o.ClusteradmFlags.DryRun:

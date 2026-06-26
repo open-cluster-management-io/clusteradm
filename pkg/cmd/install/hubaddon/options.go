@@ -9,17 +9,14 @@ import (
 )
 
 type Options struct {
-	//ClusteradmFlags: The generic options from the clusteradm cli-runtime.
+	//ClusteradmFlags: The generic options from the clusteradm cli-runtime
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 	//A list of comma separated addon names
 	names string
-	//Namespace of the built-in add-on to install
+	// The namespace in which to install the hub add-on(s)
 	namespace string
-	//If true, automatically create the specified namespace
+	// Whether to create the hub add-on namespace during install
 	createNamespace bool
-	//The file to output the resources will be sent to the file.
-	outputFile    string
-	bundleVersion string
 	// The chart version to use when deploying the hub add-on(s)
 	chartVersion string
 	// Path to a file containing version bundle configuration

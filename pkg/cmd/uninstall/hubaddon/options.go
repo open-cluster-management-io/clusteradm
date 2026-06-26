@@ -13,7 +13,7 @@ type Options struct {
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 	//A list of comma separated addon names
 	names string
-	//Namespace of the built-in add-on to uninstall
+	//The namespace from which to uninstall the hub add-on(s)
 	namespace string
 
 	Streams genericiooptions.IOStreams

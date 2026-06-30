@@ -2,37 +2,41 @@
 package hubaddon
 
 type AddonChart struct {
-	ChartName      string
-	ReleaseName    string
-	Namespace      string
-	CRDChartName   string
-	CRDReleaseName string
-	CRDs           []string
-	Version        string
+	ChartName      string   `json:"chartName"`
+	ReleaseName    string   `json:"releaseName"`
+	Namespace      string   `json:"namespace"`
+	CRDChartName   string   `json:"crdChartName"`
+	CRDReleaseName string   `json:"crdReleaseName"`
+	CRDs           []string `json:"crds"`
+	Version        string   `json:"version"`
 }
-
-const (
-	ArgocdAddonName          = "argocd"
-	ArgocdAgentAddonName     = "argocd-agent"
-	PolicyFrameworkAddonName = "governance-policy-framework"
-)
 
 var AddonCharts = map[string][]AddonChart{
 	// ArgoCD Addons
-	ArgocdAddonName: {{
+	"argocd": {{
 		ChartName: "argocd-pull-integration",
 		Namespace: "argocd",
 	}},
-	ArgocdAgentAddonName: {{
+	"argocd-agent": {{
 		ChartName: "argocd-agent-addon",
 		Namespace: "argocd",
 	}},
 	// Policy Framework Addons
-	PolicyFrameworkAddonName: {{
+	"governance-policy-framework": {{
 		ChartName: "governance-policy-propagator",
 		Namespace: "open-cluster-management",
 	}, {
 		ChartName: "governance-policy-addon-controller",
 		Namespace: "open-cluster-management",
 	}},
+}
+
+func GetAddonNames() []string {
+	addonNames := make([]string, 0, len(AddonCharts))
+
+	for addon := range AddonCharts {
+		addonNames = append(addonNames, addon)
+	}
+
+	return addonNames
 }

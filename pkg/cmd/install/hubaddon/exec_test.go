@@ -35,7 +35,7 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 				Helm:            helm.NewHelm(clusteradmFlags, streams),
 			}
 
-			err := o.runWithHelmClient(ctx, PolicyFrameworkAddonName)
+			err := o.runWithHelmClient(ctx, "governance-policy-framework")
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 			var policyAddonDeployments = []string{
@@ -59,7 +59,7 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 	})
 
 	ginkgo.It("Should not create any built-in add-on deployment(s) in dry-run mode", func(ctx ginkgo.SpecContext) {
-		addon := ArgocdAddonName
+		addon := "argocd"
 		clusteradmFlagsCopy := *clusteradmFlags
 		clusteradmFlagsCopy.DryRun = true
 		streams := genericiooptions.IOStreams{Out: io.Discard, ErrOut: os.Stderr}
@@ -80,7 +80,7 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 	})
 
 	ginkgo.It("Should install the argocd-agent add-on in dry-run mode", func(ctx ginkgo.SpecContext) {
-		addon := ArgocdAgentAddonName
+		addon := "argocd-agent"
 		addonChart := AddonCharts[addon][0]
 		clusteradmFlagsCopy := *clusteradmFlags
 		clusteradmFlagsCopy.DryRun = true

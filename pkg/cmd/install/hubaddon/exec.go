@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	chartRepoURL  = "https://open-cluster-management.io/helm-charts"
+	ChartRepoURL  = "https://open-cluster-management.io/helm-charts"
 	chartRepoName = "ocm"
 )
 
@@ -96,7 +96,7 @@ func (o *Options) runWithHelmClient(ctx context.Context, addon string) error {
 		o.Helm.WithNamespace(addonChart.Namespace)
 		o.Helm.WithCreateNamespace(o.createNamespace)
 
-		if err := o.Helm.PrepareChart(ctx, chartRepoName, chartRepoURL); err != nil {
+		if err := o.Helm.PrepareChart(ctx, chartRepoName, ChartRepoURL); err != nil {
 			errs = append(errs, err)
 
 			continue

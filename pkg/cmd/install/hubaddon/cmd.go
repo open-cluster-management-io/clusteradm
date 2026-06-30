@@ -3,6 +3,7 @@ package hubaddon
 
 import (
 	"fmt"
+	"strings"
 
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	clusteradmhelpers "open-cluster-management.io/clusteradm/pkg/helpers"
@@ -48,9 +49,9 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		},
 	}
 
-	cmd.Flags().StringVar(&o.names, "names", "", "Names of the built-in add-on to install (comma separated). The built-in add-ons are: argocd, argocd-agent, governance-policy-framework")
-	cmd.Flags().StringVar(&o.namespace, "namespace", "open-cluster-management", "Namespace of the built-in add-on to install. Defaults to open-cluster-management")
-	cmd.Flags().BoolVar(&o.createNamespace, "create-namespace", false, "If true, automatically create the specified namespace")
+	cmd.Flags().StringVar(&o.names, "names", "", "Names of the add-ons to install (comma separated) from the "+ChartRepoURL+" repository. The built-in add-ons are: "+strings.Join(GetAddonNames(), ", "))
+	cmd.Flags().StringVar(&o.namespace, "namespace", "", "Namespace in which to install the add-ons. If not provided, the add-ons will be installed according to their chart.")
+	cmd.Flags().BoolVar(&o.createNamespace, "create-namespace", false, "If true, automatically create the specified namespace.")
 	cmd.Flags().StringVar(&o.chartVersion, "chart-version", "", "The chart version to use when deploying the hub add-on(s) (e.g. 0.6.0). Defaults to an empty string, which fetches the latest released version.")
 	cmd.Flags().StringVar(&o.versionBundleFile, "bundle-version-overrides", "",
 		"Path to a file containing version bundle overrides. Optional. If provided, overrides component versions within the selected version bundle.")

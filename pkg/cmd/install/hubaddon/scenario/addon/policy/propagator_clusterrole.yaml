@@ -6,18 +6,6 @@ metadata:
 rules:
   - apiGroups:
       - ""
-    resources:
-      - events
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - ""
     resourceNames:
       - policy-encryption-key
     resources:
@@ -35,9 +23,22 @@ rules:
     verbs:
       - create
   - apiGroups:
-      - "*"
+      - ""
+      - events.k8s.io
     resources:
-      - "*"
+      - events
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - '*'
+    resources:
+      - '*'
     verbs:
       - get
       - list
@@ -51,9 +52,15 @@ rules:
       - list
       - watch
   - apiGroups:
-      - authorization.k8s.io
+      - authentication.k8s.io
     resources:
       - tokenreviews
+    verbs:
+      - create
+  - apiGroups:
+      - authorization.k8s.io
+    resources:
+      - subjectaccessreviews
     verbs:
       - create
   - apiGroups:

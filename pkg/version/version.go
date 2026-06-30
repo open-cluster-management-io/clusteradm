@@ -77,8 +77,7 @@ func versionFromBuildInfo(info *debug.BuildInfo, fallbackCommit string) (string,
 }
 
 type VersionBundle struct {
-	OCM         string `json:"ocm"`
-	PolicyAddon string `json:"policy_addon"`
+	OCM string `json:"ocm"`
 }
 
 var defaultBundleVersion = "1.3.1"
@@ -113,45 +112,37 @@ func getVersionBundle(version string) (VersionBundle, error) {
 
 	// latest
 	versionBundleList["latest"] = VersionBundle{
-		OCM:         "latest",
-		PolicyAddon: "latest",
+		OCM: "latest",
 	}
 
 	// predefined bundle version
 	// TODO: automated version tracking
 	versionBundleList["1.1.0"] = VersionBundle{
-		OCM:         "v1.1.0",
-		PolicyAddon: "v0.16.0",
+		OCM: "v1.1.0",
 	}
 
 	versionBundleList["1.1.1"] = VersionBundle{
-		OCM:         "v1.1.1",
-		PolicyAddon: "v0.17.0",
+		OCM: "v1.1.1",
 	}
 
 	versionBundleList["1.1.3"] = VersionBundle{
-		OCM:         "v1.1.3",
-		PolicyAddon: "v0.17.0",
+		OCM: "v1.1.3",
 	}
 
 	versionBundleList["1.2.0"] = VersionBundle{
-		OCM:         "v1.2.0",
-		PolicyAddon: "v0.18.0",
+		OCM: "v1.2.0",
 	}
 
 	versionBundleList["1.2.1"] = VersionBundle{
-		OCM:         "v1.2.1",
-		PolicyAddon: "v0.18.0",
+		OCM: "v1.2.1",
 	}
 
 	versionBundleList["1.3.0"] = VersionBundle{
-		OCM:         "v1.3.0",
-		PolicyAddon: "v0.18.0",
+		OCM: "v1.3.0",
 	}
 
 	versionBundleList["1.3.1"] = VersionBundle{
-		OCM:         "v1.3.1",
-		PolicyAddon: "v0.18.0",
+		OCM: "v1.3.1",
 	}
 
 	// default

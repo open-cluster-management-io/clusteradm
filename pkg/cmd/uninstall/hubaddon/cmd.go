@@ -3,12 +3,15 @@ package hubaddon
 
 import (
 	"fmt"
+	"strings"
 
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	clusteradmhelpers "open-cluster-management.io/clusteradm/pkg/helpers"
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
+
+	hubaddoninstall "open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon"
 )
 
 var example = `
@@ -48,7 +51,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		},
 	}
 
-	cmd.Flags().StringVar(&o.names, "names", "", "Names of the built-in add-on to uninstall (comma separated). The built-in add-ons are: argocd, argocd-agent, governance-policy-framework")
+	cmd.Flags().StringVar(&o.names, "names", "", "Names of the built-in add-on to uninstall (comma separated) from the "+hubaddoninstall.ChartRepoURL+" repository. The built-in add-ons are: "+strings.Join(hubaddoninstall.GetAddonNames(), ", "))
 	cmd.Flags().StringVar(&o.namespace, "namespace", "", "Namespace from which to uninstall the add-ons. If not provided, the add-ons will be uninstalled according to their chart.")
 
 	return cmd

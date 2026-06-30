@@ -33,7 +33,7 @@ func (o *Options) validate() (err error) {
 }
 
 func (o *Options) run() error {
-	addons := sets.New[string](strings.Split(o.names, ",")...)
+	addons := sets.New(strings.Split(o.names, ",")...)
 	if len(addons) == 0 {
 		return nil
 	}

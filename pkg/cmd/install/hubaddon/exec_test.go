@@ -35,7 +35,7 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 				Helm:            helm.NewHelm(clusteradmFlags, streams),
 			}
 
-			err := o.runWithHelmClient(PolicyFrameworkAddonName)
+			err := o.runWithHelmClient("governance-policy-framework")
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 			var policyAddonDeployments = []string{

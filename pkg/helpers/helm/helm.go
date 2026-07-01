@@ -248,6 +248,8 @@ func (h *Helm) InstallChart(ctx context.Context, name, repo, chart string) error
 
 	if h.clusteradmFlags.DryRun {
 		fmt.Fprintln(h.streams.Out, release.Manifest)
+	} else if len(release.Info.Notes) > 0 {
+		fmt.Fprintln(h.streams.Out, release.Info.Notes)
 	}
 
 	return nil

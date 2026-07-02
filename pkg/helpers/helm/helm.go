@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v2"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/gofrs/flock"
 	"github.com/pkg/errors"
@@ -24,25 +25,38 @@ import (
 	"helm.sh/helm/v3/pkg/downloader"
 	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/repo"
+
+	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
 const HelmFlagSetAnnotation = "HelmSet"
 
 type Helm struct {
-	settings        *cli.EnvSettings
-	values          *values.Options
-	createNamespace bool
+	settings         *cli.EnvSettings
+	values           *values.Options
+	createNamespace  bool
+	dryRun           bool
+	restClientGetter genericclioptions.RESTClientGetter
 }
 
-func NewHelm() *Helm {
+func NewHelm(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags) *Helm {
 	h := &Helm{
 		settings: cli.New(),
 		values: &values.Options{
 			Values:     []string{},
 			FileValues: []string{},
 		},
+		dryRun:           clusteradmFlags.DryRun,
+		restClientGetter: clusteradmFlags.KubectlFactory,
 	}
 	return h
+}
+
+func (h *Helm) restClientGetterOrDefault() genericclioptions.RESTClientGetter {
+	if h.restClientGetter != nil {
+		return h.restClientGetter
+	}
+	return h.settings.RESTClientGetter()
 }
 
 func (h *Helm) WithNamespace(ns string) {
@@ -158,11 +172,12 @@ func (h *Helm) PrepareChart(repoName, repoURL string) error {
 // InstallChart installs the chart
 func (h *Helm) InstallChart(name, repo, chart string) {
 	actionConfig := new(action.Configuration)
-	if err := actionConfig.Init(h.settings.RESTClientGetter(), h.settings.Namespace(), os.Getenv("HELM_DRIVER"), debug); err != nil {
+	if err := actionConfig.Init(h.restClientGetterOrDefault(), h.settings.Namespace(), os.Getenv("HELM_DRIVER"), debug); err != nil {
 		log.Fatal(err)
 	}
 	client := action.NewInstall(actionConfig)
 	client.CreateNamespace = h.createNamespace
+	client.DryRun = h.dryRun
 
 	if client.Version == "" && client.Devel {
 		client.Version = ">0.0.0-0"
@@ -221,7 +236,10 @@ func (h *Helm) InstallChart(name, repo, chart string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(release.Manifest)
+
+	if h.dryRun {
+		fmt.Println(release.Manifest)
+	}
 }
 
 func isChartInstallable(ch *chart.Chart) (bool, error) {
@@ -239,7 +257,7 @@ func debug(format string, v ...interface{}) {
 
 func (h *Helm) UninstallRelease(name string) error {
 	actionConfig := new(action.Configuration)
-	if err := actionConfig.Init(h.settings.RESTClientGetter(), h.settings.Namespace(), os.Getenv("HELM_DRIVER"), debug); err != nil {
+	if err := actionConfig.Init(h.restClientGetterOrDefault(), h.settings.Namespace(), os.Getenv("HELM_DRIVER"), debug); err != nil {
 		return err
 	}
 

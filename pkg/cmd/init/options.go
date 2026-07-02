@@ -87,6 +87,6 @@ func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, st
 		ClusteradmFlags:           clusteradmFlags,
 		clusterManagerChartConfig: chart.NewDefaultClusterManagerChartConfig(),
 		Streams:                   streams,
-		Helm:                      helm.NewHelm(),
+		Helm:                      helm.NewHelm(clusteradmFlags),
 	}
 }

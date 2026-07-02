@@ -30,6 +30,6 @@ func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, st
 	return &Options{
 		ClusteradmFlags: clusteradmFlags,
 		Streams:         streams,
-		Helm:            helm.NewHelm(),
+		Helm:            helm.NewHelm(clusteradmFlags),
 	}
 }

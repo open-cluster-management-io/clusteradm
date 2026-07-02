@@ -170,15 +170,13 @@ func (o *Options) createNamespace() error {
 }
 
 func (o *Options) runWithHelmClient(addon string) error {
+	o.Helm.WithCreateNamespace(o.values.CreateNamespace)
+
 	if addon == argocdAddonName {
 		o.Helm.WithNamespace(argocdNamespace)
-		o.Helm.WithCreateNamespace(o.values.CreateNamespace)
+
 		if err := o.Helm.PrepareChart(repoName, url); err != nil {
 			return err
-		}
-
-		if o.ClusteradmFlags.DryRun {
-			o.Helm.SetValue("dryRun", "true")
 		}
 
 		o.Helm.InstallChart(argocdReleaseName, repoName, argocdChartName)
@@ -186,13 +184,9 @@ func (o *Options) runWithHelmClient(addon string) error {
 
 	if addon == argocdAgentAddonName {
 		o.Helm.WithNamespace(argocdNamespace)
-		o.Helm.WithCreateNamespace(o.values.CreateNamespace)
+
 		if err := o.Helm.PrepareChart(repoName, url); err != nil {
 			return err
-		}
-
-		if o.ClusteradmFlags.DryRun {
-			o.Helm.SetValue("dryRun", "true")
 		}
 
 		o.Helm.InstallChart(argocdAgentReleaseName, repoName, argocdAgentChartName)

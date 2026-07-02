@@ -11,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"open-cluster-management.io/clusteradm/pkg/cmd/install/hubaddon/scenario"
+	"open-cluster-management.io/clusteradm/pkg/helpers/helm"
 	"open-cluster-management.io/clusteradm/pkg/version"
 )
 
@@ -105,6 +106,29 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 			err := o.runWithClient()
 			gomega.Expect(err).Should(gomega.HaveOccurred())
 		})
+	})
+
+	ginkgo.It("Should not create any built-in add-on deployment(s) in dry-run mode", func(ctx ginkgo.SpecContext) {
+		addon := "argocd"
+		clusteradmFlagsCopy := *clusteradmFlags
+		clusteradmFlagsCopy.DryRun = true
+		o := Options{
+			ClusteradmFlags: &clusteradmFlagsCopy,
+			values: scenario.Values{
+				CreateNamespace: true,
+				HubAddons:       []string{addon},
+			},
+			Streams: genericiooptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr},
+			Helm:    helm.NewHelm(&clusteradmFlagsCopy),
+		}
+
+		err := o.runWithHelmClient(addon)
+		gomega.Expect(err).ToNot(gomega.HaveOccurred())
+
+		gomega.Consistently(func(g gomega.Gomega) bool {
+			_, err := kubeClient.CoreV1().Namespaces().Get(ctx, addon, metav1.GetOptions{})
+			return errors.IsNotFound(err)
+		}, eventuallyTimeout, eventuallyInterval).Should(gomega.BeTrue(), addon+" namespace should not be created")
 	})
 
 	// Generate entries for the `runWithClient` test table

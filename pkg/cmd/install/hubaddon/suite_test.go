@@ -48,10 +48,15 @@ func TestIntegrationInstallAddons(t *testing.T) {
 var _ = ginkgo.BeforeSuite(func() {
 	ginkgo.By("bootstrapping test environment")
 
+	ocmVendorPath := filepath.Join("..", "..", "..", "..", "vendor", "open-cluster-management.io", "api")
+
 	// start a kube-apiserver
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
-			filepath.Join("..", "..", "..", "..", "vendor", "open-cluster-management.io", "api", "addon", "v1alpha1"),
+			filepath.Join(ocmVendorPath, "addon", "v1alpha1"),
+			filepath.Join(ocmVendorPath, "cluster", "v1"),
+			filepath.Join(ocmVendorPath, "cluster", "v1beta1"),
+			filepath.Join(ocmVendorPath, "cluster", "v1beta2"),
 		},
 	}
 

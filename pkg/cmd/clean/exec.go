@@ -77,7 +77,7 @@ func (o *Options) Run() error {
 	}
 
 	if exist {
-		fmt.Fprintf(o.Streams.Out, "Please detach all managed clusters from the hub control plane\n")
+		fmt.Fprintln(o.Streams.Out, "Please detach all managed clusters from the hub control plane")
 		return nil
 	}
 
@@ -93,7 +93,7 @@ func (o *Options) Run() error {
 
 	err = clusterManagerClient.OperatorV1().ClusterManagers().Delete(context.Background(), o.ClusterManageName, metav1.DeleteOptions{})
 	if errors.IsNotFound(err) {
-		fmt.Fprintf(o.Streams.Out, "The multicluster hub control plane is cleand up already\n")
+		fmt.Fprintln(o.Streams.Out, "The multicluster hub control plane is cleand up already")
 		return nil
 	}
 	b := retry.DefaultBackoff
@@ -110,7 +110,7 @@ func (o *Options) Run() error {
 		}
 	}
 
-	fmt.Fprintf(o.Streams.Out, "The multicluster hub control plane has been clean up successfully!\n")
+	fmt.Fprintln(o.Streams.Out, "The multicluster hub control plane has been clean up successfully!")
 
 	return nil
 }

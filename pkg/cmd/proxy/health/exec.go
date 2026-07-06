@@ -91,7 +91,7 @@ func (o *Options) run(streams genericiooptions.IOStreams) error {
 				"Cluster-Proxy addon is not installed.\n"); err != nil {
 				return err
 			}
-			if _, err := fmt.Fprintf(
+			if _, err := fmt.Fprintln(
 				streams.Out,
 				"Consider following the guide: https://open-cluster-management.io/docs/getting-started/integration/cluster-proxy"); err != nil {
 				return err

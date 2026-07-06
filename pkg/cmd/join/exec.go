@@ -419,7 +419,7 @@ func (o *Options) run() error {
 
 	fmt.Fprintf(o.Streams.Out, "Please log onto the hub cluster and run the following command:\n\n"+
 		"    %s accept --clusters %s\n\n", helpers.GetExampleHeader(), o.klusterletChartConfig.Klusterlet.ClusterName)
-	fmt.Fprintf(o.Streams.Out, "This is not needed when the ManagedClusterAutoApproval feature is enabled\n")
+	fmt.Fprintln(o.Streams.Out, "This is not needed when the ManagedClusterAutoApproval feature is enabled")
 	return nil
 
 }

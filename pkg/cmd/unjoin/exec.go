@@ -128,7 +128,7 @@ func (o *Options) run() error {
 			return err
 		}
 		if len(list.Items) != 0 {
-			fmt.Fprintf(o.Streams.Out, "operator not purged: there are other klusterlet on cluster\n")
+			fmt.Fprintln(o.Streams.Out, "operator not purged: there are other klusterlet on cluster")
 			return nil
 		}
 		if err = purgeOperator(kubeClient, apiExtensionsClient); err != nil {

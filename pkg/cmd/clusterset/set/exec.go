@@ -115,7 +115,7 @@ func (o *Options) handleManagedNamespaces(clusterClient *clusterclientset.Client
 		namespace = strings.TrimSpace(namespace)
 		// Validate namespace name (basic validation)
 		if len(namespace) == 0 {
-			fmt.Fprintf(o.Streams.ErrOut, "Warning: Empty namespace name provided, skipping\n")
+			fmt.Fprintln(o.Streams.ErrOut, "Warning: Empty namespace name provided, skipping")
 			continue
 		}
 

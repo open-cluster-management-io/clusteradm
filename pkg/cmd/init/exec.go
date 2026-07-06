@@ -239,7 +239,7 @@ func (o *Options) run() error {
 	} else {
 		o.clusterManagerChartConfig.CreateNamespace = o.createNamespace
 		if !o.createNamespace {
-			fmt.Fprintf(o.Streams.Out, "skip creating namespace\n")
+			fmt.Fprintln(o.Streams.Out, "skip creating namespace")
 		}
 
 		if !o.useBootstrapToken {

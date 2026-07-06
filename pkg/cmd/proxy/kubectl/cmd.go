@@ -197,7 +197,7 @@ func getProxyConfig(hubRestConfig *rest.Config, streams genericiooptions.IOStrea
 				"Cluster-Proxy addon is not installed.\n"); err != nil {
 				return nil, err
 			}
-			if _, err := fmt.Fprintf(
+			if _, err := fmt.Fprintln(
 				streams.Out,
 				"Consider following the guide: https://open-cluster-management.io/docs/getting-started/integration/cluster-proxy"); err != nil {
 				return nil, err

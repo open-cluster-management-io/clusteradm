@@ -199,7 +199,7 @@ func getProxyConfig(hubRestConfig *rest.Config, streams genericiooptions.IOStrea
 			}
 			if _, err := fmt.Fprintf(
 				streams.Out,
-				"Consider following the guide: https://open-cluster-management.io/getting-started/integration/cluster-proxy/\n"); err != nil {
+				"Consider following the guide: https://open-cluster-management.io/docs/getting-started/integration/cluster-proxy"); err != nil {
 				return nil, err
 			}
 			return nil, nil

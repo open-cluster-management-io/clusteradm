@@ -122,7 +122,7 @@ func (o *Options) accept(kubeClient *kubernetes.Clientset, clusterClient *cluste
 	if err != nil {
 		return approved, err
 	}
-	fmt.Fprintf(o.Streams.Out, "\n Your managed cluster %s has joined the Hub successfully. Visit https://open-cluster-management.io/scenarios or https://github.com/open-cluster-management-io/OCM/tree/main/solutions for next steps.\n", clusterName)
+	fmt.Fprintf(o.Streams.Out, "\n Your managed cluster %s has joined the Hub successfully. Visit https://open-cluster-management.io/docs/scenarios or https://github.com/open-cluster-management-io/OCM/tree/main/solutions for next steps.\n", clusterName)
 	return approved, nil
 }
 

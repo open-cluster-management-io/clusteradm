@@ -35,7 +35,7 @@ type Helm struct {
 	settings         *cli.EnvSettings
 	values           *values.Options
 	createNamespace  bool
-	dryRun           bool
+	clusteradmFlags  *genericclioptionsclusteradm.ClusteradmFlags
 	restClientGetter genericclioptions.RESTClientGetter
 }
 
@@ -46,7 +46,7 @@ func NewHelm(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags) *Helm
 			Values:     []string{},
 			FileValues: []string{},
 		},
-		dryRun:           clusteradmFlags.DryRun,
+		clusteradmFlags:  clusteradmFlags,
 		restClientGetter: clusteradmFlags.KubectlFactory,
 	}
 	return h
@@ -177,7 +177,10 @@ func (h *Helm) InstallChart(name, repo, chart string) {
 	}
 	client := action.NewInstall(actionConfig)
 	client.CreateNamespace = h.createNamespace
-	client.DryRun = h.dryRun
+	if h.clusteradmFlags.DryRun {
+		client.DryRun = true
+		client.ClientOnly = true
+	}
 
 	if client.Version == "" && client.Devel {
 		client.Version = ">0.0.0-0"
@@ -237,7 +240,7 @@ func (h *Helm) InstallChart(name, repo, chart string) {
 		log.Fatal(err)
 	}
 
-	if h.dryRun {
+	if h.clusteradmFlags.DryRun {
 		fmt.Println(release.Manifest)
 	}
 }

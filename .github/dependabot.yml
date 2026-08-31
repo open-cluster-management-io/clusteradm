@@ -1,0 +1,48 @@
+# Copyright Contributors to the Open Cluster Management project
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ":seedling:"
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
+      semver-minor-days: 14
+    groups:
+      kubernetes:
+        patterns:
+          - k8s.io/*
+          - "*.k8s.io/*"
+      open-cluster-management:
+        patterns:
+          - open-cluster-management.io/*
+      helm:
+        patterns:
+          - helm.sh/*
+      gomod:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "k8s.io/*"
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+      - dependency-name: "*.k8s.io/*"
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ":seedling:"
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        patterns:
+          - "*"

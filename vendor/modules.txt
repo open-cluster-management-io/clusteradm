@@ -1442,15 +1442,15 @@ open-cluster-management.io/cluster-proxy/pkg/generated/clientset/versioned
 open-cluster-management.io/cluster-proxy/pkg/generated/clientset/versioned/scheme
 open-cluster-management.io/cluster-proxy/pkg/generated/clientset/versioned/typed/proxy/v1alpha1
 open-cluster-management.io/cluster-proxy/pkg/util
-# open-cluster-management.io/managed-serviceaccount v0.8.0
-## explicit; go 1.22.0
+# open-cluster-management.io/managed-serviceaccount v0.10.0
+## explicit; go 1.25.0
 open-cluster-management.io/managed-serviceaccount/apis/authentication/v1alpha1
 open-cluster-management.io/managed-serviceaccount/apis/authentication/v1beta1
 open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned
 open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned/scheme
 open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned/typed/authentication/v1alpha1
 open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned/typed/authentication/v1beta1
-# open-cluster-management.io/ocm v1.3.1-0.20260519091624-6ec234a49ffd
+# open-cluster-management.io/ocm v1.3.1
 ## explicit; go 1.25.0
 open-cluster-management.io/ocm/deploy/cluster-manager/chart
 open-cluster-management.io/ocm/deploy/klusterlet/chart

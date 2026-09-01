@@ -31,10 +31,16 @@ var (
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
 
+	// SchemeGroupVersion generated code relies on this name
+	// Deprecated
+	SchemeGroupVersion = GroupVersion
+
 	// AddToScheme adds the types in this group-version to the given scheme.
 	AddToScheme = SchemeBuilder.AddToScheme
-
-	// SchemeGroupVersion is an alias to GroupVersion
-	// used by the generated clients
-	SchemeGroupVersion = GroupVersion
 )
+
+// Resource generated code relies on this being here, but it logically belongs to the group
+// DEPRECATED
+func Resource(resource string) schema.GroupResource {
+	return schema.GroupResource{Group: GroupVersion.Group, Resource: resource}
+}

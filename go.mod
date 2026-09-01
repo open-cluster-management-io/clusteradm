@@ -30,8 +30,8 @@ require (
 	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2
 	open-cluster-management.io/api v1.3.0
 	open-cluster-management.io/cluster-proxy v0.7.0
-	open-cluster-management.io/managed-serviceaccount v0.8.0
-	open-cluster-management.io/ocm v1.3.1-0.20260519091624-6ec234a49ffd
+	open-cluster-management.io/managed-serviceaccount v0.10.0
+	open-cluster-management.io/ocm v1.3.1
 	open-cluster-management.io/sdk-go v1.3.0
 	sigs.k8s.io/apiserver-network-proxy v0.29.0
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.31.2

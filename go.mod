@@ -19,22 +19,22 @@ require (
 	google.golang.org/grpc v1.83.0
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.21.0
-	k8s.io/api v0.35.4
-	k8s.io/apiextensions-apiserver v0.35.4
-	k8s.io/apimachinery v0.35.4
-	k8s.io/cli-runtime v0.35.4
-	k8s.io/client-go v0.35.4
-	k8s.io/component-base v0.35.4
+	k8s.io/api v0.35.8
+	k8s.io/apiextensions-apiserver v0.35.8
+	k8s.io/apimachinery v0.35.8
+	k8s.io/cli-runtime v0.35.8
+	k8s.io/client-go v0.35.8
+	k8s.io/component-base v0.35.8
 	k8s.io/klog/v2 v2.140.0
-	k8s.io/kubectl v0.35.4
+	k8s.io/kubectl v0.35.8
 	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2
 	open-cluster-management.io/api v1.3.0
 	open-cluster-management.io/cluster-proxy v0.7.0
 	open-cluster-management.io/managed-serviceaccount v0.8.0
 	open-cluster-management.io/ocm v1.3.1-0.20260519091624-6ec234a49ffd
 	open-cluster-management.io/sdk-go v1.3.0
-	sigs.k8s.io/apiserver-network-proxy v0.29.0
-	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.31.2
+	sigs.k8s.io/apiserver-network-proxy v0.29.5
+	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.31.4
 	sigs.k8s.io/controller-runtime v0.23.3
 	sigs.k8s.io/kustomize/kyaml v0.20.1
 )
@@ -143,22 +143,22 @@ require (
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.53.0 // indirect
-	golang.org/x/mod v0.36.0 // indirect
+	golang.org/x/mod v0.37.0 // indirect
 	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.21.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/term v0.44.0 // indirect
-	golang.org/x/text v0.38.0 // indirect
+	golang.org/x/text v0.39.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
-	golang.org/x/tools v0.45.0 // indirect
+	golang.org/x/tools v0.47.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
+	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiserver v0.35.4 // indirect
-	k8s.io/component-helpers v0.35.4 // indirect
+	k8s.io/apiserver v0.35.8 // indirect
+	k8s.io/component-helpers v0.35.8 // indirect
 	k8s.io/kube-aggregator v0.35.4 // indirect
 	k8s.io/kube-openapi v0.0.0-20260319004828-5883c5ee87b9 // indirect
 	oras.land/oras-go/v2 v2.6.0 // indirect

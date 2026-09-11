@@ -220,7 +220,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	}
 
 	if o.grpcServer != "" {
-		if err = o.getGRPCCAData(externalClientUnSecure); err != nil {
+		if err = o.getGRPCCAData(cmd.Context(), externalClientUnSecure); err != nil {
 			return err
 		}
 	}
@@ -274,9 +274,10 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	return nil
 }
 
-func (o *Options) validate() error {
+func (o *Options) validate(ctx context.Context) error {
 	// preflight check
 	if err := preflightinterface.RunChecks(
+		ctx,
 		[]preflightinterface.Checker{
 			preflight.HubKubeconfigCheck{
 				Config: o.HubConfig,
@@ -372,10 +373,10 @@ func (o *Options) validate() error {
 	return nil
 }
 
-func (o *Options) run() error {
+func (o *Options) run(ctx context.Context) error {
 	f := o.ClusteradmFlags.KubectlFactory
 	if o.capiOptions.Enable {
-		getter, err := o.capiOptions.ToClientGetter()
+		getter, err := o.capiOptions.ToClientGetter(ctx)
 		if err != nil {
 			return err
 		}
@@ -399,7 +400,7 @@ func (o *Options) run() error {
 
 	r := reader.NewResourceReader(f, o.ClusteradmFlags.DryRun, o.Streams)
 
-	if err = o.applyKlusterlet(r, operatorClient, apiExtensionsClient); err != nil {
+	if err = o.applyKlusterlet(ctx, r, operatorClient, apiExtensionsClient); err != nil {
 		return err
 	}
 
@@ -424,8 +425,8 @@ func (o *Options) run() error {
 
 }
 
-func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient operatorclient.Interface, apiExtensionsClient apiextensionsclient.Interface) error {
-	available, err := checkIfRegistrationOperatorAvailable(o.ClusteradmFlags.KubectlFactory)
+func (o *Options) applyKlusterlet(ctx context.Context, r *reader.ResourceReader, operatorClient operatorclient.Interface, apiExtensionsClient apiextensionsclient.Interface) error {
+	available, err := checkIfRegistrationOperatorAvailable(ctx, o.ClusteradmFlags.KubectlFactory)
 	if err != nil {
 		return err
 	}
@@ -437,7 +438,7 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient opera
 		o.klusterletChartConfig.NoOperator = true
 	}
 
-	crds, raw, err := chart.RenderKlusterletChart(context.TODO(), o.klusterletChartConfig, OperatorNamespace)
+	crds, raw, err := chart.RenderKlusterletChart(ctx, o.klusterletChartConfig, OperatorNamespace)
 	if err != nil {
 		return err
 	}
@@ -448,7 +449,12 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient opera
 
 	if !o.ClusteradmFlags.DryRun {
 		if err := wait.WaitUntilCRDReady(
-			o.Streams.Out, apiExtensionsClient, "klusterlets.operator.open-cluster-management.io", o.wait); err != nil {
+			ctx,
+			o.Streams.Out,
+			apiExtensionsClient,
+			"klusterlets.operator.open-cluster-management.io",
+			o.wait,
+		); err != nil {
 			return err
 		}
 	}
@@ -459,28 +465,20 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient opera
 
 	if !available && o.wait && !o.ClusteradmFlags.DryRun {
 		err = waitUntilRegistrationOperatorConditionIsTrue(
-			o.Streams.Out, o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout))
+			ctx, o.Streams.Out, o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout))
 		if err != nil {
 			return err
 		}
 	}
 
 	if o.wait && !o.ClusteradmFlags.DryRun {
-		if o.mode == string(operatorv1.InstallModeHosted) {
-			err = waitUntilKlusterletConditionIsTrue(
-				o.Streams.Out, operatorClient, int64(o.ClusteradmFlags.Timeout), o.klusterletChartConfig.Klusterlet.Name)
-			if err != nil {
-				return err
-			}
-		} else {
-			err = waitUntilKlusterletConditionIsTrue(
-				o.Streams.Out, operatorClient, int64(o.ClusteradmFlags.Timeout), o.klusterletChartConfig.Klusterlet.Name)
-			if err != nil {
-				return err
-			}
+		err = waitUntilKlusterletConditionIsTrue(
+			ctx, o.Streams.Out, operatorClient, int64(o.ClusteradmFlags.Timeout), o.klusterletChartConfig.Klusterlet.Name)
+		if err != nil {
+			return err
 		}
 
-		err = o.waitUntilManagedClusterIsCreated(int64(o.ClusteradmFlags.Timeout), o.klusterletChartConfig.Klusterlet.ClusterName)
+		err = o.waitUntilManagedClusterIsCreated(ctx, int64(o.ClusteradmFlags.Timeout), o.klusterletChartConfig.Klusterlet.ClusterName)
 		if err != nil {
 			return err
 		}
@@ -488,7 +486,7 @@ func (o *Options) applyKlusterlet(r *reader.ResourceReader, operatorClient opera
 	return nil
 }
 
-func checkIfRegistrationOperatorAvailable(f util.Factory) (bool, error) {
+func checkIfRegistrationOperatorAvailable(ctx context.Context, f util.Factory) (bool, error) {
 	var restConfig *rest.Config
 	restConfig, err := f.ToRESTConfig()
 	if err != nil {
@@ -500,7 +498,7 @@ func checkIfRegistrationOperatorAvailable(f util.Factory) (bool, error) {
 	}
 
 	deploy, err := client.AppsV1().Deployments(OperatorNamespace).
-		Get(context.TODO(), DefaultOperatorName, metav1.GetOptions{})
+		Get(ctx, DefaultOperatorName, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return false, nil
@@ -520,7 +518,7 @@ func checkIfRegistrationOperatorAvailable(f util.Factory) (bool, error) {
 	return meta.IsStatusConditionTrue(conds, "Available"), nil
 }
 
-func (o *Options) waitUntilManagedClusterIsCreated(timeout int64, clusterName string) error {
+func (o *Options) waitUntilManagedClusterIsCreated(ctx context.Context, timeout int64, clusterName string) error {
 	// Create an unsecure bootstrap
 	bootstrapExternalConfigUnSecure := o.createExternalBootstrapConfig()
 	restConfig, err := helpers.CreateRESTConfigFromClientcmdapiv1Config(bootstrapExternalConfigUnSecure)
@@ -545,10 +543,13 @@ func (o *Options) waitUntilManagedClusterIsCreated(timeout int64, clusterName st
 	operatorSpinner.Start()
 	defer operatorSpinner.Stop()
 
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
+	defer cancel()
 	return helpers.WatchUntil(
+		ctx,
 		func() (watch.Interface, error) {
 			w, err := clusterClient.ClusterV1().ManagedClusters().
-				Watch(context.TODO(), metav1.ListOptions{
+				Watch(ctx, metav1.ListOptions{
 					TimeoutSeconds: &timeout,
 					FieldSelector:  fmt.Sprintf("metadata.name=%s", clusterName),
 				})
@@ -566,7 +567,7 @@ func (o *Options) waitUntilManagedClusterIsCreated(timeout int64, clusterName st
 		})
 }
 
-func waitUntilRegistrationOperatorConditionIsTrue(w io.Writer, f util.Factory, timeout int64) error {
+func waitUntilRegistrationOperatorConditionIsTrue(ctx context.Context, w io.Writer, f util.Factory, timeout int64) error {
 	var restConfig *rest.Config
 	restConfig, err := f.ToRESTConfig()
 	if err != nil {
@@ -590,10 +591,13 @@ func waitUntilRegistrationOperatorConditionIsTrue(w io.Writer, f util.Factory, t
 	operatorSpinner.Start()
 	defer operatorSpinner.Stop()
 
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
+	defer cancel()
 	return helpers.WatchUntil(
+		ctx,
 		func() (watch.Interface, error) {
 			return client.CoreV1().Pods(OperatorNamespace).
-				Watch(context.TODO(), metav1.ListOptions{
+				Watch(ctx, metav1.ListOptions{
 					TimeoutSeconds: &timeout,
 					LabelSelector:  "app=klusterlet",
 				})
@@ -619,7 +623,7 @@ func waitUntilRegistrationOperatorConditionIsTrue(w io.Writer, f util.Factory, t
 
 // Wait until the klusterlet condition available=true, or timeout in $timeout seconds
 func waitUntilKlusterletConditionIsTrue(
-	w io.Writer, client operatorclient.Interface, timeout int64, klusterletName string) error {
+	ctx context.Context, w io.Writer, client operatorclient.Interface, timeout int64, klusterletName string) error {
 	phase := &atomic.Value{}
 	phase.Store("")
 	klusterletSpinner := printer.NewSpinnerWithStatus(
@@ -633,10 +637,13 @@ func waitUntilKlusterletConditionIsTrue(
 	klusterletSpinner.Start()
 	defer klusterletSpinner.Stop()
 
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
+	defer cancel()
 	return helpers.WatchUntil(
+		ctx,
 		func() (watch.Interface, error) {
 			return client.OperatorV1().Klusterlets().
-				Watch(context.TODO(), metav1.ListOptions{
+				Watch(ctx, metav1.ListOptions{
 					TimeoutSeconds: &timeout,
 					FieldSelector:  fmt.Sprintf("metadata.name=%s", klusterletName),
 				})
@@ -780,7 +787,7 @@ func (o *Options) setGRPCConfig() error {
 	return nil
 }
 
-func (o *Options) getGRPCCAData(kubeClient kubernetes.Interface) error {
+func (o *Options) getGRPCCAData(ctx context.Context, kubeClient kubernetes.Interface) error {
 	if o.grpcCAFile != "" {
 		caData, err := os.ReadFile(o.grpcCAFile)
 		if err != nil {
@@ -793,7 +800,7 @@ func (o *Options) getGRPCCAData(kubeClient kubernetes.Interface) error {
 		return nil
 	}
 
-	cm, err := kubeClient.CoreV1().ConfigMaps(config.HubClusterNamespace).Get(context.TODO(),
+	cm, err := kubeClient.CoreV1().ConfigMaps(config.HubClusterNamespace).Get(ctx,
 		config.CABundleConfigMap, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get CA bundle configmap for gRPC server: %w", err)

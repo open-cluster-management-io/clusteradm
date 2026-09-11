@@ -2,7 +2,6 @@
 package clusteradme2e
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -19,16 +18,16 @@ import (
 
 var _ = ginkgo.Describe("test clusteradm upgrade klusterlet with klusterlet values file", ginkgo.Ordered, ginkgo.Label("upgrade-klusterlet-klusterletvaluesfile"), func() {
 
-	ginkgo.BeforeAll(func() {
+	ginkgo.BeforeAll(func(ctx ginkgo.SpecContext) {
 		ginkgo.By("reset e2e environment...")
-		err := e2e.ClearEnv()
+		err := e2e.ClearEnv(ctx)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	})
 
 	var err error
 
 	ginkgo.Context("upgrade klusterlet with klusterlet values file", func() {
-		ginkgo.It("should upgrade klusterlet with configuration from file", func() {
+		ginkgo.It("should upgrade klusterlet with configuration from file", func(ctx ginkgo.SpecContext) {
 			ginkgo.By("init hub")
 			clusterAdm := e2e.Clusteradm()
 			err = clusterAdm.Init(
@@ -36,7 +35,7 @@ var _ = ginkgo.Describe("test clusteradm upgrade klusterlet with klusterlet valu
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 
-			util.WaitClusterManagerApplied(operatorClient, e2e)
+			util.WaitClusterManagerApplied(ctx, operatorClient, e2e)
 
 			ginkgo.By("managedcluster1 join hub with default configuration")
 			err = e2e.Clusteradm().Join(
@@ -62,7 +61,7 @@ var _ = ginkgo.Describe("test clusteradm upgrade klusterlet with klusterlet valu
 
 			ginkgo.By("Check the version of operator and agent")
 			gomega.Eventually(func() error {
-				err := util.CheckOperatorAndAgentVersion(mcl1KubeClient, bundleVersion, bundleVersion)
+				err := util.CheckOperatorAndAgentVersion(ctx, mcl1KubeClient, bundleVersion, bundleVersion)
 				if err != nil {
 					logf.Log.Error(err, "failed to check operator and agent version")
 				}
@@ -88,7 +87,7 @@ var _ = ginkgo.Describe("test clusteradm upgrade klusterlet with klusterlet valu
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 			gomega.Eventually(func() error {
-				klusterlet, err := mc1OperatorClient.OperatorV1().Klusterlets().Get(context.TODO(), "klusterlet", metav1.GetOptions{})
+				klusterlet, err := mc1OperatorClient.OperatorV1().Klusterlets().Get(ctx, "klusterlet", metav1.GetOptions{})
 				if err != nil {
 					return err
 				}

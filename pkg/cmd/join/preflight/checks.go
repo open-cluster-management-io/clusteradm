@@ -2,6 +2,7 @@
 package preflight
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -21,7 +22,7 @@ type HubKubeconfigCheck struct {
 	Config *clientcmdapiv1.Config
 }
 
-func (c HubKubeconfigCheck) Check() (warningList []string, errorList []error) {
+func (c HubKubeconfigCheck) Check(ctx context.Context) (warningList []string, errorList []error) {
 	if c.Config == nil {
 		return nil, []error{errors.New("no hubconfig found")}
 	}
@@ -72,7 +73,7 @@ type DeployModeCheck struct {
 	ManagedKubeconfigFile string
 }
 
-func (c DeployModeCheck) Check() (warningList []string, errorList []error) {
+func (c DeployModeCheck) Check(ctx context.Context) (warningList []string, errorList []error) {
 	if c.Mode != InstallModeDefault && c.Mode != InstallModeHosted {
 		return nil, []error{errors.New("deploy mode should be default or hosted")}
 	}
@@ -87,7 +88,7 @@ func (c DeployModeCheck) Check() (warningList []string, errorList []error) {
 		// if we use kind cluster as managed cluster, the kubeconfig should be --internal, the kubeconfig can be used by klusterlet
 		// deployed in management cluster, but can not be used by clusteradm to validate. so we jump the validate process
 		if !c.InternalEndpoint {
-			err := helpers.ValidateKubeconfigFile(c.ManagedKubeconfigFile)
+			err := helpers.ValidateKubeconfigFile(ctx, c.ManagedKubeconfigFile)
 			if err != nil {
 				return nil, []error{fmt.Errorf("validate managed kubeconfig file failed: %v", err)}
 			}
@@ -104,7 +105,7 @@ type ClusterNameCheck struct {
 	ClusterName string
 }
 
-func (c ClusterNameCheck) Check() (warningList []string, errorList []error) {
+func (c ClusterNameCheck) Check(ctx context.Context) (warningList []string, errorList []error) {
 	re := regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
 	matched := re.MatchString(c.ClusterName)
 	if !matched {

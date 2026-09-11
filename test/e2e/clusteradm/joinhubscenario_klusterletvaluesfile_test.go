@@ -2,7 +2,6 @@
 package clusteradme2e
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -17,16 +16,16 @@ import (
 )
 
 var _ = ginkgo.Describe("test clusteradm join with klusterlet values file", ginkgo.Label("join-hub-klusterletvaluesfile"), func() {
-	ginkgo.BeforeEach(func() {
+	ginkgo.BeforeEach(func(ctx ginkgo.SpecContext) {
 		ginkgo.By("clear e2e environment...")
-		err := e2e.ClearEnv()
+		err := e2e.ClearEnv(ctx)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	})
 
 	ginkgo.Context("join hub scenario with klusterlet values file", func() {
 		var err error
 
-		ginkgo.It("should join with klusterlet chart values file", func() {
+		ginkgo.It("should join with klusterlet chart values file", func(ctx ginkgo.SpecContext) {
 			ginkgo.By("init hub")
 			clusterAdm := e2e.Clusteradm()
 			err = clusterAdm.Init(
@@ -34,7 +33,7 @@ var _ = ginkgo.Describe("test clusteradm join with klusterlet values file", gink
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 
-			util.WaitClusterManagerApplied(operatorClient, e2e)
+			util.WaitClusterManagerApplied(ctx, operatorClient, e2e)
 
 			ginkgo.By("managedcluster1 join hub with klusterlet values file")
 
@@ -68,7 +67,7 @@ var _ = ginkgo.Describe("test clusteradm join with klusterlet values file", gink
 
 			ginkgo.By("verify klusterlet was created with klusterlet values file")
 			gomega.Eventually(func() error {
-				klusterlet, err := mc1OperatorClient.OperatorV1().Klusterlets().Get(context.TODO(), "klusterlet", metav1.GetOptions{})
+				klusterlet, err := mc1OperatorClient.OperatorV1().Klusterlets().Get(ctx, "klusterlet", metav1.GetOptions{})
 				if err != nil {
 					return err
 				}
@@ -99,7 +98,7 @@ var _ = ginkgo.Describe("test clusteradm join with klusterlet values file", gink
 
 			ginkgo.By("verify klusterlet namespace was created with the custom name")
 			gomega.Eventually(func() error {
-				_, err := mcl1KubeClient.CoreV1().Namespaces().Get(context.TODO(), "open-cluster-management-agent-advanced", metav1.GetOptions{})
+				_, err := mcl1KubeClient.CoreV1().Namespaces().Get(ctx, "open-cluster-management-agent-advanced", metav1.GetOptions{})
 				return err
 			}, 120*time.Second, 5*time.Second).Should(gomega.Succeed())
 		})

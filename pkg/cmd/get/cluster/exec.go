@@ -39,7 +39,7 @@ func (o *Options) validate(args []string) (err error) {
 	return nil
 }
 
-func (o *Options) run() (err error) {
+func (o *Options) run(ctx context.Context) (err error) {
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
@@ -51,7 +51,7 @@ func (o *Options) run() (err error) {
 
 	listOpt := metav1.ListOptions{}
 	if len(o.Clusterset) != 0 {
-		_, err := clusterClient.ClusterV1beta2().ManagedClusterSets().Get(context.TODO(), o.Clusterset, metav1.GetOptions{})
+		_, err := clusterClient.ClusterV1beta2().ManagedClusterSets().Get(ctx, o.Clusterset, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -59,7 +59,7 @@ func (o *Options) run() (err error) {
 		listOpt.LabelSelector = fmt.Sprintf("cluster.open-cluster-management.io/clusterset=%s", o.Clusterset)
 	}
 
-	clusters, err := clusterClient.ClusterV1().ManagedClusters().List(context.TODO(), listOpt)
+	clusters, err := clusterClient.ClusterV1().ManagedClusters().List(ctx, listOpt)
 	if err != nil {
 		return err
 	}

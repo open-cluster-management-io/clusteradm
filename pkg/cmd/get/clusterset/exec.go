@@ -56,8 +56,9 @@ func (o *Options) validate(args []string) (err error) {
 	return nil
 }
 
-func (o *Options) run() (err error) {
-	clustersets, err := o.Client.ClusterV1beta2().ManagedClusterSets().List(context.TODO(), metav1.ListOptions{})
+func (o *Options) run(ctx context.Context) (err error) {
+	o.ctx = ctx
+	clustersets, err := o.Client.ClusterV1beta2().ManagedClusterSets().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -69,9 +70,9 @@ func (o *Options) run() (err error) {
 
 func (o *Options) convertToTree(obj runtime.Object, tree *printer.TreePrinter) *printer.TreePrinter {
 	bindingMap := map[string][]string{}
-	bindings, err := o.Client.ClusterV1beta2().ManagedClusterSetBindings(metav1.NamespaceAll).List(context.TODO(), metav1.ListOptions{})
+	bindings, err := o.Client.ClusterV1beta2().ManagedClusterSetBindings(metav1.NamespaceAll).List(o.ctx, metav1.ListOptions{})
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed to list managed cluster set bindings: %w", err))
 	}
 	for _, binding := range bindings.Items {
 		if _, ok := bindingMap[binding.Spec.ClusterSet]; !ok {
@@ -81,7 +82,7 @@ func (o *Options) convertToTree(obj runtime.Object, tree *printer.TreePrinter) *
 		bindingMap[binding.Spec.ClusterSet] = append(bindingMap[binding.Spec.ClusterSet], binding.Namespace)
 	}
 
-	getter := &clusterGetter{client: o.Client}
+	getter := &clusterGetter{ctx: o.ctx, client: o.Client}
 
 	if csList, ok := obj.(*clusterapiv1beta2.ManagedClusterSetList); ok {
 		for _, clusterset := range csList.Items {
@@ -104,9 +105,9 @@ func (o *Options) convertToTree(obj runtime.Object, tree *printer.TreePrinter) *
 
 func (o *Options) converToTable(obj runtime.Object) *metav1.Table {
 	bindingMap := map[string][]string{}
-	bindings, err := o.Client.ClusterV1beta2().ManagedClusterSetBindings(metav1.NamespaceAll).List(context.TODO(), metav1.ListOptions{})
+	bindings, err := o.Client.ClusterV1beta2().ManagedClusterSetBindings(metav1.NamespaceAll).List(o.ctx, metav1.ListOptions{})
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed to list managed cluster set bindings: %w", err))
 	}
 	for _, binding := range bindings.Items {
 		if _, ok := bindingMap[binding.Spec.ClusterSet]; !ok {
@@ -159,12 +160,13 @@ func getFileds(clusterset clusterapiv1beta2.ManagedClusterSet, bindings []string
 }
 
 type clusterGetter struct {
+	ctx    context.Context
 	client clusterclientset.Interface
 }
 
 func (c *clusterGetter) List(selector labels.Selector) ([]*v1.ManagedCluster, error) {
 	var ret []*v1.ManagedCluster
-	clusters, err := c.client.ClusterV1().ManagedClusters().List(context.TODO(), metav1.ListOptions{LabelSelector: selector.String()})
+	clusters, err := c.client.ClusterV1().ManagedClusters().List(c.ctx, metav1.ListOptions{LabelSelector: selector.String()})
 	if err != nil {
 		return nil, err
 	}

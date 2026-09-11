@@ -46,7 +46,8 @@ func (o *Options) validate(args []string) (err error) {
 	return nil
 }
 
-func (o *Options) run() (err error) {
+func (o *Options) run(ctx context.Context) (err error) {
+	o.ctx = ctx
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
@@ -57,7 +58,7 @@ func (o *Options) run() (err error) {
 		if err != nil {
 			return err
 		}
-		_, err = nsClient.CoreV1().Namespaces().Get(context.TODO(), o.Namespace, metav1.GetOptions{})
+		_, err = nsClient.CoreV1().Namespaces().Get(ctx, o.Namespace, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -73,9 +74,9 @@ func (o *Options) run() (err error) {
 
 	var placementList *v1beta1.PlacementList
 	if o.PlacementName == "" {
-		placementList, err = o.Client.Placements(o.Namespace).List(context.TODO(), metav1.ListOptions{})
+		placementList, err = o.Client.Placements(o.Namespace).List(ctx, metav1.ListOptions{})
 	} else {
-		placementList, err = o.Client.Placements(o.Namespace).List(context.TODO(), metav1.ListOptions{
+		placementList, err = o.Client.Placements(o.Namespace).List(ctx, metav1.ListOptions{
 			FieldSelector: fmt.Sprintf("metadata.name=%s", o.PlacementName),
 		})
 	}
@@ -89,9 +90,9 @@ func (o *Options) run() (err error) {
 }
 
 func (o *Options) convertToTree(obj runtime.Object, tree *printer.TreePrinter) *printer.TreePrinter {
-	decisionList, err := o.Client.PlacementDecisions(o.Namespace).List(context.TODO(), metav1.ListOptions{})
+	decisionList, err := o.Client.PlacementDecisions(o.Namespace).List(o.ctx, metav1.ListOptions{})
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed to list placement decisions: %w", err))
 	}
 
 	// save decisions into a map
@@ -153,9 +154,9 @@ func getFileds(placement v1beta1.Placement, selectedClusters map[string][]v1beta
 }
 
 func (o *Options) converToTable(obj runtime.Object) *metav1.Table {
-	decisionList, err := o.Client.PlacementDecisions(o.Namespace).List(context.TODO(), metav1.ListOptions{})
+	decisionList, err := o.Client.PlacementDecisions(o.Namespace).List(o.ctx, metav1.ListOptions{})
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed to list placement decisions: %w", err))
 	}
 
 	// save decisions into a map

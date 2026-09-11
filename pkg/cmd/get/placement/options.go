@@ -2,6 +2,8 @@
 package placement
 
 import (
+	"context"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"k8s.io/cli-runtime/pkg/printers"
@@ -12,6 +14,7 @@ import (
 )
 
 type Options struct {
+	ctx context.Context
 	//ClusteradmFlags: The generic optiosn from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 	Streams         genericiooptions.IOStreams

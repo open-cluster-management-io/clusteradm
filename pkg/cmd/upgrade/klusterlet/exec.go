@@ -21,7 +21,7 @@ import (
 	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
 )
 
-func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
+func (o *Options) complete(cmd *cobra.Command, _ []string) (err error) {
 	err = o.ClusteradmFlags.ValidateManagedCluster()
 	if err != nil {
 		return err
@@ -38,7 +38,7 @@ func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 		return err
 	}
 
-	k, err := operatorClient.OperatorV1().Klusterlets().Get(context.TODO(), config.KlusterletName, metav1.GetOptions{})
+	k, err := operatorClient.OperatorV1().Klusterlets().Get(cmd.Context(), config.KlusterletName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 	return nil
 }
 
-func (o *Options) validate() error {
+func (o *Options) validate(ctx context.Context) error {
 
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
@@ -91,7 +91,7 @@ func (o *Options) validate() error {
 	if err != nil {
 		return err
 	}
-	installed, err := helpers.IsKlusterletsInstalled(apiExtensionsClient)
+	installed, err := helpers.IsKlusterletsInstalled(ctx, apiExtensionsClient)
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func (o *Options) validate() error {
 	return nil
 }
 
-func (o *Options) run() error {
+func (o *Options) run(ctx context.Context) error {
 	r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
 
 	_, apiExtensionsClient, _, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
@@ -113,7 +113,7 @@ func (o *Options) run() error {
 	}
 
 	crds, raw, err := chart.RenderKlusterletChart(
-		context.TODO(),
+		ctx,
 		o.klusterletChartConfig,
 		"open-cluster-management")
 	if err != nil {
@@ -126,7 +126,12 @@ func (o *Options) run() error {
 
 	if !o.ClusteradmFlags.DryRun {
 		if err := wait.WaitUntilCRDReady(
-			o.Streams.Out, apiExtensionsClient, "klusterlets.operator.open-cluster-management.io", o.wait); err != nil {
+			ctx,
+			o.Streams.Out,
+			apiExtensionsClient,
+			"klusterlets.operator.open-cluster-management.io",
+			o.wait,
+		); err != nil {
 			return err
 		}
 	}
@@ -137,6 +142,7 @@ func (o *Options) run() error {
 
 	if o.wait && !o.ClusteradmFlags.DryRun {
 		if err := wait.WaitUntilRegistrationOperatorReady(
+			ctx,
 			o.Streams.Out,
 			o.ClusteradmFlags.KubectlFactory,
 			int64(o.ClusteradmFlags.Timeout),

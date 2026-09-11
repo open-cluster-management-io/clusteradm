@@ -3,7 +3,6 @@
 package clusteradme2e
 
 import (
-	"context"
 	"time"
 
 	"github.com/onsi/ginkgo/v2"
@@ -13,15 +12,15 @@ import (
 )
 
 var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode", ginkgo.Label("init"), func() {
-	ginkgo.BeforeEach(func() {
+	ginkgo.BeforeEach(func(ctx ginkgo.SpecContext) {
 		ginkgo.By("clear e2e environment...")
-		err := e2e.ClearEnv()
+		err := e2e.ClearEnv(ctx)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	})
 
 	ginkgo.Context("init cluster manager", func() {
 
-		ginkgo.It("should init multiple times with different flags", func() {
+		ginkgo.It("should init multiple times with different flags", func(ctx ginkgo.SpecContext) {
 			ginkgo.By("init hub with bootstrap token")
 			err := e2e.Clusteradm().Init(
 				"--use-bootstrap-token",
@@ -29,10 +28,10 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode"
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 
-			cm, err := operatorClient.OperatorV1().ClusterManagers().Get(context.TODO(), "cluster-manager", metav1.GetOptions{})
+			cm, err := operatorClient.OperatorV1().ClusterManagers().Get(ctx, "cluster-manager", metav1.GetOptions{})
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
-			util.WaitClusterManagerApplied(operatorClient, e2e)
+			util.WaitClusterManagerApplied(ctx, operatorClient, e2e)
 
 			// 2 featureGates: DefaultClusterSet and ResourceCleanup
 			gomega.Expect(len(cm.Spec.RegistrationConfiguration.FeatureGates)).Should(gomega.Equal(2))
@@ -45,7 +44,7 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode"
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 
-			cm, err = operatorClient.OperatorV1().ClusterManagers().Get(context.TODO(), "cluster-manager", metav1.GetOptions{})
+			cm, err = operatorClient.OperatorV1().ClusterManagers().Get(ctx, "cluster-manager", metav1.GetOptions{})
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
 			// Ensure that when only awsirsa is passed as registration-drivers only awsirsa driver is available
 			gomega.Expect(len(cm.Spec.RegistrationConfiguration.RegistrationDrivers)).Should(gomega.Equal(1))
@@ -60,7 +59,7 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode"
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 
-			cm, err = operatorClient.OperatorV1().ClusterManagers().Get(context.TODO(), "cluster-manager", metav1.GetOptions{})
+			cm, err = operatorClient.OperatorV1().ClusterManagers().Get(ctx, "cluster-manager", metav1.GetOptions{})
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
 			// Ensure that awsirsa and csr is passed as registration-drivers both the values are set.
 			gomega.Expect(len(cm.Spec.RegistrationConfiguration.RegistrationDrivers)).Should(gomega.Equal(2))
@@ -86,7 +85,7 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode"
 				"--auto-approved-arn-patterns=arn:aws:eks:us-west-2:123456789013:cluster/.*,arn:aws:eks:us-west-2:123456789012:cluster/.*",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
-			cm, err = operatorClient.OperatorV1().ClusterManagers().Get(context.TODO(), "cluster-manager", metav1.GetOptions{})
+			cm, err = operatorClient.OperatorV1().ClusterManagers().Get(ctx, "cluster-manager", metav1.GetOptions{})
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
 			// Ensure that the auto approval identities contain user for CSR and pattern for AWS
 			gomega.Expect(cm.Spec.RegistrationConfiguration.RegistrationDrivers[0].AuthType).Should(gomega.Equal("awsirsa"))
@@ -110,13 +109,13 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode"
 				"--feature-gates=ManagedClusterAutoApproval=true",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
-			cm, err = operatorClient.OperatorV1().ClusterManagers().Get(context.TODO(), "cluster-manager", metav1.GetOptions{})
+			cm, err = operatorClient.OperatorV1().ClusterManagers().Get(ctx, "cluster-manager", metav1.GetOptions{})
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
 			// 3 featureGates: ManagedClusterAutoApproval, DefaultClusterSet and ResourceCleanup
 			gomega.Expect(len(cm.Spec.RegistrationConfiguration.FeatureGates)).Should(gomega.Equal(3))
 
 			gomega.Eventually(func() error {
-				return util.ValidateImagePullSecret(kubeClient, "e30=",
+				return util.ValidateImagePullSecret(ctx, kubeClient, "e30=",
 					"open-cluster-management")
 			}, time.Second*120, time.Second*2).ShouldNot(gomega.HaveOccurred())
 
@@ -132,7 +131,7 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token in singleton mode"
 
 			util.CleanupTestImagePullCredentialFile("config.json")
 			gomega.Eventually(func() error {
-				return util.ValidateImagePullSecret(kubeClient, encodedString,
+				return util.ValidateImagePullSecret(ctx, kubeClient, encodedString,
 					"open-cluster-management")
 			}, time.Second*120, time.Second*2).ShouldNot(gomega.HaveOccurred())
 		})

@@ -3,13 +3,14 @@ package work
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
@@ -44,7 +45,7 @@ func (o *Options) validate() error {
 	return nil
 }
 
-func (o *Options) run() error {
+func (o *Options) run(ctx context.Context) error {
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
@@ -56,7 +57,7 @@ func (o *Options) run() error {
 
 	var errs []error
 	for cluster := range o.ClusterOptions.AllClusters() {
-		err := o.deleteWork(workClient, cluster)
+		err := o.deleteWork(ctx, workClient, cluster)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -65,47 +66,41 @@ func (o *Options) run() error {
 	return utilerrors.NewAggregate(errs)
 }
 
-func (o *Options) deleteWork(workClient *workclientset.Clientset, cluster string) error {
-	_, err := workClient.WorkV1().ManifestWorks(cluster).Get(context.TODO(), o.Workname, metav1.GetOptions{})
+func (o *Options) deleteWork(ctx context.Context, workClient *workclientset.Clientset, cluster string) error {
+	_, err := workClient.WorkV1().ManifestWorks(cluster).Get(ctx, o.Workname, metav1.GetOptions{})
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if k8serrors.IsNotFound(err) {
 			fmt.Fprintf(o.Streams.Out, "work %s not found or is already deleted\n", o.Workname)
 			return nil
 		}
 		return err
 	}
 
-	// start a goroutine to watch the delete event
-	errChannel := make(chan error)
-	timeout := 10 * time.Second
-	go func(c chan<- error) {
-		time.Sleep(timeout)
-		c <- fmt.Errorf("delete work %s timeout, failed to delete", o.Workname)
-	}(errChannel)
+	watchCtx, cancel := context.WithTimeout(ctx, time.Duration(o.ClusteradmFlags.Timeout)*time.Second)
+	defer cancel()
 
-	go func(c chan<- error) {
-		// watch until clusterset is removed
-		e := helpers.WatchUntil(
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- helpers.WatchUntil(
+			watchCtx,
 			func() (watch.Interface, error) {
-				return workClient.WorkV1().ManifestWorks(cluster).Watch(context.TODO(), metav1.ListOptions{})
+				return workClient.WorkV1().ManifestWorks(cluster).Watch(watchCtx, metav1.ListOptions{})
 			},
 			func(event watch.Event) bool {
 				return event.Type == watch.Deleted
 			},
 		)
-		c <- e
+	}()
 
-	}(errChannel)
-
-	err = workClient.WorkV1().ManifestWorks(cluster).Delete(context.TODO(), o.Workname, metav1.DeleteOptions{})
-	if err != nil && !errors.IsNotFound(err) {
+	err = workClient.WorkV1().ManifestWorks(cluster).Delete(ctx, o.Workname, metav1.DeleteOptions{})
+	if err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
 
 	if o.Force {
 		// check whether work is already deleted, if not, remove the finalizer
-		work, err := workClient.WorkV1().ManifestWorks(cluster).Get(context.TODO(), o.Workname, metav1.GetOptions{})
-		if errors.IsNotFound(err) {
+		work, err := workClient.WorkV1().ManifestWorks(cluster).Get(ctx, o.Workname, metav1.GetOptions{})
+		if k8serrors.IsNotFound(err) {
 			fmt.Fprintf(o.Streams.Out, "work %s is deleted\n", o.Workname)
 			return nil
 		}
@@ -119,16 +114,17 @@ func (o *Options) deleteWork(workClient *workclientset.Clientset, cluster string
 		if len(work.Finalizers) != 0 {
 			work.Finalizers = work.Finalizers[:0]
 
-			_, err = workClient.WorkV1().ManifestWorks(cluster).Update(context.TODO(), work, metav1.UpdateOptions{})
+			_, err = workClient.WorkV1().ManifestWorks(cluster).Update(ctx, work, metav1.UpdateOptions{})
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	// handle the error of watch function
-	if err = <-errChannel; err != nil {
-		close(errChannel)
+	if err = <-errCh; err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return fmt.Errorf("delete work %s timeout, failed to delete", o.Workname)
+		}
 		return err
 	}
 

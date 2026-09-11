@@ -50,7 +50,7 @@ func (o *Options) validate() error {
 	return nil
 }
 
-func (o *Options) run() error {
+func (o *Options) run(ctx context.Context) error {
 	// 1. get klusterlet cr by clustername
 	// 2. check if any applied work still running
 	// 3. delete klusterlet cr
@@ -79,7 +79,7 @@ func (o *Options) run() error {
 		}
 	}
 
-	err = o.getKlusterlet(kubeClient, klusterletClient)
+	err = o.getKlusterlet(ctx, kubeClient, klusterletClient)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			fmt.Fprintf(o.Streams.Out, "klusterlet corresponds to %s not found", o.values.ClusterName)
@@ -94,7 +94,7 @@ func (o *Options) run() error {
 	}
 	// In hosted mode, the work applied on managed cluster, so we should fetch managed cluster kubeconfig to build a work client
 	if o.values.DeployMode == operatorv1.InstallModeHosted {
-		kubeconfigSecret, err := kubeClient.CoreV1().Secrets(o.values.AgentNamespace).Get(context.Background(), managedKubeconfigSecretName, metav1.GetOptions{})
+		kubeconfigSecret, err := kubeClient.CoreV1().Secrets(o.values.AgentNamespace).Get(ctx, managedKubeconfigSecretName, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -109,21 +109,21 @@ func (o *Options) run() error {
 		}
 	}
 
-	amws := isAppliedManifestWorkExist(appliedWorkClient)
+	amws := isAppliedManifestWorkExist(ctx, appliedWorkClient)
 	if len(amws) != 0 {
 		fmt.Fprintf(o.Streams.Out, "appliedManifestWorks %v still exist on the managed cluster,"+
 			"you should manually clean them, uninstall kluster will cause those works out of control.", amws)
 		return nil
 	}
 
-	err = o.purgeKlusterlet(kubeClient, klusterletClient)
+	err = o.purgeKlusterlet(ctx, kubeClient, klusterletClient)
 	if err != nil {
 		return err
 	}
 
 	// Delete the other applied resources
 	if o.purgeOperator {
-		list, err := klusterletClient.OperatorV1().Klusterlets().List(context.Background(), metav1.ListOptions{})
+		list, err := klusterletClient.OperatorV1().Klusterlets().List(ctx, metav1.ListOptions{})
 		if err != nil && !errors.IsNotFound(err) {
 			return err
 		}
@@ -131,7 +131,7 @@ func (o *Options) run() error {
 			fmt.Fprintln(o.Streams.Out, "operator not purged: there are other klusterlet on cluster")
 			return nil
 		}
-		if err = purgeOperator(kubeClient, apiExtensionsClient); err != nil {
+		if err = purgeOperator(ctx, kubeClient, apiExtensionsClient); err != nil {
 			return err
 		}
 	}
@@ -141,8 +141,8 @@ func (o *Options) run() error {
 
 }
 
-func (o *Options) getKlusterlet(_ kubernetes.Interface, klusterletClient klusterletclient.Interface) error {
-	list, err := klusterletClient.OperatorV1().Klusterlets().List(context.Background(), metav1.ListOptions{})
+func (o *Options) getKlusterlet(ctx context.Context, _ kubernetes.Interface, klusterletClient klusterletclient.Interface) error {
+	list, err := klusterletClient.OperatorV1().Klusterlets().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -161,8 +161,8 @@ func (o *Options) getKlusterlet(_ kubernetes.Interface, klusterletClient kluster
 	return errors.NewNotFound(operatorv1.Resource("klusterlet"), o.values.ClusterName)
 }
 
-func isAppliedManifestWorkExist(client appliedworkclient.Interface) []string {
-	obj, err := client.WorkV1().AppliedManifestWorks().List(context.Background(), metav1.ListOptions{})
+func isAppliedManifestWorkExist(ctx context.Context, client appliedworkclient.Interface) []string {
+	obj, err := client.WorkV1().AppliedManifestWorks().List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil
 	}
@@ -177,8 +177,8 @@ func isAppliedManifestWorkExist(client appliedworkclient.Interface) []string {
 	return amws
 }
 
-func (o *Options) purgeKlusterlet(kubeClient kubernetes.Interface, klusterletClient klusterletclient.Interface) error {
-	err := klusterletClient.OperatorV1().Klusterlets().Delete(context.Background(), o.values.KlusterletName, metav1.DeleteOptions{})
+func (o *Options) purgeKlusterlet(ctx context.Context, kubeClient kubernetes.Interface, klusterletClient klusterletclient.Interface) error {
+	err := klusterletClient.OperatorV1().Klusterlets().Delete(ctx, o.values.KlusterletName, metav1.DeleteOptions{})
 	if errors.IsNotFound(err) {
 		fmt.Fprintf(o.Streams.Out, "klusterlet %s is cleaned up already\n", o.values.KlusterletName)
 		return nil
@@ -189,12 +189,12 @@ func (o *Options) purgeKlusterlet(kubeClient kubernetes.Interface, klusterletCli
 
 	b := retry.DefaultBackoff
 	b.Duration = 5 * time.Second
-	err = WaitResourceToBeDelete(context.Background(), klusterletClient, o.values.KlusterletName, b)
+	err = WaitResourceToBeDelete(ctx, klusterletClient, o.values.KlusterletName, b)
 	if err != nil {
 		return err
 	}
 
-	err = kubeClient.CoreV1().Namespaces().Delete(context.Background(), o.values.AgentNamespace, metav1.DeleteOptions{})
+	err = kubeClient.CoreV1().Namespaces().Delete(ctx, o.values.AgentNamespace, metav1.DeleteOptions{})
 	if errors.IsNotFound(err) {
 		fmt.Fprintf(o.Streams.Out, "namespace %s is cleaned up already\n", o.values.AgentNamespace)
 		return nil
@@ -207,37 +207,37 @@ func (o *Options) purgeKlusterlet(kubeClient kubernetes.Interface, klusterletCli
 
 }
 
-func purgeOperator(client kubernetes.Interface, extensionClient apiextensionsclient.Interface) error {
+func purgeOperator(ctx context.Context, client kubernetes.Interface, extensionClient apiextensionsclient.Interface) error {
 	var errs []error
 
 	nameSpace := "open-cluster-management"
 	err := client.AppsV1().
 		Deployments(nameSpace).
-		Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
+		Delete(ctx, "klusterlet", metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		errs = append(errs, err)
 	}
 	err = extensionClient.ApiextensionsV1().
 		CustomResourceDefinitions().
-		Delete(context.Background(), "klusterlets.operator.open-cluster-management.io", metav1.DeleteOptions{})
+		Delete(ctx, "klusterlets.operator.open-cluster-management.io", metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		errs = append(errs, err)
 	}
 	err = client.RbacV1().
 		ClusterRoles().
-		Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
+		Delete(ctx, "klusterlet", metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		errs = append(errs, err)
 	}
 	err = client.RbacV1().
 		ClusterRoleBindings().
-		Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
+		Delete(ctx, "klusterlet", metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		errs = append(errs, err)
 	}
 	err = client.CoreV1().
 		ServiceAccounts("open-cluster-management").
-		Delete(context.Background(), "klusterlet", metav1.DeleteOptions{})
+		Delete(ctx, "klusterlet", metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		errs = append(errs, err)
 	}

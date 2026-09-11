@@ -2,6 +2,7 @@
 package util
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path"
@@ -85,11 +86,11 @@ func initE2E(version string) (*TestE2eConfig, error) {
 	}
 
 	// clearenv set the e2e environment from initial state to empty
-	clearenv := func() error {
+	clearenv := func(ctx context.Context) error {
 		fmt.Println("cleaning hub...")
 
 		fmt.Println("deleting all clusters on the hub...")
-		err := WaitClustersDeleted(e2eConf.Cluster().Hub().KubeConfig())
+		err := WaitClustersDeleted(ctx, e2eConf.Cluster().Hub().KubeConfig())
 		if err != nil {
 			return err
 		}
@@ -103,7 +104,7 @@ func initE2E(version string) (*TestE2eConfig, error) {
 		if err != nil {
 			return err
 		}
-		err = WaitNamespaceDeleted(e2eConf.Cluster().ManagedCluster1().KubeConfig(), config.ManagedClusterNamespace)
+		err = WaitNamespaceDeleted(ctx, e2eConf.Cluster().ManagedCluster1().KubeConfig(), config.ManagedClusterNamespace)
 		if err != nil {
 			return err
 		}
@@ -117,11 +118,11 @@ func initE2E(version string) (*TestE2eConfig, error) {
 			return err
 		}
 
-		err = DeleteClusterCSRs(e2eConf.Cluster().Hub().KubeConfig())
+		err = DeleteClusterCSRs(ctx, e2eConf.Cluster().Hub().KubeConfig())
 		if err != nil {
 			return err
 		}
-		err = WaitNamespaceDeleted(e2eConf.Cluster().Hub().KubeConfig(), config.HubClusterNamespace)
+		err = WaitNamespaceDeleted(ctx, e2eConf.Cluster().Hub().KubeConfig(), config.HubClusterNamespace)
 		if err != nil {
 			return err
 		}

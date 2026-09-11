@@ -65,7 +65,7 @@ func (o *Options) validate() error {
 	return nil
 }
 
-func (o *Options) run() error {
+func (o *Options) run(ctx context.Context) error {
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
@@ -84,17 +84,17 @@ func (o *Options) run() error {
 		return err
 	}
 
-	addedClusters, deletedClusters, err := o.getClusters(workClient, clusterClient)
+	addedClusters, deletedClusters, err := o.getClusters(ctx, workClient, clusterClient)
 	if err != nil {
 		return err
 	}
 
 	if o.UseReplicaSet {
-		if err := o.applyWorkSet(workClient, clusterClient, manifests); err != nil {
+		if err := o.applyWorkSet(ctx, workClient, clusterClient, manifests); err != nil {
 			return err
 		}
 	} else {
-		if err := o.applyWork(workClient, manifests, addedClusters, deletedClusters); err != nil {
+		if err := o.applyWork(ctx, workClient, manifests, addedClusters, deletedClusters); err != nil {
 			return err
 		}
 	}
@@ -128,14 +128,14 @@ func (o *Options) readManifests() ([]workapiv1.Manifest, error) {
 	return manifests, nil
 }
 
-func (o *Options) getPlacement(clusterClient *clusterclientset.Clientset) (*clusterv1beta1.Placement, error) {
+func (o *Options) getPlacement(ctx context.Context, clusterClient *clusterclientset.Clientset) (*clusterv1beta1.Placement, error) {
 	parts := strings.Split(o.Placement, "/")
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("the name of the placement %s must be in the format of <namespace>/<name>", o.Placement)
 	}
 
 	namespace, name := parts[0], parts[1]
-	placement, err := clusterClient.ClusterV1beta1().Placements(namespace).Get(context.Background(), name, metav1.GetOptions{})
+	placement, err := clusterClient.ClusterV1beta1().Placements(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get placement %s", err)
 	}
@@ -143,8 +143,8 @@ func (o *Options) getPlacement(clusterClient *clusterclientset.Clientset) (*clus
 	return placement, nil
 }
 
-func (o *Options) getWorkDepolyClusters(workClient workclientset.Interface) (sets.Set[string], error) {
-	works, err := workClient.WorkV1().ManifestWorks("").List(context.TODO(), metav1.ListOptions{})
+func (o *Options) getWorkDepolyClusters(ctx context.Context, workClient workclientset.Interface) (sets.Set[string], error) {
+	works, err := workClient.WorkV1().ManifestWorks("").List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -158,8 +158,8 @@ func (o *Options) getWorkDepolyClusters(workClient workclientset.Interface) (set
 	return depolyClusters, nil
 }
 
-func (o *Options) getClusters(workClient workclientset.Interface, clusterClient *clusterclientset.Clientset) (sets.Set[string], sets.Set[string], error) {
-	existingDeployClusters, err := o.getWorkDepolyClusters(workClient)
+func (o *Options) getClusters(ctx context.Context, workClient workclientset.Interface, clusterClient *clusterclientset.Clientset) (sets.Set[string], sets.Set[string], error) {
+	existingDeployClusters, err := o.getWorkDepolyClusters(ctx, workClient)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -170,12 +170,12 @@ func (o *Options) getClusters(workClient workclientset.Interface, clusterClient 
 		return clusters, nil, nil
 	}
 
-	placement, err := o.getPlacement(clusterClient)
+	placement, err := o.getPlacement(ctx, clusterClient)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	pdtracker := clustersdkv1beta1.NewPlacementDecisionClustersTracker(placement, placementDecisionGetter{clusterClient: clusterClient}, existingDeployClusters)
+	pdtracker := clustersdkv1beta1.NewPlacementDecisionClustersTracker(placement, placementDecisionGetter{ctx: ctx, clusterClient: clusterClient}, existingDeployClusters)
 	addedClusters, deletedClusters, err := pdtracker.GetClusterChanges()
 	if err != nil {
 		return nil, nil, err
@@ -184,13 +184,13 @@ func (o *Options) getClusters(workClient workclientset.Interface, clusterClient 
 	return addedClusters, deletedClusters, nil
 }
 
-func (o *Options) applyWorkSet(workClient workclientset.Interface, clusterClient *clusterclientset.Clientset, manifests []workapiv1.Manifest) error {
-	placement, err := o.getPlacement(clusterClient)
+func (o *Options) applyWorkSet(ctx context.Context, workClient workclientset.Interface, clusterClient *clusterclientset.Clientset, manifests []workapiv1.Manifest) error {
+	placement, err := o.getPlacement(ctx, clusterClient)
 	if err != nil {
 		return err
 	}
 
-	workSet, err := workClient.WorkV1alpha1().ManifestWorkReplicaSets(placement.Namespace).Get(context.TODO(), o.Workname, metav1.GetOptions{})
+	workSet, err := workClient.WorkV1alpha1().ManifestWorkReplicaSets(placement.Namespace).Get(ctx, o.Workname, metav1.GetOptions{})
 
 	switch {
 	case errors.IsNotFound(err):
@@ -210,7 +210,7 @@ func (o *Options) applyWorkSet(workClient workclientset.Interface, clusterClient
 				},
 			},
 		}
-		if _, err := workClient.WorkV1alpha1().ManifestWorkReplicaSets(placement.Namespace).Create(context.TODO(), workSet, metav1.CreateOptions{}); err != nil {
+		if _, err := workClient.WorkV1alpha1().ManifestWorkReplicaSets(placement.Namespace).Create(ctx, workSet, metav1.CreateOptions{}); err != nil {
 			return err
 		}
 		_, err = fmt.Fprintf(o.Streams.Out, "create manifestworkreplicaset %s in namespace %s\n", o.Workname, placement.Namespace)
@@ -224,7 +224,7 @@ func (o *Options) applyWorkSet(workClient workclientset.Interface, clusterClient
 	} else {
 		workSet.Spec.ManifestWorkTemplate.Workload.Manifests = manifests
 		workSet.Spec.PlacementRefs = []workapiv1alpha1.LocalPlacementReference{{Name: placement.Name}}
-		if _, err := workClient.WorkV1alpha1().ManifestWorkReplicaSets(placement.Namespace).Update(context.TODO(), workSet, metav1.UpdateOptions{}); err != nil {
+		if _, err := workClient.WorkV1alpha1().ManifestWorkReplicaSets(placement.Namespace).Update(ctx, workSet, metav1.UpdateOptions{}); err != nil {
 			return err
 		}
 		_, err = fmt.Fprintf(o.Streams.Out, "update manifestworkreplicaset %s in namespace %s\n", o.Workname, placement.Namespace)
@@ -233,10 +233,10 @@ func (o *Options) applyWorkSet(workClient workclientset.Interface, clusterClient
 	return err
 }
 
-func (o *Options) applyWork(workClient workclientset.Interface, manifests []workapiv1.Manifest, addedClusters, deletedClusters sets.Set[string]) error {
+func (o *Options) applyWork(ctx context.Context, workClient workclientset.Interface, manifests []workapiv1.Manifest, addedClusters, deletedClusters sets.Set[string]) error {
 	for clusterName := range deletedClusters {
 		if o.Overwrite {
-			if err := workClient.WorkV1().ManifestWorks(clusterName).Delete(context.TODO(), o.Workname, metav1.DeleteOptions{}); err != nil {
+			if err := workClient.WorkV1().ManifestWorks(clusterName).Delete(ctx, o.Workname, metav1.DeleteOptions{}); err != nil {
 				return err
 			}
 			if _, err := fmt.Fprintf(o.Streams.Out, "delete work %s in cluster %s\n", o.Workname, clusterName); err != nil {
@@ -246,7 +246,7 @@ func (o *Options) applyWork(workClient workclientset.Interface, manifests []work
 	}
 
 	for clusterName := range addedClusters {
-		work, err := workClient.WorkV1().ManifestWorks(clusterName).Get(context.TODO(), o.Workname, metav1.GetOptions{})
+		work, err := workClient.WorkV1().ManifestWorks(clusterName).Get(ctx, o.Workname, metav1.GetOptions{})
 
 		switch {
 		case errors.IsNotFound(err):
@@ -261,7 +261,7 @@ func (o *Options) applyWork(workClient workclientset.Interface, manifests []work
 					},
 				},
 			}
-			if _, err := workClient.WorkV1().ManifestWorks(clusterName).Create(context.TODO(), work, metav1.CreateOptions{}); err != nil {
+			if _, err := workClient.WorkV1().ManifestWorks(clusterName).Create(ctx, work, metav1.CreateOptions{}); err != nil {
 				return err
 			}
 			if _, err := fmt.Fprintf(o.Streams.Out, "create work %s in cluster %s\n", o.Workname, clusterName); err != nil {
@@ -278,7 +278,7 @@ func (o *Options) applyWork(workClient workclientset.Interface, manifests []work
 			}
 		} else {
 			work.Spec.Workload.Manifests = manifests
-			if _, err := workClient.WorkV1().ManifestWorks(clusterName).Update(context.TODO(), work, metav1.UpdateOptions{}); err != nil {
+			if _, err := workClient.WorkV1().ManifestWorks(clusterName).Update(ctx, work, metav1.UpdateOptions{}); err != nil {
 				return err
 			}
 			if _, err := fmt.Fprintf(o.Streams.Out, "update work %s in cluster %s\n", o.Workname, clusterName); err != nil {
@@ -291,11 +291,12 @@ func (o *Options) applyWork(workClient workclientset.Interface, manifests []work
 }
 
 type placementDecisionGetter struct {
+	ctx           context.Context
 	clusterClient *clusterclientset.Clientset
 }
 
 func (pdl placementDecisionGetter) List(selector labels.Selector, namespace string) ([]*clusterv1beta1.PlacementDecision, error) {
-	decisionList, err := pdl.clusterClient.ClusterV1beta1().PlacementDecisions(namespace).List(context.Background(), metav1.ListOptions{LabelSelector: selector.String()})
+	decisionList, err := pdl.clusterClient.ClusterV1beta1().PlacementDecisions(namespace).List(pdl.ctx, metav1.ListOptions{LabelSelector: selector.String()})
 	if err != nil {
 		return nil, err
 	}

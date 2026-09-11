@@ -2,7 +2,6 @@
 package clusteradme2e
 
 import (
-	"context"
 	"os"
 	"time"
 
@@ -20,14 +19,14 @@ import (
 )
 
 var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", ginkgo.Label("join-hub-skip-approve"), func() {
-	ginkgo.BeforeEach(func() {
-		err := e2e.ClearEnv()
+	ginkgo.BeforeEach(func(ctx ginkgo.SpecContext) {
+		err := e2e.ClearEnv(ctx)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	})
 
 	ginkgo.Context("join hub scenario with manual bootstrap token", func() {
 		var err error
-		ginkgo.It("should managedclusters join and accepted successfully", func() {
+		ginkgo.It("should managedclusters join and accepted successfully", func(ctx ginkgo.SpecContext) {
 			ginkgo.By("init hub with manual bootstrap token")
 			clusterAdm := e2e.Clusteradm()
 			err = clusterAdm.Init(
@@ -59,7 +58,7 @@ var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", ginkgo.La
 			gomega.Eventually(func() error {
 				tr, err := kubeClient.CoreV1().
 					ServiceAccounts(config.OpenClusterManagementNamespace).
-					CreateToken(context.TODO(), "sa-manual-token", &authv1.TokenRequest{
+					CreateToken(ctx, "sa-manual-token", &authv1.TokenRequest{
 						Spec: authv1.TokenRequestSpec{
 							// token expired in 1 hour
 							ExpirationSeconds: new(int64(3600)),

@@ -45,7 +45,7 @@ func (o *Options) validate() (err error) {
 	return nil
 }
 
-func (o *Options) run() (err error) {
+func (o *Options) run(ctx context.Context) (err error) {
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
@@ -63,7 +63,7 @@ func (o *Options) run() (err error) {
 
 	workList := &workapiv1.ManifestWorkList{Items: []workapiv1.ManifestWork{}}
 	for cluster := range clusters {
-		_, err = clusterClient.ClusterV1().ManagedClusters().Get(context.TODO(), cluster, metav1.GetOptions{})
+		_, err = clusterClient.ClusterV1().ManagedClusters().Get(ctx, cluster, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -72,7 +72,7 @@ func (o *Options) run() (err error) {
 		if len(o.workName) > 0 {
 			listOpts.FieldSelector = fmt.Sprintf("metadata.name=%s", o.workName)
 		}
-		works, err := workClient.WorkV1().ManifestWorks(cluster).List(context.TODO(), listOpts)
+		works, err := workClient.WorkV1().ManifestWorks(cluster).List(ctx, listOpts)
 		if err != nil {
 			return err
 		}

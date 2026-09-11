@@ -42,7 +42,7 @@ func (o *Options) Validate() error {
 	return nil
 }
 
-func (o *Options) Run() (err error) {
+func (o *Options) Run(ctx context.Context) (err error) {
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
@@ -67,7 +67,7 @@ func (o *Options) Run() (err error) {
 	var clusters sets.Set[string]
 	if o.ClusterOptions.AllClusters().Len() == 0 {
 		clusters = sets.New[string]()
-		mcllist, err := clusterClient.ClusterV1().ManagedClusters().List(context.TODO(),
+		mcllist, err := clusterClient.ClusterV1().ManagedClusters().List(ctx,
 			metav1.ListOptions{})
 		if err != nil {
 			return err
@@ -81,10 +81,12 @@ func (o *Options) Run() (err error) {
 
 	klog.V(3).InfoS("addon to be disabled with cluster values:", "addon", addons.List(), "clusters", clusters.UnsortedList())
 
-	return o.runWithClient(clusterClient, addonClient, kubeClient, apiExtensionsClient, dynamicClient, o.ClusteradmFlags.DryRun, addons.List(), clusters.UnsortedList())
+	return o.runWithClient(ctx, clusterClient, addonClient, kubeClient, apiExtensionsClient, dynamicClient, o.ClusteradmFlags.DryRun, addons.List(), clusters.UnsortedList())
 }
 
-func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
+func (o *Options) runWithClient(
+	ctx context.Context,
+	clusterClient clusterclientset.Interface,
 	addonClient addonclient.Interface,
 	_ kubernetes.Interface,
 	_ apiextensionsclient.Interface,
@@ -94,7 +96,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 	clusters []string) error {
 
 	for _, clusterName := range clusters {
-		_, err := clusterClient.ClusterV1().ManagedClusters().Get(context.TODO(),
+		_, err := clusterClient.ClusterV1().ManagedClusters().Get(ctx,
 			clusterName,
 			metav1.GetOptions{})
 		if err != nil {
@@ -104,7 +106,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 
 	for _, addon := range addons {
 		for _, clusterName := range clusters {
-			err := addonClient.AddonV1alpha1().ManagedClusterAddOns(clusterName).Delete(context.TODO(),
+			err := addonClient.AddonV1alpha1().ManagedClusterAddOns(clusterName).Delete(ctx,
 				addon,
 				metav1.DeleteOptions{})
 			if err != nil {

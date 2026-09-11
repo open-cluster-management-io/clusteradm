@@ -2,7 +2,6 @@
 package create
 
 import (
-	"context"
 	"fmt"
 	"os"
 
@@ -213,11 +212,11 @@ data:
 	ginkgo.Context("integration test with actual creation", func() {
 		var addonName string
 
-		ginkgo.AfterEach(func() {
+		ginkgo.AfterEach(func(ctx ginkgo.SpecContext) {
 			// Clean up ClusterManagementAddOn
 			if addonName != "" {
 				err = addonClient.AddonV1alpha1().ClusterManagementAddOns().Delete(
-					context.Background(), addonName, metav1.DeleteOptions{})
+					ctx, addonName, metav1.DeleteOptions{})
 				if err != nil && !errors.IsNotFound(err) {
 					gomega.Expect(err).ToNot(gomega.HaveOccurred())
 				}
@@ -227,14 +226,14 @@ data:
 			if addonName != "" {
 				templateName := fmt.Sprintf("%s-0.0.1", addonName)
 				err = addonClient.AddonV1alpha1().AddOnTemplates().Delete(
-					context.Background(), templateName, metav1.DeleteOptions{})
+					ctx, templateName, metav1.DeleteOptions{})
 				if err != nil && !errors.IsNotFound(err) {
 					gomega.Expect(err).ToNot(gomega.HaveOccurred())
 				}
 			}
 		})
 
-		ginkgo.It("Should create ClusterManagementAddOn with placement reference", func() {
+		ginkgo.It("Should create ClusterManagementAddOn with placement reference", func(ctx ginkgo.SpecContext) {
 			addonName = fmt.Sprintf("test-addon-%s", suffix)
 			placementNamespace := fmt.Sprintf("placement-ns-%s", suffix)
 			placementName := fmt.Sprintf("placement-%s", suffix)
@@ -266,12 +265,12 @@ data:
 				Streams:         streams,
 			}
 
-			err = o.Run()
+			err = o.Run(ctx)
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 			// Verify ClusterManagementAddOn was created with correct install strategy
 			cma, err := addonClient.AddonV1alpha1().ClusterManagementAddOns().Get(
-				context.Background(), addonName, metav1.GetOptions{})
+				ctx, addonName, metav1.GetOptions{})
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 			gomega.Expect(cma.Spec.InstallStrategy.Type).To(gomega.Equal(addonapiv1alpha1.AddonInstallStrategyPlacements))
 			gomega.Expect(cma.Spec.InstallStrategy.Placements).To(gomega.HaveLen(1))
@@ -281,12 +280,12 @@ data:
 			// Verify AddOnTemplate was created
 			templateName := fmt.Sprintf("%s-0.0.1", addonName)
 			template, err := addonClient.AddonV1alpha1().AddOnTemplates().Get(
-				context.Background(), templateName, metav1.GetOptions{})
+				ctx, templateName, metav1.GetOptions{})
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 			gomega.Expect(template.Spec.AddonName).To(gomega.Equal(addonName))
 		})
 
-		ginkgo.It("Should create ClusterManagementAddOn without placement reference", func() {
+		ginkgo.It("Should create ClusterManagementAddOn without placement reference", func(ctx ginkgo.SpecContext) {
 			addonName = fmt.Sprintf("test-addon-no-placement-%s", suffix)
 
 			// Create a temporary manifest file
@@ -316,12 +315,12 @@ data:
 				Streams:         streams,
 			}
 
-			err = o.Run()
+			err = o.Run(ctx)
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 			// Verify ClusterManagementAddOn was created with Manual install strategy
 			cma, err := addonClient.AddonV1alpha1().ClusterManagementAddOns().Get(
-				context.Background(), addonName, metav1.GetOptions{})
+				ctx, addonName, metav1.GetOptions{})
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 			gomega.Expect(cma.Spec.InstallStrategy.Type).To(gomega.Equal(addonapiv1alpha1.AddonInstallStrategyManual))
 			gomega.Expect(cma.Spec.InstallStrategy.Placements).To(gomega.BeNil())

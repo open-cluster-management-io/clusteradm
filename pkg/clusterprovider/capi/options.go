@@ -74,7 +74,7 @@ func (o *CAPIOptions) Validate() error {
 	return nil
 }
 
-func (o *CAPIOptions) ToClientGetter() (genericclioptions.RESTClientGetter, error) {
+func (o *CAPIOptions) ToClientGetter(ctx context.Context) (genericclioptions.RESTClientGetter, error) {
 	var config *rest.Config
 	var err error
 	if len(o.KubeConfigFile) == 0 {
@@ -98,14 +98,14 @@ func (o *CAPIOptions) ToClientGetter() (genericclioptions.RESTClientGetter, erro
 		return nil, err
 	}
 
-	_, err = dynamicClient.Resource(capiGVR).Namespace(o.ClusterNamespace).Get(context.TODO(), o.ClusterName, metav1.GetOptions{})
+	_, err = dynamicClient.Resource(capiGVR).Namespace(o.ClusterNamespace).Get(ctx, o.ClusterName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cluster %s/%s from capi, got error %v", o.ClusterNamespace, o.ClusterName, err)
 	}
 
-	secret, err := kubeClient.CoreV1().Secrets(o.ClusterNamespace).Get(context.TODO(), o.ClusterName+"-kubeconfig", metav1.GetOptions{})
+	secret, err := kubeClient.CoreV1().Secrets(o.ClusterNamespace).Get(ctx, o.ClusterName+"-kubeconfig", metav1.GetOptions{})
 	if errors.IsNotFound(err) {
-		return nil, fmt.Errorf("kubeconfig sercret for cluster %s/%s is not found, try again later", o.ClusterNamespace, o.ClusterName)
+		return nil, fmt.Errorf("kubeconfig secret for cluster %s/%s is not found, try again later", o.ClusterNamespace, o.ClusterName)
 	}
 	if err != nil {
 		return nil, err

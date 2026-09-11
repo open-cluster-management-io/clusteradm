@@ -49,7 +49,7 @@ func TestCreateOrUpdateConfigMap(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client := fakekube.NewSimpleClientset(tt.args.object...)
-			if err := CreateOrUpdateConfigMap(client, tt.args.cm); (err != nil) != tt.wantErr {
+			if err := CreateOrUpdateConfigMap(t.Context(), client, tt.args.cm); (err != nil) != tt.wantErr {
 				t.Errorf("CreateOrUpdateConfigMap() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			testinghelper.AssertAction(t, client.Actions()[tt.actionIndex], tt.action)

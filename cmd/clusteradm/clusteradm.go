@@ -3,8 +3,11 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -127,7 +130,9 @@ func main() {
 
 	ktemplates.ActsAsRootCommand(root, filters, groups...)
 
-	err := root.Execute()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	err := root.ExecuteContext(ctx)
 	if err != nil {
 		klog.V(1).ErrorS(err, "Error:")
 	}

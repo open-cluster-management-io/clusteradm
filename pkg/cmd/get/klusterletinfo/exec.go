@@ -63,8 +63,8 @@ const (
 	componentNameKlusterletAgent   = "klusterlet-agent"
 )
 
-func (o *Options) run() error {
-	k, err := o.operatorClient.OperatorV1().Klusterlets().Get(context.TODO(), klusterletName, metav1.GetOptions{})
+func (o *Options) run(ctx context.Context) error {
+	k, err := o.operatorClient.OperatorV1().Klusterlets().Get(ctx, klusterletName, metav1.GetOptions{})
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			return err
@@ -84,20 +84,20 @@ func (o *Options) run() error {
 	}
 
 	// printing registration-operator
-	if err := o.printRegistrationOperator(); err != nil {
+	if err := o.printRegistrationOperator(ctx); err != nil {
 		return err
 	}
 	// printing components
-	if err := o.printComponents(k); err != nil {
+	if err := o.printComponents(ctx, k); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (o *Options) printRegistrationOperator() error {
+func (o *Options) printRegistrationOperator(ctx context.Context) error {
 	deploy, err := o.kubeClient.AppsV1().
 		Deployments(registrationOperatorNamespace).
-		Get(context.TODO(), klusterletName, metav1.GetOptions{})
+		Get(ctx, klusterletName, metav1.GetOptions{})
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			return err
@@ -116,7 +116,7 @@ func (o *Options) printRegistrationOperator() error {
 	crdStatus := make(map[string]string)
 	cmgrCrd, err := o.crdClient.ApiextensionsV1().
 		CustomResourceDefinitions().
-		Get(context.TODO(), klusterletCRD, metav1.GetOptions{})
+		Get(ctx, klusterletCRD, metav1.GetOptions{})
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			return err
@@ -137,44 +137,44 @@ func (o *Options) printRegistrationOperator() error {
 	return nil
 }
 
-func (o *Options) printComponents(klet *v1.Klusterlet) error {
+func (o *Options) printComponents(ctx context.Context, klet *v1.Klusterlet) error {
 	o.printer.Write(printer.LEVEL_0, "Components:\n")
 
 	mode := klet.Spec.DeployOption.Mode
 	if mode == v1.InstallModeSingleton || mode == v1.InstallModeSingletonHosted {
-		if err := o.printAgent(klet); err != nil {
+		if err := o.printAgent(ctx, klet); err != nil {
 			return err
 		}
 	} else {
-		if err := o.printRegistration(klet); err != nil {
+		if err := o.printRegistration(ctx, klet); err != nil {
 			return err
 		}
-		if err := o.printWork(klet); err != nil {
+		if err := o.printWork(ctx, klet); err != nil {
 			return err
 		}
 	}
-	if err := o.printComponentsCRD(klet); err != nil {
+	if err := o.printComponentsCRD(ctx, klet); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (o *Options) printRegistration(klet *v1.Klusterlet) error {
+func (o *Options) printRegistration(ctx context.Context, klet *v1.Klusterlet) error {
 	o.printer.Write(printer.LEVEL_1, "Registration:\n")
-	return printer.PrintComponentsDeploy(o.printer, o.kubeClient, klet.Status.RelatedResources, componentNameRegistrationAgent)
+	return printer.PrintComponentsDeploy(ctx, o.printer, o.kubeClient, klet.Status.RelatedResources, componentNameRegistrationAgent)
 }
 
-func (o *Options) printWork(klet *v1.Klusterlet) error {
+func (o *Options) printWork(ctx context.Context, klet *v1.Klusterlet) error {
 	o.printer.Write(printer.LEVEL_1, "Work:\n")
-	return printer.PrintComponentsDeploy(o.printer, o.kubeClient, klet.Status.RelatedResources, componentNameWorkAgent)
+	return printer.PrintComponentsDeploy(ctx, o.printer, o.kubeClient, klet.Status.RelatedResources, componentNameWorkAgent)
 }
 
-func (o *Options) printAgent(klet *v1.Klusterlet) error {
+func (o *Options) printAgent(ctx context.Context, klet *v1.Klusterlet) error {
 	o.printer.Write(printer.LEVEL_1, "Controller:\n")
-	return printer.PrintComponentsDeploy(o.printer, o.kubeClient, klet.Status.RelatedResources, componentNameKlusterletAgent)
+	return printer.PrintComponentsDeploy(ctx, o.printer, o.kubeClient, klet.Status.RelatedResources, componentNameKlusterletAgent)
 }
 
-func (o *Options) printComponentsCRD(klet *v1.Klusterlet) error {
+func (o *Options) printComponentsCRD(ctx context.Context, klet *v1.Klusterlet) error {
 	o.printer.Write(printer.LEVEL_1, "CustomResourceDefinition:\n")
-	return printer.PrintComponentsCRD(o.printer, o.crdClient, klet.Status.RelatedResources)
+	return printer.PrintComponentsCRD(ctx, o.printer, o.crdClient, klet.Status.RelatedResources)
 }

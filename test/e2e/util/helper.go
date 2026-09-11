@@ -27,13 +27,13 @@ import (
 
 // WaitNamespaceDeleted receive a kubeconfigpath, a context name and a namespace name,
 // then poll until the specific namespace is fully deleted or an error occurs.
-func WaitNamespaceDeleted(restcfg *rest.Config, namespace string) error {
+func WaitNamespaceDeleted(ctx context.Context, restcfg *rest.Config, namespace string) error {
 	clientset, err := kubernetes.NewForConfig(restcfg)
 	if err != nil {
 		return err
 	}
 
-	return wait.PollUntilContextTimeout(context.TODO(), 1*time.Second, 300*time.Second, true, func(ctx context.Context) (bool, error) {
+	return wait.PollUntilContextTimeout(ctx, 1*time.Second, 300*time.Second, true, func(ctx context.Context) (bool, error) {
 		_, err := clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return true, nil
@@ -48,18 +48,18 @@ func WaitNamespaceDeleted(restcfg *rest.Config, namespace string) error {
 	})
 }
 
-func DeleteClusterCSRs(restcfg *rest.Config) error {
+func DeleteClusterCSRs(ctx context.Context, restcfg *rest.Config) error {
 	clientset, err := kubernetes.NewForConfig(restcfg)
 	if err != nil {
 		return err
 	}
 
-	return clientset.CertificatesV1().CertificateSigningRequests().DeleteCollection(context.TODO(), metav1.DeleteOptions{}, metav1.ListOptions{
+	return clientset.CertificatesV1().CertificateSigningRequests().DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
 		LabelSelector: "open-cluster-management.io/cluster-name",
 	})
 }
 
-func WaitClustersDeleted(restcfg *rest.Config) error {
+func WaitClustersDeleted(ctx context.Context, restcfg *rest.Config) error {
 	clientset, err := clusterclient.NewForConfig(restcfg)
 	if err != nil {
 		return err
@@ -67,7 +67,7 @@ func WaitClustersDeleted(restcfg *rest.Config) error {
 
 	namesToFinalizers := map[string][]string{}
 
-	err = wait.PollUntilContextTimeout(context.TODO(), 2*time.Second, 300*time.Second, true, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextTimeout(ctx, 2*time.Second, 300*time.Second, true, func(ctx context.Context) (bool, error) {
 		clusterList, err := clientset.ClusterV1().ManagedClusters().List(ctx, metav1.ListOptions{})
 		if err != nil {
 			if errors.IsNotFound(err) {
@@ -108,8 +108,8 @@ func buildConfigFromFlags(context, kubeconfigPath string) (*rest.Config, error) 
 		}).ClientConfig()
 }
 
-func ValidateImagePullSecret(kubeClient kubernetes.Interface, expectedCred string, namespace string) error {
-	pullSecret, err := kubeClient.CoreV1().Secrets(namespace).Get(context.TODO(), config.ImagePullSecret, metav1.GetOptions{})
+func ValidateImagePullSecret(ctx context.Context, kubeClient kubernetes.Interface, expectedCred string, namespace string) error {
+	pullSecret, err := kubeClient.CoreV1().Secrets(namespace).Get(ctx, config.ImagePullSecret, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("cannot find pull secret in %v ns. %v", namespace, err)
 	}
@@ -131,13 +131,13 @@ func CleanupTestImagePullCredentialFile(fileName string) {
 	_ = os.Remove(fileName)
 }
 
-func WaitClusterManagerApplied(operatorClient operatorclient.Interface, e2eConf *TestE2eConfig) {
+func WaitClusterManagerApplied(ctx context.Context, operatorClient operatorclient.Interface, e2eConf *TestE2eConfig) {
 	gomega.Expect(e2eConf).NotTo(gomega.BeNil())
 	kubeClient, err := kubernetes.NewForConfig(e2eConf.Cluster().hub.kubeConfig)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	gomega.Eventually(func() error {
-		cm, err := operatorClient.OperatorV1().ClusterManagers().Get(context.TODO(), "cluster-manager", metav1.GetOptions{})
+		cm, err := operatorClient.OperatorV1().ClusterManagers().Get(ctx, "cluster-manager", metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -153,7 +153,7 @@ func WaitClusterManagerApplied(operatorClient operatorclient.Interface, e2eConf 
 			return fmt.Errorf("hub registration is not functional")
 		}
 
-		deployments, err := kubeClient.AppsV1().Deployments(config.HubClusterNamespace).List(context.TODO(), metav1.ListOptions{})
+		deployments, err := kubeClient.AppsV1().Deployments(config.HubClusterNamespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return err
 		}
@@ -171,8 +171,8 @@ func WaitClusterManagerApplied(operatorClient operatorclient.Interface, e2eConf 
 	}, time.Second*60, time.Second*2).Should(gomega.Succeed())
 }
 
-func CheckOperatorAndAgentVersion(mcl1KubeClient kubernetes.Interface, operatorBundleVersion, registrationBundleVersion string) error {
-	operator, err := mcl1KubeClient.AppsV1().Deployments("open-cluster-management").Get(context.TODO(), "klusterlet", metav1.GetOptions{})
+func CheckOperatorAndAgentVersion(ctx context.Context, mcl1KubeClient kubernetes.Interface, operatorBundleVersion, registrationBundleVersion string) error {
+	operator, err := mcl1KubeClient.AppsV1().Deployments("open-cluster-management").Get(ctx, "klusterlet", metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -195,7 +195,7 @@ func CheckOperatorAndAgentVersion(mcl1KubeClient kubernetes.Interface, operatorB
 	}
 
 	registration, err := mcl1KubeClient.AppsV1().Deployments("open-cluster-management-agent").Get(
-		context.TODO(), "klusterlet-registration-agent", metav1.GetOptions{})
+		ctx, "klusterlet-registration-agent", metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -209,8 +209,8 @@ func CheckOperatorAndAgentVersion(mcl1KubeClient kubernetes.Interface, operatorB
 	return nil
 }
 
-func CheckOperatorAndManagerVersion(hubKubeClient kubernetes.Interface, operatorBundleVersion, registrationBundleVersion string) error {
-	operator, err := hubKubeClient.AppsV1().Deployments("open-cluster-management").Get(context.TODO(), "cluster-manager", metav1.GetOptions{})
+func CheckOperatorAndManagerVersion(ctx context.Context, hubKubeClient kubernetes.Interface, operatorBundleVersion, registrationBundleVersion string) error {
+	operator, err := hubKubeClient.AppsV1().Deployments("open-cluster-management").Get(ctx, "cluster-manager", metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -233,7 +233,7 @@ func CheckOperatorAndManagerVersion(hubKubeClient kubernetes.Interface, operator
 	}
 
 	registration, err := hubKubeClient.AppsV1().Deployments("open-cluster-management-hub").Get(
-		context.TODO(), "cluster-manager-registration-controller", metav1.GetOptions{})
+		ctx, "cluster-manager-registration-controller", metav1.GetOptions{})
 	if err != nil {
 		return err
 	}

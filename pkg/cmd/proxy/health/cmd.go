@@ -40,7 +40,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 			if err := o.validate(); err != nil {
 				return err
 			}
-			if err := o.run(streams); err != nil {
+			if err := o.run(c.Context(), streams); err != nil {
 				return err
 			}
 			return nil

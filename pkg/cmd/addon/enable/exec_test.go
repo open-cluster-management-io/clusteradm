@@ -2,7 +2,6 @@
 package enable
 
 import (
-	"context"
 	"fmt"
 	"os"
 
@@ -40,18 +39,18 @@ var _ = ginkgo.Describe("addon enable", func() {
 		cluster2Name = fmt.Sprintf("cluster-%s", rand.String(5))
 	})
 
-	ginkgo.AfterEach(func() {
+	ginkgo.AfterEach(func(ctx ginkgo.SpecContext) {
 		ginkgo.By("Delete cluster management add-on")
 		for _, addon := range addons {
 			err = addonClient.AddonV1alpha1().ClusterManagementAddOns().Delete(
-				context.Background(), addon, metav1.DeleteOptions{})
+				ctx, addon, metav1.DeleteOptions{})
 			if err != nil && !errors.IsNotFound(err) {
 				gomega.Expect(err).ToNot(gomega.HaveOccurred())
 			}
 		}
 	})
 
-	assertCreatingClusters := func(clusterName string) {
+	assertCreatingClusters := func(ctx ginkgo.SpecContext, clusterName string) {
 		ginkgo.By(fmt.Sprintf("Create %s cluster", clusterName))
 
 		cluster := &clusterapiv1.ManagedCluster{
@@ -60,7 +59,7 @@ var _ = ginkgo.Describe("addon enable", func() {
 			},
 		}
 
-		_, err = clusterClient.ClusterV1().ManagedClusters().Create(context.Background(), cluster, metav1.CreateOptions{})
+		_, err = clusterClient.ClusterV1().ManagedClusters().Create(ctx, cluster, metav1.CreateOptions{})
 		gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 		ns := &corev1.Namespace{
@@ -68,11 +67,11 @@ var _ = ginkgo.Describe("addon enable", func() {
 				Name: clusterName,
 			},
 		}
-		_, err := kubeClient.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
+		_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 		gomega.Expect(err).ToNot(gomega.HaveOccurred())
 	}
 
-	assertCreatingClusterManagementAddOn := func(cmaName string) {
+	assertCreatingClusterManagementAddOn := func(ctx ginkgo.SpecContext, cmaName string) {
 		ginkgo.By(fmt.Sprintf("Create %s ClusterManagementAddOn", cmaName))
 
 		cma := &addonapiv1alpha1.ClusterManagementAddOn{
@@ -87,7 +86,7 @@ var _ = ginkgo.Describe("addon enable", func() {
 		}
 
 		_, err = addonClient.AddonV1alpha1().ClusterManagementAddOns().Create(
-			context.Background(), cma, metav1.CreateOptions{})
+			ctx, cma, metav1.CreateOptions{})
 		gomega.Expect(err).ToNot(gomega.HaveOccurred())
 	}
 
@@ -101,10 +100,10 @@ var _ = ginkgo.Describe("addon enable", func() {
 
 	ginkgo.DescribeTableSubtree("runWithClient",
 		func(addon string) {
-			ginkgo.It("Should create ManagedClusterAddOn "+addon+" in each ManagedCluster namespace successfully", func() {
-				assertCreatingClusters(cluster1Name)
-				assertCreatingClusters(cluster2Name)
-				assertCreatingClusterManagementAddOn(addon)
+			ginkgo.It("Should create ManagedClusterAddOn "+addon+" in each ManagedCluster namespace successfully", func(ctx ginkgo.SpecContext) {
+				assertCreatingClusters(ctx, cluster1Name)
+				assertCreatingClusters(ctx, cluster2Name)
+				assertCreatingClusterManagementAddOn(ctx, addon)
 
 				o := Options{
 					Namespace: "open-cluster-management-agent-addon",
@@ -113,7 +112,7 @@ var _ = ginkgo.Describe("addon enable", func() {
 
 				clusters := []string{cluster1Name, cluster2Name}
 
-				err := o.runWithClient(clusterClient, addonClient, []string{addon}, clusters)
+				err := o.runWithClient(ctx, clusterClient, addonClient, []string{addon}, clusters)
 				gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 				for _, cluster := range clusters {
@@ -121,7 +120,7 @@ var _ = ginkgo.Describe("addon enable", func() {
 						addonClient.AddonV1alpha1().ManagedClusterAddOns(cluster).Get,
 						eventuallyTimeout, eventuallyInterval,
 					).WithArguments(
-						context.Background(), addon, metav1.GetOptions{},
+						ctx, addon, metav1.GetOptions{},
 					).ShouldNot(gomega.BeNil())
 				}
 			})
@@ -130,9 +129,9 @@ var _ = ginkgo.Describe("addon enable", func() {
 	)
 
 	ginkgo.Context("runWithClient - invalid configurations", func() {
-		ginkgo.It("Should not create a ManagedClusterAddOn because ManagedCluster doesn't exist", func() {
+		ginkgo.It("Should not create a ManagedClusterAddOn because ManagedCluster doesn't exist", func(ctx ginkgo.SpecContext) {
 			for _, addon := range addons {
-				assertCreatingClusterManagementAddOn(addon)
+				assertCreatingClusterManagementAddOn(ctx, addon)
 			}
 
 			clusterName := "no-such-cluster"
@@ -142,12 +141,12 @@ var _ = ginkgo.Describe("addon enable", func() {
 
 			clusters := []string{clusterName}
 
-			err := o.runWithClient(clusterClient, addonClient, addons, clusters)
+			err := o.runWithClient(ctx, clusterClient, addonClient, addons, clusters)
 			gomega.Expect(err).To(gomega.HaveOccurred())
 		})
 
-		ginkgo.It("Should not create a ManagedClusterAddOn because ClusterManagementAddOn doesn't exist", func() {
-			assertCreatingClusters(cluster1Name)
+		ginkgo.It("Should not create a ManagedClusterAddOn because ClusterManagementAddOn doesn't exist", func(ctx ginkgo.SpecContext) {
+			assertCreatingClusters(ctx, cluster1Name)
 
 			o := Options{
 				Namespace: "open-cluster-management-agent-addon",
@@ -156,7 +155,7 @@ var _ = ginkgo.Describe("addon enable", func() {
 
 			clusters := []string{cluster1Name, cluster1Name, cluster1Name}
 
-			err := o.runWithClient(clusterClient, addonClient, addons, clusters)
+			err := o.runWithClient(ctx, clusterClient, addonClient, addons, clusters)
 			gomega.Expect(err).To(gomega.HaveOccurred())
 		})
 
@@ -168,7 +167,7 @@ var _ = ginkgo.Describe("addon enable", func() {
 			configName      string
 		)
 
-		ginkgo.BeforeEach(func() {
+		ginkgo.BeforeEach(func(ctx ginkgo.SpecContext) {
 			configNamespace = fmt.Sprintf("config-ns-%s", rand.String(5))
 			configName = fmt.Sprintf("config-%s", rand.String(5))
 
@@ -178,29 +177,29 @@ var _ = ginkgo.Describe("addon enable", func() {
 					Name: configNamespace,
 				},
 			}
-			_, err := kubeClient.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
+			_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 		})
 
-		ginkgo.AfterEach(func() {
+		ginkgo.AfterEach(func(ctx ginkgo.SpecContext) {
 			// Clean up AddOnDeploymentConfig
 			err := addonClient.AddonV1alpha1().AddOnDeploymentConfigs(configNamespace).Delete(
-				context.Background(), configName, metav1.DeleteOptions{})
+				ctx, configName, metav1.DeleteOptions{})
 			if err != nil && !errors.IsNotFound(err) {
 				gomega.Expect(err).ToNot(gomega.HaveOccurred())
 			}
 
 			// Clean up namespace
 			err = kubeClient.CoreV1().Namespaces().Delete(
-				context.Background(), configNamespace, metav1.DeleteOptions{})
+				ctx, configNamespace, metav1.DeleteOptions{})
 			if err != nil && !errors.IsNotFound(err) {
 				gomega.Expect(err).ToNot(gomega.HaveOccurred())
 			}
 		})
 
-		ginkgo.It("Should create ManagedClusterAddOn with configs from file", func() {
-			assertCreatingClusters(cluster1Name)
-			assertCreatingClusterManagementAddOn("argocd")
+		ginkgo.It("Should create ManagedClusterAddOn with configs from file", func(ctx ginkgo.SpecContext) {
+			assertCreatingClusters(ctx, cluster1Name)
+			assertCreatingClusterManagementAddOn(ctx, "argocd")
 
 			// Create a config file
 			configContent := fmt.Sprintf(`apiVersion: addon.open-cluster-management.io/v1alpha1
@@ -233,12 +232,12 @@ spec:
 
 			clusters := []string{cluster1Name}
 
-			err = o.runWithClient(clusterClient, addonClient, []string{"argocd"}, clusters)
+			err = o.runWithClient(ctx, clusterClient, addonClient, []string{"argocd"}, clusters)
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 			// Verify ManagedClusterAddOn was created with configs
 			mca, err := addonClient.AddonV1alpha1().ManagedClusterAddOns(cluster1Name).Get(
-				context.Background(), "argocd", metav1.GetOptions{})
+				ctx, "argocd", metav1.GetOptions{})
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 			gomega.Expect(mca.Spec.Configs).To(gomega.HaveLen(1))
 			gomega.Expect(mca.Spec.Configs[0].Group).To(gomega.Equal("addon.open-cluster-management.io"))
@@ -248,14 +247,14 @@ spec:
 
 			// Verify AddOnDeploymentConfig was created
 			adc, err := addonClient.AddonV1alpha1().AddOnDeploymentConfigs(configNamespace).Get(
-				context.Background(), configName, metav1.GetOptions{})
+				ctx, configName, metav1.GetOptions{})
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 			gomega.Expect(adc.Name).To(gomega.Equal(configName))
 		})
 
-		ginkgo.It("Should create ManagedClusterAddOn with multiple configs from file", func() {
-			assertCreatingClusters(cluster1Name)
-			assertCreatingClusterManagementAddOn("governance-policy-framework")
+		ginkgo.It("Should create ManagedClusterAddOn with multiple configs from file", func(ctx ginkgo.SpecContext) {
+			assertCreatingClusters(ctx, cluster1Name)
+			assertCreatingClusterManagementAddOn(ctx, "governance-policy-framework")
 
 			config1Name := fmt.Sprintf("config1-%s", rand.String(5))
 			config2Name := fmt.Sprintf("config2-%s", rand.String(5))
@@ -301,12 +300,12 @@ spec:
 
 			clusters := []string{cluster1Name}
 
-			err = o.runWithClient(clusterClient, addonClient, []string{"governance-policy-framework"}, clusters)
+			err = o.runWithClient(ctx, clusterClient, addonClient, []string{"governance-policy-framework"}, clusters)
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 			// Verify ManagedClusterAddOn was created with multiple configs
 			mca, err := addonClient.AddonV1alpha1().ManagedClusterAddOns(cluster1Name).Get(
-				context.Background(), "governance-policy-framework", metav1.GetOptions{})
+				ctx, "governance-policy-framework", metav1.GetOptions{})
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 			gomega.Expect(mca.Spec.Configs).To(gomega.HaveLen(2))
 
@@ -324,26 +323,26 @@ spec:
 
 			// Verify both AddOnDeploymentConfigs were created
 			_, err = addonClient.AddonV1alpha1().AddOnDeploymentConfigs(configNamespace).Get(
-				context.Background(), config1Name, metav1.GetOptions{})
+				ctx, config1Name, metav1.GetOptions{})
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 			_, err = addonClient.AddonV1alpha1().AddOnDeploymentConfigs(configNamespace).Get(
-				context.Background(), config2Name, metav1.GetOptions{})
+				ctx, config2Name, metav1.GetOptions{})
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 			// Clean up additional configs
 			err = addonClient.AddonV1alpha1().AddOnDeploymentConfigs(configNamespace).Delete(
-				context.Background(), config1Name, metav1.DeleteOptions{})
+				ctx, config1Name, metav1.DeleteOptions{})
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 			err = addonClient.AddonV1alpha1().AddOnDeploymentConfigs(configNamespace).Delete(
-				context.Background(), config2Name, metav1.DeleteOptions{})
+				ctx, config2Name, metav1.DeleteOptions{})
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 		})
 
-		ginkgo.It("Should work without config file when not provided", func() {
-			assertCreatingClusters(cluster1Name)
-			assertCreatingClusterManagementAddOn("config-policy-controller")
+		ginkgo.It("Should work without config file when not provided", func(ctx ginkgo.SpecContext) {
+			assertCreatingClusters(ctx, cluster1Name)
+			assertCreatingClusterManagementAddOn(ctx, "config-policy-controller")
 
 			o := Options{
 				Namespace:  "open-cluster-management-agent-addon",
@@ -356,19 +355,19 @@ spec:
 
 			clusters := []string{cluster1Name}
 
-			err := o.runWithClient(clusterClient, addonClient, []string{"config-policy-controller"}, clusters)
+			err := o.runWithClient(ctx, clusterClient, addonClient, []string{"config-policy-controller"}, clusters)
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 			// Verify ManagedClusterAddOn was created without configs
 			mca, err := addonClient.AddonV1alpha1().ManagedClusterAddOns(cluster1Name).Get(
-				context.Background(), "config-policy-controller", metav1.GetOptions{})
+				ctx, "config-policy-controller", metav1.GetOptions{})
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 			gomega.Expect(mca.Spec.Configs).To(gomega.BeNil())
 		})
 
-		ginkgo.It("Should return error when config file does not exist", func() {
-			assertCreatingClusters(cluster1Name)
-			assertCreatingClusterManagementAddOn("argocd")
+		ginkgo.It("Should return error when config file does not exist", func(ctx ginkgo.SpecContext) {
+			assertCreatingClusters(ctx, cluster1Name)
+			assertCreatingClusterManagementAddOn(ctx, "argocd")
 
 			o := Options{
 				Namespace:  "open-cluster-management-agent-addon",
@@ -381,7 +380,7 @@ spec:
 
 			clusters := []string{cluster1Name}
 
-			err := o.runWithClient(clusterClient, addonClient, []string{"argocd"}, clusters)
+			err := o.runWithClient(ctx, clusterClient, addonClient, []string{"argocd"}, clusters)
 			gomega.Expect(err).To(gomega.HaveOccurred())
 			gomega.Expect(err.Error()).To(gomega.ContainSubstring("failed to read config file"))
 		})

@@ -47,7 +47,7 @@ func (o *Options) validate() error {
 	return nil
 }
 
-func (o *Options) run() (err error) {
+func (o *Options) run(ctx context.Context) (err error) {
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
@@ -68,7 +68,7 @@ func (o *Options) run() (err error) {
 	var clusters sets.Set[string]
 	if o.ClusterOptions.AllClusters().Len() == 0 {
 		clusters = sets.New[string]()
-		mcllist, err := clusterClient.ClusterV1().ManagedClusters().List(context.TODO(),
+		mcllist, err := clusterClient.ClusterV1().ManagedClusters().List(ctx,
 			metav1.ListOptions{})
 		if err != nil {
 			return err
@@ -81,14 +81,14 @@ func (o *Options) run() (err error) {
 		clusters = o.ClusterOptions.AllClusters()
 	}
 
-	cmaList, err := addonClient.AddonV1alpha1().ClusterManagementAddOns().List(context.TODO(), metav1.ListOptions{})
+	cmaList, err := addonClient.AddonV1alpha1().ClusterManagementAddOns().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
 
 	addonList, err := addonClient.AddonV1alpha1().
 		ManagedClusterAddOns(metav1.NamespaceAll).
-		List(context.TODO(), metav1.ListOptions{})
+		List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func (o *Options) run() (err error) {
 
 	workList, err := workClient.WorkV1().
 		ManifestWorks(metav1.NamespaceAll).
-		List(context.TODO(), metav1.ListOptions{
+		List(ctx, metav1.ListOptions{
 			LabelSelector: "open-cluster-management.io/addon-name",
 		})
 	if err != nil {

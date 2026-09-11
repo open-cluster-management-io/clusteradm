@@ -52,7 +52,7 @@ func (o *Options) Validate() error {
 	return nil
 }
 
-func (o *Options) Run() error {
+func (o *Options) Run(ctx context.Context) error {
 	kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
 	if err != nil {
 		return err
@@ -65,14 +65,14 @@ func (o *Options) Run() error {
 	if err != nil {
 		return err
 	}
-	return o.runWithClient(kubeClient, clusterClient)
+	return o.runWithClient(ctx, kubeClient, clusterClient)
 }
 
-func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient *clusterclientset.Clientset) error {
+func (o *Options) runWithClient(ctx context.Context, kubeClient *kubernetes.Clientset, clusterClient *clusterclientset.Clientset) error {
 	var errs []error
 	for _, clusterName := range o.Values.Clusters {
 		if !o.Wait {
-			approved, err := o.accept(kubeClient, clusterClient, clusterName, false)
+			approved, err := o.accept(ctx, kubeClient, clusterClient, clusterName, false)
 			if err != nil {
 				errs = append(errs, err)
 			}
@@ -80,8 +80,8 @@ func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient 
 				errs = append(errs, fmt.Errorf("no csr is approved yet for cluster %s", clusterName))
 			}
 		} else {
-			err := wait.PollUntilContextTimeout(context.TODO(), 1*time.Second, time.Duration(o.ClusteradmFlags.Timeout)*time.Second, true, func(ctx context.Context) (bool, error) {
-				approved, err := o.accept(kubeClient, clusterClient, clusterName, true)
+			err := wait.PollUntilContextTimeout(ctx, 1*time.Second, time.Duration(o.ClusteradmFlags.Timeout)*time.Second, true, func(ctx context.Context) (bool, error) {
+				approved, err := o.accept(ctx, kubeClient, clusterClient, clusterName, true)
 				if !approved {
 					return false, nil
 				}
@@ -96,8 +96,8 @@ func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient 
 	return utilerrors.NewAggregate(errs)
 }
 
-func (o *Options) accept(kubeClient *kubernetes.Clientset, clusterClient *clusterclientset.Clientset, clusterName string, waitMode bool) (bool, error) {
-	managedCluster, err := clusterClient.ClusterV1().ManagedClusters().Get(context.TODO(),
+func (o *Options) accept(ctx context.Context, kubeClient *kubernetes.Clientset, clusterClient *clusterclientset.Clientset, clusterName string, waitMode bool) (bool, error) {
+	managedCluster, err := clusterClient.ClusterV1().ManagedClusters().Get(ctx,
 		clusterName,
 		metav1.GetOptions{})
 	if err != nil {
@@ -110,7 +110,7 @@ func (o *Options) accept(kubeClient *kubernetes.Clientset, clusterClient *cluste
 
 	var approved bool
 	if !hasEksArn {
-		approved, err = o.approveCSR(kubeClient, clusterName, waitMode)
+		approved, err = o.approveCSR(ctx, kubeClient, clusterName, waitMode)
 		if err != nil {
 			return approved, fmt.Errorf("fail to approve the csr for cluster %s: %v", clusterName, err)
 		}
@@ -118,7 +118,7 @@ func (o *Options) accept(kubeClient *kubernetes.Clientset, clusterClient *cluste
 		approved = true
 	}
 
-	err = o.updateManagedCluster(clusterClient, clusterName)
+	err = o.updateManagedCluster(ctx, clusterClient, clusterName)
 	if err != nil {
 		return approved, err
 	}
@@ -126,9 +126,9 @@ func (o *Options) accept(kubeClient *kubernetes.Clientset, clusterClient *cluste
 	return approved, nil
 }
 
-func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName string, waitMode bool) (bool, error) {
+func (o *Options) approveCSR(ctx context.Context, kubeClient *kubernetes.Clientset, clusterName string, waitMode bool) (bool, error) {
 	var hasApproved bool
-	csrs, err := kubeClient.CertificatesV1().CertificateSigningRequests().List(context.TODO(),
+	csrs, err := kubeClient.CertificatesV1().CertificateSigningRequests().List(ctx,
 		metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("%v = %v", clusterLabel, clusterName),
 		})
@@ -239,7 +239,7 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 		})
 
 		signingRequest := kubeClient.CertificatesV1().CertificateSigningRequests()
-		if _, err := signingRequest.UpdateApproval(context.TODO(), csr.Name, &csr, metav1.UpdateOptions{}); err != nil {
+		if _, err := signingRequest.UpdateApproval(ctx, csr.Name, &csr, metav1.UpdateOptions{}); err != nil {
 			errs = append(errs, err)
 		} else {
 			fmt.Fprintf(o.Streams.Out, "CSR %s approved\n", csr.Name)
@@ -249,8 +249,8 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 	return hasApproved, utilerrors.NewAggregate(errs)
 }
 
-func (o *Options) updateManagedCluster(clusterClient *clusterclientset.Clientset, clusterName string) error {
-	mc, err := clusterClient.ClusterV1().ManagedClusters().Get(context.TODO(),
+func (o *Options) updateManagedCluster(ctx context.Context, clusterClient *clusterclientset.Clientset, clusterName string) error {
+	mc, err := clusterClient.ClusterV1().ManagedClusters().Get(ctx,
 		clusterName,
 		metav1.GetOptions{})
 	if err != nil {
@@ -265,7 +265,7 @@ func (o *Options) updateManagedCluster(clusterClient *clusterclientset.Clientset
 	}
 	if !mc.Spec.HubAcceptsClient {
 		patch := `{"spec":{"hubAcceptsClient":true}}`
-		_, err = clusterClient.ClusterV1().ManagedClusters().Patch(context.TODO(), mc.Name, types.MergePatchType, []byte(patch), metav1.PatchOptions{})
+		_, err = clusterClient.ClusterV1().ManagedClusters().Patch(ctx, mc.Name, types.MergePatchType, []byte(patch), metav1.PatchOptions{})
 		if err != nil {
 			return err
 		}

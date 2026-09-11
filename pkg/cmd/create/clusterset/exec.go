@@ -34,7 +34,7 @@ func (o *Options) Validate() (err error) {
 	return nil
 }
 
-func (o *Options) Run() (err error) {
+func (o *Options) Run(ctx context.Context) (err error) {
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
@@ -46,14 +46,16 @@ func (o *Options) Run() (err error) {
 
 	clusterSetName := o.Clustersets[0]
 
-	return o.runWithClient(clusterClient, o.ClusteradmFlags.DryRun, clusterSetName)
+	return o.runWithClient(ctx, clusterClient, o.ClusteradmFlags.DryRun, clusterSetName)
 }
 
-func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
+func (o *Options) runWithClient(
+	ctx context.Context,
+	clusterClient clusterclientset.Interface,
 	dryRun bool,
 	clusterset string) error {
 
-	_, err := clusterClient.ClusterV1beta2().ManagedClusterSets().Get(context.TODO(), clusterset, metav1.GetOptions{})
+	_, err := clusterClient.ClusterV1beta2().ManagedClusterSets().Get(ctx, clusterset, metav1.GetOptions{})
 	if err == nil {
 		fmt.Fprintf(o.Streams.Out, "Clusterset %s is already created\n", clusterset)
 		return nil
@@ -70,7 +72,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 		},
 	}
 
-	_, err = clusterClient.ClusterV1beta2().ManagedClusterSets().Create(context.TODO(), mcs, metav1.CreateOptions{})
+	_, err = clusterClient.ClusterV1beta2().ManagedClusterSets().Create(ctx, mcs, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}

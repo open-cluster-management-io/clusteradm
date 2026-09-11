@@ -65,7 +65,7 @@ func (o *Options) validate() (err error) {
 	return nil
 }
 
-func (o *Options) run() error {
+func (o *Options) run(ctx context.Context) error {
 	alreadyProvidedAddons := make(map[string]bool)
 	addons := make([]string, 0)
 	names := strings.Split(o.names, ",")
@@ -79,7 +79,7 @@ func (o *Options) run() error {
 	var filteredAddons []string
 	for _, a := range addons {
 		if a == argocdAddonName || a == argocdAgentAddonName {
-			if err := o.runWithHelmClient(a); err != nil {
+			if err := o.runWithHelmClient(ctx, a); err != nil {
 				return err
 			}
 		} else {
@@ -96,7 +96,7 @@ func (o *Options) run() error {
 	klog.V(3).InfoS("values:", "addon", o.values.HubAddons)
 
 	if o.values.CreateNamespace {
-		if err := o.createNamespace(); err != nil {
+		if err := o.createNamespace(ctx); err != nil {
 			return err
 		}
 	}
@@ -146,15 +146,15 @@ func (o *Options) runWithClient() error {
 	return nil
 }
 
-func (o *Options) createNamespace() error {
+func (o *Options) createNamespace(ctx context.Context) error {
 	clientSet, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
 	if err != nil {
 		return fmt.Errorf("failed to create kubernetes clientSet")
 	}
 
-	ns, err := clientSet.CoreV1().Namespaces().Get(context.Background(), o.values.Namespace, metav1.GetOptions{})
+	ns, err := clientSet.CoreV1().Namespaces().Get(ctx, o.values.Namespace, metav1.GetOptions{})
 	if err != nil && errors.IsNotFound(err) {
-		ns, err = clientSet.CoreV1().Namespaces().Create(context.Background(), &corev1.Namespace{
+		ns, err = clientSet.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: o.values.Namespace,
 			},
@@ -169,13 +169,13 @@ func (o *Options) createNamespace() error {
 	return nil
 }
 
-func (o *Options) runWithHelmClient(addon string) error {
+func (o *Options) runWithHelmClient(ctx context.Context, addon string) error {
 	o.Helm.WithCreateNamespace(o.values.CreateNamespace)
 
 	if addon == argocdAddonName {
 		o.Helm.WithNamespace(argocdNamespace)
 
-		if err := o.Helm.PrepareChart(repoName, url); err != nil {
+		if err := o.Helm.PrepareChart(ctx, repoName, url); err != nil {
 			return err
 		}
 
@@ -185,7 +185,7 @@ func (o *Options) runWithHelmClient(addon string) error {
 	if addon == argocdAgentAddonName {
 		o.Helm.WithNamespace(argocdNamespace)
 
-		if err := o.Helm.PrepareChart(repoName, url); err != nil {
+		if err := o.Helm.PrepareChart(ctx, repoName, url); err != nil {
 			return err
 		}
 

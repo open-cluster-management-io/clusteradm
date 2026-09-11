@@ -90,7 +90,7 @@ func (h *Helm) SetValue(key, value string) {
 }
 
 // PrepareChart prepares the chart for installation
-func (h *Helm) PrepareChart(repoName, repoURL string) error {
+func (h *Helm) PrepareChart(ctx context.Context, repoName, repoURL string) error {
 	// add repo
 	repoFile := h.settings.RepositoryConfig
 
@@ -102,7 +102,7 @@ func (h *Helm) PrepareChart(repoName, repoURL string) error {
 
 	// Acquire a file lock for process synchronization
 	fileLock := flock.New(strings.Replace(repoFile, filepath.Ext(repoFile), ".lock", 1))
-	lockCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	lockCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	locked, err := fileLock.TryLockContext(lockCtx, time.Second)
 	if err == nil && locked {

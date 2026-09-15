@@ -213,8 +213,8 @@ func WatchUntil(
 	defer w.Stop()
 	for {
 		event, ok := <-w.ResultChan()
-		if !ok { // The channel is closed by Kubernetes, thus, user should check the pod status manually
-			return fmt.Errorf("unexpected watch event received")
+		if !ok {
+			return fmt.Errorf("watch channel closed before the expected event was received")
 		}
 
 		if assertEvent(event) {

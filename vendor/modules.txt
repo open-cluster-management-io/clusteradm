@@ -1415,11 +1415,16 @@ open-cluster-management.io/api/client/addon/clientset/versioned/scheme
 open-cluster-management.io/api/client/addon/clientset/versioned/typed/addon/v1alpha1
 open-cluster-management.io/api/client/addon/clientset/versioned/typed/addon/v1beta1
 open-cluster-management.io/api/client/cluster/clientset/versioned
+open-cluster-management.io/api/client/cluster/clientset/versioned/fake
 open-cluster-management.io/api/client/cluster/clientset/versioned/scheme
 open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1
+open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1/fake
 open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1alpha1
+open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1alpha1/fake
 open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1beta1
+open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1beta1/fake
 open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1beta2
+open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1beta2/fake
 open-cluster-management.io/api/client/operator/clientset/versioned
 open-cluster-management.io/api/client/operator/clientset/versioned/scheme
 open-cluster-management.io/api/client/operator/clientset/versioned/typed/operator/v1

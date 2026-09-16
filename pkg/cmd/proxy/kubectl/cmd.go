@@ -43,7 +43,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd := &cobra.Command{
 		Use:   "kubectl",
 		Short: "Use kubectl through cluster-proxy addon.",
-		Long:  "Use kubectl through cluster-proxy addon. (Only supports managed service account token as certificate.) Only a single cluster is supported per invocation, use --cluster.",
+		Long:  "Use kubectl with the specified managed cluster through cluster-proxy addon. (Supports only managed service account token as certificate, and only a single cluster per invocation specified using --cluster.)",
 		Example: `If you want to get nodes on managed cluster named "cluster1", you can use the following command:
 		clusteradm proxy kubectl --cluster=cluster1 --sa=test --args="get nodes"`,
 		SilenceUsage: true,

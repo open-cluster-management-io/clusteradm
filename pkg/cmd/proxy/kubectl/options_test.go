@@ -14,6 +14,7 @@ func Test_Options_validate(t *testing.T) {
 		clusters              []string
 		managedServiceAccount string
 		wantErr               bool
+		wantErrMsg            string
 	}{
 		{
 			name:                  "valid single cluster",
@@ -27,22 +28,26 @@ func Test_Options_validate(t *testing.T) {
 			clusters:              []string{"cluster1", "cluster2"},
 			managedServiceAccount: "sa1",
 			wantErr:               true,
+			wantErrMsg:            "proxy kubectl only supports a single cluster, use --cluster instead of --clusters",
 		},
 		{
 			name:                  "clusters flag alone rejected",
 			clusters:              []string{"cluster1", "cluster2"},
 			managedServiceAccount: "sa1",
 			wantErr:               true,
+			wantErrMsg:            "proxy kubectl only supports a single cluster, use --cluster instead of --clusters",
 		},
 		{
 			name:                  "missing cluster",
 			managedServiceAccount: "sa1",
 			wantErr:               true,
+			wantErrMsg:            "--cluster is required",
 		},
 		{
-			name:    "missing managedServiceAccount",
-			cluster: "cluster1",
-			wantErr: true,
+			name:       "missing managedServiceAccount",
+			cluster:    "cluster1",
+			wantErr:    true,
+			wantErrMsg: "managedServiceAccount is required",
 		},
 	}
 
@@ -58,6 +63,9 @@ func Test_Options_validate(t *testing.T) {
 			err := o.validate()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if err != nil && err.Error() != tt.wantErrMsg {
+				t.Errorf("validate() error message = %q, want %q", err.Error(), tt.wantErrMsg)
 			}
 		})
 	}

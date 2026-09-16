@@ -9,7 +9,7 @@ import (
 var _ = ginkgo.Describe("test clusteradm version", ginkgo.Label("version"), func() {
 	var err error
 
-	ginkgo.It("write your tests here", func() {
+	ginkgo.It("check clusteradm version", func() {
 		err = e2e.Clusteradm().Version()
 		gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm version check error")
 	})

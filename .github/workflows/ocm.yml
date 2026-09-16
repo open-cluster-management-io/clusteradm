@@ -4,19 +4,25 @@ name: OCM
 on:
     repository_dispatch:
         types: [ocm_changes]
-env:
-  GO_VERSION: '1.26'
+
+permissions:
+  contents: read
 
 jobs:
     e2e-test:
         runs-on: ubuntu-latest
         steps:
-        - run: echo ${{ github.event.client_payload.ref }}
-        - run: echo ${{ github.event.client_payload.sha }}
-        - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7
+        - name: Git Ref ${{ github.event.client_payload.ref }}
+          run: ":"
+        - name: Git SHA ${{ github.event.client_payload.sha }}
+          run: ":"
+        - name: Check out code
+          uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7
+          with:
+            persist-credentials: false
         - name: Set up Go
           uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e #v7
           with:
-            go-version: ${{ env.GO_VERSION }}
+            go-version-file: go.mod
         - name: E2E Tests
           run: make test-e2e

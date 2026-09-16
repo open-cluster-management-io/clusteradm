@@ -34,6 +34,7 @@ var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", ginkgo.La
 			err = clusterAdm.Init(
 				"--timeout", "400",
 				"--context", e2e.Cluster().Hub().Context(),
+				"--wait",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 			ginkgo.By("init files with manual bootstrap token")

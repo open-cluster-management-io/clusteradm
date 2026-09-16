@@ -12,6 +12,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 
 	"github.com/gofrs/flock"
 	"github.com/pkg/errors"
@@ -37,9 +38,10 @@ type Helm struct {
 	createNamespace  bool
 	clusteradmFlags  *genericclioptionsclusteradm.ClusteradmFlags
 	restClientGetter genericclioptions.RESTClientGetter
+	streams          genericiooptions.IOStreams
 }
 
-func NewHelm(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags) *Helm {
+func NewHelm(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Helm {
 	h := &Helm{
 		settings: cli.New(),
 		values: &values.Options{
@@ -48,6 +50,7 @@ func NewHelm(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags) *Helm
 		},
 		clusteradmFlags:  clusteradmFlags,
 		restClientGetter: clusteradmFlags.KubectlFactory,
+		streams:          streams,
 	}
 	return h
 }
@@ -146,7 +149,7 @@ func (h *Helm) PrepareChart(repoName, repoURL string) error {
 		if err := f.WriteFile(repoFile, 0644); err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("%q has been added to your repositories\n", repoName)
+		fmt.Fprintf(h.streams.Out, "%q has been added to your repositories\n", repoName)
 	}
 
 	// update repo
@@ -160,12 +163,12 @@ func (h *Helm) PrepareChart(repoName, repoURL string) error {
 			ocmRepo = r
 		}
 	}
-	fmt.Printf("Hang tight while we grab the latest from ocm chart repository...\n")
+	fmt.Fprintln(h.streams.Out, "Hang tight while we grab the latest from ocm chart repository...")
 
 	if _, err := ocmRepo.DownloadIndexFile(); err != nil {
 		return fmt.Errorf("unable to get an update from the %q chart repository (%s):\n\t%s", ocmRepo.Config.Name, ocmRepo.Config.URL, err)
 	}
-	fmt.Printf("Successfully got an update from the %q chart repository\n", ocmRepo.Config.Name)
+	fmt.Fprintf(h.streams.Out, "Successfully got an update from the %q chart repository\n", ocmRepo.Config.Name)
 	return nil
 }
 
@@ -241,7 +244,7 @@ func (h *Helm) InstallChart(name, repo, chart string) {
 	}
 
 	if h.clusteradmFlags.DryRun {
-		fmt.Println(release.Manifest)
+		fmt.Fprintln(h.streams.Out, release.Manifest)
 	}
 }
 

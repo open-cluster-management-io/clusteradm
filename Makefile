@@ -11,6 +11,9 @@ GOPATH := ${shell go env GOPATH}
 GOOS := ${shell go env GOOS}
 GOARCH := ${shell go env GOARCH}
 
+LOCAL_BIN := $(PWD)/_output/tools/bin
+export PATH := $(LOCAL_BIN):$(PATH)
+
 SOURCE_GIT_LATEST_TAG ?= $(shell git describe --tags `git rev-list --tags --max-count=1`)
 SOURCE_GIT_TAG ?=$(shell git describe --long --tags --abbrev=7 --match 'v[0-9]*' || echo 'v0.0.0-unknown-$(SOURCE_GIT_COMMIT)')
 SOURCE_GIT_COMMIT ?=$(shell git rev-parse --short "HEAD^{commit}" 2>/dev/null)
@@ -102,7 +105,7 @@ check-copyright:
 
 .PHONY: test
 test: deps envtest-setup
-	@build/run-unit-tests.sh
+	@KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" build/run-unit-tests.sh
 
 .PHONY: clean-test
 clean-test: 

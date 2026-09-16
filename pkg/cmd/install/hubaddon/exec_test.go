@@ -3,6 +3,7 @@ package hubaddon
 
 import (
 	"context"
+	"io"
 	"os"
 
 	"github.com/onsi/ginkgo/v2"
@@ -112,14 +113,15 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 		addon := "argocd"
 		clusteradmFlagsCopy := *clusteradmFlags
 		clusteradmFlagsCopy.DryRun = true
+		streams := genericiooptions.IOStreams{Out: io.Discard, ErrOut: os.Stderr}
 		o := Options{
 			ClusteradmFlags: &clusteradmFlagsCopy,
 			values: scenario.Values{
 				CreateNamespace: true,
 				HubAddons:       []string{addon},
 			},
-			Streams: genericiooptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr},
-			Helm:    helm.NewHelm(&clusteradmFlagsCopy),
+			Streams: streams,
+			Helm:    helm.NewHelm(&clusteradmFlagsCopy, streams),
 		}
 
 		err := o.runWithHelmClient(addon)

@@ -89,14 +89,13 @@ func initE2E(version string) (*TestE2eConfig, error) {
 		fmt.Println("cleaning hub...")
 
 		fmt.Println("deleting all clusters on the hub...")
-		// delete all clusters
-		err = WaitClustersDeleted(e2eConf.Cluster().Hub().KubeConfig())
+		err := WaitClustersDeleted(e2eConf.Cluster().Hub().KubeConfig())
 		if err != nil {
 			return err
 		}
 
 		fmt.Println("unjoin managedCluster on the spoke cluster...")
-		err := e2eConf.Clusteradm().Unjoin(
+		err = e2eConf.Clusteradm().Unjoin(
 			"--context", e2eConf.Cluster().ManagedCluster1().Context(),
 			"--cluster-name", e2eConf.Cluster().ManagedCluster1().Name(),
 			"--purge-operator=false",

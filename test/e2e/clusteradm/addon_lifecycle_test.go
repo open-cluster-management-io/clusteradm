@@ -93,7 +93,7 @@ var _ = ginkgo.Describe("test clusteradm with addon create", ginkgo.Label("addon
 				"create",
 				"test-nginx",
 				"-f",
-				"test/e2e/clusteradm/scenario/addon/nginx.yaml",
+				"scenario/addon/nginx.yaml",
 				"--hub-registration",
 				"--cluster-role-bind",
 				"configmap-reader",

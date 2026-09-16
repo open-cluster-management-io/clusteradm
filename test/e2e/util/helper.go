@@ -33,15 +33,17 @@ func WaitNamespaceDeleted(restcfg *rest.Config, namespace string) error {
 		return err
 	}
 
-	return wait.PollUntilContextCancel(context.TODO(), 1*time.Second, true, func(ctx context.Context) (bool, error) {
-		ns, err := clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	return wait.PollUntilContextTimeout(context.TODO(), 1*time.Second, 300*time.Second, true, func(ctx context.Context) (bool, error) {
+		_, err := clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return true, nil
 		}
 		if err != nil {
-			return false, err
+			if ctx.Err() != nil {
+				return false, err
+			}
+			return false, nil
 		}
-		fmt.Printf("namespace %s still exists %v\n", ns.Name, ns.Status)
 		return false, nil
 	})
 }
@@ -63,22 +65,36 @@ func WaitClustersDeleted(restcfg *rest.Config) error {
 		return err
 	}
 
-	gomega.Eventually(func() error {
-		clusterList, err := clientset.ClusterV1().ManagedClusters().List(context.TODO(), metav1.ListOptions{})
-		if errors.IsNotFound(err) || len(clusterList.Items) == 0 {
-			return nil
-		}
+	namesToFinalizers := map[string][]string{}
+
+	err = wait.PollUntilContextTimeout(context.TODO(), 2*time.Second, 300*time.Second, true, func(ctx context.Context) (bool, error) {
+		clusterList, err := clientset.ClusterV1().ManagedClusters().List(ctx, metav1.ListOptions{})
 		if err != nil {
-			return err
+			if errors.IsNotFound(err) {
+				return true, nil
+			}
+			return false, nil
 		}
+		if len(clusterList.Items) == 0 {
+			return true, nil
+		}
+
+		namesToFinalizers = map[string][]string{}
+
 		for _, mcl := range clusterList.Items {
-			err = clientset.ClusterV1().ManagedClusters().Delete(context.TODO(), mcl.Name, metav1.DeleteOptions{})
-			if err != nil {
-				return err
+			namesToFinalizers[mcl.Name] = mcl.Finalizers
+			if mcl.DeletionTimestamp == nil {
+				if err := clientset.ClusterV1().ManagedClusters().Delete(ctx, mcl.Name, metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
+					return false, err
+				}
 			}
 		}
-		return fmt.Errorf("not all clusters are deleted")
-	}, time.Second*300, time.Second*2).Should(gomega.Succeed())
+		return false, nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("not all clusters are deleted: %w; cluster list with their finalizers: %+v", err, namesToFinalizers)
+	}
 
 	return nil
 }

@@ -68,7 +68,7 @@ func (o *Options) Run() error {
 	return o.runWithClient(kubeClient, clusterClient)
 }
 
-func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient *clusterclientset.Clientset) error {
+func (o *Options) runWithClient(kubeClient kubernetes.Interface, clusterClient clusterclientset.Interface) error {
 	var errs []error
 	for _, clusterName := range o.Values.Clusters {
 		if !o.Wait {
@@ -96,7 +96,7 @@ func (o *Options) runWithClient(kubeClient *kubernetes.Clientset, clusterClient 
 	return utilerrors.NewAggregate(errs)
 }
 
-func (o *Options) accept(kubeClient *kubernetes.Clientset, clusterClient *clusterclientset.Clientset, clusterName string, waitMode bool) (bool, error) {
+func (o *Options) accept(kubeClient kubernetes.Interface, clusterClient clusterclientset.Interface, clusterName string, waitMode bool) (bool, error) {
 	managedCluster, err := clusterClient.ClusterV1().ManagedClusters().Get(context.TODO(),
 		clusterName,
 		metav1.GetOptions{})
@@ -117,6 +117,9 @@ func (o *Options) accept(kubeClient *kubernetes.Clientset, clusterClient *cluste
 	} else {
 		approved = true
 	}
+	if !approved && managedCluster.Spec.HubAcceptsClient {
+		approved = true
+	}
 
 	err = o.updateManagedCluster(clusterClient, clusterName)
 	if err != nil {
@@ -126,7 +129,7 @@ func (o *Options) accept(kubeClient *kubernetes.Clientset, clusterClient *cluste
 	return approved, nil
 }
 
-func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName string, waitMode bool) (bool, error) {
+func (o *Options) approveCSR(kubeClient kubernetes.Interface, clusterName string, waitMode bool) (bool, error) {
 	var hasApproved bool
 	csrs, err := kubeClient.CertificatesV1().CertificateSigningRequests().List(context.TODO(),
 		metav1.ListOptions{
@@ -249,7 +252,7 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 	return hasApproved, utilerrors.NewAggregate(errs)
 }
 
-func (o *Options) updateManagedCluster(clusterClient *clusterclientset.Clientset, clusterName string) error {
+func (o *Options) updateManagedCluster(clusterClient clusterclientset.Interface, clusterName string) error {
 	mc, err := clusterClient.ClusterV1().ManagedClusters().Get(context.TODO(),
 		clusterName,
 		metav1.GetOptions{})

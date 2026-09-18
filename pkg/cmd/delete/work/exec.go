@@ -3,8 +3,8 @@ package work
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -113,17 +113,19 @@ func (o *Options) deleteWork(ctx context.Context, workClient *workclientset.Clie
 		}
 	}
 
+	status := &atomic.Value{}
+	status.Store("")
 	err = wait.PollUntilContextTimeout(ctx, 3*time.Second, time.Duration(o.ClusteradmFlags.Timeout)*time.Second, true, func(ctx context.Context) (bool, error) {
 		_, err := workClient.WorkV1().ManifestWorks(cluster).Get(ctx, o.Workname, metav1.GetOptions{})
-		if helperwait.IsFatalAPIError(err) {
-			return false, err
+		if err == nil {
+			err = fmt.Errorf("work %s still present", o.Workname)
 		}
-		return k8serrors.IsNotFound(err), nil
+		if k8serrors.IsNotFound(err) {
+			return true, nil
+		}
+		return helperwait.HandlePollError(ctx, err, status)
 	})
-	if err != nil {
-		if errors.Is(err, context.DeadlineExceeded) {
-			return fmt.Errorf("delete work %s timeout, failed to delete", o.Workname)
-		}
+	if err := helperwait.TimeoutError(err, status, "delete work %s timeout, failed to delete", o.Workname); err != nil {
 		return err
 	}
 

@@ -6,7 +6,6 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -552,21 +551,15 @@ func (o *Options) waitUntilManagedClusterIsCreated(ctx context.Context, timeout 
 		if err != nil {
 			// This Get uses the bootstrap token. Hub bootstrap RBAC may not be
 			// visible yet, so Forbidden can be transient; other fatal API errors are not.
-			if wait.IsFatalAPIError(err) && !k8serrors.IsForbidden(err) {
-				return false, err
+			if k8serrors.IsForbidden(err) {
+				phase.Store(err.Error())
+				return false, nil
 			}
-			return false, nil
+			return wait.HandlePollError(ctx, err, phase)
 		}
 		return true, nil
 	})
-	if err != nil {
-		if errors.Is(err, context.DeadlineExceeded) {
-			return fmt.Errorf("timed out waiting for managed cluster %s to be created", clusterName)
-		}
-		return err
-	}
-
-	return nil
+	return wait.TimeoutError(err, phase, "timed out waiting for managed cluster %s to be created", clusterName)
 }
 
 // Wait until the klusterlet condition available=true, or timeout in $timeout seconds
@@ -588,23 +581,13 @@ func waitUntilKlusterletConditionIsTrue(
 	err := k8swait.PollUntilContextTimeout(ctx, 3*time.Second, time.Duration(timeout)*time.Second, true, func(ctx context.Context) (bool, error) {
 		klusterlet, err := client.OperatorV1().Klusterlets().Get(ctx, klusterletName, metav1.GetOptions{})
 		if err != nil {
-			if wait.IsFatalAPIError(err) {
-				return false, err
-			}
-			return false, nil
+			return wait.HandlePollError(ctx, err, phase)
 		}
 		phase.Store(printer.GetSpinnerKlusterletStatus(klusterlet))
 		return meta.IsStatusConditionFalse(klusterlet.Status.Conditions, "RegistrationDesiredDegraded") &&
 			meta.IsStatusConditionFalse(klusterlet.Status.Conditions, "WorkDesiredDegraded"), nil
 	})
-	if err != nil {
-		if errors.Is(err, context.DeadlineExceeded) {
-			return fmt.Errorf("timed out waiting for klusterlet %s to become ready", klusterletName)
-		}
-		return err
-	}
-
-	return nil
+	return wait.TimeoutError(err, phase, "timed out waiting for klusterlet %s to become ready", klusterletName)
 }
 
 // Create bootstrap with token but without CA

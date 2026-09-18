@@ -3,8 +3,8 @@ package clusterset
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -100,17 +100,19 @@ func (o *Options) runWithClient(ctx context.Context, clusterClient clusterclient
 		return err
 	}
 
+	status := &atomic.Value{}
+	status.Store("")
 	err = wait.PollUntilContextTimeout(ctx, 3*time.Second, time.Duration(o.ClusteradmFlags.Timeout)*time.Second, true, func(ctx context.Context) (bool, error) {
 		_, err := clusterClient.ClusterV1beta2().ManagedClusterSets().Get(ctx, clusterset, metav1.GetOptions{})
-		if helperwait.IsFatalAPIError(err) {
-			return false, err
+		if k8serrors.IsNotFound(err) {
+			return true, nil
 		}
-		return k8serrors.IsNotFound(err), nil
+		if err == nil {
+			err = fmt.Errorf("clusterset %s still present", clusterset)
+		}
+		return helperwait.HandlePollError(ctx, err, status)
 	})
-	if err != nil {
-		if errors.Is(err, context.DeadlineExceeded) {
-			return fmt.Errorf("delete clusterset %s timeout, failed to delete", clusterset)
-		}
+	if err := helperwait.TimeoutError(err, status, "delete clusterset %s timeout, failed to delete", clusterset); err != nil {
 		return err
 	}
 

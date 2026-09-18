@@ -3,15 +3,17 @@ package clusterset
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
-	"open-cluster-management.io/clusteradm/pkg/helpers"
+	helperwait "open-cluster-management.io/clusteradm/pkg/helpers/wait"
 )
 
 func (o *Options) complete(_ *cobra.Command, args []string) (err error) {
@@ -67,7 +69,7 @@ func (o *Options) runWithClient(ctx context.Context, clusterClient clusterclient
 	// check existing
 	_, err := clusterClient.ClusterV1beta2().ManagedClusterSets().Get(ctx, clusterset, metav1.GetOptions{})
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if k8serrors.IsNotFound(err) {
 			fmt.Fprintf(o.Streams.Out, "Clusterset %s not found or is already deleted\n", clusterset)
 			return nil
 		}
@@ -83,7 +85,7 @@ func (o *Options) runWithClient(ctx context.Context, clusterClient clusterclient
 		fmt.Fprintf(o.Streams.Out, "Clusterset %s still bind to a namespace! Please unbind before deleted.\n", clusterset)
 		return nil
 	}
-	if err != nil && !errors.IsNotFound(err) {
+	if err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
 
@@ -92,28 +94,23 @@ func (o *Options) runWithClient(ctx context.Context, clusterClient clusterclient
 		return nil
 	}
 
-	errCh := make(chan error, 1)
-	go func() {
-		errCh <- helpers.WatchUntil(
-			ctx,
-			func() (watch.Interface, error) {
-				return clusterClient.ClusterV1beta2().ManagedClusterSets().Watch(ctx, metav1.ListOptions{
-					FieldSelector: fmt.Sprintf("metadata.name=%s", clusterset),
-				})
-			},
-			func(event watch.Event) bool {
-				return event.Type == watch.Deleted
-			},
-		)
-	}()
-
 	// delete
 	err = clusterClient.ClusterV1beta2().ManagedClusterSets().Delete(ctx, clusterset, metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}
 
-	if err = <-errCh; err != nil {
+	err = wait.PollUntilContextTimeout(ctx, 3*time.Second, time.Duration(o.ClusteradmFlags.Timeout)*time.Second, true, func(ctx context.Context) (bool, error) {
+		_, err := clusterClient.ClusterV1beta2().ManagedClusterSets().Get(ctx, clusterset, metav1.GetOptions{})
+		if helperwait.IsFatalAPIError(err) {
+			return false, err
+		}
+		return k8serrors.IsNotFound(err), nil
+	})
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return fmt.Errorf("delete clusterset %s timeout, failed to delete", clusterset)
+		}
 		return err
 	}
 

@@ -80,7 +80,7 @@ func (o *Options) runWithClient(ctx context.Context, kubeClient *kubernetes.Clie
 				errs = append(errs, fmt.Errorf("no csr is approved yet for cluster %s", clusterName))
 			}
 		} else {
-			err := wait.PollUntilContextTimeout(ctx, 1*time.Second, time.Duration(o.ClusteradmFlags.Timeout)*time.Second, true, func(ctx context.Context) (bool, error) {
+			err := wait.PollUntilContextTimeout(ctx, 3*time.Second, time.Duration(o.ClusteradmFlags.Timeout)*time.Second, true, func(ctx context.Context) (bool, error) {
 				approved, err := o.accept(ctx, kubeClient, clusterClient, clusterName, true)
 				if !approved {
 					return false, nil

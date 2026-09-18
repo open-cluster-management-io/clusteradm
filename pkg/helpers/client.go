@@ -18,7 +18,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -173,13 +172,13 @@ func IsClusterManagerInstalled(ctx context.Context, apiExtensionsClient apiexten
 	_, err := apiExtensionsClient.ApiextensionsV1().
 		CustomResourceDefinitions().
 		Get(ctx, "clustermanagers.operator.open-cluster-management.io", metav1.GetOptions{})
-	if err == nil {
-		return true, nil
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
 	}
-	if errors.IsNotFound(err) {
-		return false, nil
-	}
-	return false, err
+	return true, nil
 }
 
 // IsKlusterlets checks if the Managed cluster is already initialized.
@@ -188,41 +187,13 @@ func IsKlusterletsInstalled(ctx context.Context, apiExtensionsClient apiextensio
 	_, err := apiExtensionsClient.ApiextensionsV1().
 		CustomResourceDefinitions().
 		Get(ctx, "klusterlets.operator.open-cluster-management.io", metav1.GetOptions{})
-	if err == nil {
-		return true, nil
-	}
-	if errors.IsNotFound(err) {
-		return false, nil
-	}
-	return false, err
-}
-
-// WatchUntil starts a watch stream and holds until the condition is satisfied.
-func WatchUntil(
-	ctx context.Context,
-	watchFunc func() (watch.Interface, error),
-	assertEvent func(event watch.Event) bool) error {
-	w, err := watchFunc()
 	if err != nil {
-		return err
-	}
-	defer w.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case event, ok := <-w.ResultChan():
-			if !ok { // The channel is closed by Kubernetes, thus, user should check the pod status manually
-				if err := ctx.Err(); err != nil {
-					return err
-				}
-				return fmt.Errorf("unexpected watch event received")
-			}
-			if assertEvent(event) {
-				return nil
-			}
+		if errors.IsNotFound(err) {
+			return false, nil
 		}
+		return false, err
 	}
+	return true, nil
 }
 
 // CreateRESTConfigFromClientcmdapiv1Config

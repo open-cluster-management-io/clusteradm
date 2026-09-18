@@ -2,27 +2,18 @@
 package wait
 
 import (
-	"sync/atomic"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/watch"
 )
 
 func TestPodReadyEventHandler(t *testing.T) {
 	cases := []struct {
 		name      string
-		object    runtime.Object
+		object    *corev1.Pod
 		wantReady bool
 		wantPhase string
 	}{
-		{
-			name:      "non pod object is ignored",
-			object:    &corev1.ConfigMap{},
-			wantReady: false,
-			wantPhase: "",
-		},
 		{
 			name: "pod without ready condition is not ready",
 			object: &corev1.Pod{
@@ -81,17 +72,8 @@ func TestPodReadyEventHandler(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			phase := &atomic.Value{}
-			phase.Store("")
-			handler := podReadyEventHandler(phase)
-
-			got := handler(watch.Event{Type: watch.Modified, Object: c.object})
-
-			if got != c.wantReady {
-				t.Errorf("expected ready=%v, got %v", c.wantReady, got)
-			}
-			if phase.Load().(string) != c.wantPhase {
-				t.Errorf("expected phase=%q, got %q", c.wantPhase, phase.Load().(string))
+			if isPodReady(c.object) != c.wantReady {
+				t.Errorf("expected ready=%v, got %v", c.wantReady, isPodReady(c.object))
 			}
 		})
 	}

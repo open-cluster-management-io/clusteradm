@@ -3,6 +3,7 @@ package wait
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"sync/atomic"
@@ -10,10 +11,10 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
@@ -64,18 +65,15 @@ func WaitUntilRegistrationOperatorReady(ctx context.Context, w io.Writer, f util
 	operatorSpinner.Start()
 	defer operatorSpinner.Stop()
 
-	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
-	defer cancel()
-	return helpers.WatchUntil(
-		ctx,
-		func() (watch.Interface, error) {
-			return client.CoreV1().Pods("open-cluster-management").
-				Watch(ctx, metav1.ListOptions{
-					TimeoutSeconds: &timeout,
-					LabelSelector:  fmt.Sprintf("%v=%v", config.LabelApp, appLabel),
-				})
-		},
-		podReadyEventHandler(phase))
+	err = waitUntilPodsReady(ctx, client, "open-cluster-management",
+		fmt.Sprintf("%v=%v", config.LabelApp, appLabel), timeout, phase)
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return fmt.Errorf("timed out waiting for registration operator to become ready")
+		}
+		return err
+	}
+	return nil
 }
 
 //nolint:revive
@@ -104,18 +102,15 @@ func WaitUntilClusterManagerRegistrationReady(ctx context.Context, w io.Writer, 
 	clusterManagerSpinner.Start()
 	defer clusterManagerSpinner.Stop()
 
-	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
-	defer cancel()
-	return helpers.WatchUntil(
-		ctx,
-		func() (watch.Interface, error) {
-			return client.CoreV1().Pods("open-cluster-management-hub").
-				Watch(ctx, metav1.ListOptions{
-					TimeoutSeconds: &timeout,
-					LabelSelector:  "app=clustermanager-registration-controller",
-				})
-		},
-		podReadyEventHandler(phase))
+	err = waitUntilPodsReady(ctx, client, "open-cluster-management-hub",
+		"app=clustermanager-registration-controller", timeout, phase)
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return fmt.Errorf("timed out waiting for cluster manager registration to become ready")
+		}
+		return err
+	}
+	return nil
 }
 
 //nolint:revive
@@ -144,39 +139,14 @@ func WaitUntilMulticlusterControlplaneReady(ctx context.Context, w io.Writer, f 
 	clusterManagerSpinner.Start()
 	defer clusterManagerSpinner.Stop()
 
-	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
-	defer cancel()
-	return helpers.WatchUntil(
-		ctx,
-		func() (watch.Interface, error) {
-			return client.CoreV1().Pods(ns).Watch(ctx, metav1.ListOptions{
-				TimeoutSeconds: &timeout,
-				LabelSelector:  "app=multicluster-controlplane",
-			})
-		},
-		podReadyEventHandler(phase))
-}
-
-// podReadyEventHandler returns a watch.Event handler that reports the current
-// pod status into phase and reports true once the pod's Ready condition is true.
-func podReadyEventHandler(phase *atomic.Value) func(watch.Event) bool {
-	return func(event watch.Event) bool {
-		pod, ok := event.Object.(*corev1.Pod)
-		if !ok {
-			return false
+	err = waitUntilPodsReady(ctx, client, ns, "app=multicluster-controlplane", timeout, phase)
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return fmt.Errorf("timed out waiting for multicluster controlplane to become ready")
 		}
-		phase.Store(printer.GetSpinnerPodStatus(pod))
-		conds := make([]metav1.Condition, len(pod.Status.Conditions))
-		for i := range pod.Status.Conditions {
-			conds[i] = metav1.Condition{
-				Type:    string(pod.Status.Conditions[i].Type),
-				Status:  metav1.ConditionStatus(pod.Status.Conditions[i].Status),
-				Reason:  pod.Status.Conditions[i].Reason,
-				Message: pod.Status.Conditions[i].Message,
-			}
-		}
-		return meta.IsStatusConditionTrue(conds, "Ready")
+		return err
 	}
+	return nil
 }
 
 //nolint:revive
@@ -202,4 +172,48 @@ func WaitUntilMulticlusterControlplaneKubeconfigReady(ctx context.Context, f uti
 		return err
 	})
 	return errGet
+}
+
+// IsFatalAPIError reports whether err is an API error that will not resolve by retrying.
+func IsFatalAPIError(err error) bool {
+	return k8serrors.IsForbidden(err) ||
+		k8serrors.IsUnauthorized(err) ||
+		k8serrors.IsInvalid(err) ||
+		k8serrors.IsBadRequest(err) ||
+		k8serrors.IsMethodNotSupported(err)
+}
+
+func waitUntilPodsReady(ctx context.Context, client kubernetes.Interface, namespace, labelSelector string, timeout int64, phase *atomic.Value) error {
+	return wait.PollUntilContextTimeout(ctx, 3*time.Second, time.Duration(timeout)*time.Second, true, func(ctx context.Context) (bool, error) {
+		pods, err := client.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+			LabelSelector: labelSelector,
+		})
+		if err != nil {
+			if IsFatalAPIError(err) {
+				return false, err
+			}
+			return false, nil
+		}
+		for i := range pods.Items {
+			pod := &pods.Items[i]
+			phase.Store(printer.GetSpinnerPodStatus(pod))
+			if isPodReady(pod) {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+}
+
+func isPodReady(pod *corev1.Pod) bool {
+	conds := make([]metav1.Condition, len(pod.Status.Conditions))
+	for i := range pod.Status.Conditions {
+		conds[i] = metav1.Condition{
+			Type:    string(pod.Status.Conditions[i].Type),
+			Status:  metav1.ConditionStatus(pod.Status.Conditions[i].Status),
+			Reason:  pod.Status.Conditions[i].Reason,
+			Message: pod.Status.Conditions[i].Message,
+		}
+	}
+	return meta.IsStatusConditionTrue(conds, "Ready")
 }

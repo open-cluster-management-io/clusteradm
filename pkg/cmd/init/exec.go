@@ -410,7 +410,7 @@ func (o *Options) deploySingletonControlplane(kubeClient kubernetes.Interface) e
 		return err
 	}
 
-	o.Helm.InstallChart(releaseName, repoName, chartName)
+	o.Helm.InstallChart(releaseName, repoName, chartName, "")
 
 	// fetch the kubeconfig and get the token
 	if o.wait && !o.ClusteradmFlags.DryRun {

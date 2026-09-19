@@ -72,7 +72,7 @@ func (o *Options) run() error {
 		return err
 	}
 
-	if err := check.CheckForKlusterletCRD(klusterletClient); err != nil {
+	if err := check.CheckForKlusterletCRD(klusterletClient.Discovery()); err != nil {
 		if errors.IsNotFound(err) {
 			fmt.Println("klusterlet CRD not found, there is no need to unjoin.")
 			return nil

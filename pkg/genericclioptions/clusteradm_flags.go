@@ -43,14 +43,14 @@ func (f *ClusteradmFlags) ValidateHub() error {
 	if err != nil {
 		return err
 	}
-	return check.CheckForHub(client)
+	return check.CheckForHub(client.Discovery())
 }
 func (f *ClusteradmFlags) ValidateManagedCluster() error {
 	client, err := f.buildClusterClientset()
 	if err != nil {
 		return err
 	}
-	return check.CheckForManagedCluster(client)
+	return check.CheckForManagedCluster(client.Discovery())
 }
 
 func (f *ClusteradmFlags) buildClusterClientset() (*clusterclientset.Clientset, error) {

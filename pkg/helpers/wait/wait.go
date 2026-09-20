@@ -72,23 +72,7 @@ func WaitUntilRegistrationOperatorReady(w io.Writer, f util.Factory, timeout int
 					LabelSelector:  fmt.Sprintf("%v=%v", config.LabelApp, appLabel),
 				})
 		},
-		func(event watch.Event) bool {
-			pod, ok := event.Object.(*corev1.Pod)
-			if !ok {
-				return false
-			}
-			phase.Store(printer.GetSpinnerPodStatus(pod))
-			conds := make([]metav1.Condition, len(pod.Status.Conditions))
-			for i := range pod.Status.Conditions {
-				conds[i] = metav1.Condition{
-					Type:    string(pod.Status.Conditions[i].Type),
-					Status:  metav1.ConditionStatus(pod.Status.Conditions[i].Status),
-					Reason:  pod.Status.Conditions[i].Reason,
-					Message: pod.Status.Conditions[i].Message,
-				}
-			}
-			return meta.IsStatusConditionTrue(conds, "Ready")
-		})
+		podReadyEventHandler(phase))
 }
 
 //nolint:revive
@@ -125,23 +109,7 @@ func WaitUntilClusterManagerRegistrationReady(w io.Writer, f util.Factory, timeo
 					LabelSelector:  "app=clustermanager-registration-controller",
 				})
 		},
-		func(event watch.Event) bool {
-			pod, ok := event.Object.(*corev1.Pod)
-			if !ok {
-				return false
-			}
-			phase.Store(printer.GetSpinnerPodStatus(pod))
-			conds := make([]metav1.Condition, len(pod.Status.Conditions))
-			for i := range pod.Status.Conditions {
-				conds[i] = metav1.Condition{
-					Type:    string(pod.Status.Conditions[i].Type),
-					Status:  metav1.ConditionStatus(pod.Status.Conditions[i].Status),
-					Reason:  pod.Status.Conditions[i].Reason,
-					Message: pod.Status.Conditions[i].Message,
-				}
-			}
-			return meta.IsStatusConditionTrue(conds, "Ready")
-		})
+		podReadyEventHandler(phase))
 }
 
 //nolint:revive
@@ -177,23 +145,29 @@ func WaitUntilMulticlusterControlplaneReady(w io.Writer, f util.Factory, ns stri
 				LabelSelector:  "app=multicluster-controlplane",
 			})
 		},
-		func(event watch.Event) bool {
-			pod, ok := event.Object.(*corev1.Pod)
-			if !ok {
-				return false
+		podReadyEventHandler(phase))
+}
+
+// podReadyEventHandler returns a watch.Event handler that reports the current
+// pod status into phase and reports true once the pod's Ready condition is true.
+func podReadyEventHandler(phase *atomic.Value) func(watch.Event) bool {
+	return func(event watch.Event) bool {
+		pod, ok := event.Object.(*corev1.Pod)
+		if !ok {
+			return false
+		}
+		phase.Store(printer.GetSpinnerPodStatus(pod))
+		conds := make([]metav1.Condition, len(pod.Status.Conditions))
+		for i := range pod.Status.Conditions {
+			conds[i] = metav1.Condition{
+				Type:    string(pod.Status.Conditions[i].Type),
+				Status:  metav1.ConditionStatus(pod.Status.Conditions[i].Status),
+				Reason:  pod.Status.Conditions[i].Reason,
+				Message: pod.Status.Conditions[i].Message,
 			}
-			phase.Store(printer.GetSpinnerPodStatus(pod))
-			conds := make([]metav1.Condition, len(pod.Status.Conditions))
-			for i := range pod.Status.Conditions {
-				conds[i] = metav1.Condition{
-					Type:    string(pod.Status.Conditions[i].Type),
-					Status:  metav1.ConditionStatus(pod.Status.Conditions[i].Status),
-					Reason:  pod.Status.Conditions[i].Reason,
-					Message: pod.Status.Conditions[i].Message,
-				}
-			}
-			return meta.IsStatusConditionTrue(conds, "Ready")
-		})
+		}
+		return meta.IsStatusConditionTrue(conds, "Ready")
+	}
 }
 
 //nolint:revive

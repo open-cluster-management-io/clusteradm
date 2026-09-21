@@ -42,7 +42,7 @@ var (
 	releaseName = "multicluster-controlplane"
 )
 
-var validRegistrationDriver = sets.New[string](operatorv1.CSRAuthType, operatorv1.AwsIrsaAuthType, operatorv1.GRPCAuthType)
+var validRegistrationDriver = sets.New(operatorv1.CSRAuthType, operatorv1.AwsIrsaAuthType, operatorv1.GRPCAuthType)
 
 func (o *Options) complete(cmd *cobra.Command, _ []string) (err error) {
 	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun, "force", o.force, "output-file", o.outputFile)
@@ -100,7 +100,7 @@ func (o *Options) complete(cmd *cobra.Command, _ []string) (err error) {
 			},
 		}
 
-		if sets.New[string](o.registrationDrivers...).Has(operatorv1.GRPCAuthType) {
+		if sets.New(o.registrationDrivers...).Has(operatorv1.GRPCAuthType) {
 			endpoint := operatorv1.EndpointExposure{Protocol: operatorv1.GRPCAuthType}
 			switch o.grpcEndpointType {
 			case string(operatorv1.EndpointTypeHostname):
@@ -200,16 +200,16 @@ func (o *Options) validate() error {
 	if genericclioptionsclusteradm.HubMutableFeatureGate.Enabled("ManagedClusterAutoApproval") {
 		// If hub registration does not accept awsirsa, we stop user if they also pass in a list of patterns for AWS EKS ARN.
 
-		if len(o.autoApprovedARNPatterns) > 0 && !sets.New[string](o.registrationDrivers...).Has(operatorv1.AwsIrsaAuthType) {
+		if len(o.autoApprovedARNPatterns) > 0 && !sets.New(o.registrationDrivers...).Has(operatorv1.AwsIrsaAuthType) {
 			return fmt.Errorf("should not provide list of patterns for aws eks arn if not initializing hub with awsirsa registration")
 		}
 
 		// If hub registration does not accept csr, we stop user if they also pass in a list of users for CSR auto approval.
-		if len(o.autoApprovedCSRIdentities) > 0 && !sets.New[string](o.registrationDrivers...).Has(operatorv1.CSRAuthType) {
+		if len(o.autoApprovedCSRIdentities) > 0 && !sets.New(o.registrationDrivers...).Has(operatorv1.CSRAuthType) {
 			return fmt.Errorf("should not provide list of users for csr to auto approve if not initializing hub with csr registration")
 		}
 
-		if len(o.autoApprovedGRPCIdentities) > 0 && !sets.New[string](o.registrationDrivers...).Has(operatorv1.GRPCAuthType) {
+		if len(o.autoApprovedGRPCIdentities) > 0 && !sets.New(o.registrationDrivers...).Has(operatorv1.GRPCAuthType) {
 			return fmt.Errorf("should not provide list of users or identities for grpc cluster to auto approve if not initializing hub with grpc registration")
 		}
 

@@ -14,7 +14,6 @@ import (
 	"github.com/onsi/gomega"
 	authv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	"open-cluster-management.io/clusteradm/pkg/config"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"open-cluster-management.io/clusteradm/test/e2e/clusteradm/scenario"
@@ -48,8 +47,8 @@ var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", ginkgo.La
 			)
 
 			kubeConfigFlags := &genericclioptions.ConfigFlags{
-				KubeConfig: ptr.To[string](e2e.KubeConfigPath),
-				Context:    ptr.To[string](e2e.Cluster().Hub().Context()),
+				KubeConfig: new(e2e.KubeConfigPath),
+				Context:    new(e2e.Cluster().Hub().Context()),
 			}
 			r := reader.NewResourceReader(cmdutil.NewFactory(kubeConfigFlags), false, genericiooptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr})
 			var values = make(map[string]interface{})
@@ -63,7 +62,7 @@ var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", ginkgo.La
 					CreateToken(context.TODO(), "sa-manual-token", &authv1.TokenRequest{
 						Spec: authv1.TokenRequestSpec{
 							// token expired in 1 hour
-							ExpirationSeconds: ptr.To[int64](3600),
+							ExpirationSeconds: new(int64(3600)),
 						},
 					}, metav1.CreateOptions{})
 				if err != nil {

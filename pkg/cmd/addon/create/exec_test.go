@@ -13,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
-	"k8s.io/utils/ptr"
 
 	addonapiv1alpha1 "open-cluster-management.io/api/addon/v1alpha1"
 )
@@ -130,7 +129,7 @@ data:
 				Version:       "0.0.1",
 				PlacementRef:  "",
 				Labels:        []string{},
-				FileNameFlags: genericclioptions.FileNameFlags{Filenames: &[]string{tmpFile.Name()}, Recursive: ptr.To[bool](true)},
+				FileNameFlags: genericclioptions.FileNameFlags{Filenames: &[]string{tmpFile.Name()}, Recursive: new(true)},
 				Streams:       streams,
 			}
 
@@ -166,7 +165,7 @@ data:
 				Version:       "0.0.1",
 				PlacementRef:  fmt.Sprintf("%s/%s", placementNamespace, placementName),
 				Labels:        []string{},
-				FileNameFlags: genericclioptions.FileNameFlags{Filenames: &[]string{tmpFile.Name()}, Recursive: ptr.To[bool](true)},
+				FileNameFlags: genericclioptions.FileNameFlags{Filenames: &[]string{tmpFile.Name()}, Recursive: new(true)},
 				Streams:       streams,
 			}
 
@@ -201,7 +200,7 @@ data:
 				Version:       "0.0.1",
 				PlacementRef:  "invalid-format-no-slash",
 				Labels:        []string{},
-				FileNameFlags: genericclioptions.FileNameFlags{Filenames: &[]string{tmpFile.Name()}, Recursive: ptr.To[bool](true)},
+				FileNameFlags: genericclioptions.FileNameFlags{Filenames: &[]string{tmpFile.Name()}, Recursive: new(true)},
 				Streams:       streams,
 			}
 
@@ -263,7 +262,7 @@ data:
 				Version:         "0.0.1",
 				PlacementRef:    fmt.Sprintf("%s/%s", placementNamespace, placementName),
 				Labels:          []string{},
-				FileNameFlags:   genericclioptions.FileNameFlags{Filenames: &[]string{tmpFile.Name()}, Recursive: ptr.To[bool](true)},
+				FileNameFlags:   genericclioptions.FileNameFlags{Filenames: &[]string{tmpFile.Name()}, Recursive: new(true)},
 				Streams:         streams,
 			}
 
@@ -313,7 +312,7 @@ data:
 				Version:         "0.0.1",
 				PlacementRef:    "",
 				Labels:          []string{},
-				FileNameFlags:   genericclioptions.FileNameFlags{Filenames: &[]string{tmpFile.Name()}, Recursive: ptr.To[bool](true)},
+				FileNameFlags:   genericclioptions.FileNameFlags{Filenames: &[]string{tmpFile.Name()}, Recursive: new(true)},
 				Streams:         streams,
 			}
 

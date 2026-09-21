@@ -172,7 +172,7 @@ func (o *Options) approveCSR(kubeClient *kubernetes.Clientset, clusterName strin
 
 	// if there are multiple csr with different common name, it is possible that multiple agents is registered with the
 	// same cluster name. We should stop here and let user specify a certain requester or enable skip-approve-check.
-	requiredRequesters := sets.New[string](o.Requesters...)
+	requiredRequesters := sets.New(o.Requesters...)
 	if len(requesters) > 1 {
 		if requiredRequesters.Len() == 0 || !o.SkipApproveCheck {
 			fmt.Fprintf(o.Streams.Out, "There are CSRs of different requesters: %s, approve is skipped "+

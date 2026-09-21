@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	clusterv1beta1 "open-cluster-management.io/api/cluster/v1beta1"
@@ -67,7 +66,7 @@ func (o *Options) run() (err error) {
 	}
 
 	if o.NumOfClusters > 0 {
-		desiredPlacement.Spec.NumberOfClusters = ptr.To[int32](o.NumOfClusters)
+		desiredPlacement.Spec.NumberOfClusters = new(o.NumOfClusters)
 	}
 
 	if len(o.ClusterSelector) > 0 {

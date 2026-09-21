@@ -19,7 +19,6 @@ import (
 	"k8s.io/kubectl/pkg/cmd/plugin"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
-	utilpointer "k8s.io/utils/ptr"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -64,8 +63,8 @@ func main() {
 
 	//kubeConfigFlags := genericclioptions.NewConfigFlags(true).WithDeprecatedPasswordFlag()
 	kubeConfigFlags := &genericclioptions.ConfigFlags{
-		KubeConfig: utilpointer.To[string](""),
-		Context:    utilpointer.To[string](""),
+		KubeConfig: new(string),
+		Context:    new(string),
 	}
 	kubeConfigFlags.AddFlags(flags)
 	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(kubeConfigFlags)

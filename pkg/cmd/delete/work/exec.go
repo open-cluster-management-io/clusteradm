@@ -94,16 +94,24 @@ func (o *Options) deleteWork(ctx context.Context, workClient *workclientset.Clie
 		)
 	}()
 
+	printDeleteMsg := func() {
+		fmt.Fprintf(o.Streams.Out, "work %s in cluster %s is deleted\n", o.Workname, cluster)
+	}
+
 	err = workClient.WorkV1().ManifestWorks(cluster).Delete(ctx, o.Workname, metav1.DeleteOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return err
+	}
+	if k8serrors.IsNotFound(err) {
+		printDeleteMsg()
+		return nil
 	}
 
 	if o.Force {
 		// check whether work is already deleted, if not, remove the finalizer
 		work, err := workClient.WorkV1().ManifestWorks(cluster).Get(ctx, o.Workname, metav1.GetOptions{})
 		if k8serrors.IsNotFound(err) {
-			fmt.Fprintf(o.Streams.Out, "work %s is deleted\n", o.Workname)
+			printDeleteMsg()
 			return nil
 		}
 
@@ -130,6 +138,6 @@ func (o *Options) deleteWork(ctx context.Context, workClient *workclientset.Clie
 		return err
 	}
 
-	fmt.Fprintf(o.Streams.Out, "work %s in cluster %s is deleted\n", o.Workname, cluster)
+	printDeleteMsg()
 	return nil
 }

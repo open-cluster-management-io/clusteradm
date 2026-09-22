@@ -179,7 +179,10 @@ func (o *Options) runWithHelmClient(ctx context.Context, addon string) error {
 			return err
 		}
 
-		o.Helm.InstallChart(argocdReleaseName, repoName, argocdChartName)
+		err := o.Helm.InstallChart(ctx, argocdReleaseName, repoName, argocdChartName)
+		if err != nil {
+			return err
+		}
 	}
 
 	if addon == argocdAgentAddonName {
@@ -189,7 +192,10 @@ func (o *Options) runWithHelmClient(ctx context.Context, addon string) error {
 			return err
 		}
 
-		o.Helm.InstallChart(argocdAgentReleaseName, repoName, argocdAgentChartName)
+		err := o.Helm.InstallChart(ctx, argocdAgentReleaseName, repoName, argocdAgentChartName)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

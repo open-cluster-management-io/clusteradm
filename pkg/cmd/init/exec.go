@@ -417,7 +417,10 @@ func (o *Options) deploySingletonControlplane(ctx context.Context, kubeClient ku
 		return err
 	}
 
-	o.Helm.InstallChart(releaseName, repoName, chartName)
+	err = o.Helm.InstallChart(ctx, releaseName, repoName, chartName)
+	if err != nil {
+		return err
+	}
 
 	// fetch the kubeconfig and get the token
 	if o.wait && !o.ClusteradmFlags.DryRun {

@@ -105,7 +105,6 @@ func GetVersionBundle(version string, versionBundleFile string) (VersionBundle, 
 }
 
 func getVersionBundle(version string) (VersionBundle, error) {
-
 	// supporting either "x.y.z" or "vx.y.z" format version
 	version = strings.TrimPrefix(version, "v")
 
@@ -151,7 +150,7 @@ func getVersionBundle(version string) (VersionBundle, error) {
 
 	versionBundleList["1.3.1"] = VersionBundle{
 		OCM:         "v1.3.1",
-		PolicyAddon: "v0.18.0",
+		PolicyAddon: "v0.19.0",
 	}
 
 	// default

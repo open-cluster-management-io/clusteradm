@@ -84,7 +84,9 @@ func (o *Options) deleteWork(ctx context.Context, workClient *workclientset.Clie
 		errCh <- helpers.WatchUntil(
 			watchCtx,
 			func() (watch.Interface, error) {
-				return workClient.WorkV1().ManifestWorks(cluster).Watch(watchCtx, metav1.ListOptions{})
+				return workClient.WorkV1().ManifestWorks(cluster).Watch(watchCtx, metav1.ListOptions{
+					FieldSelector: fmt.Sprintf("metadata.name=%s", o.Workname),
+				})
 			},
 			func(event watch.Event) bool {
 				return event.Type == watch.Deleted

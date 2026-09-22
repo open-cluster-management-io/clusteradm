@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/klog/v2"
 
 	v1 "open-cluster-management.io/api/cluster/v1"
 
@@ -33,7 +32,7 @@ func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 	}
 	o.Client = clusterClient
 
-	o.printer.Competele()
+	o.printer.Complete()
 
 	return nil
 }
@@ -57,93 +56,96 @@ func (o *Options) validate(args []string) (err error) {
 }
 
 func (o *Options) run(ctx context.Context) (err error) {
-	o.ctx = ctx
 	clustersets, err := o.Client.ClusterV1beta2().ManagedClusterSets().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
 
-	o.printer.WithTreeConverter(o.convertToTree).WithTableConverter(o.converToTable)
+	o.printer.WithTreeConverter(o.convertToTreeFunc(ctx)).WithTableConverter(o.convertToTableFunc(ctx))
 
 	return o.printer.Print(o.Streams, clustersets)
 }
 
-func (o *Options) convertToTree(obj runtime.Object, tree *printer.TreePrinter) *printer.TreePrinter {
-	bindingMap := map[string][]string{}
-	bindings, err := o.Client.ClusterV1beta2().ManagedClusterSetBindings(metav1.NamespaceAll).List(o.ctx, metav1.ListOptions{})
-	if err != nil {
-		panic(fmt.Errorf("failed to list managed cluster set bindings: %w", err))
-	}
-	for _, binding := range bindings.Items {
-		if _, ok := bindingMap[binding.Spec.ClusterSet]; !ok {
-			bindingMap[binding.Spec.ClusterSet] = []string{}
+func (o *Options) convertToTreeFunc(ctx context.Context) func(runtime.Object, *printer.TreePrinter) (*printer.TreePrinter, error) {
+	return func(obj runtime.Object, tree *printer.TreePrinter) (*printer.TreePrinter, error) {
+		bindingMap := map[string][]string{}
+		bindings, err := o.Client.ClusterV1beta2().ManagedClusterSetBindings(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to list managed cluster set bindings: %w", err)
 		}
-
-		bindingMap[binding.Spec.ClusterSet] = append(bindingMap[binding.Spec.ClusterSet], binding.Namespace)
-	}
-
-	getter := &clusterGetter{ctx: o.ctx, client: o.Client}
-
-	if csList, ok := obj.(*clusterapiv1beta2.ManagedClusterSetList); ok {
-		for _, clusterset := range csList.Items {
-			boundNs, status, managedNs := getFileds(clusterset, bindingMap[clusterset.Name])
-			clusters, err := getter.listClustersByClusterSet(&clusterset)
-			if err != nil {
-				klog.Fatalf("Failed to list cluster in clusterset %s: %v", clusterset.Name, err)
-			}
-			mp := make(map[string]interface{})
-			mp[".BoundNamespace"] = boundNs
-			mp[".Status"] = status
-			mp[".Clusters"] = clusters
-			mp[".ManagedNamespaces"] = managedNs
-			tree.AddFileds(clusterset.Name, &mp)
-		}
-	}
-
-	return tree
-}
-
-func (o *Options) converToTable(obj runtime.Object) *metav1.Table {
-	bindingMap := map[string][]string{}
-	bindings, err := o.Client.ClusterV1beta2().ManagedClusterSetBindings(metav1.NamespaceAll).List(o.ctx, metav1.ListOptions{})
-	if err != nil {
-		panic(fmt.Errorf("failed to list managed cluster set bindings: %w", err))
-	}
-	for _, binding := range bindings.Items {
-		if _, ok := bindingMap[binding.Spec.ClusterSet]; !ok {
-			bindingMap[binding.Spec.ClusterSet] = []string{}
-		}
-
-		bindingMap[binding.Spec.ClusterSet] = append(bindingMap[binding.Spec.ClusterSet], binding.Namespace)
-	}
-
-	table := &metav1.Table{
-		ColumnDefinitions: []metav1.TableColumnDefinition{
-			{Name: "Name", Type: "string"},
-			{Name: "Bound Namespaces", Type: "string"},
-			{Name: "Status", Type: "string"},
-			{Name: "Managed Namespaces", Type: "string"},
-		},
-		Rows: []metav1.TableRow{},
-	}
-
-	if csList, ok := obj.(*clusterapiv1beta2.ManagedClusterSetList); ok {
-		for _, clusterset := range csList.Items {
-			boundNs, status, managedNs := getFileds(clusterset, bindingMap[clusterset.Name])
-			managedNsStr := strings.Join(managedNs, ",")
-			row := metav1.TableRow{
-				Cells:  []interface{}{clusterset.Name, boundNs, status, managedNsStr},
-				Object: runtime.RawExtension{Object: &clusterset},
+		for _, binding := range bindings.Items {
+			if _, ok := bindingMap[binding.Spec.ClusterSet]; !ok {
+				bindingMap[binding.Spec.ClusterSet] = []string{}
 			}
 
-			table.Rows = append(table.Rows, row)
+			bindingMap[binding.Spec.ClusterSet] = append(bindingMap[binding.Spec.ClusterSet], binding.Namespace)
 		}
-	}
 
-	return table
+		getter := &clusterGetter{ctx: ctx, client: o.Client}
+
+		if csList, ok := obj.(*clusterapiv1beta2.ManagedClusterSetList); ok {
+			for _, clusterset := range csList.Items {
+				boundNs, status, managedNs := getFields(clusterset, bindingMap[clusterset.Name])
+				clusters, err := getter.listClustersByClusterSet(&clusterset)
+				if err != nil {
+					return nil, fmt.Errorf("failed to list cluster in clusterset %s: %w", clusterset.Name, err)
+				}
+				mp := make(map[string]interface{})
+				mp[".BoundNamespace"] = boundNs
+				mp[".Status"] = status
+				mp[".Clusters"] = clusters
+				mp[".ManagedNamespaces"] = managedNs
+				tree.AddFileds(clusterset.Name, &mp)
+			}
+		}
+
+		return tree, nil
+	}
 }
 
-func getFileds(clusterset clusterapiv1beta2.ManagedClusterSet, bindings []string) (boundNs, status string, managedNs []string) {
+func (o *Options) convertToTableFunc(ctx context.Context) func(runtime.Object) (*metav1.Table, error) {
+	return func(obj runtime.Object) (*metav1.Table, error) {
+		bindingMap := map[string][]string{}
+		bindings, err := o.Client.ClusterV1beta2().ManagedClusterSetBindings(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to list managed cluster set bindings: %w", err)
+		}
+		for _, binding := range bindings.Items {
+			if _, ok := bindingMap[binding.Spec.ClusterSet]; !ok {
+				bindingMap[binding.Spec.ClusterSet] = []string{}
+			}
+
+			bindingMap[binding.Spec.ClusterSet] = append(bindingMap[binding.Spec.ClusterSet], binding.Namespace)
+		}
+
+		table := &metav1.Table{
+			ColumnDefinitions: []metav1.TableColumnDefinition{
+				{Name: "Name", Type: "string"},
+				{Name: "Bound Namespaces", Type: "string"},
+				{Name: "Status", Type: "string"},
+				{Name: "Managed Namespaces", Type: "string"},
+			},
+			Rows: []metav1.TableRow{},
+		}
+
+		if csList, ok := obj.(*clusterapiv1beta2.ManagedClusterSetList); ok {
+			for _, clusterset := range csList.Items {
+				boundNs, status, managedNs := getFields(clusterset, bindingMap[clusterset.Name])
+				managedNsStr := strings.Join(managedNs, ",")
+				row := metav1.TableRow{
+					Cells:  []interface{}{clusterset.Name, boundNs, status, managedNsStr},
+					Object: runtime.RawExtension{Object: &clusterset},
+				}
+
+				table.Rows = append(table.Rows, row)
+			}
+		}
+
+		return table, nil
+	}
+}
+
+func getFields(clusterset clusterapiv1beta2.ManagedClusterSet, bindings []string) (boundNs, status string, managedNs []string) {
 	boundNs = strings.Join(bindings, ",")
 
 	managedNameSpace := clusterset.Spec.ManagedNamespaces

@@ -25,7 +25,7 @@ func (o *Options) complete(_ *cobra.Command, args []string) (err error) {
 		o.workName = args[0]
 	}
 
-	o.printer.Competele()
+	o.printer.Complete()
 
 	return nil
 }
@@ -79,15 +79,15 @@ func (o *Options) run(ctx context.Context) (err error) {
 		workList.Items = append(workList.Items, works.Items...)
 	}
 
-	o.printer.WithTreeConverter(o.convertToTree).WithTableConverter(o.converToTable)
+	o.printer.WithTreeConverter(o.convertToTree).WithTableConverter(o.convertToTable)
 
 	return o.printer.Print(o.Streams, workList)
 }
 
-func (o *Options) convertToTree(obj runtime.Object, tree *printer.TreePrinter) *printer.TreePrinter {
+func (o *Options) convertToTree(obj runtime.Object, tree *printer.TreePrinter) (*printer.TreePrinter, error) {
 	if workList, ok := obj.(*workapiv1.ManifestWorkList); ok {
 		for _, work := range workList.Items {
-			cluster, number, applied, available := getFileds(work)
+			cluster, number, applied, available := getFields(work)
 			mp := make(map[string]interface{})
 			mp[".Number of Manifests"] = number
 			mp[".Applied"] = applied
@@ -97,10 +97,10 @@ func (o *Options) convertToTree(obj runtime.Object, tree *printer.TreePrinter) *
 			tree.AddFileds(fmt.Sprintf("%s.%s", cluster, work.Name), &workStatus)
 		}
 	}
-	return tree
+	return tree, nil
 }
 
-func (o *Options) converToTable(obj runtime.Object) *metav1.Table {
+func (o *Options) convertToTable(obj runtime.Object) (*metav1.Table, error) {
 	table := &metav1.Table{
 		ColumnDefinitions: []metav1.TableColumnDefinition{
 			{Name: "Name", Type: "string"},
@@ -114,7 +114,7 @@ func (o *Options) converToTable(obj runtime.Object) *metav1.Table {
 
 	if workList, ok := obj.(*workapiv1.ManifestWorkList); ok {
 		for _, work := range workList.Items {
-			cluster, number, applied, available := getFileds(work)
+			cluster, number, applied, available := getFields(work)
 			row := metav1.TableRow{
 				Cells:  []interface{}{work.Name, cluster, number, applied, available},
 				Object: runtime.RawExtension{Object: &work},
@@ -124,10 +124,10 @@ func (o *Options) converToTable(obj runtime.Object) *metav1.Table {
 		}
 	}
 
-	return table
+	return table, nil
 }
 
-func getFileds(work workapiv1.ManifestWork) (cluster string, number int, applied, available string) {
+func getFields(work workapiv1.ManifestWork) (cluster string, number int, applied, available string) {
 	cluster = work.Namespace
 	number = len(work.Spec.Workload.Manifests)
 

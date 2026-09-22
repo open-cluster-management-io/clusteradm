@@ -16,7 +16,7 @@ import (
 )
 
 func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
-	o.printer.Competele()
+	o.printer.Complete()
 
 	return nil
 }
@@ -64,15 +64,15 @@ func (o *Options) run(ctx context.Context) (err error) {
 		return err
 	}
 
-	o.printer.WithTreeConverter(o.convertToTree).WithTableConverter(o.converToTable)
+	o.printer.WithTreeConverter(o.convertToTree).WithTableConverter(o.convertToTable)
 
 	return o.printer.Print(o.Streams, clusters)
 }
 
-func (o *Options) convertToTree(obj runtime.Object, tree *printer.TreePrinter) *printer.TreePrinter {
+func (o *Options) convertToTree(obj runtime.Object, tree *printer.TreePrinter) (*printer.TreePrinter, error) {
 	if mclList, ok := obj.(*clusterapiv1.ManagedClusterList); ok {
 		for _, cluster := range mclList.Items {
-			accepted, available, version, cpu, memory, clusterset := getFileds(cluster)
+			accepted, available, version, cpu, memory, clusterset := getFields(cluster)
 			mp := make(map[string]interface{})
 			mp[".Accepted"] = accepted
 			mp[".Available"] = available
@@ -84,10 +84,10 @@ func (o *Options) convertToTree(obj runtime.Object, tree *printer.TreePrinter) *
 			tree.AddFileds(cluster.Name, &mp)
 		}
 	}
-	return tree
+	return tree, nil
 }
 
-func (o *Options) converToTable(obj runtime.Object) *metav1.Table {
+func (o *Options) convertToTable(obj runtime.Object) (*metav1.Table, error) {
 	table := &metav1.Table{
 		ColumnDefinitions: []metav1.TableColumnDefinition{
 			{Name: "Name", Type: "string"},
@@ -103,7 +103,7 @@ func (o *Options) converToTable(obj runtime.Object) *metav1.Table {
 
 	if mclList, ok := obj.(*clusterapiv1.ManagedClusterList); ok {
 		for _, cluster := range mclList.Items {
-			accepted, available, version, cpu, memory, clusterset := getFileds(cluster)
+			accepted, available, version, cpu, memory, clusterset := getFields(cluster)
 			row := metav1.TableRow{
 				Cells:  []interface{}{cluster.Name, accepted, available, clusterset, cpu, memory, version},
 				Object: runtime.RawExtension{Object: &cluster},
@@ -112,10 +112,10 @@ func (o *Options) converToTable(obj runtime.Object) *metav1.Table {
 			table.Rows = append(table.Rows, row)
 		}
 	}
-	return table
+	return table, nil
 }
 
-func getFileds(cluster clusterapiv1.ManagedCluster) (accepted bool, available, version, cpu, memory, clusterset string) {
+func getFields(cluster clusterapiv1.ManagedCluster) (accepted bool, available, version, cpu, memory, clusterset string) {
 	accepted = cluster.Spec.HubAcceptsClient
 
 	version = cluster.Status.Version.Kubernetes

@@ -24,7 +24,7 @@ import (
 )
 
 func (o *Options) complete(_ *cobra.Command, args []string) (err error) {
-	o.printer.Competele()
+	o.printer.Complete()
 	klog.V(1).InfoS("addon options:", "dry-run", o.ClusteradmFlags.DryRun, "clusters", o.ClusterOptions.AllClusters().UnsortedList())
 	o.addons = args
 
@@ -111,7 +111,7 @@ func (o *Options) run(ctx context.Context) (err error) {
 
 	klog.V(3).InfoS("values:", "clusters", clusters)
 
-	o.printer.WithTreeConverter(o.convertToTreeFunc(clusters.UnsortedList(), mcaByName, workList.Items)).WithTableConverter(o.converToTableFunc(mcaByName))
+	o.printer.WithTreeConverter(o.convertToTreeFunc(clusters.UnsortedList(), mcaByName, workList.Items)).WithTableConverter(o.convertToTableFunc(mcaByName))
 
 	return o.printer.Print(o.Streams, cmaList)
 }
@@ -120,8 +120,8 @@ func (o *Options) convertToTreeFunc(
 	clusters []string,
 	mcaByName map[string][]addonv1alpha1.ManagedClusterAddOn,
 	works []workapiv1.ManifestWork,
-) func(obj runtime.Object, tree *printer.TreePrinter) *printer.TreePrinter {
-	return func(obj runtime.Object, tree *printer.TreePrinter) *printer.TreePrinter {
+) func(obj runtime.Object, tree *printer.TreePrinter) (*printer.TreePrinter, error) {
+	return func(obj runtime.Object, tree *printer.TreePrinter) (*printer.TreePrinter, error) {
 		if cmaList, ok := obj.(*addonv1alpha1.ClusterManagementAddOnList); ok {
 			for _, cma := range cmaList.Items {
 				if !shouldShow(o.addons, cma.Name) {
@@ -142,12 +142,12 @@ func (o *Options) convertToTreeFunc(
 				}
 			}
 		}
-		return tree
+		return tree, nil
 	}
 }
 
-func (o *Options) converToTableFunc(mcaByName map[string][]addonv1alpha1.ManagedClusterAddOn) func(obj runtime.Object) *metav1.Table {
-	return func(obj runtime.Object) *metav1.Table {
+func (o *Options) convertToTableFunc(mcaByName map[string][]addonv1alpha1.ManagedClusterAddOn) func(obj runtime.Object) (*metav1.Table, error) {
+	return func(obj runtime.Object) (*metav1.Table, error) {
 		klog.V(3).InfoS("values:", "addons", mcaByName)
 		table := &metav1.Table{
 			ColumnDefinitions: []metav1.TableColumnDefinition{
@@ -170,7 +170,7 @@ func (o *Options) converToTableFunc(mcaByName map[string][]addonv1alpha1.Managed
 				table.Rows = append(table.Rows, row)
 			}
 		}
-		return table
+		return table, nil
 	}
 }
 

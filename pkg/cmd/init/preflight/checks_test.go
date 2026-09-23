@@ -142,7 +142,7 @@ func Test_createClusterInfo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client := fakekube.NewSimpleClientset(tt.args.object...)
-			if err := createClusterInfo(client, tt.args.cluster); (err != nil) != tt.wantErr {
+			if err := createClusterInfo(t.Context(), client, tt.args.cluster); (err != nil) != tt.wantErr {
 				t.Errorf("createClusterInfo() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			testinghelper.AssertAction(t, client.Actions()[tt.actionIndex], tt.action)
@@ -195,7 +195,7 @@ func TestHubApiServerCheck_Check(t *testing.T) {
 			c := HubApiServerCheck{
 				Config: config,
 			}
-			gotWarnings, gotErrorList := c.Check()
+			gotWarnings, gotErrorList := c.Check(t.Context())
 			testinghelper.AssertWarnings(t, gotWarnings, tt.wantWarnings)
 			testinghelper.AssertErrors(t, gotErrorList, tt.wantErrorList)
 		})
@@ -269,7 +269,7 @@ func TestClusterInfoCheck_Check(t *testing.T) {
 				Config:       config,
 				Client:       client,
 			}
-			gotWarnings, gotErrorList := c.Check()
+			gotWarnings, gotErrorList := c.Check(t.Context())
 			testinghelper.AssertAction(t, client.Actions()[tt.actionIndex], tt.action)
 			testinghelper.AssertWarnings(t, gotWarnings, tt.wantWarnings)
 			testinghelper.AssertErrors(t, gotErrorList, tt.wantErrorList)

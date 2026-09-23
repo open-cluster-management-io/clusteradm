@@ -40,7 +40,7 @@ func (o *Options) Validate() (err error) {
 	return nil
 }
 
-func (o *Options) Run() (err error) {
+func (o *Options) Run(ctx context.Context) (err error) {
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
@@ -50,7 +50,7 @@ func (o *Options) Run() (err error) {
 		return err
 	}
 
-	_, err = clusterClient.ClusterV1beta2().ManagedClusterSets().Get(context.TODO(), o.Clusterset, metav1.GetOptions{})
+	_, err = clusterClient.ClusterV1beta2().ManagedClusterSets().Get(ctx, o.Clusterset, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -65,7 +65,7 @@ func (o *Options) Run() (err error) {
 		},
 	}
 
-	_, err = clusterClient.ClusterV1beta2().ManagedClusterSetBindings(o.Namespace).Create(context.TODO(), binding, metav1.CreateOptions{})
+	_, err = clusterClient.ClusterV1beta2().ManagedClusterSetBindings(o.Namespace).Create(ctx, binding, metav1.CreateOptions{})
 	if errors.IsAlreadyExists(err) {
 		fmt.Fprintf(o.Streams.Out, "Clusterset %s is already bound to Namespace %s\n", o.Clusterset, o.Namespace)
 		return nil

@@ -3,6 +3,7 @@ package preflight
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 )
@@ -10,7 +11,7 @@ import (
 // Checker validates the state of the cluster to ensure
 // clusteradm will be successfully as often as possible.
 type Checker interface {
-	Check() (warnings []string, errorList []error)
+	Check(ctx context.Context) (warnings []string, errorList []error)
 	Name() string
 }
 
@@ -28,11 +29,11 @@ func (e *Error) Preflight() bool {
 
 // RunChecks runs each check, display it's check/errors,
 // and once all are processed will exist if any errors occurred.
-func RunChecks(checks []Checker, ww io.Writer) error {
+func RunChecks(ctx context.Context, checks []Checker, ww io.Writer) error {
 	var errsBuffer bytes.Buffer
 	for _, check := range checks {
 		name := check.Name()
-		warnings, errs := check.Check()
+		warnings, errs := check.Check(ctx)
 		for _, warning := range warnings {
 			_, _ = io.WriteString(ww, fmt.Sprintf("\t[WARNING %s]: %v\n", name, warning))
 		}

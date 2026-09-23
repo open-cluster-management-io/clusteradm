@@ -22,7 +22,7 @@ type SingletonControlplaneCheck struct {
 	ControlplaneName string
 }
 
-func (c SingletonControlplaneCheck) Check() (warnings []string, errorList []error) {
+func (c SingletonControlplaneCheck) Check(ctx context.Context) (warnings []string, errorList []error) {
 	re := regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
 	matched := re.MatchString(c.ControlplaneName)
 	if !matched {
@@ -60,7 +60,7 @@ func checkServer(server string) (warnings []string, errorList []error) {
 	return nil, nil
 }
 
-func (c HubApiServerCheck) Check() (warnings []string, errorList []error) {
+func (c HubApiServerCheck) Check(ctx context.Context) (warnings []string, errorList []error) {
 	config, err := c.Config.RawConfig()
 	if err != nil {
 		return nil, []error{err}
@@ -84,8 +84,8 @@ type ClusterInfoCheck struct {
 	Client       kubernetes.Interface
 }
 
-func (c ClusterInfoCheck) Check() (warnings []string, errorList []error) {
-	cm, err := c.Client.CoreV1().ConfigMaps(c.Namespace).Get(context.Background(), c.ResourceName, metav1.GetOptions{})
+func (c ClusterInfoCheck) Check(ctx context.Context) (warnings []string, errorList []error) {
+	cm, err := c.Client.CoreV1().ConfigMaps(c.Namespace).Get(ctx, c.ResourceName, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			resourceNotFound := errors.New("no ConfigMap named cluster-info in the kube-public namespace, clusteradm will creates it")
@@ -97,10 +97,7 @@ func (c ClusterInfoCheck) Check() (warnings []string, errorList []error) {
 			if err != nil {
 				return nil, []error{err}
 			}
-			if err != nil {
-				return []string{resourceNotFound.Error()}, []error{err}
-			}
-			if err := createClusterInfo(c.Client, cluster); err != nil {
+			if err := createClusterInfo(ctx, c.Client, cluster); err != nil {
 				return []string{resourceNotFound.Error()}, []error{err}
 			}
 			return []string{resourceNotFound.Error()}, nil
@@ -133,7 +130,7 @@ func loadCurrentCluster(currentConfig clientcmdapi.Config) (*clientcmdapi.Cluste
 }
 
 // createClusterInfo will create a ConfigMap named cluster-info in the kube-public namespace.
-func createClusterInfo(client kubernetes.Interface, cluster *clientcmdapi.Cluster) error {
+func createClusterInfo(ctx context.Context, client kubernetes.Interface, cluster *clientcmdapi.Cluster) error {
 	kubeconfig := &clientcmdapi.Config{Clusters: map[string]*clientcmdapi.Cluster{"": cluster}}
 	if err := clientcmdapi.FlattenConfig(kubeconfig); err != nil {
 		return err
@@ -152,5 +149,5 @@ func createClusterInfo(client kubernetes.Interface, cluster *clientcmdapi.Cluste
 			"kubeconfig": string(kubeconfigBytes),
 		},
 	}
-	return CreateOrUpdateConfigMap(client, clusterInfo)
+	return CreateOrUpdateConfigMap(ctx, client, clusterInfo)
 }

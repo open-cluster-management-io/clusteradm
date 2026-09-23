@@ -57,7 +57,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 			if err := o.Validate(); err != nil {
 				return err
 			}
-			if err := o.Run(); err != nil {
+			if err := o.Run(c.Context()); err != nil {
 				return err
 			}
 

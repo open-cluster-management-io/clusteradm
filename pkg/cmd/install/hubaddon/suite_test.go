@@ -2,7 +2,6 @@
 package hubaddon
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -45,7 +44,7 @@ func TestIntegrationInstallAddons(t *testing.T) {
 	ginkgo.RunSpecs(t, "Integration install hub-addon Suite")
 }
 
-var _ = ginkgo.BeforeSuite(func() {
+var _ = ginkgo.BeforeSuite(func(ctx ginkgo.SpecContext) {
 	ginkgo.By("bootstrapping test environment")
 
 	ocmVendorPath := filepath.Join("..", "..", "..", "..", "vendor", "open-cluster-management.io", "api")
@@ -77,7 +76,7 @@ var _ = ginkgo.BeforeSuite(func() {
 		},
 	}
 
-	_, err = kubeClient.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
+	_, err = kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	if !errors.IsAlreadyExists(err) {
 		gomega.Expect(err).ToNot(gomega.HaveOccurred())
 	}

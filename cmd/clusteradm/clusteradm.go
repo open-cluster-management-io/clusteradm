@@ -3,8 +3,11 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -19,7 +22,6 @@ import (
 	"k8s.io/kubectl/pkg/cmd/plugin"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
-	utilpointer "k8s.io/utils/ptr"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -64,8 +66,8 @@ func main() {
 
 	//kubeConfigFlags := genericclioptions.NewConfigFlags(true).WithDeprecatedPasswordFlag()
 	kubeConfigFlags := &genericclioptions.ConfigFlags{
-		KubeConfig: utilpointer.To[string](""),
-		Context:    utilpointer.To[string](""),
+		KubeConfig: new(string),
+		Context:    new(string),
 	}
 	kubeConfigFlags.AddFlags(flags)
 	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(kubeConfigFlags)
@@ -128,7 +130,9 @@ func main() {
 
 	ktemplates.ActsAsRootCommand(root, filters, groups...)
 
-	err := root.Execute()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	err := root.ExecuteContext(ctx)
 	if err != nil {
 		klog.V(1).ErrorS(err, "Error:")
 	}

@@ -13,15 +13,15 @@ import (
 
 var _ = ginkgo.Describe("test clusteradm upgrade clustermanager and klusterlets", ginkgo.Ordered, ginkgo.Label("upgrade"), func() {
 
-	ginkgo.BeforeAll(func() {
+	ginkgo.BeforeAll(func(ctx ginkgo.SpecContext) {
 		ginkgo.By("reset e2e environment...")
-		err := e2e.ClearEnv()
+		err := e2e.ClearEnv(ctx)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	})
 
 	var err error
 
-	ginkgo.It("run cluster manager and klusterlet upgrade version latest ", func() {
+	ginkgo.It("run cluster manager and klusterlet upgrade version latest ", func(ctx ginkgo.SpecContext) {
 		ginkgo.By("init hub with service account")
 		clusteradmDefault := e2e.Clusteradm().WithVersion("default")
 		err = clusteradmDefault.Init(
@@ -31,7 +31,7 @@ var _ = ginkgo.Describe("test clusteradm upgrade clustermanager and klusterlets"
 
 		ginkgo.By("Check the version of operator and controller")
 		gomega.Eventually(func() error {
-			return util.CheckOperatorAndManagerVersion(kubeClient, version.GetDefaultBundleVersion(), version.GetDefaultBundleVersion())
+			return util.CheckOperatorAndManagerVersion(ctx, kubeClient, version.GetDefaultBundleVersion(), version.GetDefaultBundleVersion())
 		}, 120*time.Second, 5*time.Second).Should(gomega.Succeed())
 
 		ginkgo.By("managedcluster1 join hub")
@@ -57,7 +57,7 @@ var _ = ginkgo.Describe("test clusteradm upgrade clustermanager and klusterlets"
 
 		ginkgo.By("Check the version of operator and agent")
 		gomega.Eventually(func() error {
-			return util.CheckOperatorAndAgentVersion(mcl1KubeClient, bundleVersion, version.GetDefaultBundleVersion())
+			return util.CheckOperatorAndAgentVersion(ctx, mcl1KubeClient, bundleVersion, version.GetDefaultBundleVersion())
 		}, 120*time.Second, 5*time.Second).Should(gomega.Succeed())
 
 		err = e2e.Clusteradm().Upgrade(
@@ -70,7 +70,7 @@ var _ = ginkgo.Describe("test clusteradm upgrade clustermanager and klusterlets"
 
 		ginkgo.By("Upgrade to the latest version")
 		gomega.Eventually(func() error {
-			return util.CheckOperatorAndManagerVersion(kubeClient, bundleVersion, bundleVersion)
+			return util.CheckOperatorAndManagerVersion(ctx, kubeClient, bundleVersion, bundleVersion)
 		}, 120*time.Second, 5*time.Second).Should(gomega.Succeed())
 
 		err = e2e.Clusteradm().Upgrade(
@@ -81,7 +81,7 @@ var _ = ginkgo.Describe("test clusteradm upgrade clustermanager and klusterlets"
 		gomega.Expect(err).NotTo(gomega.HaveOccurred(), "klusterlet upgrade error")
 
 		gomega.Eventually(func() error {
-			return util.CheckOperatorAndAgentVersion(mcl1KubeClient, bundleVersion, bundleVersion)
+			return util.CheckOperatorAndAgentVersion(ctx, mcl1KubeClient, bundleVersion, bundleVersion)
 		}, 120*time.Second, 5*time.Second).Should(gomega.Succeed())
 	})
 })

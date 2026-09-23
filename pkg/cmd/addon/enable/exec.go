@@ -176,7 +176,7 @@ func (o *Options) Validate() (err error) {
 	return nil
 }
 
-func (o *Options) Run() error {
+func (o *Options) Run(ctx context.Context) error {
 	addons := sets.NewString(o.Names...)
 	clusters := o.ClusterOptions.AllClusters()
 
@@ -196,16 +196,18 @@ func (o *Options) Run() error {
 		return err
 	}
 
-	return o.runWithClient(clusterClient, addonClient, addons.List(), clusters.UnsortedList())
+	return o.runWithClient(ctx, clusterClient, addonClient, addons.List(), clusters.UnsortedList())
 }
 
-func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
+func (o *Options) runWithClient(
+	ctx context.Context,
+	clusterClient clusterclientset.Interface,
 	addonClient addonclientset.Interface,
 	addons []string,
 	clusters []string) error {
 
 	for _, clusterName := range clusters {
-		_, err := clusterClient.ClusterV1().ManagedClusters().Get(context.TODO(),
+		_, err := clusterClient.ClusterV1().ManagedClusters().Get(ctx,
 			clusterName,
 			metav1.GetOptions{})
 		if err != nil {
@@ -220,7 +222,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 	}
 
 	for _, addon := range addons {
-		_, err := addonClient.AddonV1alpha1().ClusterManagementAddOns().Get(context.TODO(), addon, metav1.GetOptions{})
+		_, err := addonClient.AddonV1alpha1().ClusterManagementAddOns().Get(ctx, addon, metav1.GetOptions{})
 		if err != nil {
 			if errors.IsNotFound(err) {
 				return fmt.Errorf("enabling the unknown addon %s is not supported", addon)
@@ -233,7 +235,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 			if err != nil {
 				return err
 			}
-			err = ApplyAddon(addonClient, cai)
+			err = ApplyAddon(ctx, addonClient, cai)
 			if err != nil {
 				return err
 			}
@@ -246,10 +248,10 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 	return nil
 }
 
-func ApplyAddon(addonClient addonclientset.Interface, addon *addonv1alpha1.ManagedClusterAddOn) error {
-	originalAddon, err := addonClient.AddonV1alpha1().ManagedClusterAddOns(addon.Namespace).Get(context.TODO(), addon.Name, metav1.GetOptions{})
+func ApplyAddon(ctx context.Context, addonClient addonclientset.Interface, addon *addonv1alpha1.ManagedClusterAddOn) error {
+	originalAddon, err := addonClient.AddonV1alpha1().ManagedClusterAddOns(addon.Namespace).Get(ctx, addon.Name, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
-		_, err := addonClient.AddonV1alpha1().ManagedClusterAddOns(addon.Namespace).Create(context.TODO(), addon, metav1.CreateOptions{})
+		_, err := addonClient.AddonV1alpha1().ManagedClusterAddOns(addon.Namespace).Create(ctx, addon, metav1.CreateOptions{})
 		return err
 	}
 	if err != nil {
@@ -262,6 +264,6 @@ func ApplyAddon(addonClient addonclientset.Interface, addon *addonv1alpha1.Manag
 	if addon.Spec.Configs != nil {
 		originalAddon.Spec.Configs = addon.Spec.Configs
 	}
-	_, err = addonClient.AddonV1alpha1().ManagedClusterAddOns(addon.Namespace).Update(context.TODO(), originalAddon, metav1.UpdateOptions{})
+	_, err = addonClient.AddonV1alpha1().ManagedClusterAddOns(addon.Namespace).Update(ctx, originalAddon, metav1.UpdateOptions{})
 	return err
 }

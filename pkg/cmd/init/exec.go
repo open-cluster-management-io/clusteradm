@@ -42,7 +42,7 @@ var (
 	releaseName = "multicluster-controlplane"
 )
 
-var validRegistrationDriver = sets.New[string](operatorv1.CSRAuthType, operatorv1.AwsIrsaAuthType, operatorv1.GRPCAuthType)
+var validRegistrationDriver = sets.New(operatorv1.CSRAuthType, operatorv1.AwsIrsaAuthType, operatorv1.GRPCAuthType)
 
 func (o *Options) complete(cmd *cobra.Command, _ []string) (err error) {
 	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun, "force", o.force, "output-file", o.outputFile)
@@ -100,7 +100,7 @@ func (o *Options) complete(cmd *cobra.Command, _ []string) (err error) {
 			},
 		}
 
-		if sets.New[string](o.registrationDrivers...).Has(operatorv1.GRPCAuthType) {
+		if sets.New(o.registrationDrivers...).Has(operatorv1.GRPCAuthType) {
 			endpoint := operatorv1.EndpointExposure{Protocol: operatorv1.GRPCAuthType}
 			switch o.grpcEndpointType {
 			case string(operatorv1.EndpointTypeHostname):
@@ -154,7 +154,7 @@ func (o *Options) complete(cmd *cobra.Command, _ []string) (err error) {
 	return nil
 }
 
-func (o *Options) validate() error {
+func (o *Options) validate(ctx context.Context) error {
 	if o.force {
 		return nil
 	}
@@ -183,7 +183,7 @@ func (o *Options) validate() error {
 				Client:       kubeClient,
 			})
 	}
-	if err := preflightinterface.RunChecks(checks, os.Stderr); err != nil {
+	if err := preflightinterface.RunChecks(ctx, checks, os.Stderr); err != nil {
 		return err
 	}
 
@@ -200,16 +200,16 @@ func (o *Options) validate() error {
 	if genericclioptionsclusteradm.HubMutableFeatureGate.Enabled("ManagedClusterAutoApproval") {
 		// If hub registration does not accept awsirsa, we stop user if they also pass in a list of patterns for AWS EKS ARN.
 
-		if len(o.autoApprovedARNPatterns) > 0 && !sets.New[string](o.registrationDrivers...).Has(operatorv1.AwsIrsaAuthType) {
+		if len(o.autoApprovedARNPatterns) > 0 && !sets.New(o.registrationDrivers...).Has(operatorv1.AwsIrsaAuthType) {
 			return fmt.Errorf("should not provide list of patterns for aws eks arn if not initializing hub with awsirsa registration")
 		}
 
 		// If hub registration does not accept csr, we stop user if they also pass in a list of users for CSR auto approval.
-		if len(o.autoApprovedCSRIdentities) > 0 && !sets.New[string](o.registrationDrivers...).Has(operatorv1.CSRAuthType) {
+		if len(o.autoApprovedCSRIdentities) > 0 && !sets.New(o.registrationDrivers...).Has(operatorv1.CSRAuthType) {
 			return fmt.Errorf("should not provide list of users for csr to auto approve if not initializing hub with csr registration")
 		}
 
-		if len(o.autoApprovedGRPCIdentities) > 0 && !sets.New[string](o.registrationDrivers...).Has(operatorv1.GRPCAuthType) {
+		if len(o.autoApprovedGRPCIdentities) > 0 && !sets.New(o.registrationDrivers...).Has(operatorv1.GRPCAuthType) {
 			return fmt.Errorf("should not provide list of users or identities for grpc cluster to auto approve if not initializing hub with grpc registration")
 		}
 
@@ -225,14 +225,14 @@ func (o *Options) validate() error {
 	return nil
 }
 
-func (o *Options) run() error {
+func (o *Options) run(ctx context.Context) error {
 	kubeClient, apiExtensionsClient, _, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
 	if err != nil {
 		return err
 	}
 
 	if o.singleton {
-		err = o.deploySingletonControlplane(kubeClient)
+		err = o.deploySingletonControlplane(ctx, kubeClient)
 		if err != nil {
 			return err
 		}
@@ -268,7 +268,7 @@ func (o *Options) run() error {
 
 		r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
 		crds, raw, err := chart.RenderClusterManagerChart(
-			context.TODO(),
+			ctx,
 			o.clusterManagerChartConfig,
 			"open-cluster-management")
 		if err != nil {
@@ -281,7 +281,12 @@ func (o *Options) run() error {
 
 		if !o.ClusteradmFlags.DryRun {
 			if err := helperwait.WaitUntilCRDReady(
-				o.Streams.Out, apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", o.wait); err != nil {
+				ctx,
+				o.Streams.Out,
+				apiExtensionsClient,
+				"clustermanagers.operator.open-cluster-management.io",
+				o.wait,
+			); err != nil {
 				return err
 			}
 		}
@@ -292,6 +297,7 @@ func (o *Options) run() error {
 
 		if o.wait && !o.ClusteradmFlags.DryRun {
 			if err := helperwait.WaitUntilRegistrationOperatorReady(
+				ctx,
 				o.Streams.Out,
 				o.ClusteradmFlags.KubectlFactory,
 				int64(o.ClusteradmFlags.Timeout),
@@ -302,6 +308,7 @@ func (o *Options) run() error {
 
 		if o.wait && !o.ClusteradmFlags.DryRun {
 			if err := helperwait.WaitUntilClusterManagerRegistrationReady(
+				ctx,
 				o.Streams.Out,
 				o.ClusteradmFlags.KubectlFactory,
 				int64(o.ClusteradmFlags.Timeout)); err != nil {
@@ -312,12 +319,12 @@ func (o *Options) run() error {
 		// if service-account wait for the sa secret
 		var token string
 		if !o.useBootstrapToken && !o.ClusteradmFlags.DryRun {
-			token, err = helpers.GetBootstrapTokenFromSA(context.TODO(), kubeClient)
+			token, err = helpers.GetBootstrapTokenFromSA(ctx, kubeClient)
 			if err != nil {
 				return err
 			}
 		} else if !o.ClusteradmFlags.DryRun {
-			token, err = helpers.GetBootstrapToken(context.TODO(), kubeClient)
+			token, err = helpers.GetBootstrapToken(ctx, kubeClient)
 			if err != nil {
 				return err
 			}
@@ -387,12 +394,12 @@ func (o *Options) run() error {
 	return nil
 }
 
-func (o *Options) deploySingletonControlplane(kubeClient kubernetes.Interface) error {
+func (o *Options) deploySingletonControlplane(ctx context.Context, kubeClient kubernetes.Interface) error {
 	// create namespace
-	_, err := kubeClient.CoreV1().Namespaces().Get(context.TODO(), o.SingletonName, metav1.GetOptions{})
+	_, err := kubeClient.CoreV1().Namespaces().Get(ctx, o.SingletonName, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			_, err = kubeClient.CoreV1().Namespaces().Create(context.TODO(), &corev1.Namespace{
+			_, err = kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: o.SingletonName,
 				},
@@ -405,16 +412,20 @@ func (o *Options) deploySingletonControlplane(kubeClient kubernetes.Interface) e
 		}
 	}
 
-	err = o.Helm.PrepareChart(repoName, url)
+	err = o.Helm.PrepareChart(ctx, repoName, url)
 	if err != nil {
 		return err
 	}
 
-	o.Helm.InstallChart(releaseName, repoName, chartName)
+	err = o.Helm.InstallChart(ctx, releaseName, repoName, chartName)
+	if err != nil {
+		return err
+	}
 
 	// fetch the kubeconfig and get the token
 	if o.wait && !o.ClusteradmFlags.DryRun {
 		if err := helperwait.WaitUntilMulticlusterControlplaneReady(
+			ctx,
 			o.Streams.Out,
 			o.ClusteradmFlags.KubectlFactory,
 			o.SingletonName,
@@ -425,6 +436,7 @@ func (o *Options) deploySingletonControlplane(kubeClient kubernetes.Interface) e
 		b := retry.DefaultBackoff
 		b.Duration = 3 * time.Second
 		if err := helperwait.WaitUntilMulticlusterControlplaneKubeconfigReady(
+			ctx,
 			o.ClusteradmFlags.KubectlFactory,
 			o.SingletonName,
 			b); err != nil {
@@ -432,7 +444,7 @@ func (o *Options) deploySingletonControlplane(kubeClient kubernetes.Interface) e
 		}
 
 		// if kubeconfig is ready, get kubeconfig from secret, write to file or outpout to stdout
-		conf, err := kubeClient.CoreV1().Secrets(o.SingletonName).Get(context.Background(), "multicluster-controlplane-kubeconfig", metav1.GetOptions{})
+		conf, err := kubeClient.CoreV1().Secrets(o.SingletonName).Get(ctx, "multicluster-controlplane-kubeconfig", metav1.GetOptions{})
 		if err != nil {
 			return err
 		}

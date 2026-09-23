@@ -8,16 +8,16 @@ import (
 )
 
 var _ = ginkgo.Describe("test clusteradm with timeout", ginkgo.Label("join-hub-timeout"), func() {
-	ginkgo.BeforeEach(func() {
+	ginkgo.BeforeEach(func(ctx ginkgo.SpecContext) {
 		ginkgo.By("clear e2e environment...")
-		err := e2e.ClearEnv()
+		err := e2e.ClearEnv(ctx)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	})
 
 	ginkgo.Context("join hub scenario with timeout", func() {
 		var err error
 
-		ginkgo.It("should managedcluster join and accepted successfully", func() {
+		ginkgo.It("should managedcluster join and accepted successfully", func(ctx ginkgo.SpecContext) {
 			ginkgo.By("init hub with timeout")
 			clusterAdm := e2e.Clusteradm()
 			err = clusterAdm.Init(
@@ -26,7 +26,7 @@ var _ = ginkgo.Describe("test clusteradm with timeout", ginkgo.Label("join-hub-t
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 
-			util.WaitClusterManagerApplied(operatorClient, e2e)
+			util.WaitClusterManagerApplied(ctx, operatorClient, e2e)
 
 			ginkgo.By("managedcluster1 join hub")
 			err = e2e.Clusteradm().Join(

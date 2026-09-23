@@ -25,7 +25,7 @@ import (
 )
 
 //nolint:revive
-func WaitUntilCRDReady(w io.Writer, apiExtensionsClient apiextensionsclient.Interface, crdName string, wait bool) error {
+func WaitUntilCRDReady(ctx context.Context, w io.Writer, apiExtensionsClient apiextensionsclient.Interface, crdName string, wait bool) error {
 	b := retry.DefaultBackoff
 	b.Duration = 200 * time.Millisecond
 
@@ -35,11 +35,11 @@ func WaitUntilCRDReady(w io.Writer, apiExtensionsClient apiextensionsclient.Inte
 		crdSpinner.Start()
 		defer crdSpinner.Stop()
 	}
-	return helpers.WaitCRDToBeReady(apiExtensionsClient, crdName, b, wait)
+	return helpers.WaitCRDToBeReady(ctx, apiExtensionsClient, crdName, b, wait)
 }
 
 //nolint:revive
-func WaitUntilRegistrationOperatorReady(w io.Writer, f util.Factory, timeout int64, appLabel string) error {
+func WaitUntilRegistrationOperatorReady(ctx context.Context, w io.Writer, f util.Factory, timeout int64, appLabel string) error {
 	var restConfig *rest.Config
 	restConfig, err := f.ToRESTConfig()
 	if err != nil {
@@ -64,10 +64,13 @@ func WaitUntilRegistrationOperatorReady(w io.Writer, f util.Factory, timeout int
 	operatorSpinner.Start()
 	defer operatorSpinner.Stop()
 
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
+	defer cancel()
 	return helpers.WatchUntil(
+		ctx,
 		func() (watch.Interface, error) {
 			return client.CoreV1().Pods("open-cluster-management").
-				Watch(context.TODO(), metav1.ListOptions{
+				Watch(ctx, metav1.ListOptions{
 					TimeoutSeconds: &timeout,
 					LabelSelector:  fmt.Sprintf("%v=%v", config.LabelApp, appLabel),
 				})
@@ -76,7 +79,7 @@ func WaitUntilRegistrationOperatorReady(w io.Writer, f util.Factory, timeout int
 }
 
 //nolint:revive
-func WaitUntilClusterManagerRegistrationReady(w io.Writer, f util.Factory, timeout int64) error {
+func WaitUntilClusterManagerRegistrationReady(ctx context.Context, w io.Writer, f util.Factory, timeout int64) error {
 	var restConfig *rest.Config
 	restConfig, err := f.ToRESTConfig()
 	if err != nil {
@@ -101,10 +104,13 @@ func WaitUntilClusterManagerRegistrationReady(w io.Writer, f util.Factory, timeo
 	clusterManagerSpinner.Start()
 	defer clusterManagerSpinner.Stop()
 
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
+	defer cancel()
 	return helpers.WatchUntil(
+		ctx,
 		func() (watch.Interface, error) {
 			return client.CoreV1().Pods("open-cluster-management-hub").
-				Watch(context.TODO(), metav1.ListOptions{
+				Watch(ctx, metav1.ListOptions{
 					TimeoutSeconds: &timeout,
 					LabelSelector:  "app=clustermanager-registration-controller",
 				})
@@ -113,7 +119,7 @@ func WaitUntilClusterManagerRegistrationReady(w io.Writer, f util.Factory, timeo
 }
 
 //nolint:revive
-func WaitUntilMulticlusterControlplaneReady(w io.Writer, f util.Factory, ns string, timeout int64) error {
+func WaitUntilMulticlusterControlplaneReady(ctx context.Context, w io.Writer, f util.Factory, ns string, timeout int64) error {
 	var restConfig *rest.Config
 	restConfig, err := f.ToRESTConfig()
 	if err != nil {
@@ -138,9 +144,12 @@ func WaitUntilMulticlusterControlplaneReady(w io.Writer, f util.Factory, ns stri
 	clusterManagerSpinner.Start()
 	defer clusterManagerSpinner.Stop()
 
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
+	defer cancel()
 	return helpers.WatchUntil(
+		ctx,
 		func() (watch.Interface, error) {
-			return client.CoreV1().Pods(ns).Watch(context.TODO(), metav1.ListOptions{
+			return client.CoreV1().Pods(ns).Watch(ctx, metav1.ListOptions{
 				TimeoutSeconds: &timeout,
 				LabelSelector:  "app=multicluster-controlplane",
 			})
@@ -171,7 +180,7 @@ func podReadyEventHandler(phase *atomic.Value) func(watch.Event) bool {
 }
 
 //nolint:revive
-func WaitUntilMulticlusterControlplaneKubeconfigReady(f util.Factory, ns string, b wait.Backoff) error {
+func WaitUntilMulticlusterControlplaneKubeconfigReady(ctx context.Context, f util.Factory, ns string, b wait.Backoff) error {
 	var restConfig *rest.Config
 	restConfig, err := f.ToRESTConfig()
 	if err != nil {
@@ -189,7 +198,7 @@ func WaitUntilMulticlusterControlplaneKubeconfigReady(f util.Factory, ns string,
 		}
 		return false
 	}, func() error {
-		_, err := client.CoreV1().Secrets(ns).Get(context.TODO(), "multicluster-controlplane-kubeconfig", metav1.GetOptions{})
+		_, err := client.CoreV1().Secrets(ns).Get(ctx, "multicluster-controlplane-kubeconfig", metav1.GetOptions{})
 		return err
 	})
 	return errGet

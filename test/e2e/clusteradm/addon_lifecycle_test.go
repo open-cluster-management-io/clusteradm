@@ -2,7 +2,6 @@
 package clusteradme2e
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -26,16 +25,16 @@ var addonLabels = map[string]string{
 }
 
 var _ = ginkgo.Describe("test clusteradm with addon create", ginkgo.Label("addon-create"), func() {
-	ginkgo.BeforeEach(func() {
+	ginkgo.BeforeEach(func(ctx ginkgo.SpecContext) {
 		ginkgo.By("clear e2e environment...")
-		err := e2e.ClearEnv()
+		err := e2e.ClearEnv(ctx)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	})
 
 	ginkgo.Context("create template type addon", func() {
 		var err error
 
-		ginkgo.It("should managedclusters join and accepted successfully", func() {
+		ginkgo.It("should managedclusters join and accepted successfully", func(ctx ginkgo.SpecContext) {
 			ginkgo.By("init hub with bootstrap token")
 			clusterAdm := e2e.Clusteradm()
 			err = clusterAdm.Init(
@@ -44,7 +43,7 @@ var _ = ginkgo.Describe("test clusteradm with addon create", ginkgo.Label("addon
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 
-			util.WaitClusterManagerApplied(operatorClient, e2e)
+			util.WaitClusterManagerApplied(ctx, operatorClient, e2e)
 
 			ginkgo.By("managedcluster1 join hub")
 			err = e2e.Clusteradm().Join(
@@ -66,7 +65,7 @@ var _ = ginkgo.Describe("test clusteradm with addon create", ginkgo.Label("addon
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm accept error")
 
 			ginkgo.By("create configmap-reader clusterrole")
-			_, err = kubeClient.RbacV1().ClusterRoles().Create(context.TODO(), &rbacv1.ClusterRole{
+			_, err = kubeClient.RbacV1().ClusterRoles().Create(ctx, &rbacv1.ClusterRole{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "configmap-reader",
 				},
@@ -104,7 +103,7 @@ var _ = ginkgo.Describe("test clusteradm with addon create", ginkgo.Label("addon
 
 			gomega.Eventually(func() error {
 				cma, err := addonClient.AddonV1alpha1().ClusterManagementAddOns().Get(
-					context.TODO(), "test-nginx", metav1.GetOptions{})
+					ctx, "test-nginx", metav1.GetOptions{})
 				if err != nil {
 					return err
 				}
@@ -113,7 +112,7 @@ var _ = ginkgo.Describe("test clusteradm with addon create", ginkgo.Label("addon
 				}
 
 				addonT, err := addonClient.AddonV1alpha1().AddOnTemplates().Get(
-					context.TODO(), "test-nginx-0.0.1", metav1.GetOptions{})
+					ctx, "test-nginx-0.0.1", metav1.GetOptions{})
 				if err != nil {
 					return err
 				}
@@ -139,7 +138,7 @@ var _ = ginkgo.Describe("test clusteradm with addon create", ginkgo.Label("addon
 
 			gomega.Eventually(func() error {
 				mca, err := addonClient.AddonV1alpha1().ManagedClusterAddOns(e2e.Cluster().ManagedCluster1().Name()).Get(
-					context.TODO(), "test-nginx", metav1.GetOptions{})
+					ctx, "test-nginx", metav1.GetOptions{})
 				if err != nil {
 					return err
 				}
@@ -172,7 +171,7 @@ var _ = ginkgo.Describe("test clusteradm with addon create", ginkgo.Label("addon
 					Group:    "work.open-cluster-management.io",
 					Version:  "v1",
 					Resource: "manifestworks",
-				}).Namespace(e2e.Cluster().ManagedCluster1().Name()).List(context.TODO(),
+				}).Namespace(e2e.Cluster().ManagedCluster1().Name()).List(ctx,
 					metav1.ListOptions{
 						LabelSelector: "open-cluster-management.io/addon-name=test-nginx",
 					})

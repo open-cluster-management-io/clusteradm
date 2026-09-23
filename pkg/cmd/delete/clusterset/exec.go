@@ -37,7 +37,7 @@ func (o *Options) validate() (err error) {
 	return nil
 }
 
-func (o *Options) run() (err error) {
+func (o *Options) run(ctx context.Context) (err error) {
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
@@ -49,12 +49,12 @@ func (o *Options) run() (err error) {
 
 	clusterSetName := o.Clustersets[0]
 
-	return o.runWithClient(clusterClient, o.ClusteradmFlags.DryRun, clusterSetName)
+	return o.runWithClient(ctx, clusterClient, o.ClusteradmFlags.DryRun, clusterSetName)
 }
 
 // check unband first
 
-func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
+func (o *Options) runWithClient(ctx context.Context, clusterClient clusterclientset.Interface,
 	dryRun bool,
 	clusterset string) error {
 
@@ -65,7 +65,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 	}
 
 	// check existing
-	_, err := clusterClient.ClusterV1beta2().ManagedClusterSets().Get(context.TODO(), clusterset, metav1.GetOptions{})
+	_, err := clusterClient.ClusterV1beta2().ManagedClusterSets().Get(ctx, clusterset, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			fmt.Fprintf(o.Streams.Out, "Clusterset %s not found or is already deleted\n", clusterset)
@@ -75,7 +75,7 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 	}
 
 	// check binding
-	list, err := clusterClient.ClusterV1beta2().ManagedClusterSetBindings(metav1.NamespaceAll).List(context.TODO(), metav1.ListOptions{
+	list, err := clusterClient.ClusterV1beta2().ManagedClusterSetBindings(metav1.NamespaceAll).List(ctx, metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("metadata.name=%s", clusterset),
 	})
 	// if exist, return
@@ -92,13 +92,12 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 		return nil
 	}
 
-	// start a goroutine to watch the delete event
-	errChannel := make(chan error)
-	go func(c chan<- error) {
-		// watch until clusterset is removed
-		e := helpers.WatchUntil(
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- helpers.WatchUntil(
+			ctx,
 			func() (watch.Interface, error) {
-				return clusterClient.ClusterV1beta2().ManagedClusterSets().Watch(context.TODO(), metav1.ListOptions{
+				return clusterClient.ClusterV1beta2().ManagedClusterSets().Watch(ctx, metav1.ListOptions{
 					FieldSelector: fmt.Sprintf("metadata.name=%s", clusterset),
 				})
 			},
@@ -106,18 +105,15 @@ func (o *Options) runWithClient(clusterClient clusterclientset.Interface,
 				return event.Type == watch.Deleted
 			},
 		)
-		c <- e
-
-	}(errChannel)
+	}()
 
 	// delete
-	err = clusterClient.ClusterV1beta2().ManagedClusterSets().Delete(context.TODO(), clusterset, metav1.DeleteOptions{})
+	err = clusterClient.ClusterV1beta2().ManagedClusterSets().Delete(ctx, clusterset, metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}
 
-	// handle the error of watch function
-	if err = <-errChannel; err != nil {
+	if err = <-errCh; err != nil {
 		return err
 	}
 

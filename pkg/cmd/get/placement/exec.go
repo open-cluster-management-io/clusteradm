@@ -20,7 +20,7 @@ import (
 const placementLabel = "cluster.open-cluster-management.io/placement"
 
 func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
-	o.printer.Competele()
+	o.printer.Complete()
 
 	return nil
 }
@@ -46,7 +46,7 @@ func (o *Options) validate(args []string) (err error) {
 	return nil
 }
 
-func (o *Options) run() (err error) {
+func (o *Options) run(ctx context.Context) (err error) {
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
@@ -57,7 +57,7 @@ func (o *Options) run() (err error) {
 		if err != nil {
 			return err
 		}
-		_, err = nsClient.CoreV1().Namespaces().Get(context.TODO(), o.Namespace, metav1.GetOptions{})
+		_, err = nsClient.CoreV1().Namespaces().Get(ctx, o.Namespace, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -73,9 +73,9 @@ func (o *Options) run() (err error) {
 
 	var placementList *v1beta1.PlacementList
 	if o.PlacementName == "" {
-		placementList, err = o.Client.Placements(o.Namespace).List(context.TODO(), metav1.ListOptions{})
+		placementList, err = o.Client.Placements(o.Namespace).List(ctx, metav1.ListOptions{})
 	} else {
-		placementList, err = o.Client.Placements(o.Namespace).List(context.TODO(), metav1.ListOptions{
+		placementList, err = o.Client.Placements(o.Namespace).List(ctx, metav1.ListOptions{
 			FieldSelector: fmt.Sprintf("metadata.name=%s", o.PlacementName),
 		})
 	}
@@ -83,43 +83,45 @@ func (o *Options) run() (err error) {
 		return err
 	}
 
-	o.printer.WithTreeConverter(o.convertToTree).WithTableConverter(o.converToTable)
+	o.printer.WithTreeConverter(o.convertToTreeFunc(ctx)).WithTableConverter(o.convertToTableFunc(ctx))
 
 	return o.printer.Print(o.Streams, placementList)
 }
 
-func (o *Options) convertToTree(obj runtime.Object, tree *printer.TreePrinter) *printer.TreePrinter {
-	decisionList, err := o.Client.PlacementDecisions(o.Namespace).List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		panic(err)
-	}
-
-	// save decisions into a map
-	selectedClusters := make(map[string][]v1beta1.ClusterDecision)
-	for _, decision := range decisionList.Items {
-		placementName := decision.Labels[placementLabel]
-		selectedClusters[placementName] = decision.Status.Decisions
-	}
-
-	if placementList, ok := obj.(*v1beta1.PlacementList); ok {
-		for _, pla := range placementList.Items {
-			mp := make(map[string]interface{})
-			namespace, clusterset, satisfied, misconfig, number, decision := getFileds(pla, selectedClusters)
-			mp[".Namespace"] = namespace
-			mp[".ClusterSet"] = clusterset
-			mp[".Status.NumberOfSelectedClusters"] = number
-			mp[".Status.Conditions.PlacementConditionSatisfied"] = satisfied
-			mp[".Status.Conditions.PlacementConditionMisconfigured"] = misconfig
-			mp[".PlacementDecision"] = decision
-
-			tree.AddFileds(pla.Name, &mp)
+func (o *Options) convertToTreeFunc(ctx context.Context) func(runtime.Object, *printer.TreePrinter) (*printer.TreePrinter, error) {
+	return func(obj runtime.Object, tree *printer.TreePrinter) (*printer.TreePrinter, error) {
+		decisionList, err := o.Client.PlacementDecisions(o.Namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to list placement decisions: %w", err)
 		}
-	}
 
-	return tree
+		// save decisions into a map
+		selectedClusters := make(map[string][]v1beta1.ClusterDecision)
+		for _, decision := range decisionList.Items {
+			placementName := decision.Labels[placementLabel]
+			selectedClusters[placementName] = decision.Status.Decisions
+		}
+
+		if placementList, ok := obj.(*v1beta1.PlacementList); ok {
+			for _, pla := range placementList.Items {
+				mp := make(map[string]interface{})
+				namespace, clusterset, satisfied, misconfig, number, decision := getFields(pla, selectedClusters)
+				mp[".Namespace"] = namespace
+				mp[".ClusterSet"] = clusterset
+				mp[".Status.NumberOfSelectedClusters"] = number
+				mp[".Status.Conditions.PlacementConditionSatisfied"] = satisfied
+				mp[".Status.Conditions.PlacementConditionMisconfigured"] = misconfig
+				mp[".PlacementDecision"] = decision
+
+				tree.AddFileds(pla.Name, &mp)
+			}
+		}
+
+		return tree, nil
+	}
 }
 
-func getFileds(placement v1beta1.Placement, selectedClusters map[string][]v1beta1.ClusterDecision) (namespace string, clusterset []string, satisfied string, misconfig string, number int, decision []string) {
+func getFields(placement v1beta1.Placement, selectedClusters map[string][]v1beta1.ClusterDecision) (namespace string, clusterset []string, satisfied string, misconfig string, number int, decision []string) {
 	namespace = placement.Namespace
 	clusterset = placement.Spec.ClusterSets
 
@@ -152,42 +154,44 @@ func getFileds(placement v1beta1.Placement, selectedClusters map[string][]v1beta
 	return namespace, clusterset, satisfied, misconfig, number, decision
 }
 
-func (o *Options) converToTable(obj runtime.Object) *metav1.Table {
-	decisionList, err := o.Client.PlacementDecisions(o.Namespace).List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		panic(err)
-	}
-
-	// save decisions into a map
-	selectedClusters := make(map[string][]v1beta1.ClusterDecision)
-	for _, decision := range decisionList.Items {
-		placementName := decision.Labels[placementLabel]
-		selectedClusters[placementName] = decision.Status.Decisions
-	}
-
-	table := &metav1.Table{
-		ColumnDefinitions: []metav1.TableColumnDefinition{
-			{Name: "Name", Type: "string"},
-			{Name: "Status", Type: "string"},
-			{Name: "Reason", Type: "string"},
-			{Name: "SeletedClusters", Type: "array"},
-		},
-		Rows: []metav1.TableRow{},
-	}
-
-	if placementList, ok := obj.(*v1beta1.PlacementList); ok {
-		for _, placement := range placementList.Items {
-			clusters := make([]string, 0, len(selectedClusters[placement.Name]))
-			for _, i := range selectedClusters[placement.Name] {
-				clusters = append(clusters, i.ClusterName)
-			}
-
-			row := convertRow(placement, clusters)
-			table.Rows = append(table.Rows, row)
+func (o *Options) convertToTableFunc(ctx context.Context) func(runtime.Object) (*metav1.Table, error) {
+	return func(obj runtime.Object) (*metav1.Table, error) {
+		decisionList, err := o.Client.PlacementDecisions(o.Namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to list placement decisions: %w", err)
 		}
-	}
 
-	return table
+		// save decisions into a map
+		selectedClusters := make(map[string][]v1beta1.ClusterDecision)
+		for _, decision := range decisionList.Items {
+			placementName := decision.Labels[placementLabel]
+			selectedClusters[placementName] = decision.Status.Decisions
+		}
+
+		table := &metav1.Table{
+			ColumnDefinitions: []metav1.TableColumnDefinition{
+				{Name: "Name", Type: "string"},
+				{Name: "Status", Type: "string"},
+				{Name: "Reason", Type: "string"},
+				{Name: "SeletedClusters", Type: "array"},
+			},
+			Rows: []metav1.TableRow{},
+		}
+
+		if placementList, ok := obj.(*v1beta1.PlacementList); ok {
+			for _, placement := range placementList.Items {
+				clusters := make([]string, 0, len(selectedClusters[placement.Name]))
+				for _, i := range selectedClusters[placement.Name] {
+					clusters = append(clusters, i.ClusterName)
+				}
+
+				row := convertRow(placement, clusters)
+				table.Rows = append(table.Rows, row)
+			}
+		}
+
+		return table, nil
+	}
 }
 
 func convertRow(placement v1beta1.Placement, clusters []string) metav1.TableRow {

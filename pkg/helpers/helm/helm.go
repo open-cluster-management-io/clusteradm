@@ -90,7 +90,7 @@ func (h *Helm) SetValue(key, value string) {
 }
 
 // PrepareChart prepares the chart for installation
-func (h *Helm) PrepareChart(repoName, repoURL string) error {
+func (h *Helm) PrepareChart(ctx context.Context, repoName, repoURL string) error {
 	// add repo
 	repoFile := h.settings.RepositoryConfig
 
@@ -102,7 +102,7 @@ func (h *Helm) PrepareChart(repoName, repoURL string) error {
 
 	// Acquire a file lock for process synchronization
 	fileLock := flock.New(strings.Replace(repoFile, filepath.Ext(repoFile), ".lock", 1))
-	lockCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	lockCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	locked, err := fileLock.TryLockContext(lockCtx, time.Second)
 	if err == nil && locked {
@@ -173,7 +173,7 @@ func (h *Helm) PrepareChart(repoName, repoURL string) error {
 }
 
 // InstallChart installs the chart
-func (h *Helm) InstallChart(name, repo, chart string) {
+func (h *Helm) InstallChart(ctx context.Context, name, repo, chart string) error {
 	actionConfig := new(action.Configuration)
 	if err := actionConfig.Init(h.restClientGetterOrDefault(), h.settings.Namespace(), os.Getenv("HELM_DRIVER"), debug); err != nil {
 		log.Fatal(err)
@@ -191,7 +191,7 @@ func (h *Helm) InstallChart(name, repo, chart string) {
 	client.ReleaseName = name
 	cp, err := client.LocateChart(fmt.Sprintf("%s/%s", repo, chart), h.settings)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to locate Helm chart: %w", err)
 	}
 
 	debug("CHART PATH: %s\n", cp)
@@ -199,18 +199,18 @@ func (h *Helm) InstallChart(name, repo, chart string) {
 	p := getter.All(h.settings)
 	vals, err := h.values.MergeValues(p)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("unable to merge Helm values: %w", err)
 	}
 
 	// Check chart dependencies to make sure all are present in /charts
 	chartRequested, err := loader.Load(cp)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("unable to load Helm chart: %w", err)
 	}
 
 	validInstallableChart, err := isChartInstallable(chartRequested)
 	if !validInstallableChart {
-		log.Fatal(err)
+		return fmt.Errorf("unsupported Helm chart type: %w", err)
 	}
 
 	if req := chartRequested.Metadata.Dependencies; req != nil {
@@ -229,23 +229,25 @@ func (h *Helm) InstallChart(name, repo, chart string) {
 					RepositoryCache:  h.settings.RepositoryCache,
 				}
 				if err := man.Update(); err != nil {
-					log.Fatal(err)
+					return fmt.Errorf("failed to update Helm chart dependencies: %w", err)
 				}
 			} else {
-				log.Fatal(err)
+				return fmt.Errorf("failed to check Helm chart dependencies: %w", err)
 			}
 		}
 	}
 
 	client.Namespace = h.settings.Namespace()
-	release, err := client.Run(chartRequested, vals)
+	release, err := client.RunWithContext(ctx, chartRequested, vals)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to install Helm chart: %w", err)
 	}
 
 	if h.clusteradmFlags.DryRun {
 		fmt.Fprintln(h.streams.Out, release.Manifest)
 	}
+
+	return nil
 }
 
 func isChartInstallable(ch *chart.Chart) (bool, error) {

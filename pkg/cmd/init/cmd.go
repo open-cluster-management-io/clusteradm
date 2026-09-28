@@ -22,6 +22,10 @@ var example = `
 	--aws-resource-tags product:v1:tenant:app-name=My-App,product:v1:tenant:created-by=Team-1
     --auto-approved-csr-identities="user1,user2"
 	--auto-approved-arn-patterns="arn:aws:eks:us-west-2:123456789013:cluster/.*,arn:aws:eks:us-west-2:123456789012:cluster/.*"
+
+# Initialize the hub cluster to accept clusters registering with an Azure AD identity
+%[1]s init --registration-drivers "csr,azure"
+	--auto-approved-azure-identity-patterns="^11111111-1111-1111-1111-111111111111$"
 `
 
 // NewCmd ...
@@ -95,7 +99,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	o.Helm.AddFlags(singletonSet)
 	cmd.Flags().AddFlagSet(singletonSet)
 	cmd.Flags().StringSliceVar(&o.registrationDrivers, "registration-drivers", []string{},
-		"The type of authentication to use for registering and authenticating with hub. Only csr, awsirsa and grpc are accepted as valid inputs. This flag can be repeated to specify multiple authentication types.")
+		"The type of authentication to use for registering and authenticating with hub. Only csr, awsirsa, grpc and azure are accepted as valid inputs. This flag can be repeated to specify multiple authentication types.")
 	cmd.Flags().StringVar(&o.hubClusterArn, "hub-cluster-arn", "",
 		"The hubCluster ARN to be passed if awsirsa is one of the registrationAuths and the cluster name in EKS kubeconfig doesn't contain hubClusterArn")
 	cmd.Flags().StringSliceVar(&o.awsResourceTags, "aws-resource-tags", []string{},
@@ -105,6 +109,8 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		"The users or identities that can be auto approved for CSR and auto accepted to join with hub cluster")
 	cmd.Flags().StringSliceVar(&o.autoApprovedARNPatterns, "auto-approved-arn-patterns", []string{},
 		"List of AWS EKS ARN patterns so any EKS clusters with these patterns will be auto accepted to join with hub cluster")
+	cmd.Flags().StringSliceVar(&o.autoApprovedAzureIdentityPatterns, "auto-approved-azure-identity-patterns", []string{},
+		"List of Azure AD object ID patterns so any clusters registering with the azure driver whose identity matches will be auto accepted to join with hub cluster")
 	cmd.Flags().BoolVar(&o.enableSyncLabels, "enable-sync-labels", false, "If true, sync the labels from clustermanager to all hub resources.")
 	cmd.Flags().StringVar(&o.grpcServer, "grpc-server", "", "The gRPC server address of the hub")
 	cmd.Flags().StringVar(&o.grpcEndpointType, "grpc-endpoint-type", "hostname", "The gRPC server endpoint type. The supported types are hostname and loadBalancer. The default type is hostname.")

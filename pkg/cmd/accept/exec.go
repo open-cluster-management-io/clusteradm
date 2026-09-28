@@ -103,13 +103,14 @@ func (o *Options) accept(ctx context.Context, kubeClient *kubernetes.Clientset, 
 	if err != nil {
 		return false, fmt.Errorf("fail to get managedcluster %s: %v", clusterName, err)
 	}
-	// when a managed cluster registers with hub using awsirsa registration-auth, it will add this annotation
-	// to ManagedCluster resource, presence of which is used to decide the requested authentication type.
-	// awrirsa authentication doesn't create CSR on hub, hence there is nothing to approve
+	// when a managed cluster registers with hub using awsirsa or azure registration-auth, it will add one of
+	// these annotations to ManagedCluster resource, presence of which is used to decide the requested
+	// authentication type. awsirsa and azure authentication don't create CSR on hub, hence there is nothing to approve
 	_, hasEksArn := managedCluster.Annotations["agent.open-cluster-management.io/managed-cluster-arn"]
+	_, hasAzureIdentity := managedCluster.Annotations["agent.open-cluster-management.io/managed-cluster-azure-identity"]
 
 	var approved bool
-	if !hasEksArn {
+	if !hasEksArn && !hasAzureIdentity {
 		approved, err = o.approveCSR(ctx, kubeClient, clusterName, waitMode)
 		if err != nil {
 			return approved, fmt.Errorf("fail to approve the csr for cluster %s: %v", clusterName, err)

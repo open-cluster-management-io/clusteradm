@@ -121,6 +121,9 @@ type Options struct {
 
 	// Token expiration seconds for addon registration
 	addonTokenExpirationSeconds int64
+
+	// The flags of the azure registration driver
+	azure azureOptions
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Options {

@@ -173,6 +173,10 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		}
 	}
 
+	if o.registrationAuth == operatorv1.AzureAuthType {
+		o.klusterletChartConfig.Klusterlet.RegistrationConfiguration.RegistrationDriver = o.azure.registrationDriver()
+	}
+
 	// set addon kubeclient registration driver (only if not using default csr)
 	if o.addonKubeClientRegistrationAuth != "csr" {
 		o.setAddonKubeClientRegistrationDriver()
@@ -343,7 +347,18 @@ func (o *Options) validate(ctx context.Context) error {
 		return err
 	}
 
+	if o.registrationAuth != operatorv1.AzureAuthType && o.azure.used() {
+		return gherrors.New("the --azure-* flags are only valid when registration-auth type is azure")
+	}
+
 	switch o.registrationAuth {
+	case operatorv1.AzureAuthType:
+		if err := o.azure.validate(); err != nil {
+			return err
+		}
+		if err := o.azure.readSecretMaterial(o.Streams.In); err != nil {
+			return err
+		}
 	case operatorv1.AwsIrsaAuthType:
 		if o.hubClusterArn == "" {
 			return gherrors.New("hub-cluster-arn is required when registration-auth type is awsirsa")
@@ -383,7 +398,7 @@ func (o *Options) run(ctx context.Context) error {
 		f = util.NewFactory(getter)
 	}
 
-	_, apiExtensionsClient, _, err := helpers.GetClients(f)
+	kubeClient, apiExtensionsClient, _, err := helpers.GetClients(f)
 	if err != nil {
 		return err
 	}
@@ -400,7 +415,7 @@ func (o *Options) run(ctx context.Context) error {
 
 	r := reader.NewResourceReader(f, o.ClusteradmFlags.DryRun, o.Streams)
 
-	if err = o.applyKlusterlet(ctx, r, operatorClient, apiExtensionsClient); err != nil {
+	if err = o.applyKlusterlet(ctx, r, kubeClient, operatorClient, apiExtensionsClient); err != nil {
 		return err
 	}
 
@@ -425,7 +440,8 @@ func (o *Options) run(ctx context.Context) error {
 
 }
 
-func (o *Options) applyKlusterlet(ctx context.Context, r *reader.ResourceReader, operatorClient operatorclient.Interface, apiExtensionsClient apiextensionsclient.Interface) error {
+func (o *Options) applyKlusterlet(ctx context.Context, r *reader.ResourceReader, kubeClient kubernetes.Interface,
+	operatorClient operatorclient.Interface, apiExtensionsClient apiextensionsclient.Interface) error {
 	available, err := checkIfRegistrationOperatorAvailable(ctx, o.ClusteradmFlags.KubectlFactory)
 	if err != nil {
 		return err
@@ -463,6 +479,18 @@ func (o *Options) applyKlusterlet(ctx context.Context, r *reader.ResourceReader,
 		return err
 	}
 
+	// The credential Secret is applied directly rather than with the rendered manifests, so its
+	// secret material never appears in the dry-run output or --output-file.
+	if len(o.azure.secretData) > 0 {
+		namespace := o.agentNamespace()
+		if o.ClusteradmFlags.DryRun {
+			fmt.Fprintf(o.Streams.Out, "Secret %s/%s holding the Azure credential is not created in dry-run mode and not included in the output.\n",
+				namespace, azureCredentialSecretName)
+		} else if err := o.azure.applyCredentialSecret(ctx, kubeClient, namespace); err != nil {
+			return err
+		}
+	}
+
 	if !available && o.wait && !o.ClusteradmFlags.DryRun {
 		err = waitUntilRegistrationOperatorConditionIsTrue(
 			ctx, o.Streams.Out, o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout))
@@ -484,6 +512,19 @@ func (o *Options) applyKlusterlet(ctx context.Context, r *reader.ResourceReader,
 		}
 	}
 	return nil
+}
+
+// agentNamespace returns the namespace the klusterlet agents run in, as the klusterlet chart
+// derives it.
+func (o *Options) agentNamespace() string {
+	klusterletConfig := o.klusterletChartConfig.Klusterlet
+	if klusterletConfig.Mode == operatorv1.InstallModeHosted || klusterletConfig.Mode == operatorv1.InstallModeSingletonHosted {
+		return klusterletConfig.Name
+	}
+	if klusterletConfig.Namespace != "" {
+		return klusterletConfig.Namespace
+	}
+	return AgentNamespacePrefix + "agent"
 }
 
 func checkIfRegistrationOperatorAvailable(ctx context.Context, f util.Factory) (bool, error) {

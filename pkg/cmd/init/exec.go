@@ -42,7 +42,7 @@ var (
 	releaseName = "multicluster-controlplane"
 )
 
-var validRegistrationDriver = sets.New(operatorv1.CSRAuthType, operatorv1.AwsIrsaAuthType, operatorv1.GRPCAuthType)
+var validRegistrationDriver = sets.New(operatorv1.CSRAuthType, operatorv1.AwsIrsaAuthType, operatorv1.GRPCAuthType, operatorv1.AzureAuthType)
 
 func (o *Options) complete(cmd *cobra.Command, _ []string) (err error) {
 	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun, "force", o.force, "output-file", o.outputFile)
@@ -193,7 +193,7 @@ func (o *Options) validate(ctx context.Context) error {
 
 	for _, driver := range o.registrationDrivers {
 		if !validRegistrationDriver.Has(driver) {
-			return fmt.Errorf("only csr,awsirsa and grpc are valid drivers")
+			return fmt.Errorf("only csr,awsirsa,grpc and azure are valid drivers")
 		}
 	}
 
@@ -213,7 +213,12 @@ func (o *Options) validate(ctx context.Context) error {
 			return fmt.Errorf("should not provide list of users or identities for grpc cluster to auto approve if not initializing hub with grpc registration")
 		}
 
-	} else if len(o.autoApprovedARNPatterns) > 0 || len(o.autoApprovedCSRIdentities) > 0 || len(o.autoApprovedGRPCIdentities) > 0 {
+		if len(o.autoApprovedAzureIdentityPatterns) > 0 && !sets.New[string](o.registrationDrivers...).Has(operatorv1.AzureAuthType) {
+			return fmt.Errorf("should not provide list of patterns for azure identities if not initializing hub with azure registration")
+		}
+
+	} else if len(o.autoApprovedARNPatterns) > 0 || len(o.autoApprovedCSRIdentities) > 0 || len(o.autoApprovedGRPCIdentities) > 0 ||
+		len(o.autoApprovedAzureIdentityPatterns) > 0 {
 		return fmt.Errorf("should enable feature gate ManagedClusterAutoApproval before passing list of identities")
 	}
 
@@ -479,6 +484,13 @@ func getRegistrationDrivers(o *Options) ([]operatorv1.RegistrationDriverHub, err
 			}
 			awsirsa := &operatorv1.AwsIrsaConfig{HubClusterArn: hubClusterArn, Tags: o.awsResourceTags, AutoApprovedIdentities: o.autoApprovedARNPatterns}
 			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: operatorv1.AwsIrsaAuthType, AwsIrsa: awsirsa}
+		case operatorv1.AzureAuthType:
+			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: operatorv1.AzureAuthType}
+			if len(o.autoApprovedAzureIdentityPatterns) != 0 {
+				registrationDriver.Azure = &operatorv1.AzureConfig{
+					AutoApprovedIdentityPatterns: o.autoApprovedAzureIdentityPatterns,
+				}
+			}
 		case operatorv1.GRPCAuthType:
 			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: operatorv1.GRPCAuthType}
 			if len(o.autoApprovedGRPCIdentities) != 0 {

@@ -53,6 +53,18 @@ spec:
               deployOption:
                 description: DeployOption contains the options of deploying a klusterlet
                 properties:
+                  hosted:
+                    description: |-
+                      Hosted holds configuration for a mode whose controllers run on a separate management
+                      cluster rather than locally.
+                    properties:
+                      managementClusterName:
+                        description: |-
+                          ManagementClusterName is the name (as known to the hub) of the cluster where this
+                          klusterlet's controllers actually run, for a mode where that's a separate management
+                          cluster rather than the klusterlet running locally.
+                        type: string
+                    type: object
                   mode:
                     description: |-
                       Mode can be Default, Hosted, Singleton or SingletonHosted. It is Default mode if not specified
@@ -63,6 +75,18 @@ spec:
                       In Singleton mode, registration/work agent is started as a single deployment.
                       In SingletonHosted mode, agent is started as a single deployment in hosted mode.
                       Note: Do not modify the Mode field once it's applied.
+                    type: string
+                  reportHostingCluster:
+                    description: |-
+                      ReportHostingCluster, when set to Enable, makes this klusterlet self-report where its own
+                      controllers actually run - its own cluster name when they run locally, or
+                      Hosted.ManagementClusterName when they run on a separate management cluster - via a
+                      reserved ClusterClaim named "hosting-cluster.open-cluster-management.io". Disabled by
+                      default: the klusterlet-operator emits nothing and behaves exactly as it does today unless
+                      this is explicitly set to Enable.
+                    enum:
+                    - Enable
+                    - Disable
                     type: string
                 type: object
               externalServerURLs:
@@ -360,11 +384,12 @@ spec:
                         default: csr
                         description: Type of the authentication used by managedcluster
                           to register as well as pull work from hub. Possible values
-                          are csr and awsirsa.
+                          are csr, awsirsa, grpc and azure.
                         enum:
                         - csr
                         - awsirsa
                         - grpc
+                        - azure
                         type: string
                       awsIrsa:
                         description: |-
@@ -374,25 +399,93 @@ spec:
                           hubClusterArn:
                             description: |-
                               The arn of the hub cluster (ie: an EKS cluster). This will be required to pass information to hub, which hub will use to create IAM identities for this klusterlet.
-                              Example - arn:eks:us-west-2:12345678910:cluster/hub-cluster1.
+                              Example - arn:aws:eks:us-west-2:123456789010:cluster/hub-cluster1.
+                              Non-commercial partitions are supported too, e.g. arn:aws-us-gov:eks:us-gov-west-1:123456789010:cluster/hub-cluster1.
                             minLength: 1
-                            pattern: ^arn:aws:eks:([a-zA-Z0-9-]+):(\d{12}):cluster/([a-zA-Z0-9-]+)$
+                            pattern: ^arn:aws(?:-[a-z0-9]+)*:eks:([a-zA-Z0-9-]+):(\d{12}):cluster/([a-zA-Z0-9-]+)$
                             type: string
                           managedClusterArn:
                             description: |-
                               The arn of the managed cluster (ie: an EKS cluster). This will be required to generate the md5hash which will be used as a suffix to create IAM role on hub
                               as well as used by kluslerlet-agent, to assume role suffixed with the md5hash, on startup.
-                              Example - arn:eks:us-west-2:12345678910:cluster/managed-cluster1.
+                              Example - arn:aws:eks:us-west-2:123456789010:cluster/managed-cluster1.
+                              Non-commercial partitions are supported too, e.g. arn:aws-us-gov:eks:us-gov-west-1:123456789010:cluster/managed-cluster1.
                             minLength: 1
-                            pattern: ^arn:aws:eks:([a-zA-Z0-9-]+):(\d{12}):cluster/([a-zA-Z0-9-]+)$
+                            pattern: ^arn:aws(?:-[a-z0-9]+)*:eks:([a-zA-Z0-9-]+):(\d{12}):cluster/([a-zA-Z0-9-]+)$
                             type: string
                         required:
                         - hubClusterArn
                         - managedClusterArn
                         type: object
+                      azure:
+                        description: |-
+                          azure contains the details required for registering with the hub cluster using an Azure AD
+                          (Entra ID) identity instead of a client certificate. This is required only when authType is azure.
+                        properties:
+                          clientID:
+                            description: |-
+                              clientID is the client ID of the identity. Optional for managed-identity-credential
+                              (omit it to use the node's system-assigned identity); required for every other
+                              credential type.
+                            type: string
+                          credential:
+                            description: |-
+                              credential selects which Azure credential mechanism is used to obtain an Azure AD
+                              access token. There is no automatic fallback between mechanisms.
+                            enum:
+                            - managed-identity-credential
+                            - environment-credential-secret
+                            - environment-credential-certificate
+                            - workload-identity-credential
+                            type: string
+                          federatedTokenFile:
+                            description: |-
+                              federatedTokenFile overrides the projected ServiceAccount token path injected by the
+                              Azure Workload Identity webhook. Applies only to workload-identity-credential.
+                            type: string
+                          managedClusterAzureID:
+                            description: |-
+                              managedClusterAzureID is the Azure AD object ID (principal ID) of the identity used by
+                              this managed cluster. It is recorded as an annotation on the ManagedCluster, and used
+                              by the hub for auto-approval matching and RBAC binding.
+                            minLength: 1
+                            type: string
+                          tenantID:
+                            description: |-
+                              tenantID is the Entra ID tenant. Required for the environment-credential-* types;
+                              optional for workload-identity-credential, where it overrides the value injected by
+                              the Azure Workload Identity webhook.
+                            type: string
+                          tokenAudience:
+                            description: |-
+                              tokenAudience is the OAuth2 scope requested for the hub apiserver, e.g.
+                              "<server-app-id>/.default". Defaults to the well-known AKS AAD Server application,
+                              which is only correct for AKS's native Azure AD integration; for a self-managed
+                              apiserver it must match that apiserver's --oidc-client-id.
+                            type: string
+                        required:
+                        - credential
+                        - managedClusterAzureID
+                        type: object
+                        x-kubernetes-validations:
+                        - message: clientID is required for workload-identity-credential
+                          rule: self.credential != 'workload-identity-credential'
+                            || (has(self.clientID) && size(self.clientID) > 0)
+                        - message: clientID and tenantID are required for environment-credential-secret
+                            and environment-credential-certificate
+                          rule: '!(self.credential in [''environment-credential-secret'',
+                            ''environment-credential-certificate'']) || (has(self.clientID)
+                            && size(self.clientID) > 0 && has(self.tenantID) && size(self.tenantID)
+                            > 0)'
+                        - message: federatedTokenFile applies only to workload-identity-credential
+                          rule: self.credential == 'workload-identity-credential'
+                            || !has(self.federatedTokenFile)
                     required:
                     - authType
                     type: object
+                    x-kubernetes-validations:
+                    - message: azure is required when authType is azure
+                      rule: self.authType != 'azure' || has(self.azure)
                 type: object
               registrationImagePullSpec:
                 description: |-

@@ -66,6 +66,8 @@ type Options struct {
 	autoApprovedARNPatterns []string
 	// List of tags to be added to AWS resources created by hub while processing awsirsa registration request
 	awsResourceTags []string
+	// A list of Azure AD object ID patterns that are accepted and whatever matches can be auto accepted to join hub cluster
+	autoApprovedAzureIdentityPatterns []string
 	// enableSyncLabels is to enable the feature which can sync the labels from clustermanager to all hub resources.
 	enableSyncLabels bool
 

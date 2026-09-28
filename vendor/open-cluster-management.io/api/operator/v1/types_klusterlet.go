@@ -208,31 +208,103 @@ type ClusterClaimConfiguration struct {
 	ReservedClusterClaimSuffixes []string `json:"reservedClusterClaimSuffixes,omitempty"`
 }
 
+// +kubebuilder:validation:XValidation:rule="self.authType != 'azure' || has(self.azure)",message="azure is required when authType is azure"
 type RegistrationDriver struct {
-	// Type of the authentication used by managedcluster to register as well as pull work from hub. Possible values are csr and awsirsa.
+	// Type of the authentication used by managedcluster to register as well as pull work from hub. Possible values are csr, awsirsa, grpc and azure.
 	// +required
 	// +kubebuilder:default:=csr
-	// +kubebuilder:validation:Enum=csr;awsirsa;grpc
+	// +kubebuilder:validation:Enum=csr;awsirsa;grpc;azure
 	AuthType string `json:"authType,omitempty"`
 
 	// Contain the details required for registering with hub cluster (ie: an EKS cluster) using AWS IAM roles for service account.
 	// This is required only when the authType is awsirsa.
 	AwsIrsa *AwsIrsa `json:"awsIrsa,omitempty"`
+
+	// azure contains the details required for registering with the hub cluster using an Azure AD
+	// (Entra ID) identity instead of a client certificate. This is required only when authType is azure.
+	// +optional
+	Azure *AzureAuth `json:"azure,omitempty"`
+}
+
+// AzureCredentialType selects which Azure credential mechanism the azure driver uses to
+// obtain an Azure AD access token.
+type AzureCredentialType string
+
+const (
+	// AzureManagedIdentityCredential uses the managed identity attached to the node the
+	// agent runs on - user-assigned when clientID is set, system-assigned otherwise.
+	AzureManagedIdentityCredential AzureCredentialType = "managed-identity-credential"
+	// AzureEnvironmentCredentialSecret uses a service principal client secret supplied to
+	// the agent as a Secret-backed environment variable.
+	AzureEnvironmentCredentialSecret AzureCredentialType = "environment-credential-secret"
+	// AzureEnvironmentCredentialCertificate uses a service principal certificate supplied
+	// to the agent as a Secret-backed mounted file.
+	AzureEnvironmentCredentialCertificate AzureCredentialType = "environment-credential-certificate"
+	// AzureWorkloadIdentityCredential uses Workload Identity Federation with the agent's
+	// projected ServiceAccount token.
+	AzureWorkloadIdentityCredential AzureCredentialType = "workload-identity-credential"
+)
+
+// AzureAuth represents the configuration for registering with the hub cluster using an
+// Azure AD identity. Secret material (client secret, certificate, certificate password) is
+// never part of this type - it reaches the agent only through a Secret.
+// +kubebuilder:validation:XValidation:rule="self.credential != 'workload-identity-credential' || (has(self.clientID) && size(self.clientID) > 0)",message="clientID is required for workload-identity-credential"
+// +kubebuilder:validation:XValidation:rule="!(self.credential in ['environment-credential-secret', 'environment-credential-certificate']) || (has(self.clientID) && size(self.clientID) > 0 && has(self.tenantID) && size(self.tenantID) > 0)",message="clientID and tenantID are required for environment-credential-secret and environment-credential-certificate"
+// +kubebuilder:validation:XValidation:rule="self.credential == 'workload-identity-credential' || !has(self.federatedTokenFile)",message="federatedTokenFile applies only to workload-identity-credential"
+type AzureAuth struct {
+	// credential selects which Azure credential mechanism is used to obtain an Azure AD
+	// access token. There is no automatic fallback between mechanisms.
+	// +required
+	// +kubebuilder:validation:Enum=managed-identity-credential;environment-credential-secret;environment-credential-certificate;workload-identity-credential
+	Credential AzureCredentialType `json:"credential"`
+
+	// managedClusterAzureID is the Azure AD object ID (principal ID) of the identity used by
+	// this managed cluster. It is recorded as an annotation on the ManagedCluster, and used
+	// by the hub for auto-approval matching and RBAC binding.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	ManagedClusterAzureID string `json:"managedClusterAzureID"`
+
+	// clientID is the client ID of the identity. Optional for managed-identity-credential
+	// (omit it to use the node's system-assigned identity); required for every other
+	// credential type.
+	// +optional
+	ClientID string `json:"clientID,omitempty"`
+
+	// tenantID is the Entra ID tenant. Required for the environment-credential-* types;
+	// optional for workload-identity-credential, where it overrides the value injected by
+	// the Azure Workload Identity webhook.
+	// +optional
+	TenantID string `json:"tenantID,omitempty"`
+
+	// federatedTokenFile overrides the projected ServiceAccount token path injected by the
+	// Azure Workload Identity webhook. Applies only to workload-identity-credential.
+	// +optional
+	FederatedTokenFile string `json:"federatedTokenFile,omitempty"`
+
+	// tokenAudience is the OAuth2 scope requested for the hub apiserver, e.g.
+	// "<server-app-id>/.default". Defaults to the well-known AKS AAD Server application,
+	// which is only correct for AKS's native Azure AD integration; for a self-managed
+	// apiserver it must match that apiserver's --oidc-client-id.
+	// +optional
+	TokenAudience string `json:"tokenAudience,omitempty"`
 }
 
 type AwsIrsa struct {
 	// The arn of the hub cluster (ie: an EKS cluster). This will be required to pass information to hub, which hub will use to create IAM identities for this klusterlet.
-	// Example - arn:eks:us-west-2:12345678910:cluster/hub-cluster1.
+	// Example - arn:aws:eks:us-west-2:123456789010:cluster/hub-cluster1.
+	// Non-commercial partitions are supported too, e.g. arn:aws-us-gov:eks:us-gov-west-1:123456789010:cluster/hub-cluster1.
 	// +required
 	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:Pattern=`^arn:aws:eks:([a-zA-Z0-9-]+):(\d{12}):cluster/([a-zA-Z0-9-]+)$`
+	// +kubebuilder:validation:Pattern=`^arn:aws(?:-[a-z0-9]+)*:eks:([a-zA-Z0-9-]+):(\d{12}):cluster/([a-zA-Z0-9-]+)$`
 	HubClusterArn string `json:"hubClusterArn"`
 	// The arn of the managed cluster (ie: an EKS cluster). This will be required to generate the md5hash which will be used as a suffix to create IAM role on hub
 	// as well as used by kluslerlet-agent, to assume role suffixed with the md5hash, on startup.
-	// Example - arn:eks:us-west-2:12345678910:cluster/managed-cluster1.
+	// Example - arn:aws:eks:us-west-2:123456789010:cluster/managed-cluster1.
+	// Non-commercial partitions are supported too, e.g. arn:aws-us-gov:eks:us-gov-west-1:123456789010:cluster/managed-cluster1.
 	// +required
 	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:Pattern=`^arn:aws:eks:([a-zA-Z0-9-]+):(\d{12}):cluster/([a-zA-Z0-9-]+)$`
+	// +kubebuilder:validation:Pattern=`^arn:aws(?:-[a-z0-9]+)*:eks:([a-zA-Z0-9-]+):(\d{12}):cluster/([a-zA-Z0-9-]+)$`
 	ManagedClusterArn string `json:"managedClusterArn"`
 }
 
@@ -371,6 +443,42 @@ type KlusterletDeployOption struct {
 	// Note: Do not modify the Mode field once it's applied.
 	// +optional
 	Mode InstallMode `json:"mode"`
+
+	// ReportHostingCluster, when set to Enable, makes this klusterlet self-report where its own
+	// controllers actually run - its own cluster name when they run locally, or
+	// Hosted.ManagementClusterName when they run on a separate management cluster - via a
+	// reserved ClusterClaim named "hosting-cluster.open-cluster-management.io". Disabled by
+	// default: the klusterlet-operator emits nothing and behaves exactly as it does today unless
+	// this is explicitly set to Enable.
+	// +optional
+	ReportHostingCluster ReportHostingClusterMode `json:"reportHostingCluster,omitempty"`
+
+	// Hosted holds configuration for a mode whose controllers run on a separate management
+	// cluster rather than locally.
+	// +optional
+	Hosted *KlusterletHostedConfiguration `json:"hosted,omitempty"`
+}
+
+// ReportHostingClusterMode is the type for KlusterletDeployOption.ReportHostingCluster. A typed
+// enum, not a bool, so a later mode can be added without a breaking change to the field's shape.
+// +kubebuilder:validation:Enum=Enable;Disable
+type ReportHostingClusterMode string
+
+const (
+	// ReportHostingClusterModeEnable enables self-reporting of the klusterlet's hosting cluster.
+	ReportHostingClusterModeEnable ReportHostingClusterMode = "Enable"
+	// ReportHostingClusterModeDisable disables self-reporting. This is the default.
+	ReportHostingClusterModeDisable ReportHostingClusterMode = "Disable"
+)
+
+// KlusterletHostedConfiguration holds configuration for a mode whose controllers run on a
+// separate management cluster rather than locally.
+type KlusterletHostedConfiguration struct {
+	// ManagementClusterName is the name (as known to the hub) of the cluster where this
+	// klusterlet's controllers actually run, for a mode where that's a separate management
+	// cluster rather than the klusterlet running locally.
+	// +optional
+	ManagementClusterName string `json:"managementClusterName,omitempty"`
 }
 
 // KlusterletStatus represents the current status of Klusterlet agent.

@@ -2,7 +2,6 @@
 package clusteradme2e
 
 import (
-	"context"
 	"time"
 
 	"github.com/onsi/ginkgo/v2"
@@ -13,16 +12,16 @@ import (
 )
 
 var _ = ginkgo.Describe("test clusteradm join with annotations", ginkgo.Label("join-hub-annotate"), func() {
-	ginkgo.BeforeEach(func() {
+	ginkgo.BeforeEach(func(ctx ginkgo.SpecContext) {
 		ginkgo.By("clear e2e environment...")
-		err := e2e.ClearEnv()
+		err := e2e.ClearEnv(ctx)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	})
 
 	ginkgo.Context("join hub scenario with annotations", func() {
 		var err error
 
-		ginkgo.It("should managedclusters join with annotations and be accepted successfully", func() {
+		ginkgo.It("should managedclusters join with annotations and be accepted successfully", func(ctx ginkgo.SpecContext) {
 			ginkgo.By("init hub")
 			clusterAdm := e2e.Clusteradm()
 			err = clusterAdm.Init(
@@ -30,7 +29,7 @@ var _ = ginkgo.Describe("test clusteradm join with annotations", ginkgo.Label("j
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 
-			util.WaitClusterManagerApplied(operatorClient, e2e)
+			util.WaitClusterManagerApplied(ctx, operatorClient, e2e)
 
 			ginkgo.By("managedcluster1 join hub with annotations")
 			err = e2e.Clusteradm().Join(
@@ -44,7 +43,7 @@ var _ = ginkgo.Describe("test clusteradm join with annotations", ginkgo.Label("j
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "managedcluster1 join error")
 			gomega.Eventually(func() error {
-				return util.ValidateImagePullSecret(managedClusterKubeClient,
+				return util.ValidateImagePullSecret(ctx, managedClusterKubeClient,
 					"e30=", "open-cluster-management")
 			}, time.Second*120, time.Second*2).ShouldNot(gomega.HaveOccurred())
 
@@ -58,7 +57,7 @@ var _ = ginkgo.Describe("test clusteradm join with annotations", ginkgo.Label("j
 
 			ginkgo.By("verify managedcluster1 has correct annotations")
 			managedCluster, err := clusterClient.ClusterV1().ManagedClusters().Get(
-				context.TODO(), e2e.Cluster().ManagedCluster1().Name(), metav1.GetOptions{})
+				ctx, e2e.Cluster().ManagedCluster1().Name(), metav1.GetOptions{})
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
 			annotations := managedCluster.GetAnnotations()
 			gomega.Expect(annotations).NotTo(gomega.BeNil())

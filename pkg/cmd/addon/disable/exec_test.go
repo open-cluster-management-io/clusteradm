@@ -2,7 +2,6 @@
 package disable
 
 import (
-	"context"
 	"fmt"
 	"os"
 
@@ -30,7 +29,7 @@ var _ = ginkgo.Describe("addon disable", func() {
 		cluster2Name = fmt.Sprintf("cluster-%s", rand.String(5))
 	})
 
-	assertCreatingClusters := func(clusterName string) {
+	assertCreatingClusters := func(ctx ginkgo.SpecContext, clusterName string) {
 		ginkgo.By(fmt.Sprintf("Create %s cluster", clusterName))
 
 		cluster := &clusterapiv1.ManagedCluster{
@@ -39,7 +38,7 @@ var _ = ginkgo.Describe("addon disable", func() {
 			},
 		}
 
-		_, err = clusterClient.ClusterV1().ManagedClusters().Create(context.Background(), cluster, metav1.CreateOptions{})
+		_, err = clusterClient.ClusterV1().ManagedClusters().Create(ctx, cluster, metav1.CreateOptions{})
 		gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 		ns := &corev1.Namespace{
@@ -47,13 +46,13 @@ var _ = ginkgo.Describe("addon disable", func() {
 				Name: clusterName,
 			},
 		}
-		_, err := kubeClient.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
+		_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 		gomega.Expect(err).ToNot(gomega.HaveOccurred(), "creat cluster error")
 	}
 
 	streams := genericiooptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr}
 
-	assertEnableAddon := func(addons []string, clusters []string, o *enable.Options) {
+	assertEnableAddon := func(ctx ginkgo.SpecContext, addons []string, clusters []string, o *enable.Options) {
 		ns := o.Namespace
 
 		for _, addon := range addons {
@@ -62,7 +61,7 @@ var _ = ginkgo.Describe("addon disable", func() {
 
 				cai, err := enable.NewClusterAddonInfo(clus, o, addon, nil)
 				gomega.Expect(err).ToNot(gomega.HaveOccurred(), "enable addon error")
-				err = enable.ApplyAddon(addonClient, cai)
+				err = enable.ApplyAddon(ctx, addonClient, cai)
 				gomega.Expect(err).ToNot(gomega.HaveOccurred(), "enable addon error")
 				fmt.Fprintf(streams.Out, "Deploying %s add-on to namespaces %s of managed cluster: %s.\n", addon, ns, clus)
 			}
@@ -71,43 +70,43 @@ var _ = ginkgo.Describe("addon disable", func() {
 
 	ginkgo.Context("runWithClient", func() {
 
-		ginkgo.It("Should disable argocd ManagedClusterAddOn in ManagedCluster namespace successfully", func() {
-			assertCreatingClusters(cluster1Name)
+		ginkgo.It("Should disable argocd ManagedClusterAddOn in ManagedCluster namespace successfully", func(ctx ginkgo.SpecContext) {
+			assertCreatingClusters(ctx, cluster1Name)
 
 			addons := []string{appMgrAddonName}
 			clusters := []string{cluster1Name}
-			assertEnableAddon([]string{appMgrAddonName}, []string{cluster1Name}, &enable.Options{Namespace: "default"})
+			assertEnableAddon(ctx, []string{appMgrAddonName}, []string{cluster1Name}, &enable.Options{Namespace: "default"})
 
 			o := Options{
 				Streams: streams,
 			}
 
-			err := o.runWithClient(clusterClient, addonClient, kubeClient, apiExtensionsClient, dynamicClient, false, addons, clusters)
+			err := o.runWithClient(ctx, clusterClient, addonClient, kubeClient, apiExtensionsClient, dynamicClient, false, addons, clusters)
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 		})
 
-		ginkgo.It("Should disable argocd ManagedClusterAddOns in each ManagedCluster namespace successfully", func() {
-			assertCreatingClusters(cluster1Name)
-			assertCreatingClusters(cluster2Name)
+		ginkgo.It("Should disable argocd ManagedClusterAddOns in each ManagedCluster namespace successfully", func(ctx ginkgo.SpecContext) {
+			assertCreatingClusters(ctx, cluster1Name)
+			assertCreatingClusters(ctx, cluster2Name)
 
 			addons := []string{appMgrAddonName}
 			clusters := []string{cluster1Name, cluster2Name}
-			assertEnableAddon(addons, clusters, &enable.Options{Namespace: "default"})
+			assertEnableAddon(ctx, addons, clusters, &enable.Options{Namespace: "default"})
 
 			o := Options{
 				Streams: streams,
 			}
 
-			err := o.runWithClient(clusterClient, addonClient, kubeClient, apiExtensionsClient, dynamicClient, false, addons, clusters)
+			err := o.runWithClient(ctx, clusterClient, addonClient, kubeClient, apiExtensionsClient, dynamicClient, false, addons, clusters)
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 		})
 
-		ginkgo.It("Should not disable a ManagedClusterAddOn because ManagedCluster doesn't exist", func() {
-			assertCreatingClusters(cluster1Name)
+		ginkgo.It("Should not disable a ManagedClusterAddOn because ManagedCluster doesn't exist", func(ctx ginkgo.SpecContext) {
+			assertCreatingClusters(ctx, cluster1Name)
 
 			addons := []string{appMgrAddonName}
 			clusters := []string{cluster1Name}
-			assertEnableAddon(addons, clusters, &enable.Options{Namespace: "default"})
+			assertEnableAddon(ctx, addons, clusters, &enable.Options{Namespace: "default"})
 
 			wrongCluster := "no-such-addon"
 			wrongClusters := []string{wrongCluster}
@@ -115,7 +114,7 @@ var _ = ginkgo.Describe("addon disable", func() {
 				Streams: streams,
 			}
 
-			err := o.runWithClient(clusterClient, addonClient, kubeClient, apiExtensionsClient, dynamicClient, false, addons, wrongClusters)
+			err := o.runWithClient(ctx, clusterClient, addonClient, kubeClient, apiExtensionsClient, dynamicClient, false, addons, wrongClusters)
 			gomega.Expect(err).To(gomega.HaveOccurred())
 		})
 	})

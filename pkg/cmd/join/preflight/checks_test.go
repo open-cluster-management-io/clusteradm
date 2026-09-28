@@ -64,7 +64,7 @@ func TestHubKubeconfigCheck(t *testing.T) {
 			c := HubKubeconfigCheck{
 				Config: tc.config,
 			}
-			gotWarnings, gotErrorList := c.Check()
+			gotWarnings, gotErrorList := c.Check(t.Context())
 			testinghelper.AssertWarnings(t, gotWarnings, tc.wantWarnings)
 			testinghelper.AssertErrors(t, gotErrorList, tc.wantErrorList)
 		})

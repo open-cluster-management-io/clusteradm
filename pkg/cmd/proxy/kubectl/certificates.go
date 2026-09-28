@@ -28,7 +28,7 @@ type proxyCertificates struct {
 	clientKey  []byte
 }
 
-func getProxyCertificates(hubRestConfig *rest.Config, proxyConfig *proxyv1alpha1.ManagedProxyConfiguration) (*proxyCertificates, error) {
+func getProxyCertificates(ctx context.Context, hubRestConfig *rest.Config, proxyConfig *proxyv1alpha1.ManagedProxyConfiguration) (*proxyCertificates, error) {
 	nativeClient, err := kubernetes.NewForConfig(hubRestConfig)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed building cilent")
@@ -38,7 +38,7 @@ func getProxyCertificates(hubRestConfig *rest.Config, proxyConfig *proxyv1alpha1
 
 	// ca
 	caSecret, err := nativeClient.CoreV1().Secrets(proxyConfig.Spec.ProxyServer.Namespace).
-		Get(context.TODO(), inClusterSecretProxyCA, metav1.GetOptions{})
+		Get(ctx, inClusterSecretProxyCA, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed getting CA secret")
 	}
@@ -46,7 +46,7 @@ func getProxyCertificates(hubRestConfig *rest.Config, proxyConfig *proxyv1alpha1
 
 	// server
 	serverCertSecret, err := nativeClient.CoreV1().Secrets(proxyConfig.Spec.ProxyServer.Namespace).
-		Get(context.TODO(), inClusterSecretServer, metav1.GetOptions{})
+		Get(ctx, inClusterSecretServer, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed getting cert & key secret")
 	}
@@ -55,7 +55,7 @@ func getProxyCertificates(hubRestConfig *rest.Config, proxyConfig *proxyv1alpha1
 
 	// client
 	certSecret, err := nativeClient.CoreV1().Secrets(proxyConfig.Spec.ProxyServer.Namespace).
-		Get(context.TODO(), inClusterSecretClient, metav1.GetOptions{})
+		Get(ctx, inClusterSecretClient, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed getting cert & key secret")
 	}

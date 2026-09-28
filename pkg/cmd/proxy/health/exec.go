@@ -69,7 +69,7 @@ func (o *Options) validate() error {
 	return nil
 }
 
-func (o *Options) run(streams genericiooptions.IOStreams) error {
+func (o *Options) run(ctx context.Context, streams genericiooptions.IOStreams) error {
 
 	hubRestConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
@@ -81,7 +81,7 @@ func (o *Options) run(streams genericiooptions.IOStreams) error {
 	}
 
 	_, err = addonClient.AddonV1alpha1().ClusterManagementAddOns().Get(
-		context.TODO(),
+		ctx,
 		"cluster-proxy",
 		metav1.GetOptions{})
 	if err != nil {
@@ -107,7 +107,7 @@ func (o *Options) run(streams genericiooptions.IOStreams) error {
 	}
 
 	proxyConfig, err := proxyClient.ProxyV1alpha1().ManagedProxyConfigurations().
-		Get(context.TODO(), config.ManagedProxyConfigurationName, metav1.GetOptions{})
+		Get(ctx, config.ManagedProxyConfigurationName, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "failed getting managedproxyconfiguration for cluster-proxy")
 	}
@@ -117,13 +117,13 @@ func (o *Options) run(streams genericiooptions.IOStreams) error {
 		return errors.Wrapf(err, "failed initializing cluster client")
 	}
 	managedClusterList, err := clusterClient.ManagedClusters().List(
-		context.TODO(),
+		ctx,
 		metav1.ListOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "failed listing managed clusters")
 	}
 
-	ctx, cancelFn := context.WithCancel(context.Background())
+	ctx, cancelFn := context.WithCancel(ctx)
 	defer cancelFn()
 
 	if !o.isProxyServerAddressProvided {
@@ -137,14 +137,14 @@ func (o *Options) run(streams genericiooptions.IOStreams) error {
 			common.LabelKeyComponentName+"="+common.ComponentNameProxyServer, // TODO: configurable label selector?
 			int32(o.proxyServerPort),
 		)
-		closeFn, err := localProxy.Listen(context.Background())
+		closeFn, err := localProxy.Listen(ctx)
 		if err != nil {
 			return errors.Wrapf(err, "failed listening local proxy")
 		}
 		defer closeFn()
 	}
 
-	tlsCfg, err := o.getKonnectivityTLSConfig(proxyConfig)
+	tlsCfg, err := o.getKonnectivityTLSConfig(ctx, proxyConfig)
 	if err != nil {
 		return errors.Wrapf(err, "failed building tls config")
 	}
@@ -154,7 +154,7 @@ func (o *Options) run(streams genericiooptions.IOStreams) error {
 	for _, cluster := range managedClusterList.Items {
 		if probingClusters.Len() == 0 || probingClusters.Has(cluster.Name) {
 			tunnel, err := konnectivity.CreateSingleUseGrpcTunnelWithContext(
-				context.TODO(),
+				ctx,
 				ctx,
 				net.JoinHostPort(o.proxyServerHost, strconv.Itoa(o.proxyServerPort)),
 				grpc.WithTransportCredentials(grpccredentials.NewTLS(tlsCfg)),
@@ -163,7 +163,7 @@ func (o *Options) run(streams genericiooptions.IOStreams) error {
 				return errors.Wrapf(err, "failed starting konnectivity proxy")
 			}
 
-			if err := o.visit(&w, hubRestConfig, addonClient, tunnel.DialContext, cluster.Name); err != nil {
+			if err := o.visit(ctx, &w, hubRestConfig, addonClient, tunnel.DialContext, cluster.Name); err != nil {
 				klog.Errorf("An error occurred when requesting: %v", err)
 			}
 		}
@@ -178,7 +178,7 @@ const (
 	inClusterSecretClient  = "proxy-client"
 )
 
-func (o *Options) getKonnectivityTLSConfig(proxyConfig *proxyv1alpha1.ManagedProxyConfiguration) (*tls.Config, error) {
+func (o *Options) getKonnectivityTLSConfig(ctx context.Context, proxyConfig *proxyv1alpha1.ManagedProxyConfiguration) (*tls.Config, error) {
 	if o.isProxyClientCertProvided {
 		// building tls config from local paths
 		tlsCfg, err := proxyutil.GetClientTLSConfig(
@@ -201,13 +201,13 @@ func (o *Options) getKonnectivityTLSConfig(proxyConfig *proxyv1alpha1.ManagedPro
 		return nil, errors.Wrapf(err, "failed building cilent")
 	}
 	caSecret, err := nativeClient.CoreV1().Secrets(proxyConfig.Spec.ProxyServer.Namespace).
-		Get(context.TODO(), inClusterSecretProxyCA, metav1.GetOptions{})
+		Get(ctx, inClusterSecretProxyCA, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed getting CA secret")
 	}
 	caData := caSecret.Data["ca.crt"]
 	certSecret, err := nativeClient.CoreV1().Secrets(proxyConfig.Spec.ProxyServer.Namespace).
-		Get(context.TODO(), inClusterSecretClient, metav1.GetOptions{})
+		Get(ctx, inClusterSecretClient, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed getting cert & key secret")
 	}
@@ -224,6 +224,7 @@ func (o *Options) getKonnectivityTLSConfig(proxyConfig *proxyv1alpha1.ManagedPro
 }
 
 func (o *Options) visit(
+	ctx context.Context,
 	w *writer,
 	hubRestConfig *rest.Config,
 	addonClient addonv1alpha1client.Interface,
@@ -231,7 +232,7 @@ func (o *Options) visit(
 	clusterName string) error {
 
 	addon, err := addonClient.AddonV1alpha1().ManagedClusterAddOns(clusterName).
-		Get(context.TODO(), common.AddonName, metav1.GetOptions{})
+		Get(ctx, common.AddonName, metav1.GetOptions{})
 	installed := "True"
 	if err != nil {
 		if !apierrors.IsNotFound(err) {

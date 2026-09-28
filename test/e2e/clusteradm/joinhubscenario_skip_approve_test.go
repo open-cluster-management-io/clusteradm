@@ -2,7 +2,6 @@
 package clusteradme2e
 
 import (
-	"context"
 	"os"
 	"time"
 
@@ -14,21 +13,20 @@ import (
 	"github.com/onsi/gomega"
 	authv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	"open-cluster-management.io/clusteradm/pkg/config"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 	"open-cluster-management.io/clusteradm/test/e2e/clusteradm/scenario"
 )
 
 var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", ginkgo.Label("join-hub-skip-approve"), func() {
-	ginkgo.BeforeEach(func() {
-		err := e2e.ClearEnv()
+	ginkgo.BeforeEach(func(ctx ginkgo.SpecContext) {
+		err := e2e.ClearEnv(ctx)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	})
 
 	ginkgo.Context("join hub scenario with manual bootstrap token", func() {
 		var err error
-		ginkgo.It("should managedclusters join and accepted successfully", func() {
+		ginkgo.It("should managedclusters join and accepted successfully", func(ctx ginkgo.SpecContext) {
 			ginkgo.By("init hub with manual bootstrap token")
 			clusterAdm := e2e.Clusteradm()
 			err = clusterAdm.Init(
@@ -48,8 +46,8 @@ var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", ginkgo.La
 			)
 
 			kubeConfigFlags := &genericclioptions.ConfigFlags{
-				KubeConfig: ptr.To[string](e2e.KubeConfigPath),
-				Context:    ptr.To[string](e2e.Cluster().Hub().Context()),
+				KubeConfig: new(e2e.KubeConfigPath),
+				Context:    new(e2e.Cluster().Hub().Context()),
 			}
 			r := reader.NewResourceReader(cmdutil.NewFactory(kubeConfigFlags), false, genericiooptions.IOStreams{Out: os.Stdout, ErrOut: os.Stderr})
 			var values = make(map[string]interface{})
@@ -60,10 +58,10 @@ var _ = ginkgo.Describe("test clusteradm with manual bootstrap token", ginkgo.La
 			gomega.Eventually(func() error {
 				tr, err := kubeClient.CoreV1().
 					ServiceAccounts(config.OpenClusterManagementNamespace).
-					CreateToken(context.TODO(), "sa-manual-token", &authv1.TokenRequest{
+					CreateToken(ctx, "sa-manual-token", &authv1.TokenRequest{
 						Spec: authv1.TokenRequestSpec{
 							// token expired in 1 hour
-							ExpirationSeconds: ptr.To[int64](3600),
+							ExpirationSeconds: new(int64(3600)),
 						},
 					}, metav1.CreateOptions{})
 				if err != nil {

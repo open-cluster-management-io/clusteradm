@@ -44,10 +44,10 @@ func getManifestResourceStatus(manifestCond *workapiv1.ManifestCondition) string
 	return color.RedString("not-applied")
 }
 
-func PrintOperatorCRD(printer PrefixWriter, crdClient clientset.Interface, name string) error {
+func PrintOperatorCRD(ctx context.Context, printer PrefixWriter, crdClient clientset.Interface, name string) error {
 	crdList, err := crdClient.ApiextensionsV1().
 		CustomResourceDefinitions().
-		List(context.TODO(), metav1.ListOptions{
+		List(ctx, metav1.ListOptions{
 			FieldSelector: fmt.Sprintf("metadata.name=%s", name),
 		})
 	if err != nil {
@@ -63,10 +63,10 @@ func PrintOperatorCRD(printer PrefixWriter, crdClient clientset.Interface, name 
 	return printCRD(printer, crdList, []operatorv1.RelatedResourceMeta{cmgr})
 }
 
-func PrintComponentsCRD(printer PrefixWriter, crdClient clientset.Interface, resource []operatorv1.RelatedResourceMeta) error {
+func PrintComponentsCRD(ctx context.Context, printer PrefixWriter, crdClient clientset.Interface, resource []operatorv1.RelatedResourceMeta) error {
 	crdList, err := crdClient.ApiextensionsV1().
 		CustomResourceDefinitions().
-		List(context.TODO(), metav1.ListOptions{})
+		List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func formatCRDVersion(allServingVersions map[string][]string, storageVersion map
 	return strings.Join(outputVersions.List(), "|")
 }
 
-func PrintComponentsDeploy(printer PrefixWriter, deployClient kubernetes.Interface, resource []operatorv1.RelatedResourceMeta, name string) error {
+func PrintComponentsDeploy(ctx context.Context, printer PrefixWriter, deployClient kubernetes.Interface, resource []operatorv1.RelatedResourceMeta, name string) error {
 	var deploy operatorv1.RelatedResourceMeta
 	for _, item := range resource {
 		if item.Name == name {
@@ -134,7 +134,7 @@ func PrintComponentsDeploy(printer PrefixWriter, deployClient kubernetes.Interfa
 		}
 	}
 
-	client, err := deployClient.AppsV1().Deployments(deploy.Namespace).Get(context.TODO(), deploy.Name, metav1.GetOptions{})
+	client, err := deployClient.AppsV1().Deployments(deploy.Namespace).Get(ctx, deploy.Name, metav1.GetOptions{})
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			return err

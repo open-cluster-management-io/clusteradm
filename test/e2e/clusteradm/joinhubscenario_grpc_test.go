@@ -2,7 +2,6 @@
 package clusteradme2e
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -15,13 +14,13 @@ import (
 )
 
 var _ = ginkgo.Describe("test clusteradm join with grpc", ginkgo.Label("join-hub-grpc"), func() {
-	ginkgo.BeforeEach(func() {
+	ginkgo.BeforeEach(func(ctx ginkgo.SpecContext) {
 		ginkgo.By("clear e2e environment...")
-		err := e2e.ClearEnv()
+		err := e2e.ClearEnv(ctx)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	})
-	ginkgo.AfterEach(func() {
-		err := util.WaitClustersDeleted(e2e.Cluster().Hub().KubeConfig())
+	ginkgo.AfterEach(func(ctx ginkgo.SpecContext) {
+		err := util.WaitClustersDeleted(ctx, e2e.Cluster().Hub().KubeConfig())
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 		err = e2e.Clusteradm().Unjoin(
@@ -34,7 +33,7 @@ var _ = ginkgo.Describe("test clusteradm join with grpc", ginkgo.Label("join-hub
 	ginkgo.Context("join hub scenario with grpc", func() {
 		var err error
 
-		ginkgo.It("should managedCluster join with grpc", func() {
+		ginkgo.It("should managedCluster join with grpc", func(ctx ginkgo.SpecContext) {
 			ginkgo.By("init hub")
 			clusterAdm := e2e.Clusteradm()
 			err = clusterAdm.Init(
@@ -45,11 +44,11 @@ var _ = ginkgo.Describe("test clusteradm join with grpc", ginkgo.Label("join-hub
 				"--auto-approved-grpc-identities", "system:serviceaccount:open-cluster-management:agent-registration-bootstrap",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
-			util.WaitClusterManagerApplied(operatorClient, e2e)
+			util.WaitClusterManagerApplied(ctx, operatorClient, e2e)
 
 			var clusterManager *operatorv1.ClusterManager
 			gomega.Eventually(func() error {
-				clusterManager, err = operatorClient.OperatorV1().ClusterManagers().Get(context.TODO(),
+				clusterManager, err = operatorClient.OperatorV1().ClusterManagers().Get(ctx,
 					"cluster-manager", metav1.GetOptions{})
 				return err
 			}, time.Second*60, time.Second*2).Should(gomega.Succeed())
@@ -77,7 +76,7 @@ var _ = ginkgo.Describe("test clusteradm join with grpc", ginkgo.Label("join-hub
 			var klusterlet *operatorv1.Klusterlet
 			gomega.Eventually(func() error {
 				klusterlet, err = operatorClient.OperatorV1().Klusterlets().Get(
-					context.TODO(), "klusterlet", metav1.GetOptions{})
+					ctx, "klusterlet", metav1.GetOptions{})
 				return err
 			}, time.Second*60, time.Second*2).Should(gomega.Succeed())
 
@@ -90,7 +89,7 @@ var _ = ginkgo.Describe("test clusteradm join with grpc", ginkgo.Label("join-hub
 			ginkgo.By(fmt.Sprintf("wait for cluster %s to become available", e2e.Cluster().Hub().Name()))
 			gomega.Eventually(func() bool {
 				managedCluster, err := clusterClient.ClusterV1().ManagedClusters().Get(
-					context.TODO(), e2e.Cluster().Hub().Name(), metav1.GetOptions{})
+					ctx, e2e.Cluster().Hub().Name(), metav1.GetOptions{})
 				if err != nil {
 					return false
 				}

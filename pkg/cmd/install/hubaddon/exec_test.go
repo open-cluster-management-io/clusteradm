@@ -2,7 +2,6 @@
 package hubaddon
 
 import (
-	"context"
 	"io"
 	"os"
 
@@ -72,7 +71,7 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 
 	ginkgo.Context("runWithClient - invalid configurations", func() {
 
-		ginkgo.It("Should not create any built-in add-on deployment(s) because it's not a valid add-on name", func() {
+		ginkgo.It("Should not create any built-in add-on deployment(s) because it's not a valid add-on name", func(ctx ginkgo.SpecContext) {
 			o := Options{
 				ClusteradmFlags: clusteradmFlags,
 				values: scenario.Values{
@@ -86,7 +85,7 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 			for _, addonDeployments := range hubAddons {
 				for _, deployment := range addonDeployments {
 					gomega.Consistently(func() bool {
-						_, err := kubeClient.AppsV1().Deployments(ocmNamespace).Get(context.Background(), deployment, metav1.GetOptions{})
+						_, err := kubeClient.AppsV1().Deployments(ocmNamespace).Get(ctx, deployment, metav1.GetOptions{})
 						return errors.IsNotFound(err)
 					}, consistentlyTimeout, consistentlyInterval).Should(gomega.BeTrue())
 				}
@@ -124,7 +123,7 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 			Helm:    helm.NewHelm(&clusteradmFlagsCopy, streams),
 		}
 
-		err := o.runWithHelmClient(addon)
+		err := o.runWithHelmClient(ctx, addon)
 		gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 		gomega.Consistently(func(g gomega.Gomega) bool {
@@ -141,7 +140,7 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 
 	ginkgo.DescribeTableSubtree("runWithClient",
 		func(hubAddon string, deployments []string) {
-			ginkgo.It("Should deploy the built in "+hubAddon+" add-on deployments in open-cluster-management namespace successfully", func() {
+			ginkgo.It("Should deploy the built in "+hubAddon+" add-on deployments in open-cluster-management namespace successfully", func(ctx ginkgo.SpecContext) {
 				o := Options{
 					ClusteradmFlags: clusteradmFlags,
 					bundleVersion:   ocmVersion,
@@ -158,7 +157,7 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 
 				for _, deployment := range deployments {
 					gomega.Eventually(func() (bool, error) {
-						appDeployment, err := kubeClient.AppsV1().Deployments(ocmNamespace).Get(context.Background(), deployment, metav1.GetOptions{})
+						appDeployment, err := kubeClient.AppsV1().Deployments(ocmNamespace).Get(ctx, deployment, metav1.GetOptions{})
 						if err != nil {
 							return false, err
 						}

@@ -19,7 +19,7 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 	return nil
 }
 
-func (o *Options) validate() error {
+func (o *Options) validate(ctx context.Context) error {
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
@@ -29,7 +29,7 @@ func (o *Options) validate() error {
 	if err != nil {
 		return err
 	}
-	installed, err := helpers.IsClusterManagerInstalled(apiExtensionsClient)
+	installed, err := helpers.IsClusterManagerInstalled(ctx, apiExtensionsClient)
 	if err != nil {
 		return err
 	}
@@ -39,7 +39,7 @@ func (o *Options) validate() error {
 	return err
 }
 
-func (o *Options) run() error {
+func (o *Options) run(ctx context.Context) error {
 
 	kubeClient, err := o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
 	if err != nil {
@@ -50,30 +50,30 @@ func (o *Options) run() error {
 		return nil
 	}
 
-	return o.deleteToken(kubeClient)
+	return o.deleteToken(ctx, kubeClient)
 }
 
-func (o *Options) deleteToken(kubeClient *kubernetes.Clientset) error {
+func (o *Options) deleteToken(ctx context.Context, kubeClient *kubernetes.Clientset) error {
 	//Delete bootstrap token bindings
-	err := kubeClient.RbacV1().ClusterRoleBindings().Delete(context.TODO(), config.BootstrapClusterRoleBindingName, metav1.DeleteOptions{})
+	err := kubeClient.RbacV1().ClusterRoleBindings().Delete(ctx, config.BootstrapClusterRoleBindingName, metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	}
-	err = kubeClient.RbacV1().ClusterRoleBindings().Delete(context.TODO(), config.BootstrapClusterRoleBindingSAName, metav1.DeleteOptions{})
+	err = kubeClient.RbacV1().ClusterRoleBindings().Delete(ctx, config.BootstrapClusterRoleBindingSAName, metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	}
 
 	//Delete Roles
-	err = kubeClient.RbacV1().ClusterRoles().Delete(context.TODO(), config.BootstrapClusterRoleName, metav1.DeleteOptions{})
+	err = kubeClient.RbacV1().ClusterRoles().Delete(ctx, config.BootstrapClusterRoleName, metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	}
 
 	//Detele bootstrap token secret
-	secret, err := helpers.GetBootstrapSecret(context.TODO(), kubeClient)
+	secret, err := helpers.GetBootstrapSecret(ctx, kubeClient)
 	if err == nil {
-		err = kubeClient.CoreV1().Secrets(secret.Namespace).Delete(context.TODO(), secret.Name, metav1.DeleteOptions{})
+		err = kubeClient.CoreV1().Secrets(secret.Namespace).Delete(ctx, secret.Name, metav1.DeleteOptions{})
 		if err != nil && !errors.IsNotFound(err) {
 			return err
 		}
@@ -82,7 +82,7 @@ func (o *Options) deleteToken(kubeClient *kubernetes.Clientset) error {
 		return err
 	}
 	//Delete service account
-	err = kubeClient.CoreV1().ServiceAccounts(config.OpenClusterManagementNamespace).Delete(context.TODO(), config.BootstrapSAName, metav1.DeleteOptions{})
+	err = kubeClient.CoreV1().ServiceAccounts(config.OpenClusterManagementNamespace).Delete(ctx, config.BootstrapSAName, metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	}

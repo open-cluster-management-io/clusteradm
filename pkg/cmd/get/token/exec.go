@@ -30,7 +30,7 @@ func (o *Options) validate() (err error) {
 	return err
 }
 
-func (o *Options) run() error {
+func (o *Options) run(ctx context.Context) error {
 	kubeClient, _, _, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
 	if err != nil {
 		return err
@@ -45,7 +45,7 @@ func (o *Options) run() error {
 
 	//if bootstrap token then read the token
 	if o.useBootstrapToken {
-		token, err = helpers.GetBootstrapToken(context.TODO(), kubeClient)
+		token, err = helpers.GetBootstrapToken(ctx, kubeClient)
 		if err != nil {
 			return err
 		}
@@ -53,7 +53,7 @@ func (o *Options) run() error {
 	}
 
 	//read the token
-	token, err = helpers.GetBootstrapTokenFromSA(context.TODO(), kubeClient)
+	token, err = helpers.GetBootstrapTokenFromSA(ctx, kubeClient)
 	if err != nil {
 		return err
 	}

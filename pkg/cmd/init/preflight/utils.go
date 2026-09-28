@@ -17,13 +17,13 @@ func BoolPointer(value bool) *bool {
 
 // CreateOrUpdateConfigMap  creates a ConfigMap if target resource does not exist.
 // If the resource exists already, the function will update the resource instead.
-func CreateOrUpdateConfigMap(client kubernetes.Interface, cm *corev1.ConfigMap) error {
-	if _, err := client.CoreV1().ConfigMaps(cm.ObjectMeta.Namespace).Create(context.TODO(), cm, metav1.CreateOptions{}); err != nil {
+func CreateOrUpdateConfigMap(ctx context.Context, client kubernetes.Interface, cm *corev1.ConfigMap) error {
+	if _, err := client.CoreV1().ConfigMaps(cm.ObjectMeta.Namespace).Create(ctx, cm, metav1.CreateOptions{}); err != nil {
 		if !apierrors.IsAlreadyExists(err) {
 			return errors.Wrap(err, "unable to create ConfigMap")
 		}
 
-		if _, err := client.CoreV1().ConfigMaps(cm.ObjectMeta.Namespace).Update(context.TODO(), cm, metav1.UpdateOptions{}); err != nil {
+		if _, err := client.CoreV1().ConfigMaps(cm.ObjectMeta.Namespace).Update(ctx, cm, metav1.UpdateOptions{}); err != nil {
 			return errors.Wrap(err, "unable to update ConfigMap")
 		}
 	}

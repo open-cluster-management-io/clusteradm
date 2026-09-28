@@ -22,7 +22,7 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
 )
 
-func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
+func (o *Options) complete(cmd *cobra.Command, _ []string) (err error) {
 	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun)
 
 	f := o.ClusteradmFlags.KubectlFactory
@@ -35,7 +35,7 @@ func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 	if err != nil {
 		return err
 	}
-	cm, err := operatorClient.OperatorV1().ClusterManagers().Get(context.TODO(), "cluster-manager", metav1.GetOptions{})
+	cm, err := operatorClient.OperatorV1().ClusterManagers().Get(cmd.Context(), "cluster-manager", metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		return fmt.Errorf("clustermanager is not installed")
 	}
@@ -92,7 +92,7 @@ func (o *Options) validate() (err error) {
 	return nil
 }
 
-func (o *Options) run() error {
+func (o *Options) run(ctx context.Context) error {
 	r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
 
 	_, apiExtensionsClient, _, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
@@ -101,7 +101,7 @@ func (o *Options) run() error {
 	}
 
 	crds, raw, err := chart.RenderClusterManagerChart(
-		context.TODO(),
+		ctx,
 		o.clusterManagerChartConfig,
 		"open-cluster-management")
 	if err != nil {
@@ -114,7 +114,12 @@ func (o *Options) run() error {
 
 	if !o.ClusteradmFlags.DryRun {
 		if err := wait.WaitUntilCRDReady(
-			o.Streams.Out, apiExtensionsClient, "clustermanagers.operator.open-cluster-management.io", o.wait); err != nil {
+			ctx,
+			o.Streams.Out,
+			apiExtensionsClient,
+			"clustermanagers.operator.open-cluster-management.io",
+			o.wait,
+		); err != nil {
 			return err
 		}
 	}
@@ -125,6 +130,7 @@ func (o *Options) run() error {
 
 	if o.wait && !o.ClusteradmFlags.DryRun {
 		if err := wait.WaitUntilRegistrationOperatorReady(
+			ctx,
 			o.Streams.Out,
 			o.ClusteradmFlags.KubectlFactory,
 			int64(o.ClusteradmFlags.Timeout),

@@ -167,7 +167,7 @@ func (o *Options) Validate() (err error) {
 	return nil
 }
 
-func (o *Options) Run() error {
+func (o *Options) Run(ctx context.Context) error {
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
@@ -178,27 +178,27 @@ func (o *Options) Run() error {
 		return err
 	}
 
-	if err := o.applyCMA(addonClient); err != nil {
+	if err := o.applyCMA(ctx, addonClient); err != nil {
 		return err
 	}
 
-	return o.applyTemplate(addonClient)
+	return o.applyTemplate(ctx, addonClient)
 }
 
 func (o *Options) templateName() string {
 	return o.Name + "-" + o.Version
 }
 
-func (o *Options) applyCMA(addonClient addonclientset.Interface) error {
+func (o *Options) applyCMA(ctx context.Context, addonClient addonclientset.Interface) error {
 	cma, err := newClusterManagementAddon(o)
 	if err != nil {
 		return err
 	}
 
 	// apply cma at first
-	originalCMA, err := addonClient.AddonV1alpha1().ClusterManagementAddOns().Get(context.TODO(), o.Name, metav1.GetOptions{})
+	originalCMA, err := addonClient.AddonV1alpha1().ClusterManagementAddOns().Get(ctx, o.Name, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
-		_, err := addonClient.AddonV1alpha1().ClusterManagementAddOns().Create(context.TODO(), cma, metav1.CreateOptions{})
+		_, err := addonClient.AddonV1alpha1().ClusterManagementAddOns().Create(ctx, cma, metav1.CreateOptions{})
 		fmt.Fprintf(o.Streams.Out, "ClusterManagementAddon %s is created\n", o.Name)
 		return err
 	}
@@ -212,7 +212,7 @@ func (o *Options) applyCMA(addonClient addonclientset.Interface) error {
 	}
 
 	cma.ResourceVersion = originalCMA.ResourceVersion
-	if _, err = addonClient.AddonV1alpha1().ClusterManagementAddOns().Update(context.TODO(), cma, metav1.UpdateOptions{}); err != nil {
+	if _, err = addonClient.AddonV1alpha1().ClusterManagementAddOns().Update(ctx, cma, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 
@@ -220,15 +220,15 @@ func (o *Options) applyCMA(addonClient addonclientset.Interface) error {
 	return nil
 }
 
-func (o *Options) applyTemplate(addonClient addonclientset.Interface) error {
+func (o *Options) applyTemplate(ctx context.Context, addonClient addonclientset.Interface) error {
 	addon, err := newAddonTemplate(o)
 	if err != nil {
 		return err
 	}
 
-	originalAddon, err := addonClient.AddonV1alpha1().AddOnTemplates().Get(context.TODO(), o.templateName(), metav1.GetOptions{})
+	originalAddon, err := addonClient.AddonV1alpha1().AddOnTemplates().Get(ctx, o.templateName(), metav1.GetOptions{})
 	if errors.IsNotFound(err) {
-		_, err := addonClient.AddonV1alpha1().AddOnTemplates().Create(context.TODO(), addon, metav1.CreateOptions{})
+		_, err := addonClient.AddonV1alpha1().AddOnTemplates().Create(ctx, addon, metav1.CreateOptions{})
 		fmt.Fprintf(o.Streams.Out, "AddonTemplate %s is created\n", addon.Name)
 		return err
 	}
@@ -242,7 +242,7 @@ func (o *Options) applyTemplate(addonClient addonclientset.Interface) error {
 	}
 
 	addon.ResourceVersion = originalAddon.ResourceVersion
-	if _, err = addonClient.AddonV1alpha1().AddOnTemplates().Update(context.TODO(), addon, metav1.UpdateOptions{}); err != nil {
+	if _, err = addonClient.AddonV1alpha1().AddOnTemplates().Update(ctx, addon, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 

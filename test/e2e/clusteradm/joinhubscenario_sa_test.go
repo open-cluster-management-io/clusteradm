@@ -8,9 +8,9 @@ import (
 )
 
 var _ = ginkgo.Describe("test clusteradm with service account", ginkgo.Label("join-hub-sa"), func() {
-	ginkgo.BeforeEach(func() {
+	ginkgo.BeforeEach(func(ctx ginkgo.SpecContext) {
 		ginkgo.By("clear e2e environment...")
-		err := e2e.ClearEnv()
+		err := e2e.ClearEnv(ctx)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	})
 
@@ -18,7 +18,7 @@ var _ = ginkgo.Describe("test clusteradm with service account", ginkgo.Label("jo
 		var originalToken string
 		var err error
 
-		ginkgo.It("should managedclusters join and accepted successfully", func() {
+		ginkgo.It("should managedclusters join and accepted successfully", func(ctx ginkgo.SpecContext) {
 			ginkgo.By("init hub with service account")
 			clusterAdm := e2e.Clusteradm()
 			err = clusterAdm.Init(
@@ -26,7 +26,7 @@ var _ = ginkgo.Describe("test clusteradm with service account", ginkgo.Label("jo
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 
-			util.WaitClusterManagerApplied(operatorClient, e2e)
+			util.WaitClusterManagerApplied(ctx, operatorClient, e2e)
 
 			ginkgo.By("managedcluster1 join hub")
 			err = e2e.Clusteradm().Join(

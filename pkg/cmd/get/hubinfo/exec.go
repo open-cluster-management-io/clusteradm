@@ -69,22 +69,22 @@ const (
 	componentNameAddOnManagerController = "cluster-manager-addon-manager-controller"
 )
 
-func (o *Options) run() error {
+func (o *Options) run(ctx context.Context) error {
 	// printing registration-operator
-	if err := o.printRegistrationOperator(); err != nil {
+	if err := o.printRegistrationOperator(ctx); err != nil {
 		return err
 	}
 	// printing components
-	if err := o.printComponents(); err != nil {
+	if err := o.printComponents(ctx); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (o *Options) printRegistrationOperator() error {
+func (o *Options) printRegistrationOperator(ctx context.Context) error {
 	deploy, err := o.kubeClient.AppsV1().
 		Deployments(registrationOperatorNamespace).
-		Get(context.TODO(), clusterManagerName, metav1.GetOptions{})
+		Get(ctx, clusterManagerName, metav1.GetOptions{})
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			return err
@@ -104,13 +104,13 @@ func (o *Options) printRegistrationOperator() error {
 	o.printer.Write(printer.LEVEL_0, "Registration Operator:\n")
 	o.printer.Write(printer.LEVEL_1, "Controller:\t(%d/%d) %s\n", registrationOperatorAvailableRs, registrationOperatorExpectedRs, imageName)
 	o.printer.Write(printer.LEVEL_1, "CustomResourceDefinition:\n")
-	return printer.PrintOperatorCRD(o.printer, o.crdClient, clusterManagerNameCRD)
+	return printer.PrintOperatorCRD(ctx, o.printer, o.crdClient, clusterManagerNameCRD)
 }
 
-func (o *Options) printComponents() error {
+func (o *Options) printComponents(ctx context.Context) error {
 	cmgr, err := o.operatorClient.OperatorV1().
 		ClusterManagers().
-		Get(context.TODO(), clusterManagerName, metav1.GetOptions{})
+		Get(ctx, clusterManagerName, metav1.GetOptions{})
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			return err
@@ -121,59 +121,59 @@ func (o *Options) printComponents() error {
 
 	o.printer.Write(printer.LEVEL_0, "Components:\n")
 
-	if err := o.printAddOnManager(cmgr); err != nil {
+	if err := o.printAddOnManager(ctx, cmgr); err != nil {
 		return err
 	}
-	if err := o.printRegistration(cmgr); err != nil {
+	if err := o.printRegistration(ctx, cmgr); err != nil {
 		return err
 	}
-	if err := o.printWork(cmgr); err != nil {
+	if err := o.printWork(ctx, cmgr); err != nil {
 		return err
 	}
-	if err := o.printPlacement(cmgr); err != nil {
+	if err := o.printPlacement(ctx, cmgr); err != nil {
 		return err
 	}
-	if err := o.printComponentsCRD(cmgr); err != nil {
+	if err := o.printComponentsCRD(ctx, cmgr); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (o *Options) printRegistration(cmgr *v1.ClusterManager) error {
+func (o *Options) printRegistration(ctx context.Context, cmgr *v1.ClusterManager) error {
 	o.printer.Write(printer.LEVEL_1, "Registration:\n")
-	err := printer.PrintComponentsDeploy(o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNameRegistrationController)
+	err := printer.PrintComponentsDeploy(ctx, o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNameRegistrationController)
 	if err != nil {
 		return err
 	}
 
-	return printer.PrintComponentsDeploy(o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNameRegistrationWebhook)
+	return printer.PrintComponentsDeploy(ctx, o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNameRegistrationWebhook)
 }
 
-func (o *Options) printWork(cmgr *v1.ClusterManager) error {
+func (o *Options) printWork(ctx context.Context, cmgr *v1.ClusterManager) error {
 	o.printer.Write(printer.LEVEL_1, "Work:\n")
 	if cmgr.Spec.WorkConfiguration != nil && check.IsFeatureEnabled(cmgr.Spec.WorkConfiguration.FeatureGates, string(feature.ManifestWorkReplicaSet)) {
-		err := printer.PrintComponentsDeploy(o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNameWorkController)
+		err := printer.PrintComponentsDeploy(ctx, o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNameWorkController)
 		if err != nil {
 			return err
 		}
 	}
-	return printer.PrintComponentsDeploy(o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNameWorkWebhook)
+	return printer.PrintComponentsDeploy(ctx, o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNameWorkWebhook)
 }
 
-func (o *Options) printPlacement(cmgr *v1.ClusterManager) error {
+func (o *Options) printPlacement(ctx context.Context, cmgr *v1.ClusterManager) error {
 	o.printer.Write(printer.LEVEL_1, "Placement:\n")
-	return printer.PrintComponentsDeploy(o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNamePlacementController)
+	return printer.PrintComponentsDeploy(ctx, o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNamePlacementController)
 }
 
-func (o *Options) printAddOnManager(cmgr *v1.ClusterManager) error {
+func (o *Options) printAddOnManager(ctx context.Context, cmgr *v1.ClusterManager) error {
 	if cmgr.Spec.AddOnManagerConfiguration != nil && !check.IsFeatureEnabled(cmgr.Spec.AddOnManagerConfiguration.FeatureGates, string(feature.AddonManagement)) {
 		return nil
 	}
 	o.printer.Write(printer.LEVEL_1, "AddOn Manager:\n")
-	return printer.PrintComponentsDeploy(o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNameAddOnManagerController)
+	return printer.PrintComponentsDeploy(ctx, o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNameAddOnManagerController)
 }
 
-func (o *Options) printComponentsCRD(cmgr *v1.ClusterManager) error {
+func (o *Options) printComponentsCRD(ctx context.Context, cmgr *v1.ClusterManager) error {
 	o.printer.Write(printer.LEVEL_1, "CustomResourceDefinition:\n")
-	return printer.PrintComponentsCRD(o.printer, o.crdClient, cmgr.Status.RelatedResources)
+	return printer.PrintComponentsCRD(ctx, o.printer, o.crdClient, cmgr.Status.RelatedResources)
 }

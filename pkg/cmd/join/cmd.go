@@ -24,6 +24,11 @@ var example = `
 %[1]s join --hub-token <tokenID.tokenSecret> --hub-apiserver <hub_apiserver_url> --cluster-name <cluster_name> --klusterlet-annotation foo=bar --klusterlet-annotation bar=foo
 # Join a cluster to the hub via gRPC
 %[1]s join --hub-token <tokenID.tokenSecret> --hub-apiserver <hub_apiserver_url> --cluster-name <cluster_name> --registration-auth grpc --grpc-server <grpc_server_address>
+# Join a cluster to the hub with an Azure AD identity through Workload Identity
+%[1]s join --hub-token <tokenID.tokenSecret> --hub-apiserver <hub_apiserver_url> --cluster-name <cluster_name> --registration-auth azure --azure-credential workload-identity-credential --azure-principal-id <object_id> --azure-client-id <client_id>
+# Join a cluster to the hub with an Azure AD service principal, reading the client secret from stdin
+read -s -p 'Client secret: ' CLIENT_SECRET && echo
+%[1]s join --hub-token <tokenID.tokenSecret> --hub-apiserver <hub_apiserver_url> --cluster-name <cluster_name> --registration-auth azure --azure-credential environment-credential-secret --azure-principal-id <object_id> --azure-client-id <client_id> --azure-tenant-id <tenant_id> --azure-client-secret-stdin <<< "$CLIENT_SECRET"
 # Join with token-based addon registration
 %[1]s join --hub-token <tokenID.tokenSecret> --hub-apiserver <hub_apiserver_url> --cluster-name <cluster_name> --addon-kubeclient-registration-auth token --addon-token-expiration-seconds 3600
 `
@@ -88,7 +93,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().BoolVar(&o.createNameSpace, "create-namespace", true, "If true, create the operator namespace(open-cluster-management) and the agent namespace(open-cluster-management-agent for Default mode, <klusterlet-name> for Hosted mode), otherwise use existing one")
 	cmd.Flags().BoolVar(&o.enableSyncLabels, "enable-sync-labels", false, "If true, sync the labels from klusterlet to all agent resources.")
 	cmd.Flags().Int32Var(&o.clientCertExpirationSeconds, "client-cert-expiration-seconds", 31536000, "clientCertExpirationSeconds represents the seconds of a client certificate to expire.")
-	cmd.Flags().StringVar(&o.registrationAuth, "registration-auth", "csr", "The type of authentication to use for registering and authenticating with hub. The supported types including: csr, grpc and awsirsa. The default type is csr.")
+	cmd.Flags().StringVar(&o.registrationAuth, "registration-auth", "csr", "The type of authentication to use for registering and authenticating with hub. The supported types including: csr, grpc, awsirsa and azure. The default type is csr.")
 	cmd.Flags().StringVar(&o.hubClusterArn, "hub-cluster-arn", "", "The arn of the hub cluster(i.e. EKS cluster) to which managed-cluster will join")
 	cmd.Flags().StringVar(&o.managedClusterArn, "managed-cluster-arn", "", "The arn of the managed cluster(i.e. EKS cluster) which will be joining the hub")
 	cmd.Flags().StringArrayVar(&o.klusterletAnnotations, "klusterlet-annotation", []string{}, fmt.Sprintf("Annotations to set on the ManagedCluster, in key=value format. Note: each key will be automatically prefixed with '%s/', if not set.", operatorv1.ClusterAnnotationsKeyPrefix))
@@ -96,6 +101,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().StringVar(&o.grpcServer, "grpc-server", "", "The gRPC server address of the hub")
 	cmd.Flags().StringVar(&o.grpcCAFile, "grpc-ca-file", "", "Path to gRPC server CA PEM; required if --grpc-server is set")
 	cmd.Flags().StringVar(&o.addonKubeClientRegistrationAuth, "addon-kubeclient-registration-auth", "csr", "The type of authentication to use for kubeClient type addon registration. Supported types: csr, token. Default is csr.")
+	o.azure.addFlags(cmd.Flags())
 	cmd.Flags().Int64Var(&o.addonTokenExpirationSeconds, "addon-token-expiration-seconds", 0, "Token expiration seconds for addon registration when using token auth type. If not specified or 0, the system default will be used. Only applies when --addon-kubeclient-registration-auth=token.")
 	return cmd
 }

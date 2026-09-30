@@ -33,7 +33,7 @@ func WaitNamespaceDeleted(ctx context.Context, restcfg *rest.Config, namespace s
 		return err
 	}
 
-	return wait.PollUntilContextTimeout(ctx, 1*time.Second, 300*time.Second, true, func(ctx context.Context) (bool, error) {
+	return wait.PollUntilContextTimeout(ctx, 3*time.Second, 300*time.Second, true, func(ctx context.Context) (bool, error) {
 		_, err := clientset.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return true, nil

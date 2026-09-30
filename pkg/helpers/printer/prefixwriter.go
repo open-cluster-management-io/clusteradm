@@ -97,7 +97,7 @@ func NewSpinnerWithStatus(
 	return s
 }
 
-func GetSpinnerPodStatus(pod *corev1.Pod) string {
+func GetSpinnerPodStatus(pod corev1.Pod) string {
 	reason := string(pod.Status.Phase)
 	for _, containerStatus := range pod.Status.ContainerStatuses {
 		if containerStatus.State.Waiting != nil {

@@ -18,12 +18,11 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
-	corev1 "k8s.io/api/core/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/watch"
+	k8swait "k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -34,7 +33,6 @@ import (
 
 	clusterclient "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
-	clusterv1 "open-cluster-management.io/api/cluster/v1"
 	ocmfeature "open-cluster-management.io/api/feature"
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 	"open-cluster-management.io/clusteradm/pkg/cmd/join/preflight"
@@ -464,8 +462,13 @@ func (o *Options) applyKlusterlet(ctx context.Context, r *reader.ResourceReader,
 	}
 
 	if !available && o.wait && !o.ClusteradmFlags.DryRun {
-		err = waitUntilRegistrationOperatorConditionIsTrue(
-			ctx, o.Streams.Out, o.ClusteradmFlags.KubectlFactory, int64(o.ClusteradmFlags.Timeout))
+		err = wait.WaitUntilRegistrationOperatorReady(
+			ctx,
+			o.Streams.Out,
+			o.ClusteradmFlags.KubectlFactory,
+			int64(o.ClusteradmFlags.Timeout),
+			config.KlusterletName,
+		)
 		if err != nil {
 			return err
 		}
@@ -500,7 +503,7 @@ func checkIfRegistrationOperatorAvailable(ctx context.Context, f util.Factory) (
 	deploy, err := client.AppsV1().Deployments(OperatorNamespace).
 		Get(ctx, DefaultOperatorName, metav1.GetOptions{})
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if k8serrors.IsNotFound(err) {
 			return false, nil
 		}
 		return false, err
@@ -543,82 +546,20 @@ func (o *Options) waitUntilManagedClusterIsCreated(ctx context.Context, timeout 
 	operatorSpinner.Start()
 	defer operatorSpinner.Stop()
 
-	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
-	defer cancel()
-	return helpers.WatchUntil(
-		ctx,
-		func() (watch.Interface, error) {
-			w, err := clusterClient.ClusterV1().ManagedClusters().
-				Watch(ctx, metav1.ListOptions{
-					TimeoutSeconds: &timeout,
-					FieldSelector:  fmt.Sprintf("metadata.name=%s", clusterName),
-				})
-			if err != nil {
-				return nil, fmt.Errorf("failed to watch: %v", err)
+	err = k8swait.PollUntilContextTimeout(ctx, 3*time.Second, time.Duration(timeout)*time.Second, true, func(ctx context.Context) (bool, error) {
+		_, err := clusterClient.ClusterV1().ManagedClusters().Get(ctx, clusterName, metav1.GetOptions{})
+		if err != nil {
+			// This Get uses the bootstrap token. Hub bootstrap RBAC may not be
+			// visible yet, so Forbidden can be transient; other fatal API errors are not.
+			if k8serrors.IsForbidden(err) {
+				phase.Store(err.Error())
+				return false, nil
 			}
-			return w, nil
-		},
-		func(event watch.Event) bool {
-			cluster, ok := event.Object.(*clusterv1.ManagedCluster)
-			if !ok {
-				return false
-			}
-			return cluster.Name == clusterName
-		})
-}
-
-func waitUntilRegistrationOperatorConditionIsTrue(ctx context.Context, w io.Writer, f util.Factory, timeout int64) error {
-	var restConfig *rest.Config
-	restConfig, err := f.ToRESTConfig()
-	if err != nil {
-		return err
-	}
-	client, err := kubernetes.NewForConfig(restConfig)
-	if err != nil {
-		return err
-	}
-
-	phase := &atomic.Value{}
-	phase.Store("")
-	operatorSpinner := printer.NewSpinnerWithStatus(
-		w,
-		"Waiting for registration operator to become ready...",
-		time.Millisecond*500,
-		"Registration operator is now available.\n",
-		func() string {
-			return phase.Load().(string)
-		})
-	operatorSpinner.Start()
-	defer operatorSpinner.Stop()
-
-	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
-	defer cancel()
-	return helpers.WatchUntil(
-		ctx,
-		func() (watch.Interface, error) {
-			return client.CoreV1().Pods(OperatorNamespace).
-				Watch(ctx, metav1.ListOptions{
-					TimeoutSeconds: &timeout,
-					LabelSelector:  "app=klusterlet",
-				})
-		},
-		func(event watch.Event) bool {
-			pod, ok := event.Object.(*corev1.Pod)
-			if !ok {
-				return false
-			}
-			phase.Store(printer.GetSpinnerPodStatus(pod))
-			conds := make([]metav1.Condition, len(pod.Status.Conditions))
-			for i := range pod.Status.Conditions {
-				conds[i] = metav1.Condition{
-					Type:    string(pod.Status.Conditions[i].Type),
-					Status:  metav1.ConditionStatus(pod.Status.Conditions[i].Status),
-					Reason:  pod.Status.Conditions[i].Reason,
-					Message: pod.Status.Conditions[i].Message,
-				}
-			}
-			return meta.IsStatusConditionTrue(conds, "Ready")
-		})
+			return wait.HandlePollError(ctx, err, phase)
+		}
+		return true, nil
+	})
+	return wait.TimeoutError(err, phase, "timed out waiting for managed cluster %s to be created", clusterName)
 }
 
 // Wait until the klusterlet condition available=true, or timeout in $timeout seconds
@@ -637,27 +578,16 @@ func waitUntilKlusterletConditionIsTrue(
 	klusterletSpinner.Start()
 	defer klusterletSpinner.Stop()
 
-	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
-	defer cancel()
-	return helpers.WatchUntil(
-		ctx,
-		func() (watch.Interface, error) {
-			return client.OperatorV1().Klusterlets().
-				Watch(ctx, metav1.ListOptions{
-					TimeoutSeconds: &timeout,
-					FieldSelector:  fmt.Sprintf("metadata.name=%s", klusterletName),
-				})
-		},
-		func(event watch.Event) bool {
-			klusterlet, ok := event.Object.(*operatorv1.Klusterlet)
-			if !ok {
-				return false
-			}
-			phase.Store(printer.GetSpinnerKlusterletStatus(klusterlet))
-			return meta.IsStatusConditionFalse(klusterlet.Status.Conditions, "RegistrationDesiredDegraded") &&
-				meta.IsStatusConditionFalse(klusterlet.Status.Conditions, "WorkDesiredDegraded")
-		},
-	)
+	err := k8swait.PollUntilContextTimeout(ctx, 3*time.Second, time.Duration(timeout)*time.Second, true, func(ctx context.Context) (bool, error) {
+		klusterlet, err := client.OperatorV1().Klusterlets().Get(ctx, klusterletName, metav1.GetOptions{})
+		if err != nil {
+			return wait.HandlePollError(ctx, err, phase)
+		}
+		phase.Store(printer.GetSpinnerKlusterletStatus(klusterlet))
+		return meta.IsStatusConditionFalse(klusterlet.Status.Conditions, "RegistrationDesiredDegraded") &&
+			meta.IsStatusConditionFalse(klusterlet.Status.Conditions, "WorkDesiredDegraded"), nil
+	})
+	return wait.TimeoutError(err, phase, "timed out waiting for klusterlet %s to become ready", klusterletName)
 }
 
 // Create bootstrap with token but without CA
@@ -704,7 +634,7 @@ func (o *Options) createClientcmdapiv1Config(externalClientUnSecure *kubernetes.
 	if o.forceHubInClusterEndpointLookup {
 		o.hubInClusterEndpoint, err = sdkhelpers.GetAPIServer(externalClientUnSecure)
 		if err != nil {
-			if !errors.IsNotFound(err) {
+			if !k8serrors.IsNotFound(err) {
 				return nil, err
 			}
 		}

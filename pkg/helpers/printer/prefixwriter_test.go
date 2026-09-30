@@ -69,19 +69,19 @@ func TestPrefixWriterFlushWithoutFlusher(t *testing.T) {
 func TestGetSpinnerPodStatus(t *testing.T) {
 	cases := []struct {
 		name string
-		pod  *corev1.Pod
+		pod  corev1.Pod
 		want string
 	}{
 		{
 			name: "phase with no waiting container",
-			pod: &corev1.Pod{
+			pod: corev1.Pod{
 				Status: corev1.PodStatus{Phase: corev1.PodRunning},
 			},
 			want: "Running",
 		},
 		{
 			name: "waiting container reason overrides phase",
-			pod: &corev1.Pod{
+			pod: corev1.Pod{
 				Status: corev1.PodStatus{
 					Phase: corev1.PodPending,
 					ContainerStatuses: []corev1.ContainerStatus{
@@ -93,7 +93,7 @@ func TestGetSpinnerPodStatus(t *testing.T) {
 		},
 		{
 			name: "last waiting container wins",
-			pod: &corev1.Pod{
+			pod: corev1.Pod{
 				Status: corev1.PodStatus{
 					Phase: corev1.PodPending,
 					ContainerStatuses: []corev1.ContainerStatus{

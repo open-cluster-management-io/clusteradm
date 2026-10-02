@@ -3,6 +3,7 @@ package genericclioptions
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/spf13/pflag"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
@@ -19,6 +20,31 @@ type ClusteradmFlags struct {
 	Context string
 }
 
+const minTimeout = 30
+
+type minIntValue struct {
+	p   *int
+	min int
+}
+
+func (v *minIntValue) String() string {
+	return strconv.Itoa(*v.p)
+}
+
+func (v *minIntValue) Set(s string) error {
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		return err
+	}
+	if n < v.min {
+		return fmt.Errorf("must be at least %d", v.min)
+	}
+	*v.p = n
+	return nil
+}
+
+func (v *minIntValue) Type() string { return "int" }
+
 // NewClusteradmFlags returns ClusteradmFlags with default values set
 func NewClusteradmFlags(f cmdutil.Factory) *ClusteradmFlags {
 	return &ClusteradmFlags{
@@ -28,7 +54,8 @@ func NewClusteradmFlags(f cmdutil.Factory) *ClusteradmFlags {
 
 func (f *ClusteradmFlags) AddFlags(flags *pflag.FlagSet) {
 	flags.BoolVar(&f.DryRun, "dry-run", false, "If set the generated resources will be displayed but not applied")
-	flags.IntVar(&f.Timeout, "timeout", 300, "extend timeout from 300 secounds ")
+	f.Timeout = 300
+	flags.Var(&minIntValue{&f.Timeout, minTimeout}, "timeout", "set the timeout deadline for the command in seconds")
 }
 
 // SetContext will set current context from command line argument --context.
@@ -43,14 +70,14 @@ func (f *ClusteradmFlags) ValidateHub() error {
 	if err != nil {
 		return err
 	}
-	return check.CheckForHub(client)
+	return check.CheckForHub(client.Discovery())
 }
 func (f *ClusteradmFlags) ValidateManagedCluster() error {
 	client, err := f.buildClusterClientset()
 	if err != nil {
 		return err
 	}
-	return check.CheckForManagedCluster(client)
+	return check.CheckForManagedCluster(client.Discovery())
 }
 
 func (f *ClusteradmFlags) buildClusterClientset() (*clusterclientset.Clientset, error) {

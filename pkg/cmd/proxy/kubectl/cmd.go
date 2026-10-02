@@ -43,7 +43,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd := &cobra.Command{
 		Use:   "kubectl",
 		Short: "Use kubectl through cluster-proxy addon.",
-		Long:  "Use kubectl through cluster-proxy addon. (Only supports managed service account token as certificate.)",
+		Long:  "Use kubectl with the specified managed cluster through cluster-proxy addon. (Supports only managed service account token as certificate, and only a single cluster per invocation specified using --cluster.)",
 		Example: `If you want to get nodes on managed cluster named "cluster1", you can use the following command:
 		clusteradm proxy kubectl --cluster=cluster1 --sa=test --args="get nodes"`,
 		SilenceUsage: true,
@@ -61,7 +61,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 			}
 
 			// get proxyConfig
-			proxyConfig, err = getProxyConfig(hubRestConfig, streams)
+			proxyConfig, err = getProxyConfig(cmd.Context(), hubRestConfig, streams)
 			if err != nil {
 				return err
 			}
@@ -74,19 +74,19 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 			if err != nil {
 				return err
 			}
-			_, err = clusterClient.ManagedClusters().Get(context.TODO(), o.ClusterOption.Cluster, metav1.GetOptions{})
+			_, err = clusterClient.ManagedClusters().Get(cmd.Context(), o.ClusterOption.Cluster, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
 
 			// Get managedServiceAccount
-			managedServiceAccountToken, err := getManagedServiceAccountToken(hubRestConfig, o.managedServiceAccount, o.ClusterOption.Cluster)
+			managedServiceAccountToken, err := getManagedServiceAccountToken(cmd.Context(), hubRestConfig, o.managedServiceAccount, o.ClusterOption.Cluster)
 			if err != nil {
 				return err
 			}
 
 			// Get Proxy Certificates
-			proxyCertificates, err := getProxyCertificates(hubRestConfig, proxyConfig)
+			proxyCertificates, err := getProxyCertificates(cmd.Context(), hubRestConfig, proxyConfig)
 			if err != nil {
 				return err
 			}
@@ -173,6 +173,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	}
 
 	o.ClusterOption.AddFlags(cmd.Flags())
+	_ = cmd.Flags().MarkHidden("clusters")
 	cmd.Flags().StringVar(&o.managedServiceAccount, "sa", "", "The name of the managedServiceAccount")
 	cmd.Flags().StringVar(&o.kubectlArgs, "args", "", "The arguments to pass to kubectl")
 	cmd.Flags().BoolVarP(&o.interactiveMode, "interactive-mode", "i", false, "Enter the interactive mode")
@@ -180,14 +181,14 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	return cmd
 }
 
-func getProxyConfig(hubRestConfig *rest.Config, streams genericiooptions.IOStreams) (*proxyv1alpha1.ManagedProxyConfiguration, error) {
+func getProxyConfig(ctx context.Context, hubRestConfig *rest.Config, streams genericiooptions.IOStreams) (*proxyv1alpha1.ManagedProxyConfiguration, error) {
 	addonClient, err := addonv1alpha1client.NewForConfig(hubRestConfig)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed initializing addon api client")
 	}
 
 	_, err = addonClient.AddonV1alpha1().ClusterManagementAddOns().Get(
-		context.TODO(),
+		ctx,
 		"cluster-proxy",
 		metav1.GetOptions{})
 	if err != nil {
@@ -213,7 +214,7 @@ func getProxyConfig(hubRestConfig *rest.Config, streams genericiooptions.IOStrea
 	}
 
 	proxyConfig, err := proxyClient.ProxyV1alpha1().ManagedProxyConfigurations().
-		Get(context.TODO(), config.ManagedProxyConfigurationName, metav1.GetOptions{})
+		Get(ctx, config.ManagedProxyConfigurationName, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed getting managedproxyconfiguration for cluster-proxy")
 	}
@@ -221,13 +222,13 @@ func getProxyConfig(hubRestConfig *rest.Config, streams genericiooptions.IOStrea
 	return proxyConfig, nil
 }
 
-func getManagedServiceAccountToken(hubRestConfig *rest.Config, msaName string, namespace string) (string, error) {
+func getManagedServiceAccountToken(ctx context.Context, hubRestConfig *rest.Config, msaName string, namespace string) (string, error) {
 	msaClient, err := msaclientset.NewForConfig(hubRestConfig)
 	if err != nil {
 		return "", err
 	}
 
-	msa, err := msaClient.AuthenticationV1beta1().ManagedServiceAccounts(namespace).Get(context.TODO(), msaName, metav1.GetOptions{})
+	msa, err := msaClient.AuthenticationV1beta1().ManagedServiceAccounts(namespace).Get(ctx, msaName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -236,7 +237,7 @@ func getManagedServiceAccountToken(hubRestConfig *rest.Config, msaName string, n
 	if err != nil {
 		return "", err
 	}
-	secret, err := kubeClient.CoreV1().Secrets(namespace).Get(context.TODO(), msa.Status.TokenSecretRef.Name, metav1.GetOptions{})
+	secret, err := kubeClient.CoreV1().Secrets(namespace).Get(ctx, msa.Status.TokenSecretRef.Name, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

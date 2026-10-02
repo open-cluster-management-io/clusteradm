@@ -52,7 +52,7 @@ func (o *Options) validate() (err error) {
 	return nil
 }
 
-func (o *Options) run() error {
+func (o *Options) run(ctx context.Context) error {
 	alreadyProvidedAddons := make(map[string]bool)
 	addons := make([]string, 0)
 	names := strings.Split(o.names, ",")
@@ -66,7 +66,7 @@ func (o *Options) run() error {
 	var filteredAddons []string
 	for _, a := range addons {
 		if a == argocdAddonName || a == argocdAgentAddonName {
-			if err := o.runWithHelmClient(a); err != nil {
+			if err := o.runWithHelmClient(ctx, a); err != nil {
 				return err
 			}
 		} else {
@@ -85,15 +85,15 @@ func (o *Options) run() error {
 
 	klog.V(3).InfoS("values:", "addon", o.values.HubAddons)
 
-	return o.runWithClient()
+	return o.runWithClient(ctx)
 }
 
-func (o *Options) runWithClient() error {
+func (o *Options) runWithClient(ctx context.Context) error {
 
 	r := reader.NewResourceReader(o.ClusteradmFlags.KubectlFactory, o.ClusteradmFlags.DryRun, o.Streams)
 
 	for _, addon := range o.values.HubAddons {
-		if err := o.checkExistingAddon(addon); err != nil {
+		if err := o.checkExistingAddon(ctx, addon); err != nil {
 			return err
 		}
 		files, ok := scenario.AddonDeploymentFiles[addon]
@@ -117,7 +117,7 @@ func (o *Options) runWithClient() error {
 	return nil
 }
 
-func (o *Options) checkExistingAddon(name string) error {
+func (o *Options) checkExistingAddon(ctx context.Context, name string) error {
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
@@ -128,7 +128,7 @@ func (o *Options) checkExistingAddon(name string) error {
 		return err
 	}
 
-	addons, err := addonClient.AddonV1alpha1().ManagedClusterAddOns(metav1.NamespaceAll).List(context.TODO(), metav1.ListOptions{
+	addons, err := addonClient.AddonV1alpha1().ManagedClusterAddOns(metav1.NamespaceAll).List(ctx, metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("metadata.name=%s", name),
 	})
 	if err != nil {
@@ -146,10 +146,10 @@ func (o *Options) checkExistingAddon(name string) error {
 	return nil
 }
 
-func (o *Options) runWithHelmClient(addon string) error {
+func (o *Options) runWithHelmClient(ctx context.Context, addon string) error {
 	if addon == argocdAddonName {
 		// Check for existing ManagedClusterAddOn named "argocd"
-		if err := o.checkExistingAddon(argocdAddonName); err != nil {
+		if err := o.checkExistingAddon(ctx, argocdAddonName); err != nil {
 			return err
 		}
 		o.Helm.WithNamespace(argocdNamespace)
@@ -160,7 +160,7 @@ func (o *Options) runWithHelmClient(addon string) error {
 
 	if addon == argocdAgentAddonName {
 		// Check for existing ManagedClusterAddOn named "argocd-agent-addon"
-		if err := o.checkExistingAddon(argocdAgentReleaseName); err != nil {
+		if err := o.checkExistingAddon(ctx, argocdAgentReleaseName); err != nil {
 			return err
 		}
 		o.Helm.WithNamespace(argocdNamespace)

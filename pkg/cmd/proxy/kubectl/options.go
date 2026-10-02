@@ -26,6 +26,12 @@ func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags) *O
 }
 
 func (o *Options) validate() error {
+	if len(o.ClusterOption.Clusters) > 0 {
+		return errors.Errorf("proxy kubectl only supports a single cluster, use --cluster instead of --clusters")
+	}
+	if o.ClusterOption.Cluster == "" {
+		return errors.Errorf("--cluster is required")
+	}
 	if err := o.ClusterOption.Validate(); err != nil {
 		return err
 	}

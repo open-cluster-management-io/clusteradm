@@ -10,8 +10,8 @@ require (
 	github.com/gofrs/flock v0.13.1
 	github.com/google/uuid v1.6.0
 	github.com/jonboulle/clockwork v0.5.0
-	github.com/onsi/ginkgo/v2 v2.32.1
-	github.com/onsi/gomega v1.43.0
+	github.com/onsi/ginkgo/v2 v2.32.2
+	github.com/onsi/gomega v1.43.1
 	github.com/openshift/library-go v0.0.0-20251120164824-14a789e09884
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.10.2
@@ -21,13 +21,12 @@ require (
 	helm.sh/helm/v3 v3.21.0
 	k8s.io/api v0.35.8
 	k8s.io/apiextensions-apiserver v0.35.8
-	k8s.io/apimachinery v0.35.8
+	k8s.io/apimachinery v0.35.9
 	k8s.io/cli-runtime v0.35.8
 	k8s.io/client-go v0.35.8
 	k8s.io/component-base v0.35.8
 	k8s.io/klog/v2 v2.140.0
 	k8s.io/kubectl v0.35.8
-	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2
 	open-cluster-management.io/api v1.3.0
 	open-cluster-management.io/cluster-proxy v0.7.0
 	open-cluster-management.io/managed-serviceaccount v0.10.0
@@ -161,6 +160,7 @@ require (
 	k8s.io/component-helpers v0.35.8 // indirect
 	k8s.io/kube-aggregator v0.35.4 // indirect
 	k8s.io/kube-openapi v0.0.0-20260319004828-5883c5ee87b9 // indirect
+	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2 // indirect
 	oras.land/oras-go/v2 v2.6.0 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/kube-storage-version-migrator v0.0.6-0.20230721195810-5c8923c5ff96 // indirect

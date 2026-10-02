@@ -39,7 +39,7 @@ func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
 	return nil
 }
 
-func (o *Options) Validate() error {
+func (o *Options) Validate(ctx context.Context) error {
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
@@ -48,7 +48,7 @@ func (o *Options) Validate() error {
 	if err != nil {
 		return err
 	}
-	installed, err := helpers.IsClusterManagerInstalled(apiExtensionsClient)
+	installed, err := helpers.IsClusterManagerInstalled(ctx, apiExtensionsClient)
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func (o *Options) Validate() error {
 	return nil
 }
 
-func (o *Options) Run() error {
+func (o *Options) Run(ctx context.Context) error {
 	//Clean ClusterManager CR resource firstly
 	f := o.ClusteradmFlags.KubectlFactory
 	config, err := f.ToRESTConfig()
@@ -71,7 +71,7 @@ func (o *Options) Run() error {
 	}
 
 	// check if any managed cluster exist or not
-	exist, err := isManagedClusterExist(config)
+	exist, err := isManagedClusterExist(ctx, config)
 	if err != nil {
 		return err
 	}
@@ -87,11 +87,11 @@ func (o *Options) Run() error {
 		return err
 	}
 
-	if err := o.removeBootStrapSecret(kubeClient); err != nil {
+	if err := o.removeBootStrapSecret(ctx, kubeClient); err != nil {
 		return err
 	}
 
-	err = clusterManagerClient.OperatorV1().ClusterManagers().Delete(context.Background(), o.ClusterManageName, metav1.DeleteOptions{})
+	err = clusterManagerClient.OperatorV1().ClusterManagers().Delete(ctx, o.ClusterManageName, metav1.DeleteOptions{})
 	if errors.IsNotFound(err) {
 		fmt.Fprintln(o.Streams.Out, "The multicluster hub control plane is cleand up already")
 		return nil
@@ -99,13 +99,13 @@ func (o *Options) Run() error {
 	b := retry.DefaultBackoff
 	b.Duration = 3 * time.Second
 
-	err = WaitResourceToBeDelete(context.Background(), clusterManagerClient, o.ClusterManageName, b)
+	err = WaitResourceToBeDelete(ctx, clusterManagerClient, o.ClusterManageName, b)
 	if err != nil {
 		return err
 	}
 
 	if o.purgeOperator {
-		if err := puregeOperator(kubeClient, apiExtensionsClient); err != nil {
+		if err := puregeOperator(ctx, kubeClient, apiExtensionsClient); err != nil {
 			return err
 		}
 	}
@@ -130,8 +130,8 @@ func WaitResourceToBeDelete(context context.Context, client clustermanagerclient
 	return errGet
 
 }
-func IsClusterManagerExist(cilent clustermanagerclient.Interface) bool {
-	obj, err := cilent.OperatorV1().ClusterManagers().List(context.Background(), metav1.ListOptions{})
+func IsClusterManagerExist(ctx context.Context, cilent clustermanagerclient.Interface) bool {
+	obj, err := cilent.OperatorV1().ClusterManagers().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -141,77 +141,77 @@ func IsClusterManagerExist(cilent clustermanagerclient.Interface) bool {
 	return false
 }
 
-func (o *Options) removeBootStrapSecret(client kubernetes.Interface) error {
+func (o *Options) removeBootStrapSecret(ctx context.Context, client kubernetes.Interface) error {
 	var errs []error
 	err := client.RbacV1().
 		ClusterRoles().
-		Delete(context.Background(), "system:open-cluster-management:bootstrap", metav1.DeleteOptions{})
+		Delete(ctx, "system:open-cluster-management:bootstrap", metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		errs = append(errs, err)
 	}
 	err = client.RbacV1().
 		ClusterRoleBindings().
-		Delete(context.Background(), "cluster-bootstrap", metav1.DeleteOptions{})
+		Delete(ctx, "cluster-bootstrap", metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		errs = append(errs, err)
 	}
 	listOpts := metav1.ListOptions{LabelSelector: "app=cluster-manager"}
 	err = client.CoreV1().
 		Secrets("kube-system").
-		DeleteCollection(context.Background(), metav1.DeleteOptions{}, listOpts)
+		DeleteCollection(ctx, metav1.DeleteOptions{}, listOpts)
 	if err != nil && !errors.IsNotFound(err) {
 		errs = append(errs, err)
 	}
 	err = client.RbacV1().
 		ClusterRoleBindings().
-		Delete(context.Background(), "cluster-bootstrap-sa", metav1.DeleteOptions{})
+		Delete(ctx, "cluster-bootstrap-sa", metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		errs = append(errs, err)
 	}
 	err = client.CoreV1().
 		ServiceAccounts("open-cluster-management").
-		Delete(context.Background(), "cluster-bootstrap", metav1.DeleteOptions{})
+		Delete(ctx, "cluster-bootstrap", metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		errs = append(errs, err)
 	}
 	return utilerrors.NewAggregate(errs)
 }
 
-func puregeOperator(client kubernetes.Interface, extensionClient apiextensionsclient.Interface) error {
+func puregeOperator(ctx context.Context, client kubernetes.Interface, extensionClient apiextensionsclient.Interface) error {
 	var errs []error
 	err := client.AppsV1().
 		Deployments("open-cluster-management").
-		Delete(context.Background(), "cluster-manager", metav1.DeleteOptions{})
+		Delete(ctx, "cluster-manager", metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		errs = append(errs, err)
 	}
 	err = extensionClient.ApiextensionsV1().
 		CustomResourceDefinitions().
-		Delete(context.Background(), "clustermanagers.operator.open-cluster-management.io", metav1.DeleteOptions{})
+		Delete(ctx, "clustermanagers.operator.open-cluster-management.io", metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		errs = append(errs, err)
 	}
 	err = client.RbacV1().
 		ClusterRoles().
-		Delete(context.Background(), "cluster-manager", metav1.DeleteOptions{})
+		Delete(ctx, "cluster-manager", metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		errs = append(errs, err)
 	}
 	err = client.RbacV1().
 		ClusterRoleBindings().
-		Delete(context.Background(), "cluster-manager", metav1.DeleteOptions{})
+		Delete(ctx, "cluster-manager", metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		errs = append(errs, err)
 	}
 	err = client.CoreV1().
 		ServiceAccounts("open-cluster-management").
-		Delete(context.Background(), "cluster-manager", metav1.DeleteOptions{})
+		Delete(ctx, "cluster-manager", metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		errs = append(errs, err)
 	}
 	err = client.CoreV1().
 		Namespaces().
-		Delete(context.Background(), "open-cluster-management", metav1.DeleteOptions{})
+		Delete(ctx, "open-cluster-management", metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		errs = append(errs, err)
 	}
@@ -219,12 +219,12 @@ func puregeOperator(client kubernetes.Interface, extensionClient apiextensionscl
 	return utilerrors.NewAggregate(errs)
 }
 
-func isManagedClusterExist(config *rest.Config) (bool, error) {
+func isManagedClusterExist(ctx context.Context, config *rest.Config) (bool, error) {
 	clusterClient, err := clusterclientset.NewForConfig(config)
 	if err != nil {
 		return false, err
 	}
-	managedClusters, err := clusterClient.ClusterV1().ManagedClusters().List(context.Background(), metav1.ListOptions{})
+	managedClusters, err := clusterClient.ClusterV1().ManagedClusters().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return false, err
 	}

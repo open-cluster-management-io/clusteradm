@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	clusterclientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	clusterv1beta1 "open-cluster-management.io/api/cluster/v1beta1"
@@ -39,7 +38,7 @@ func (o *Options) validate() error {
 	return nil
 }
 
-func (o *Options) run() (err error) {
+func (o *Options) run(ctx context.Context) (err error) {
 	restConfig, err := o.ClusteradmFlags.KubectlFactory.ToRESTConfig()
 	if err != nil {
 		return err
@@ -58,7 +57,7 @@ func (o *Options) run() (err error) {
 
 	if len(o.ClusterSets) > 0 {
 		for _, clusterset := range o.ClusterSets {
-			_, err := clusterClient.ClusterV1beta2().ManagedClusterSetBindings(o.Namespace).Get(context.TODO(), clusterset, metav1.GetOptions{})
+			_, err := clusterClient.ClusterV1beta2().ManagedClusterSetBindings(o.Namespace).Get(ctx, clusterset, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
@@ -67,7 +66,7 @@ func (o *Options) run() (err error) {
 	}
 
 	if o.NumOfClusters > 0 {
-		desiredPlacement.Spec.NumberOfClusters = ptr.To[int32](o.NumOfClusters)
+		desiredPlacement.Spec.NumberOfClusters = new(o.NumOfClusters)
 	}
 
 	if len(o.ClusterSelector) > 0 {
@@ -99,7 +98,7 @@ func (o *Options) run() (err error) {
 		}
 	}
 
-	return o.applyPlacement(clusterClient, desiredPlacement)
+	return o.applyPlacement(ctx, clusterClient, desiredPlacement)
 }
 
 func parsePrioritizer(s string) (*clusterv1beta1.PrioritizerConfig, error) {
@@ -146,10 +145,10 @@ func parsePrioritizer(s string) (*clusterv1beta1.PrioritizerConfig, error) {
 	return nil, fmt.Errorf("unknown prioritizer type %s for %s", ps[0], s)
 }
 
-func (o *Options) applyPlacement(clusterClient clusterclientset.Interface, placement *clusterv1beta1.Placement) error {
-	placementOrigin, err := clusterClient.ClusterV1beta1().Placements(o.Namespace).Get(context.TODO(), placement.Name, metav1.GetOptions{})
+func (o *Options) applyPlacement(ctx context.Context, clusterClient clusterclientset.Interface, placement *clusterv1beta1.Placement) error {
+	placementOrigin, err := clusterClient.ClusterV1beta1().Placements(o.Namespace).Get(ctx, placement.Name, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
-		_, createErr := clusterClient.ClusterV1beta1().Placements(o.Namespace).Create(context.TODO(), placement, metav1.CreateOptions{})
+		_, createErr := clusterClient.ClusterV1beta1().Placements(o.Namespace).Create(ctx, placement, metav1.CreateOptions{})
 		if createErr != nil {
 			return createErr
 		}
@@ -166,7 +165,7 @@ func (o *Options) applyPlacement(clusterClient clusterclientset.Interface, place
 	}
 
 	placementOrigin.Spec = placement.Spec
-	_, err = clusterClient.ClusterV1beta1().Placements(o.Namespace).Update(context.TODO(), placementOrigin, metav1.UpdateOptions{})
+	_, err = clusterClient.ClusterV1beta1().Placements(o.Namespace).Update(ctx, placementOrigin, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}

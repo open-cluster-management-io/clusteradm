@@ -19,8 +19,8 @@ type PrinterOption struct {
 	table   printers.ResourcePrinter
 	yaml    printers.YAMLPrinter
 
-	treeConverter  func(runtime.Object, *TreePrinter) *TreePrinter
-	tableConverter func(runtime.Object) *metav1.Table
+	treeConverter  func(runtime.Object, *TreePrinter) (*TreePrinter, error)
+	tableConverter func(runtime.Object) (*metav1.Table, error)
 }
 
 func NewPrinterOption(o printers.PrintOptions) *PrinterOption {
@@ -33,7 +33,7 @@ func (p *PrinterOption) AddFlag(fs *pflag.FlagSet) {
 	fs.StringVarP(&p.Format, "output", "o", "tree", "output format can be tree, table or yaml")
 }
 
-func (p *PrinterOption) Competele() {
+func (p *PrinterOption) Complete() {
 	p.tree = NewTreePrinter(p.Options.Kind.Kind)
 	p.table = printers.NewTablePrinter(p.Options)
 	p.yaml = printers.YAMLPrinter{}
@@ -46,11 +46,11 @@ func (p *PrinterOption) Validate() error {
 	return nil
 }
 
-func (p *PrinterOption) WithTreeConverter(f func(runtime.Object, *TreePrinter) *TreePrinter) *PrinterOption {
+func (p *PrinterOption) WithTreeConverter(f func(runtime.Object, *TreePrinter) (*TreePrinter, error)) *PrinterOption {
 	p.treeConverter = f
 	return p
 }
-func (p *PrinterOption) WithTableConverter(f func(runtime.Object) *metav1.Table) *PrinterOption {
+func (p *PrinterOption) WithTableConverter(f func(runtime.Object) (*metav1.Table, error)) *PrinterOption {
 	p.tableConverter = f
 	return p
 }
@@ -58,10 +58,17 @@ func (p *PrinterOption) WithTableConverter(f func(runtime.Object) *metav1.Table)
 func (p *PrinterOption) Print(stream genericiooptions.IOStreams, obj runtime.Object) error {
 	switch p.Format {
 	case "tree":
-		p.tree = *p.treeConverter(obj, &p.tree)
-		return p.tree.Print(stream.Out)
+		tree, err := p.treeConverter(obj, &p.tree)
+		if err != nil {
+			return err
+		}
+		return tree.Print(stream.Out)
 	case "table":
-		return p.table.PrintObj(p.tableConverter(obj), stream.Out)
+		table, err := p.tableConverter(obj)
+		if err != nil {
+			return err
+		}
+		return p.table.PrintObj(table, stream.Out)
 	case "yaml":
 		objs, err := meta.ExtractList(obj)
 		if err != nil {

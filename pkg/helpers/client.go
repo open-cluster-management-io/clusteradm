@@ -18,7 +18,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -27,7 +26,6 @@ import (
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/kubectl/pkg/cmd/util"
-	"k8s.io/utils/ptr"
 
 	"open-cluster-management.io/clusteradm/pkg/config"
 )
@@ -68,7 +66,7 @@ func GetClients(f util.Factory) (
 }
 
 // WaitCRDToBeReady waits if a crd is ready
-func WaitCRDToBeReady(apiExtensionsClient apiextensionsclient.Interface, name string, b wait.Backoff, wait bool) error {
+func WaitCRDToBeReady(ctx context.Context, apiExtensionsClient apiextensionsclient.Interface, name string, b wait.Backoff, wait bool) error {
 	errGet := retry.OnError(b, func(err error) bool {
 		if err != nil {
 			if wait {
@@ -79,7 +77,7 @@ func WaitCRDToBeReady(apiExtensionsClient apiextensionsclient.Interface, name st
 		return false
 	}, func() error {
 		crd, err := apiExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().
-			Get(context.TODO(),
+			Get(ctx,
 				name,
 				metav1.GetOptions{})
 		if established := apiextensionshelpers.IsCRDConditionTrue(crd, apiextensionsv1.Established); !established {
@@ -159,7 +157,7 @@ func GetBootstrapTokenFromSA(ctx context.Context, kubeClient kubernetes.Interfac
 		CreateToken(ctx, config.BootstrapSAName, &authv1.TokenRequest{
 			Spec: authv1.TokenRequestSpec{
 				// token expired in 1 hour
-				ExpirationSeconds: ptr.To[int64](3600),
+				ExpirationSeconds: new(int64(3600)),
 			},
 		}, metav1.CreateOptions{})
 	if err != nil {
@@ -170,58 +168,32 @@ func GetBootstrapTokenFromSA(ctx context.Context, kubeClient kubernetes.Interfac
 
 // IsClusterManagerInstalled checks if the hub is already initialized.
 // It checks if the crd is already present to find out that the hub is already initialized.
-func IsClusterManagerInstalled(apiExtensionsClient apiextensionsclient.Interface) (bool, error) {
+func IsClusterManagerInstalled(ctx context.Context, apiExtensionsClient apiextensionsclient.Interface) (bool, error) {
 	_, err := apiExtensionsClient.ApiextensionsV1().
 		CustomResourceDefinitions().
-		Get(context.TODO(), "clustermanagers.operator.open-cluster-management.io", metav1.GetOptions{})
-	if err == nil {
-		return true, nil
-	}
+		Get(ctx, "clustermanagers.operator.open-cluster-management.io", metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return false, nil
 		}
+		return false, err
 	}
-	return false, err
+	return true, nil
 }
 
 // IsKlusterlets checks if the Managed cluster is already initialized.
 // It checks if the crd is already present to find out that the managed cluster is already initialized.
-func IsKlusterletsInstalled(apiExtensionsClient apiextensionsclient.Interface) (bool, error) {
+func IsKlusterletsInstalled(ctx context.Context, apiExtensionsClient apiextensionsclient.Interface) (bool, error) {
 	_, err := apiExtensionsClient.ApiextensionsV1().
 		CustomResourceDefinitions().
-		Get(context.TODO(), "klusterlets.operator.open-cluster-management.io", metav1.GetOptions{})
-	if err == nil {
-		return true, nil
-	}
+		Get(ctx, "klusterlets.operator.open-cluster-management.io", metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return false, nil
 		}
+		return false, err
 	}
-	return false, err
-}
-
-// WatchUntil starts a watch stream and holds until the condition is satisfied.
-func WatchUntil(
-	watchFunc func() (watch.Interface, error),
-	assertEvent func(event watch.Event) bool) error {
-	w, err := watchFunc()
-	if err != nil {
-		return err
-	}
-	defer w.Stop()
-	for {
-		event, ok := <-w.ResultChan()
-		if !ok { // The channel is closed by Kubernetes, thus, user should check the pod status manually
-			return fmt.Errorf("unexpected watch event received")
-		}
-
-		if assertEvent(event) {
-			break
-		}
-	}
-	return nil
+	return true, nil
 }
 
 // CreateRESTConfigFromClientcmdapiv1Config
@@ -273,7 +245,7 @@ func CreateDiscoveryClientFromClientcmdapiv1Config(clientcmdapiv1Config clientcm
 }
 
 // ValidateKubeconfigFile validate a given kubeconfig
-func ValidateKubeconfigFile(kubeconfig string) error {
+func ValidateKubeconfigFile(ctx context.Context, kubeconfig string) error {
 	restConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
 		return err
@@ -282,7 +254,7 @@ func ValidateKubeconfigFile(kubeconfig string) error {
 	if err != nil {
 		return err
 	}
-	_, err = kubeclient.Discovery().RESTClient().Get().AbsPath("/healthz").DoRaw(context.Background())
+	_, err = kubeclient.Discovery().RESTClient().Get().AbsPath("/healthz").DoRaw(ctx)
 	if err != nil {
 		return err
 	}

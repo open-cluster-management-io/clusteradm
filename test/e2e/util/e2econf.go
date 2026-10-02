@@ -1,7 +1,11 @@
 // Copyright Contributors to the Open Cluster Management project
 package util
 
-import "k8s.io/client-go/rest"
+import (
+	"context"
+
+	"k8s.io/client-go/rest"
+)
 
 type TestE2eConfig struct {
 	values  *values
@@ -9,7 +13,7 @@ type TestE2eConfig struct {
 
 	KubeConfigPath string
 
-	ClearEnv func() error
+	ClearEnv func(ctx context.Context) error
 }
 
 //nolint:revive

@@ -29,7 +29,7 @@ func (c *ClusterOption) AddFlags(flags *pflag.FlagSet) {
 }
 
 func (c *ClusterOption) AllClusters() sets.Set[string] {
-	output := sets.New[string](c.Clusters...)
+	output := sets.New(c.Clusters...)
 	if len(c.Cluster) != 0 {
 		output.Insert(c.Cluster)
 	}

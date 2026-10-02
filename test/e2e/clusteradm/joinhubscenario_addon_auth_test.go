@@ -2,7 +2,6 @@
 package clusteradme2e
 
 import (
-	"context"
 	"time"
 
 	"github.com/onsi/ginkgo/v2"
@@ -14,14 +13,14 @@ import (
 )
 
 var _ = ginkgo.Describe("test clusteradm join with addon-kubeclient-registration-auth", ginkgo.Label("join-hub-addon-auth"), func() {
-	ginkgo.BeforeEach(func() {
+	ginkgo.BeforeEach(func(ctx ginkgo.SpecContext) {
 		ginkgo.By("clear e2e environment...")
-		err := e2e.ClearEnv()
+		err := e2e.ClearEnv(ctx)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	})
 
 	ginkgo.Context("join hub scenario with CSR addon authentication", func() {
-		ginkgo.It("should managedclusters join and accepted successfully with CSR addon auth", func() {
+		ginkgo.It("should managedclusters join and accepted successfully with CSR addon auth", func(ctx ginkgo.SpecContext) {
 			ginkgo.By("init hub")
 			clusterAdm := e2e.Clusteradm()
 			err := clusterAdm.Init(
@@ -30,7 +29,7 @@ var _ = ginkgo.Describe("test clusteradm join with addon-kubeclient-registration
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 
-			util.WaitClusterManagerApplied(operatorClient, e2e)
+			util.WaitClusterManagerApplied(ctx, operatorClient, e2e)
 
 			ginkgo.By("join hub with CSR addon auth (default)")
 			err = e2e.Clusteradm().Join(
@@ -60,7 +59,7 @@ var _ = ginkgo.Describe("test clusteradm join with addon-kubeclient-registration
 			var klusterlet *operatorv1.Klusterlet
 			gomega.Eventually(func() error {
 				klusterlet, err = mcl1OperatorClient.OperatorV1().Klusterlets().Get(
-					context.TODO(), "klusterlet", metav1.GetOptions{})
+					ctx, "klusterlet", metav1.GetOptions{})
 				return err
 			}, time.Second*60, time.Second*2).Should(gomega.Succeed())
 
@@ -71,7 +70,7 @@ var _ = ginkgo.Describe("test clusteradm join with addon-kubeclient-registration
 	})
 
 	ginkgo.Context("join hub scenario with token addon authentication", func() {
-		ginkgo.It("should managedclusters join and accepted successfully with token addon auth", func() {
+		ginkgo.It("should managedclusters join and accepted successfully with token addon auth", func(ctx ginkgo.SpecContext) {
 			ginkgo.By("init hub")
 			clusterAdm := e2e.Clusteradm()
 			err := clusterAdm.Init(
@@ -80,7 +79,7 @@ var _ = ginkgo.Describe("test clusteradm join with addon-kubeclient-registration
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 
-			util.WaitClusterManagerApplied(operatorClient, e2e)
+			util.WaitClusterManagerApplied(ctx, operatorClient, e2e)
 
 			ginkgo.By("join hub with token addon auth")
 			err = e2e.Clusteradm().Join(
@@ -111,7 +110,7 @@ var _ = ginkgo.Describe("test clusteradm join with addon-kubeclient-registration
 			var klusterlet *operatorv1.Klusterlet
 			gomega.Eventually(func() error {
 				klusterlet, err = mcl1OperatorClient.OperatorV1().Klusterlets().Get(
-					context.TODO(), "klusterlet", metav1.GetOptions{})
+					ctx, "klusterlet", metav1.GetOptions{})
 				return err
 			}, time.Second*60, time.Second*2).Should(gomega.Succeed())
 
@@ -126,7 +125,7 @@ var _ = ginkgo.Describe("test clusteradm join with addon-kubeclient-registration
 	})
 
 	ginkgo.Context("join hub scenario with token addon authentication and default expiration", func() {
-		ginkgo.It("should managedclusters join with token auth and default expiration", func() {
+		ginkgo.It("should managedclusters join with token auth and default expiration", func(ctx ginkgo.SpecContext) {
 			ginkgo.By("init hub")
 			clusterAdm := e2e.Clusteradm()
 			err := clusterAdm.Init(
@@ -135,7 +134,7 @@ var _ = ginkgo.Describe("test clusteradm join with addon-kubeclient-registration
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm init error")
 
-			util.WaitClusterManagerApplied(operatorClient, e2e)
+			util.WaitClusterManagerApplied(ctx, operatorClient, e2e)
 
 			ginkgo.By("join hub with token addon auth and default expiration (0)")
 			err = e2e.Clusteradm().Join(
@@ -165,7 +164,7 @@ var _ = ginkgo.Describe("test clusteradm join with addon-kubeclient-registration
 			var klusterlet *operatorv1.Klusterlet
 			gomega.Eventually(func() error {
 				klusterlet, err = mcl1OperatorClient.OperatorV1().Klusterlets().Get(
-					context.TODO(), "klusterlet", metav1.GetOptions{})
+					ctx, "klusterlet", metav1.GetOptions{})
 				return err
 			}, time.Second*60, time.Second*2).Should(gomega.Succeed())
 

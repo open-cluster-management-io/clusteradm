@@ -3,10 +3,12 @@ package hubaddon
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"os"
 	"strings"
 
+	"helm.sh/helm/v3/pkg/repo"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -205,27 +207,38 @@ func (o *Options) runWithHelmClient(ctx context.Context, addon string) error {
 
 		// Install the CRDs from their own chart first. Helm does not reliably wait
 		// for CRDs in a chart's crds/ folder before creating resources that use them.
-		if err := o.Helm.InstallChart(ctx, argocdAgentCRDsRelease, repoName, argocdAgentCRDsChart); err != nil {
+		// Chart repos without the CRDs chart fall back to the addon chart's own crds/.
+		err := o.Helm.InstallChart(ctx, argocdAgentCRDsRelease, repoName, argocdAgentCRDsChart)
+		switch {
+		case stderrors.Is(err, repo.ErrNoChartName):
+			klog.Warningf("chart %s not found in the %s repository, installing %s with its own CRDs",
+				argocdAgentCRDsChart, repoName, argocdAgentChartName)
+		case err != nil:
 			return err
-		}
-
-		if !o.ClusteradmFlags.DryRun {
-			_, apiExtensionsClient, _, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
-			if err != nil {
+		case !o.ClusteradmFlags.DryRun:
+			if err := o.waitForCRDs(ctx, argocdAgentCRDs); err != nil {
 				return err
 			}
-			for _, crd := range argocdAgentCRDs {
-				if err := helperwait.WaitUntilCRDReady(ctx, o.Streams.Out, apiExtensionsClient, crd, false); err != nil {
-					return err
-				}
-			}
 		}
 
-		err := o.Helm.InstallChart(ctx, argocdAgentReleaseName, repoName, argocdAgentChartName)
+		err = o.Helm.InstallChart(ctx, argocdAgentReleaseName, repoName, argocdAgentChartName)
 		if err != nil {
 			return err
 		}
 	}
 
+	return nil
+}
+
+func (o *Options) waitForCRDs(ctx context.Context, crds []string) error {
+	_, apiExtensionsClient, _, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
+	if err != nil {
+		return err
+	}
+	for _, crd := range crds {
+		if err := helperwait.WaitUntilCRDReady(ctx, o.Streams.Out, apiExtensionsClient, crd, false); err != nil {
+			return err
+		}
+	}
 	return nil
 }

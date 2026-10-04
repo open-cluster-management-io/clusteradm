@@ -11,7 +11,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
+	helperwait "open-cluster-management.io/clusteradm/pkg/helpers/wait"
 
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
@@ -30,7 +32,16 @@ var (
 	argocdAgentAddonName     = "argocd-agent"
 	argocdAgentReleaseName   = "argocd-agent-addon"
 	argocdAgentChartName     = "argocd-agent-addon"
+	argocdAgentCRDsRelease   = "argocd-agent-addon-crds"
+	argocdAgentCRDsChart     = "argocd-agent-addon-crds"
 	policyFrameworkAddonName = "governance-policy-framework"
+
+	// CRDs used by resources in the argocd-agent-addon chart. They must be
+	// established before that chart is installed.
+	argocdAgentCRDs = []string{
+		"argocds.argoproj.io",
+		"gitopsclusters.apps.open-cluster-management.io",
+	}
 )
 
 func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
@@ -190,6 +201,24 @@ func (o *Options) runWithHelmClient(ctx context.Context, addon string) error {
 
 		if err := o.Helm.PrepareChart(ctx, repoName, url); err != nil {
 			return err
+		}
+
+		// Install the CRDs from their own chart first. Helm does not reliably wait
+		// for CRDs in a chart's crds/ folder before creating resources that use them.
+		if err := o.Helm.InstallChart(ctx, argocdAgentCRDsRelease, repoName, argocdAgentCRDsChart); err != nil {
+			return err
+		}
+
+		if !o.ClusteradmFlags.DryRun {
+			_, apiExtensionsClient, _, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
+			if err != nil {
+				return err
+			}
+			for _, crd := range argocdAgentCRDs {
+				if err := helperwait.WaitUntilCRDReady(ctx, o.Streams.Out, apiExtensionsClient, crd, false); err != nil {
+					return err
+				}
+			}
 		}
 
 		err := o.Helm.InstallChart(ctx, argocdAgentReleaseName, repoName, argocdAgentChartName)

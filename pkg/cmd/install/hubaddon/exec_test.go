@@ -132,7 +132,7 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 		}, eventuallyTimeout, eventuallyInterval).Should(gomega.BeTrue(), addon+" namespace should not be created")
 	})
 
-	ginkgo.It("Should install the argocd-agent CRDs chart and addon chart in dry-run mode", func(ctx ginkgo.SpecContext) {
+	ginkgo.It("Should install the argocd-agent add-on in dry-run mode", func(ctx ginkgo.SpecContext) {
 		addon := "argocd-agent"
 		clusteradmFlagsCopy := *clusteradmFlags
 		clusteradmFlagsCopy.DryRun = true

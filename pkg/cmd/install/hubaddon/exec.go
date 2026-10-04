@@ -209,7 +209,14 @@ func (o *Options) runWithHelmClient(ctx context.Context, addon string) error {
 		// Install the CRDs from their own chart first. Helm does not reliably wait
 		// for CRDs in a chart's crds/ folder before creating resources that use them.
 		// Chart repos without the CRDs chart fall back to the addon chart's own crds/.
-		err := o.Helm.InstallChart(ctx, argocdAgentCRDsRelease, repoName, argocdAgentCRDsChart)
+		// Uninstall keeps the CRDs release, so skip the install when it already exists.
+		exists, err := o.Helm.ReleaseExists(argocdAgentCRDsRelease)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			err = o.Helm.InstallChart(ctx, argocdAgentCRDsRelease, repoName, argocdAgentCRDsChart)
+		}
 		switch {
 		case stderrors.Is(err, repo.ErrNoChartName):
 			klog.Warningf("chart %s not found in the %s repository, installing %s with its own CRDs",

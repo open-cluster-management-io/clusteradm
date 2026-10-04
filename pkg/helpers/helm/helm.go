@@ -26,6 +26,7 @@ import (
 	"helm.sh/helm/v3/pkg/downloader"
 	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/repo"
+	"helm.sh/helm/v3/pkg/storage/driver"
 
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
@@ -248,6 +249,20 @@ func (h *Helm) InstallChart(ctx context.Context, name, repo, chart string) error
 	}
 
 	return nil
+}
+
+// ReleaseExists reports whether the release has any history in the current
+// namespace. Helm refuses to install over such a release.
+func (h *Helm) ReleaseExists(name string) (bool, error) {
+	actionConfig := new(action.Configuration)
+	if err := actionConfig.Init(h.restClientGetterOrDefault(), h.settings.Namespace(), os.Getenv("HELM_DRIVER"), debug); err != nil {
+		return false, err
+	}
+	_, err := action.NewHistory(actionConfig).Run(name)
+	if errors.Is(err, driver.ErrReleaseNotFound) {
+		return false, nil
+	}
+	return err == nil, err
 }
 
 func isChartInstallable(ch *chart.Chart) (bool, error) {

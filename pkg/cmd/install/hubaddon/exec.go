@@ -7,15 +7,16 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"helm.sh/helm/v3/pkg/repo"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
-	helperwait "open-cluster-management.io/clusteradm/pkg/helpers/wait"
 
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
@@ -230,13 +231,17 @@ func (o *Options) runWithHelmClient(ctx context.Context, addon string) error {
 	return nil
 }
 
+// waitForCRDs waits up to about a minute per CRD. Establishing the large Argo CD
+// CRDs can take longer than WaitUntilCRDReady's ~6s budget on a busy API server.
 func (o *Options) waitForCRDs(ctx context.Context, crds []string) error {
 	_, apiExtensionsClient, _, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
 	if err != nil {
 		return err
 	}
+	fmt.Fprintf(o.Streams.Out, "Waiting for CRDs to be established: %s\n", strings.Join(crds, ", "))
+	b := wait.Backoff{Duration: time.Second, Factor: 1.0, Steps: 60}
 	for _, crd := range crds {
-		if err := helperwait.WaitUntilCRDReady(ctx, o.Streams.Out, apiExtensionsClient, crd, false); err != nil {
+		if err := helpers.WaitCRDToBeReady(ctx, apiExtensionsClient, crd, b, false); err != nil {
 			return err
 		}
 	}

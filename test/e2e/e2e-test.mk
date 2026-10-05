@@ -20,9 +20,9 @@ start-cluster:
 	kind create cluster --name ${HUB_NAME} --image kindest/node:v1.35.8@sha256:07b2536e30b803ed61d1677a79df6115f798ce64c80f9e22f6ed45afd09323c0
 .PHONY: start-cluster
 
-test-e2e: clean-e2e ensure-ginkgo start-cluster deps install test-e2e-only
+test-e2e: clean-e2e start-cluster deps install test-e2e-only
 .PHONY: test-e2e
 
-test-e2e-only:
+test-e2e-only: ensure-ginkgo
 	$(GINKGO) -v --timeout 3600s $(if $(GINKGO_LABEL_FILTER),--label-filter="$(GINKGO_LABEL_FILTER)") ./test/e2e/clusteradm -- --bundle-version=$(BUNDLE_VERSION)
 .PHONY: test-e2e-only

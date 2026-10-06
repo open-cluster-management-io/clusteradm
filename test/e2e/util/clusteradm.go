@@ -3,7 +3,9 @@ package util
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -110,7 +112,7 @@ func (adm *clusteradm) Result() *HandledOutput {
 	return &adm.h
 }
 
-func newClusteradmCmd(flag bool, handled *HandledOutput, subcommand string, args ...string) error {
+func newClusteradmCmd(captureStdout bool, handled *HandledOutput, subcommand string, args ...string) error {
 	cmdargs := make([]string, 0, 1+len(args))
 	cmdargs = append(cmdargs, subcommand)
 	cmdargs = append(cmdargs, args...)
@@ -119,34 +121,59 @@ func newClusteradmCmd(flag bool, handled *HandledOutput, subcommand string, args
 	c.Stdin = os.Stdin
 	c.Stderr = os.Stderr
 
-	if flag {
-		out, err := c.StdoutPipe()
-		if err != nil {
-			return err
-		}
-		_ = c.Start()
-
-		var h HandledOutput
-		go func(t *HandledOutput) {
-			// scan the output and find the clusteradm join command.
-			scanner := bufio.NewScanner(out)
-			var line string
-			for scanner.Scan() {
-				line = strings.TrimSpace(scanner.Text())
-				fmt.Fprintln(os.Stdout, line)
-				if strings.HasPrefix(line, "clusteradm") {
-					*t = *handleOutput(line)
-				}
-			}
-		}(&h)
-
-		_ = c.Wait()
-		*handled = h
-		return nil
+	if !captureStdout {
+		c.Stdout = os.Stdout
+		return c.Run()
 	}
 
-	c.Stdout = os.Stdout
-	return c.Run()
+	var stderr bytes.Buffer
+	c.Stderr = io.MultiWriter(os.Stderr, &stderr)
+
+	stdout, err := c.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	if err := c.Start(); err != nil {
+		return err
+	}
+
+	// StdoutPipe must be fully read before Wait.
+	// Wait does not synchronize with readers.
+	output, scanErr := scanHandledOutput(stdout)
+	if scanErr != nil {
+		_ = stdout.Close()
+		_ = c.Process.Kill()
+	}
+	waitErr := c.Wait()
+	*handled = output
+	if scanErr != nil {
+		return scanErr
+	}
+	return commandError(waitErr, stderr.String())
+}
+
+func commandError(err error, stderr string) error {
+	if err == nil {
+		return nil
+	}
+	stderr = strings.TrimSpace(stderr)
+	if stderr == "" {
+		return err
+	}
+	return fmt.Errorf("%w: %s", err, stderr)
+}
+
+func scanHandledOutput(r io.Reader) (HandledOutput, error) {
+	var handled HandledOutput
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		fmt.Fprintln(os.Stdout, line)
+		if strings.HasPrefix(line, "clusteradm") {
+			handled = *handleOutput(line)
+		}
+	}
+	return handled, scanner.Err()
 }
 
 func handleOutput(content string) *HandledOutput {

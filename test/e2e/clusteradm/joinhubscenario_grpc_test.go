@@ -68,6 +68,7 @@ var _ = ginkgo.Describe("test clusteradm join with grpc", ginkgo.Label("join-hub
 				"--grpc-server", "cluster-manager-grpc-server.open-cluster-management-hub.svc:8090",
 				"--cluster-name", e2e.Cluster().Hub().Name(),
 				"--force-internal-endpoint-lookup",
+				"--wait",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "managedCluster join error")
 

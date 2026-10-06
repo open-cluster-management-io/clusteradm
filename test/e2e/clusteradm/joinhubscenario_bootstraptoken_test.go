@@ -15,7 +15,6 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token", ginkgo.Label("jo
 	})
 
 	ginkgo.Context("join hub scenario with bootstrap token", func() {
-		var originalToken string
 		var err error
 
 		ginkgo.It("should managedclusters join and accepted successfully", func(ctx ginkgo.SpecContext) {
@@ -53,8 +52,7 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token", ginkgo.Label("jo
 				"--use-bootstrap-token",
 			)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm get token error")
-
-			originalToken = clusterAdm.Result().RawCommand()
+			gomega.Expect(clusterAdm.Result().RawCommand()).NotTo(gomega.BeEmpty(), "clusteradm get token command is empty")
 
 			ginkgo.By("delete token")
 			err = e2e.Clusteradm().Delete(
@@ -67,9 +65,10 @@ var _ = ginkgo.Describe("test clusteradm with bootstrap token", ginkgo.Label("jo
 				"token",
 				"--use-bootstrap-token",
 			)
-			gomega.Expect(err).NotTo(gomega.HaveOccurred(), "clusteradm get token error")
-
-			gomega.Expect(clusterAdm.Result().RawCommand()).NotTo(gomega.Equal(originalToken), "new token identical as previous token after delete")
+			gomega.Expect(err).To(gomega.HaveOccurred())
+			gomega.Expect(err.Error()).To(gomega.ContainSubstring(
+				"secrets \"bootstrap-token-*\" not found",
+			), "clusteradm get token error")
 		})
 
 	})

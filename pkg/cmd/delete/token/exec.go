@@ -70,7 +70,7 @@ func (o *Options) deleteToken(ctx context.Context, kubeClient *kubernetes.Client
 		return err
 	}
 
-	//Detele bootstrap token secret
+	//Delete bootstrap token secret
 	secret, err := helpers.GetBootstrapSecret(ctx, kubeClient)
 	if err == nil {
 		err = kubeClient.CoreV1().Secrets(secret.Namespace).Delete(ctx, secret.Name, metav1.DeleteOptions{})

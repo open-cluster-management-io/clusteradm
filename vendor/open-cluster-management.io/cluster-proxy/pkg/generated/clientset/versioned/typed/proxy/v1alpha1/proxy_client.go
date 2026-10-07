@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	rest "k8s.io/client-go/rest"
+
 	v1alpha1 "open-cluster-management.io/cluster-proxy/pkg/apis/proxy/v1alpha1"
 	"open-cluster-management.io/cluster-proxy/pkg/generated/clientset/versioned/scheme"
 )
@@ -13,7 +14,6 @@ import (
 type ProxyV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	ManagedProxyConfigurationsGetter
-	ManagedProxyServiceResolversGetter
 }
 
 // ProxyV1alpha1Client is used to interact with features provided by the proxy.open-cluster-management.io group.
@@ -23,10 +23,6 @@ type ProxyV1alpha1Client struct {
 
 func (c *ProxyV1alpha1Client) ManagedProxyConfigurations() ManagedProxyConfigurationInterface {
 	return newManagedProxyConfigurations(c)
-}
-
-func (c *ProxyV1alpha1Client) ManagedProxyServiceResolvers() ManagedProxyServiceResolverInterface {
-	return newManagedProxyServiceResolvers(c)
 }
 
 // NewForConfig creates a new ProxyV1alpha1Client for the given config.

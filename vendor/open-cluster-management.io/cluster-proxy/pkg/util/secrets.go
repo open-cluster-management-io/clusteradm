@@ -3,12 +3,13 @@ package util
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	certutil "k8s.io/client-go/util/cert"
+
 	proxyv1alpha1 "open-cluster-management.io/cluster-proxy/pkg/apis/proxy/v1alpha1"
 )
 
@@ -52,8 +53,10 @@ func GetKonnectivityTLSConfig(restConfig *rest.Config, proxyConfig *proxyv1alpha
 }
 
 func buildTLSConfig(caData, certData, keyData []byte, serverName string, protos []string) (*tls.Config, error) {
-	certPool := x509.NewCertPool()
-	certPool.AppendCertsFromPEM(caData)
+	certPool, err := certutil.NewPoolFromBytes(caData)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed parsing CA data")
+	}
 	clientCert, err := tls.X509KeyPair(certData, keyData)
 	if err != nil {
 		return nil, err

@@ -77,6 +77,17 @@ const (
 	// is not a scalar value.
 	RawFeedbackJsonString featuregate.Feature = "RawFeedbackJsonString"
 
+	// ManifestWorkApplyLogs makes the work agent in the spoke cluster emit structured logs on the apply of the manifestwork and its resources
+	// Log lines are written with three types of logs - mw_spoke_apply at reconcile start, mw_resource_spoke_apply per applied resource, and
+	// mw_spoke_apply_result at reconcile.
+	// The lines carry the manifestwork name/namespace/generation, the applied resource identity, an apply
+	// timestamp, and the manifestwork labels. Read-only applies emit an observation log instead.
+	ManifestWorkApplyLogs featuregate.Feature = "ManifestWorkApplyLogs"
+
+	// ManifestWorkApplyMetrics makes the work agent in the spoke cluster emit metrics
+	// for ManifestWork resource apply results.
+	ManifestWorkApplyMetrics featuregate.Feature = "ManifestWorkApplyMetrics"
+
 	// ResourceCleanup will start gc controller to clean up resources in cluster ns after cluster is deleted.
 	ResourceCleanup featuregate.Feature = "ResourceCleanup"
 
@@ -93,6 +104,12 @@ const (
 	// When enabled, the work controller will automatically clean up completed manifest works based on the configured
 	// time-to-live duration to prevent accumulation of old completed resources.
 	CleanUpCompletedManifestWork featuregate.Feature = "CleanUpCompletedManifestWork"
+
+	// SIGPlacementDecision will start a new controller in the placement controller to sync
+	// PlacementDecision to the SIG Multicluster ClusterInventory PlacementDecision.
+	// API definition: https://github.com/kubernetes-sigs/cluster-inventory-api/blob/main/apis/v1alpha1/placementdecision_types.go
+	// KEP: https://github.com/kubernetes/enhancements/tree/master/keps/sig-multicluster/5313-placement-decision-api
+	SIGPlacementDecision featuregate.Feature = "SIGPlacementDecision"
 
 	// PlacementDebugServer enables the debug server sidecar container in placement controller pod.
 	// When enabled, a debug-server container will be added to the placement pod, providing
@@ -130,6 +147,7 @@ var DefaultHubAddonManagerFeatureGates = map[featuregate.Feature]featuregate.Fea
 // DefaultHubPlacementFeatureGates consists of all known placement feature keys.
 // To add a new feature, define a key for it above and add it here.
 var DefaultHubPlacementFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
+	SIGPlacementDecision: {Default: false, PreRelease: featuregate.Alpha},
 	PlacementDebugServer: {Default: false, PreRelease: featuregate.Alpha},
 }
 
@@ -147,4 +165,6 @@ var DefaultHubWorkFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec
 var DefaultSpokeWorkFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	ExecutorValidatingCaches: {Default: false, PreRelease: featuregate.Alpha},
 	RawFeedbackJsonString:    {Default: false, PreRelease: featuregate.Alpha},
+	ManifestWorkApplyLogs:    {Default: false, PreRelease: featuregate.Alpha},
+	ManifestWorkApplyMetrics: {Default: false, PreRelease: featuregate.Alpha},
 }

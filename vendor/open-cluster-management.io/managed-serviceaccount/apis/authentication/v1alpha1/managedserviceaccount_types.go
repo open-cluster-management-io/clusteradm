@@ -20,10 +20,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func init() {
-	SchemeBuilder.Register(&ManagedServiceAccount{}, &ManagedServiceAccountList{})
-}
-
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:deprecatedversion:warning="authentication.open-cluster-management.io/v1alpha1 ManagedServiceAccount is deprecated; use authentication.open-cluster-management.io/v1beta1 ManagedServiceAccount; version v1alpha1 will be removed in the next release"

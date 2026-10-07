@@ -16,12 +16,12 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/httpstream"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/transport/spdy"
 	"k8s.io/klog/v2"
+	"k8s.io/streaming/pkg/httpstream"
 )
 
 type LocalProxyServer interface {
@@ -47,19 +47,19 @@ func NewRoundRobinLocalProxy(
 	)
 }
 
-func NewRoundRobinLocalProxyWithReqId(
+func NewRoundRobinLocalProxyWithReqId( //nolint:revive // exported name is part of the public API
 	restConfig *rest.Config,
 	readiness *atomic.Value,
 	podNamespace,
 	podSelector string,
 	targetPort int32,
-	reqId int) LocalProxyServer {
+	reqId int) LocalProxyServer { //nolint:revive // parameter name matches public API
 	return &roundRobin{
 		restConfig:           restConfig,
 		proxyServerNamespace: podNamespace,
 		podSelector:          podSelector,
 		targetPort:           targetPort,
-		reqId:                reqId,
+		reqID:                reqId,
 		lock:                 &sync.Mutex{},
 		firstConnReceived:    readiness,
 	}
@@ -74,7 +74,7 @@ type roundRobin struct {
 
 	restConfig        *rest.Config
 	lock              *sync.Mutex
-	reqId             int
+	reqID             int
 	firstConnReceived *atomic.Value
 }
 
@@ -137,7 +137,6 @@ func (r *roundRobin) handle(conn net.Conn) error {
 		if pod.Status.Phase != corev1.PodRunning {
 			continue
 		}
-		pod := pod
 		candidates = append(candidates, &pod)
 	}
 	if len(candidates) == 0 {
@@ -145,8 +144,8 @@ func (r *roundRobin) handle(conn net.Conn) error {
 	}
 
 	r.lock.Lock()
-	currentId := r.reqId
-	r.reqId++
+	currentID := r.reqID
+	r.reqID++
 	r.lock.Unlock()
 
 	podIdx := rand.Intn(len(candidates))
@@ -170,7 +169,7 @@ func (r *roundRobin) handle(conn net.Conn) error {
 	headers := http.Header{}
 	headers.Set(corev1.StreamType, corev1.StreamTypeError)
 	headers.Set(corev1.PortHeader, fmt.Sprintf("%d", r.targetPort))
-	headers.Set(corev1.PortForwardRequestIDHeader, strconv.Itoa(currentId))
+	headers.Set(corev1.PortForwardRequestIDHeader, strconv.Itoa(currentID))
 
 	errorStream, err := streamConn.CreateStream(headers)
 	if err != nil {

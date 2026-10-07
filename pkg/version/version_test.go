@@ -2,10 +2,25 @@
 package version
 
 import (
+	_ "embed"
+	"encoding/json"
 	"reflect"
 	"runtime/debug"
 	"testing"
 )
+
+var (
+	//go:embed testdata/current-version.json
+	currentVersionJSON []byte
+	currentVersion     VersionBundle
+)
+
+func init() {
+	err := json.Unmarshal(currentVersionJSON, &currentVersion)
+	if err != nil {
+		panic(err)
+	}
+}
 
 func TestVersionFromBuildInfo(t *testing.T) {
 	tests := []struct {
@@ -121,7 +136,7 @@ func TestVersionFromBuildInfo(t *testing.T) {
 
 func TestGetVersionBundle(t *testing.T) {
 	expectedVersionBundle := VersionBundle{
-		OCM:         "v1.3.1",
+		OCM:         "v1.2.0",
 		PolicyAddon: "v0.18.0",
 	}
 
@@ -137,8 +152,15 @@ func TestGetVersionBundle(t *testing.T) {
 			version:           "default",
 			versionBundleFile: "",
 			expectedVersionBundle: func() VersionBundle {
-				versionBundle, _ := getVersionBundle("default")
-				return versionBundle
+				return currentVersion
+			},
+		},
+		{
+			name:              "most recent version " + currentVersion.OCM,
+			version:           currentVersion.OCM,
+			versionBundleFile: "",
+			expectedVersionBundle: func() VersionBundle {
+				return currentVersion
 			},
 		},
 		{
@@ -146,16 +168,18 @@ func TestGetVersionBundle(t *testing.T) {
 			version:           "v1.2.0",
 			versionBundleFile: "",
 			expectedVersionBundle: func() VersionBundle {
-				b := expectedVersionBundle
-				b.OCM = "v1.2.0"
-				return b
+				return expectedVersionBundle
 			},
 		},
 		{
-			name:                  "override",
-			version:               "v1.2.0",
-			versionBundleFile:     "testdata/bundle-overrides.json",
-			expectedVersionBundle: func() VersionBundle { return expectedVersionBundle },
+			name:              "override",
+			version:           "v1.2.0",
+			versionBundleFile: "testdata/bundle-overrides.json",
+			expectedVersionBundle: func() VersionBundle {
+				b := expectedVersionBundle
+				b.OCM = "v1.3.1"
+				return b
+			},
 		},
 	}
 

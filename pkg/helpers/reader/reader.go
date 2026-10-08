@@ -5,14 +5,17 @@ package reader
 import (
 	"bytes"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift/library-go/pkg/assets"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"k8s.io/cli-runtime/pkg/resource"
@@ -136,6 +139,8 @@ func (r *ResourceReader) applyOneObject(info *resource.Info) error {
 	}
 
 	if !r.dryRun {
+		dropUnprunableMetadataFromLastApplied(info.Object)
+
 		patcher := newPatcher(info, helper, r.f)
 		patchBytes, patchedObject, err := patcher.Patch(info.Object, modified, info.Source, info.Namespace, info.Name, r.streams.ErrOut)
 		if err != nil {
@@ -148,6 +153,64 @@ func (r *ResourceReader) applyOneObject(info *resource.Info) error {
 	}
 
 	return nil
+}
+
+// unprunableMetadata are the ObjectMeta keys we must never ask the API server to delete,
+// because it either rejects the request or carries it out and deletes a field that is not managed by us.
+var unprunableMetadata = []string{
+	"finalizers",
+	"resourceVersion",
+}
+
+// dropUnprunableMetadataFromLastApplied removes unprunableMetadata from the
+// last-applied-configuration annotation of obj, if it has one and parsing succeeds.
+// Absent, empty and malformed annotations are left untouched.
+//
+// The patcher deletes every key that is present in the annotation but absent from the
+// manifest being applied.
+func dropUnprunableMetadataFromLastApplied(obj runtime.Object) {
+	accessor := meta.NewAccessor()
+
+	annots, err := accessor.Annotations(obj)
+	if err != nil || len(annots) == 0 {
+		return
+	}
+
+	raw, ok := annots[corev1.LastAppliedConfigAnnotation]
+	if !ok || len(raw) == 0 {
+		return
+	}
+
+	var applied map[string]interface{}
+	if err := json.Unmarshal([]byte(raw), &applied); err != nil {
+		return
+	}
+
+	metadata, ok := applied["metadata"].(map[string]interface{})
+	if !ok {
+		return
+	}
+
+	stripped := false
+	for _, key := range unprunableMetadata {
+		if _, present := metadata[key]; present {
+			delete(metadata, key)
+			stripped = true
+		}
+	}
+	if !stripped {
+		return
+	}
+
+	sanitized, err := json.Marshal(applied)
+	if err != nil {
+		return
+	}
+
+	annots[corev1.LastAppliedConfigAnnotation] = string(sanitized)
+	if err := accessor.SetAnnotations(obj, annots); err != nil {
+		return
+	}
 }
 
 func (r *ResourceReader) Delete(fs embed.FS, config interface{}, files ...string) error {

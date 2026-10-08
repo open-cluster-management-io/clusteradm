@@ -34,7 +34,7 @@ rules:
     - "addon-webhook-sa-kubeconfig"
     - "external-hub-kubeconfig"
     - "work-driver-config"
-    - "open-cluster-management-image-pull-credentials"
+    - {{ include "clusterManager.imagePullSecretName" . | quote }}
     - "grpc-server-serving-cert"
     - "placement-debug-serving-cert"
     - "cluster-import-config"
@@ -80,6 +80,10 @@ rules:
 # Allow the registration-operator to create validatingwebhookconfigurration
 - apiGroups: ["admissionregistration.k8s.io"]
   resources: ["validatingwebhookconfigurations", "mutatingwebhookconfigurations"]
+  verbs: ["create", "get", "list", "update", "watch", "patch", "delete"]
+# Allow the registration-operator to manage NetworkPolicies
+- apiGroups: ["networking.k8s.io"]
+  resources: ["networkpolicies"]
   verbs: ["create", "get", "list", "update", "watch", "patch", "delete"]
 # Allow the nuclues to manage clustermanager apis.
 - apiGroups: ["operator.open-cluster-management.io"]
@@ -163,6 +167,9 @@ rules:
 - apiGroups: ["multicluster.x-k8s.io"]
   resources: ["clusterprofiles/status"]
   verbs: ["update", "patch"]
+- apiGroups: ["multicluster.x-k8s.io"]
+  resources: ["placementdecisions"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 - apiGroups: [ "cluster.x-k8s.io" ]
   resources: [ "clusters" ]
   verbs: ["get", "list", "watch"]

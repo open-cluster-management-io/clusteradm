@@ -20,8 +20,9 @@ limitations under the License.
 package v1beta1
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/controller-runtime/pkg/scheme"
 )
 
 var (
@@ -29,7 +30,7 @@ var (
 	GroupVersion = schema.GroupVersion{Group: "authentication.open-cluster-management.io", Version: "v1beta1"}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
-	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
+	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
 
 	// SchemeGroupVersion generated code relies on this name
 	// Deprecated
@@ -39,8 +40,15 @@ var (
 	AddToScheme = SchemeBuilder.AddToScheme
 )
 
+func addKnownTypes(scheme *runtime.Scheme) error {
+	scheme.AddKnownTypes(GroupVersion, &ManagedServiceAccount{}, &ManagedServiceAccountList{})
+	// AddToGroupVersion allows the serialization of client types like ListOptions.
+	metav1.AddToGroupVersion(scheme, GroupVersion)
+	return nil
+}
+
 // Resource generated code relies on this being here, but it logically belongs to the group
 // DEPRECATED
 func Resource(resource string) schema.GroupResource {
-	return schema.GroupResource{Group: GroupVersion.Group, Resource: resource}
+	return GroupVersion.WithResource(resource).GroupResource()
 }

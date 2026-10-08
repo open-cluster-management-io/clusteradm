@@ -2,6 +2,7 @@
 package version
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -81,10 +82,21 @@ type VersionBundle struct {
 	PolicyAddon string `json:"policy_addon"`
 }
 
-var defaultBundleVersion = "1.3.1"
+var (
+	//go:embed version.json
+	versionBundleJSON []byte
+	versionBundleList map[string]VersionBundle
+)
+
+func init() {
+	err := json.Unmarshal(versionBundleJSON, &versionBundleList)
+	if err != nil {
+		klog.Fatalf("failed to unmarshal version bundle JSON: %v", err)
+	}
+}
 
 func GetDefaultBundleVersion() string {
-	return defaultBundleVersion
+	return strings.TrimPrefix(versionBundleList["default"].OCM, "v")
 }
 
 // GetVersionBundle returns a version bundle for the requested version and optional overrides.
@@ -105,61 +117,13 @@ func GetVersionBundle(version string, versionBundleFile string) (VersionBundle, 
 }
 
 func getVersionBundle(version string) (VersionBundle, error) {
-
-	// supporting either "x.y.z" or "vx.y.z" format version
+	// support either "x.y.z" or "vx.y.z" format version
 	version = strings.TrimPrefix(version, "v")
-
-	versionBundleList := map[string]VersionBundle{}
-
-	// latest
-	versionBundleList["latest"] = VersionBundle{
-		OCM:         "latest",
-		PolicyAddon: "latest",
-	}
-
-	// predefined bundle version
-	// TODO: automated version tracking
-	versionBundleList["1.1.0"] = VersionBundle{
-		OCM:         "v1.1.0",
-		PolicyAddon: "v0.16.0",
-	}
-
-	versionBundleList["1.1.1"] = VersionBundle{
-		OCM:         "v1.1.1",
-		PolicyAddon: "v0.17.0",
-	}
-
-	versionBundleList["1.1.3"] = VersionBundle{
-		OCM:         "v1.1.3",
-		PolicyAddon: "v0.17.0",
-	}
-
-	versionBundleList["1.2.0"] = VersionBundle{
-		OCM:         "v1.2.0",
-		PolicyAddon: "v0.18.0",
-	}
-
-	versionBundleList["1.2.1"] = VersionBundle{
-		OCM:         "v1.2.1",
-		PolicyAddon: "v0.18.0",
-	}
-
-	versionBundleList["1.3.0"] = VersionBundle{
-		OCM:         "v1.3.0",
-		PolicyAddon: "v0.18.0",
-	}
-
-	versionBundleList["1.3.1"] = VersionBundle{
-		OCM:         "v1.3.1",
-		PolicyAddon: "v0.18.0",
-	}
-
-	// default
-	versionBundleList["default"] = versionBundleList[defaultBundleVersion]
 
 	if val, ok := versionBundleList[version]; ok {
 		return val, nil
 	}
+
 	return VersionBundle{}, fmt.Errorf("couldn't find the requested version bundle: %v", version)
 }
 

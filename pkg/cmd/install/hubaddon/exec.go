@@ -3,14 +3,19 @@ package hubaddon
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
+	"helm.sh/helm/v3/pkg/repo"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 
+	"open-cluster-management.io/clusteradm/pkg/helpers"
 	"open-cluster-management.io/clusteradm/pkg/helpers/reader"
 
 	"github.com/spf13/cobra"
@@ -30,7 +35,16 @@ var (
 	argocdAgentAddonName     = "argocd-agent"
 	argocdAgentReleaseName   = "argocd-agent-addon"
 	argocdAgentChartName     = "argocd-agent-addon"
+	argocdAgentCRDsRelease   = "argocd-agent-addon-crds"
+	argocdAgentCRDsChart     = "argocd-agent-addon-crds"
 	policyFrameworkAddonName = "governance-policy-framework"
+
+	// CRDs used by resources in the argocd-agent-addon chart. They must be
+	// established before that chart is installed.
+	argocdAgentCRDs = []string{
+		"argocds.argoproj.io",
+		"gitopsclusters.apps.open-cluster-management.io",
+	}
 )
 
 func (o *Options) complete(_ *cobra.Command, _ []string) (err error) {
@@ -192,11 +206,51 @@ func (o *Options) runWithHelmClient(ctx context.Context, addon string) error {
 			return err
 		}
 
-		err := o.Helm.InstallChart(ctx, argocdAgentReleaseName, repoName, argocdAgentChartName)
+		// Install the CRDs from their own chart first. Helm does not reliably wait
+		// for CRDs in a chart's crds/ folder before creating resources that use them.
+		// Chart repos without the CRDs chart fall back to the addon chart's own crds/.
+		// Uninstall keeps the CRDs release, so skip the install when it already exists.
+		exists, err := o.Helm.ReleaseExists(argocdAgentCRDsRelease)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			err = o.Helm.InstallChart(ctx, argocdAgentCRDsRelease, repoName, argocdAgentCRDsChart)
+		}
+		switch {
+		case stderrors.Is(err, repo.ErrNoChartName):
+			klog.Warningf("chart %s not found in the %s repository, installing %s with its own CRDs",
+				argocdAgentCRDsChart, repoName, argocdAgentChartName)
+		case err != nil:
+			return err
+		case !o.ClusteradmFlags.DryRun:
+			if err := o.waitForCRDs(ctx, argocdAgentCRDs); err != nil {
+				return err
+			}
+		}
+
+		err = o.Helm.InstallChart(ctx, argocdAgentReleaseName, repoName, argocdAgentChartName)
 		if err != nil {
 			return err
 		}
 	}
 
+	return nil
+}
+
+// waitForCRDs waits up to about a minute per CRD. Establishing the large Argo CD
+// CRDs can take longer than WaitUntilCRDReady's ~6s budget on a busy API server.
+func (o *Options) waitForCRDs(ctx context.Context, crds []string) error {
+	_, apiExtensionsClient, _, err := helpers.GetClients(o.ClusteradmFlags.KubectlFactory)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(o.Streams.Out, "Waiting for CRDs to be established: %s\n", strings.Join(crds, ", "))
+	b := wait.Backoff{Duration: time.Second, Factor: 1.0, Steps: 60}
+	for _, crd := range crds {
+		if err := helpers.WaitCRDToBeReady(ctx, apiExtensionsClient, crd, b, false); err != nil {
+			return err
+		}
+	}
 	return nil
 }

@@ -18,7 +18,7 @@ require (
 	github.com/spf13/pflag v1.0.10
 	google.golang.org/grpc v1.84.0
 	gopkg.in/yaml.v2 v2.4.0
-	helm.sh/helm/v3 v3.21.4
+	helm.sh/helm/v3 v3.22.0
 	k8s.io/api v0.37.1
 	k8s.io/apiextensions-apiserver v0.37.1
 	k8s.io/apimachinery v0.37.1
@@ -157,7 +157,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20260821135717-be32def86098 // indirect
 	k8s.io/streaming v0.37.1 // indirect
 	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3 // indirect
-	oras.land/oras-go/v2 v2.6.1 // indirect
+	oras.land/oras-go/v2 v2.6.2 // indirect
 	sigs.k8s.io/json v0.0.0-20260909141634-11ed52e25bc5 // indirect
 	sigs.k8s.io/kube-storage-version-migrator v0.0.6-0.20230721195810-5c8923c5ff96 // indirect
 	sigs.k8s.io/kustomize/api v0.21.1 // indirect

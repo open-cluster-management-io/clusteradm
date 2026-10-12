@@ -11,7 +11,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jonboulle/clockwork v0.5.0
 	github.com/onsi/ginkgo/v2 v2.33.0
-	github.com/onsi/gomega v1.43.1
+	github.com/onsi/gomega v1.44.0
 	github.com/openshift/library-go v0.0.0-20260911204104-f7fdf34b126f
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.10.2

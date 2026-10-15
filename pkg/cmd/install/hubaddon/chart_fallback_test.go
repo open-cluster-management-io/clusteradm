@@ -12,11 +12,11 @@ import (
 	"helm.sh/helm/v3/pkg/repo"
 )
 
-// The argocd-agent install falls back to the addon chart's own CRDs when the
+// Helm chart install falls back to the chart's own CRDs when the
 // CRDs chart is missing from the repo. That relies on Helm's chart lookup
 // returning an error that wraps repo.ErrNoChartName, so check it against the
 // real lookup instead of a hand-built error.
-func TestMissingCRDsChartMatchesErrNoChartName(t *testing.T) {
+func TestMissingCRDChartError(t *testing.T) {
 	dir := t.TempDir()
 	repoConfig := filepath.Join(dir, "repositories.yaml")
 	t.Setenv("HELM_REPOSITORY_CONFIG", repoConfig)

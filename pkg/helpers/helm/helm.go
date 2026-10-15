@@ -25,6 +25,8 @@ import (
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/downloader"
 	"helm.sh/helm/v3/pkg/getter"
+	"helm.sh/helm/v3/pkg/release"
+	"helm.sh/helm/v3/pkg/releaseutil"
 	"helm.sh/helm/v3/pkg/repo"
 	"helm.sh/helm/v3/pkg/storage/driver"
 
@@ -251,18 +253,26 @@ func (h *Helm) InstallChart(ctx context.Context, name, repo, chart string) error
 	return nil
 }
 
-// ReleaseExists reports whether the release has any history in the current
-// namespace. Helm refuses to install over such a release.
-func (h *Helm) ReleaseExists(name string) (bool, error) {
+// ReleaseStatus returns the status of the release's latest revision in the
+// current namespace, or "" when the release has no history.
+func (h *Helm) ReleaseStatus(name string) (release.Status, error) {
 	actionConfig := new(action.Configuration)
 	if err := actionConfig.Init(h.restClientGetterOrDefault(), h.settings.Namespace(), os.Getenv("HELM_DRIVER"), debug); err != nil {
-		return false, err
+		return "", err
 	}
-	_, err := action.NewHistory(actionConfig).Run(name)
+	return releaseStatus(actionConfig, name)
+}
+
+func releaseStatus(actionConfig *action.Configuration, name string) (release.Status, error) {
+	history, err := action.NewHistory(actionConfig).Run(name)
 	if errors.Is(err, driver.ErrReleaseNotFound) {
-		return false, nil
+		return "", nil
 	}
-	return err == nil, err
+	if err != nil {
+		return "", err
+	}
+	releaseutil.Reverse(history, releaseutil.SortByRevision)
+	return history[0].Info.Status, nil
 }
 
 func isChartInstallable(ch *chart.Chart) (bool, error) {

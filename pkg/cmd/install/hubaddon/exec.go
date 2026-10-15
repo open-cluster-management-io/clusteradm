@@ -3,15 +3,16 @@ package hubaddon
 
 import (
 	"context"
-	stderrors "errors"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
+	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/repo"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -167,7 +168,7 @@ func (o *Options) createNamespace(ctx context.Context) error {
 	}
 
 	ns, err := clientSet.CoreV1().Namespaces().Get(ctx, o.values.Namespace, metav1.GetOptions{})
-	if err != nil && errors.IsNotFound(err) {
+	if err != nil && k8serrors.IsNotFound(err) {
 		ns, err = clientSet.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: o.values.Namespace,
@@ -209,16 +210,23 @@ func (o *Options) runWithHelmClient(ctx context.Context, addon string) error {
 		// Install the CRDs from their own chart first. Helm does not reliably wait
 		// for CRDs in a chart's crds/ folder before creating resources that use them.
 		// Chart repos without the CRDs chart fall back to the addon chart's own crds/.
-		// Uninstall keeps the CRDs release, so skip the install when it already exists.
-		exists, err := o.Helm.ReleaseExists(argocdAgentCRDsRelease)
+		// Uninstall keeps the CRDs release, so skip the install when it is already deployed.
+		status, err := o.Helm.ReleaseStatus(argocdAgentCRDsRelease)
 		if err != nil {
 			return err
 		}
-		if !exists {
+		switch status {
+		case "":
 			err = o.Helm.InstallChart(ctx, argocdAgentCRDsRelease, repoName, argocdAgentCRDsChart)
+		case release.StatusDeployed:
+			// Already installed, reuse it.
+		default:
+			// Helm refuses to install over any existing release history.
+			return fmt.Errorf("release %s in namespace %s is %s, remove it with \"helm uninstall %s -n %s\" and retry",
+				argocdAgentCRDsRelease, argocdNamespace, status, argocdAgentCRDsRelease, argocdNamespace)
 		}
 		switch {
-		case stderrors.Is(err, repo.ErrNoChartName):
+		case errors.Is(err, repo.ErrNoChartName):
 			klog.Warningf("chart %s not found in the %s repository, installing %s with its own CRDs",
 				argocdAgentCRDsChart, repoName, argocdAgentChartName)
 		case err != nil:

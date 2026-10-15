@@ -269,9 +269,13 @@ func releaseStatus(actionConfig *action.Configuration, name string) (release.Sta
 		return "", nil
 	}
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get history of release %s: %w", name, err)
 	}
 	releaseutil.Reverse(history, releaseutil.SortByRevision)
+	// Helm skips revisions it cannot decode, so the history can be empty even though the name is taken.
+	if len(history) == 0 || history[0].Info == nil {
+		return "", fmt.Errorf("release %s has no readable revision", name)
+	}
 	return history[0].Info.Status, nil
 }
 

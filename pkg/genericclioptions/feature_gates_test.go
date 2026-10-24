@@ -50,13 +50,14 @@ func TestConvertToFeatureGateAPI(t *testing.T) {
 			featureGates: func() featuregate.MutableFeatureGate {
 				fg := featuregate.NewFeatureGate()
 				_ = fg.Add(map[featuregate.Feature]featuregate.FeatureSpec{
-					"ManifestWorkReplicaSet": {Default: true},
+					"NilExecutorValidating": {Default: true},
 				})
 				return fg
 			},
 			defaultFeatureGate: ocmfeature.DefaultHubWorkFeatureGates,
 			expected: []operatorv1.FeatureGate{
 				{Feature: "ManifestWorkReplicaSet", Mode: operatorv1.FeatureGateModeTypeEnable},
+				{Feature: "NilExecutorValidating", Mode: operatorv1.FeatureGateModeTypeEnable},
 			},
 		},
 		{

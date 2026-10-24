@@ -11,6 +11,7 @@ import (
 	"k8s.io/client-go/discovery"
 	fakediscovery "k8s.io/client-go/discovery/fake"
 	k8stesting "k8s.io/client-go/testing"
+	"k8s.io/component-base/featuregate"
 
 	clusterv1 "open-cluster-management.io/api/cluster/v1"
 	clusterv1alpha1 "open-cluster-management.io/api/cluster/v1alpha1"
@@ -243,6 +244,68 @@ func TestIsFeatureEnabled(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			got := IsFeatureEnabled(c.featureGates, c.feature)
+			if got != c.want {
+				t.Fatalf("expected %v, got %v", c.want, got)
+			}
+		})
+	}
+}
+
+func TestIsFeatureEnabledWithDefault(t *testing.T) {
+	defaults := map[featuregate.Feature]featuregate.FeatureSpec{
+		"DefaultOn":  {Default: true},
+		"DefaultOff": {Default: false},
+	}
+	cases := []struct {
+		name         string
+		featureGates []operatorv1.FeatureGate
+		feature      featuregate.Feature
+		want         bool
+	}{
+		{
+			name:    "unset feature that is on by default",
+			feature: "DefaultOn",
+			want:    true,
+		},
+		{
+			name:    "unset feature that is off by default",
+			feature: "DefaultOff",
+			want:    false,
+		},
+		{
+			name: "feature on by default but explicitly disabled",
+			featureGates: []operatorv1.FeatureGate{
+				{Feature: "DefaultOn", Mode: operatorv1.FeatureGateModeTypeDisable},
+			},
+			feature: "DefaultOn",
+			want:    false,
+		},
+		{
+			name: "feature off by default but explicitly enabled",
+			featureGates: []operatorv1.FeatureGate{
+				{Feature: "DefaultOff", Mode: operatorv1.FeatureGateModeTypeEnable},
+			},
+			feature: "DefaultOff",
+			want:    true,
+		},
+		{
+			name: "other gates set, feature falls back to its default",
+			featureGates: []operatorv1.FeatureGate{
+				{Feature: "DefaultOff", Mode: operatorv1.FeatureGateModeTypeEnable},
+			},
+			feature: "DefaultOn",
+			want:    true,
+		},
+		{
+			name:    "unknown feature",
+			feature: "Unknown",
+			want:    false,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := IsFeatureEnabledWithDefault(c.featureGates, defaults, c.feature)
 			if got != c.want {
 				t.Fatalf("expected %v, got %v", c.want, got)
 			}

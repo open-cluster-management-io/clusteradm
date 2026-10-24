@@ -133,6 +133,10 @@ func PrintComponentsDeploy(ctx context.Context, printer PrefixWriter, deployClie
 			deploy = item
 		}
 	}
+	// The component is not deployed, for example a feature that is off on an older hub.
+	if deploy.Name == "" {
+		return nil
+	}
 
 	client, err := deployClient.AppsV1().Deployments(deploy.Namespace).Get(ctx, deploy.Name, metav1.GetOptions{})
 	if err != nil {

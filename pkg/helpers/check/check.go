@@ -8,6 +8,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/discovery"
+	"k8s.io/component-base/featuregate"
 
 	clusterv1 "open-cluster-management.io/api/cluster/v1"
 	clusterv1alpha1 "open-cluster-management.io/api/cluster/v1alpha1"
@@ -91,4 +92,17 @@ func IsFeatureEnabled(featureGates []operatorv1.FeatureGate, feature string) boo
 		}
 	}
 	return false
+}
+
+// IsFeatureEnabledWithDefault reports whether a feature is enabled, using its mode
+// in featureGates when it is set there and its default in defaultFeatures otherwise.
+// This matches how the cluster-manager operator decides which components to run.
+func IsFeatureEnabledWithDefault(featureGates []operatorv1.FeatureGate,
+	defaultFeatures map[featuregate.Feature]featuregate.FeatureSpec, feature featuregate.Feature) bool {
+	for _, fg := range featureGates {
+		if fg.Feature == string(feature) {
+			return fg.Mode == operatorv1.FeatureGateModeTypeEnable
+		}
+	}
+	return defaultFeatures[feature].Default
 }

@@ -3,6 +3,7 @@ package printer
 
 import (
 	"bytes"
+	"context"
 	"strings"
 	"testing"
 
@@ -10,6 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubefake "k8s.io/client-go/kubernetes/fake"
 
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 	workapiv1 "open-cluster-management.io/api/work/v1"
@@ -165,4 +167,50 @@ func TestPrintCRD(t *testing.T) {
 	if !strings.Contains(out, "(absent) absent.example.com") {
 		t.Fatalf("expected missing CRD to be reported as absent, got:\n%s", out)
 	}
+}
+
+func TestPrintComponentsDeploy(t *testing.T) {
+	replicas := int32(1)
+	deploy := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "open-cluster-management-hub", Name: "cluster-manager-work-webhook"},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &replicas,
+			Template: corev1.PodTemplateSpec{Spec: corev1.PodSpec{
+				Containers: []corev1.Container{{Name: "webhook", Image: "quay.io/open-cluster-management/work:v1.4.0"}},
+			}},
+		},
+		Status: appsv1.DeploymentStatus{AvailableReplicas: 1},
+	}
+	resources := []operatorv1.RelatedResourceMeta{
+		{Resource: "deployments", Namespace: deploy.Namespace, Name: deploy.Name},
+	}
+
+	t.Run("component not in related resources is skipped", func(t *testing.T) {
+		client := kubefake.NewSimpleClientset(deploy)
+		var buf bytes.Buffer
+		pw := NewPrefixWriter(&buf)
+		if err := PrintComponentsDeploy(context.TODO(), pw, client, resources, "cluster-manager-work-controller"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		pw.Flush()
+		if buf.Len() != 0 {
+			t.Fatalf("expected no output, got:\n%s", buf.String())
+		}
+		if len(client.Actions()) != 0 {
+			t.Fatalf("expected no API calls, got %v", client.Actions())
+		}
+	})
+
+	t.Run("deployed component is printed", func(t *testing.T) {
+		client := kubefake.NewSimpleClientset(deploy)
+		var buf bytes.Buffer
+		pw := NewPrefixWriter(&buf)
+		if err := PrintComponentsDeploy(context.TODO(), pw, client, resources, deploy.Name); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		pw.Flush()
+		if out := buf.String(); !strings.Contains(out, "Webhook:") || !strings.Contains(out, "(1/1) quay.io/open-cluster-management/work:v1.4.0") {
+			t.Fatalf("expected webhook line, got:\n%s", out)
+		}
+	})
 }

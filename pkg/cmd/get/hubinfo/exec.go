@@ -151,13 +151,25 @@ func (o *Options) printRegistration(ctx context.Context, cmgr *v1.ClusterManager
 
 func (o *Options) printWork(ctx context.Context, cmgr *v1.ClusterManager) error {
 	o.printer.Write(printer.LEVEL_1, "Work:\n")
-	if cmgr.Spec.WorkConfiguration != nil && check.IsFeatureEnabled(cmgr.Spec.WorkConfiguration.FeatureGates, string(feature.ManifestWorkReplicaSet)) {
+	if workControllerEnabled(cmgr) {
 		err := printer.PrintComponentsDeploy(ctx, o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNameWorkController)
 		if err != nil {
 			return err
 		}
 	}
 	return printer.PrintComponentsDeploy(ctx, o.printer, o.kubeClient, cmgr.Status.RelatedResources, componentNameWorkWebhook)
+}
+
+// workControllerEnabled matches the cluster-manager operator, which runs the work
+// controller when ManifestWorkReplicaSet or CleanUpCompletedManifestWork is enabled,
+// either explicitly or by default.
+func workControllerEnabled(cmgr *v1.ClusterManager) bool {
+	var featureGates []v1.FeatureGate
+	if cmgr.Spec.WorkConfiguration != nil {
+		featureGates = cmgr.Spec.WorkConfiguration.FeatureGates
+	}
+	return check.IsFeatureEnabledWithDefault(featureGates, feature.DefaultHubWorkFeatureGates, feature.ManifestWorkReplicaSet) ||
+		check.IsFeatureEnabledWithDefault(featureGates, feature.DefaultHubWorkFeatureGates, feature.CleanUpCompletedManifestWork)
 }
 
 func (o *Options) printPlacement(ctx context.Context, cmgr *v1.ClusterManager) error {

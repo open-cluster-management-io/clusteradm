@@ -1423,7 +1423,7 @@ k8s.io/utils/internal/third_party/forked/golang/net
 k8s.io/utils/net
 k8s.io/utils/ptr
 k8s.io/utils/trace
-# open-cluster-management.io/api v1.4.0
+# open-cluster-management.io/api v1.4.1-0.20261021153953-ae8c33590001
 ## explicit; go 1.26.0
 open-cluster-management.io/api/addon/v1alpha1
 open-cluster-management.io/api/addon/v1beta1

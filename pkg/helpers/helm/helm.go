@@ -25,7 +25,10 @@ import (
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/downloader"
 	"helm.sh/helm/v3/pkg/getter"
+	"helm.sh/helm/v3/pkg/release"
+	"helm.sh/helm/v3/pkg/releaseutil"
 	"helm.sh/helm/v3/pkg/repo"
+	"helm.sh/helm/v3/pkg/storage/driver"
 
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
@@ -248,6 +251,32 @@ func (h *Helm) InstallChart(ctx context.Context, name, repo, chart string) error
 	}
 
 	return nil
+}
+
+// ReleaseStatus returns the status of the release's latest revision in the
+// current namespace, or "" when the release has no history.
+func (h *Helm) ReleaseStatus(name string) (release.Status, error) {
+	actionConfig := new(action.Configuration)
+	if err := actionConfig.Init(h.restClientGetterOrDefault(), h.settings.Namespace(), os.Getenv("HELM_DRIVER"), debug); err != nil {
+		return "", err
+	}
+	return releaseStatus(actionConfig, name)
+}
+
+func releaseStatus(actionConfig *action.Configuration, name string) (release.Status, error) {
+	history, err := action.NewHistory(actionConfig).Run(name)
+	if errors.Is(err, driver.ErrReleaseNotFound) {
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("failed to get history of release %s: %w", name, err)
+	}
+	releaseutil.Reverse(history, releaseutil.SortByRevision)
+	// Helm skips revisions it cannot decode, so the history can be empty even though the name is taken.
+	if len(history) == 0 || history[0].Info == nil {
+		return "", fmt.Errorf("release %s has no readable revision", name)
+	}
+	return history[0].Info.Status, nil
 }
 
 func isChartInstallable(ch *chart.Chart) (bool, error) {

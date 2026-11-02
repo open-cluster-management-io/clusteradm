@@ -161,45 +161,21 @@ github.com/go-openapi/jsonpointer/jsonname
 ## explicit; go 1.26.0
 github.com/go-openapi/jsonreference
 github.com/go-openapi/jsonreference/internal
-# github.com/go-openapi/swag v0.29.2
-## explicit; go 1.26.0
-github.com/go-openapi/swag
-# github.com/go-openapi/swag/cmdutils v0.29.2
-## explicit; go 1.26.0
-github.com/go-openapi/swag/cmdutils
 # github.com/go-openapi/swag/conv v0.29.2
 ## explicit; go 1.26.0
 github.com/go-openapi/swag/conv
-# github.com/go-openapi/swag/fileutils v0.29.2
-## explicit; go 1.26.0
-github.com/go-openapi/swag/fileutils
 # github.com/go-openapi/swag/jsonutils v0.29.2
 ## explicit; go 1.26.0
 github.com/go-openapi/swag/jsonutils
 github.com/go-openapi/swag/jsonutils/adapters
 github.com/go-openapi/swag/jsonutils/adapters/ifaces
 github.com/go-openapi/swag/jsonutils/adapters/stdlib/json
-# github.com/go-openapi/swag/loading v0.29.2
-## explicit; go 1.26.0
-github.com/go-openapi/swag/loading
-# github.com/go-openapi/swag/mangling v0.29.2
-## explicit; go 1.26.0
-github.com/go-openapi/swag/mangling
-# github.com/go-openapi/swag/netutils v0.29.2
-## explicit; go 1.26.0
-github.com/go-openapi/swag/netutils
 # github.com/go-openapi/swag/pools v0.29.2
 ## explicit; go 1.26.0
 github.com/go-openapi/swag/pools
-# github.com/go-openapi/swag/stringutils v0.29.2
-## explicit; go 1.26.0
-github.com/go-openapi/swag/stringutils
 # github.com/go-openapi/swag/typeutils v0.29.2
 ## explicit; go 1.26.0
 github.com/go-openapi/swag/typeutils
-# github.com/go-openapi/swag/yamlutils v0.29.2
-## explicit; go 1.26.0
-github.com/go-openapi/swag/yamlutils
 # github.com/go-task/slim-sprig/v3 v3.0.0
 ## explicit; go 1.20
 github.com/go-task/slim-sprig/v3
@@ -1353,18 +1329,12 @@ k8s.io/klog/v2/textlogger
 ## explicit; go 1.26.0
 k8s.io/kube-aggregator/pkg/apis/apiregistration
 k8s.io/kube-aggregator/pkg/apis/apiregistration/v1
-# k8s.io/kube-openapi v0.0.0-20260821135717-be32def86098
-## explicit; go 1.25.0
+# k8s.io/kube-openapi v0.0.0-20261001230523-97fa35140926
+## explicit; go 1.27.0
 k8s.io/kube-openapi/pkg/cached
 k8s.io/kube-openapi/pkg/common
 k8s.io/kube-openapi/pkg/handler3
 k8s.io/kube-openapi/pkg/internal
-k8s.io/kube-openapi/pkg/internal/third_party/go-json-experiment/json
-k8s.io/kube-openapi/pkg/internal/third_party/go-json-experiment/json/internal
-k8s.io/kube-openapi/pkg/internal/third_party/go-json-experiment/json/internal/jsonflags
-k8s.io/kube-openapi/pkg/internal/third_party/go-json-experiment/json/internal/jsonopts
-k8s.io/kube-openapi/pkg/internal/third_party/go-json-experiment/json/internal/jsonwire
-k8s.io/kube-openapi/pkg/internal/third_party/go-json-experiment/json/jsontext
 k8s.io/kube-openapi/pkg/schemaconv
 k8s.io/kube-openapi/pkg/spec3
 k8s.io/kube-openapi/pkg/util
@@ -1604,8 +1574,8 @@ sigs.k8s.io/kustomize/api/provider
 sigs.k8s.io/kustomize/api/resmap
 sigs.k8s.io/kustomize/api/resource
 sigs.k8s.io/kustomize/api/types
-# sigs.k8s.io/kustomize/kyaml v0.21.2
-## explicit; go 1.26.0
+# sigs.k8s.io/kustomize/kyaml v0.21.3
+## explicit; go 1.27.0
 sigs.k8s.io/kustomize/kyaml/comments
 sigs.k8s.io/kustomize/kyaml/errors
 sigs.k8s.io/kustomize/kyaml/ext
@@ -1645,6 +1615,9 @@ sigs.k8s.io/structured-merge-diff/v6/merge
 sigs.k8s.io/structured-merge-diff/v6/schema
 sigs.k8s.io/structured-merge-diff/v6/typed
 sigs.k8s.io/structured-merge-diff/v6/value
+# sigs.k8s.io/structured-merge-diff/v7 v7.0.0
+## explicit; go 1.27
+sigs.k8s.io/structured-merge-diff/v7/schema
 # sigs.k8s.io/yaml v1.6.0
 ## explicit; go 1.22
 sigs.k8s.io/yaml

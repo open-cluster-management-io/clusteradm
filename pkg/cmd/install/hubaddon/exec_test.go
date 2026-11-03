@@ -132,6 +132,30 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 		}, eventuallyTimeout, eventuallyInterval).Should(gomega.BeTrue(), addon+" namespace should not be created")
 	})
 
+	ginkgo.It("Should install the argocd-agent add-on in dry-run mode", func(ctx ginkgo.SpecContext) {
+		addon := "argocd-agent"
+		clusteradmFlagsCopy := *clusteradmFlags
+		clusteradmFlagsCopy.DryRun = true
+		streams := genericiooptions.IOStreams{Out: io.Discard, ErrOut: os.Stderr}
+		o := Options{
+			ClusteradmFlags: &clusteradmFlagsCopy,
+			values: scenario.Values{
+				CreateNamespace: true,
+				HubAddons:       []string{addon},
+			},
+			Streams: streams,
+			Helm:    helm.NewHelm(&clusteradmFlagsCopy, streams),
+		}
+
+		err := o.runWithHelmClient(ctx, addon)
+		gomega.Expect(err).ToNot(gomega.HaveOccurred())
+
+		gomega.Consistently(func(g gomega.Gomega) bool {
+			_, err := kubeClient.CoreV1().Namespaces().Get(ctx, argocdNamespace, metav1.GetOptions{})
+			return errors.IsNotFound(err)
+		}, eventuallyTimeout, eventuallyInterval).Should(gomega.BeTrue(), argocdNamespace+" namespace should not be created")
+	})
+
 	// Generate entries for the `runWithClient` test table
 	addonTests := []ginkgo.TableEntry{}
 	for hubAddon, deployments := range hubAddons {

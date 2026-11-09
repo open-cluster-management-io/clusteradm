@@ -1423,7 +1423,7 @@ k8s.io/utils/internal/third_party/forked/golang/net
 k8s.io/utils/net
 k8s.io/utils/ptr
 k8s.io/utils/trace
-# open-cluster-management.io/api v1.4.0
+# open-cluster-management.io/api v1.4.0 => github.com/ssijbabu/api v1.3.1-0.20261109191951-a6a391f290c3
 ## explicit; go 1.26.0
 open-cluster-management.io/api/addon/v1alpha1
 open-cluster-management.io/api/addon/v1beta1
@@ -1468,7 +1468,7 @@ open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versio
 open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned/scheme
 open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned/typed/authentication/v1alpha1
 open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned/typed/authentication/v1beta1
-# open-cluster-management.io/ocm v1.4.0
+# open-cluster-management.io/ocm v1.4.0 => github.com/ssijbabu/ocm v1.3.1-0.20261109195938-b8685f034802
 ## explicit; go 1.26.0
 open-cluster-management.io/ocm/deploy/cluster-manager/chart
 open-cluster-management.io/ocm/deploy/klusterlet/chart
@@ -1652,3 +1652,5 @@ sigs.k8s.io/structured-merge-diff/v6/value
 sigs.k8s.io/yaml
 sigs.k8s.io/yaml/goyaml.v3
 sigs.k8s.io/yaml/kyaml
+# open-cluster-management.io/api => github.com/ssijbabu/api v1.3.1-0.20261109191951-a6a391f290c3
+# open-cluster-management.io/ocm => github.com/ssijbabu/ocm v1.3.1-0.20261109195938-b8685f034802

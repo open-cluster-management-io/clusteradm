@@ -203,7 +203,8 @@ func (o *Options) printSPIFFEJoin(ctx context.Context, w io.Writer, kubeClient k
 	if !known {
 		endpoint = "<grpc-spiffe address>"
 	}
-	fmt.Fprintf(w, "Your hub is ready for SPIFFE registration. On each managed cluster, after its SPIRE entries exist, run:\n\n"+
+	fmt.Fprintf(w, "Your hub is ready for SPIFFE registration. On each managed cluster, run the following; it prints\n"+
+		"the SPIFFE IDs to issue once the Klusterlet has secured its namespaces (SPIFFEAdmissionReady):\n\n"+
 		"    %s join --cluster-name <cluster_name> --registration-auth spiffe \\\n"+
 		"      --hub-grpc-endpoint %s \\\n"+
 		"      --hub-spiffe-id %s",

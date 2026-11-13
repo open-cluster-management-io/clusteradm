@@ -12,7 +12,7 @@ require (
 	github.com/jonboulle/clockwork v0.5.0
 	github.com/onsi/ginkgo/v2 v2.33.1
 	github.com/onsi/gomega v1.44.0
-	github.com/openshift/library-go v0.0.0-20260911204104-f7fdf34b126f
+	github.com/openshift/library-go v0.0.0-20261030161254-298cf2d19148
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.1.0
@@ -27,7 +27,7 @@ require (
 	k8s.io/component-base v0.37.2
 	k8s.io/klog/v2 v2.140.0
 	k8s.io/kubectl v0.37.2
-	open-cluster-management.io/api v1.4.1-0.20261021153953-ae8c33590001
+	open-cluster-management.io/api v1.4.1-0.20261023183208-940bd2e3ecb2
 	open-cluster-management.io/cluster-proxy v0.13.0
 	open-cluster-management.io/managed-serviceaccount v0.12.0
 	open-cluster-management.io/ocm v1.4.0
@@ -48,6 +48,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.5.0 // indirect
 	github.com/Masterminds/sprig/v3 v3.3.0 // indirect
 	github.com/Masterminds/squirrel v1.5.4 // indirect
+	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.4.1 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -66,6 +67,7 @@ require (
 	github.com/fxamacker/cbor/v2 v2.9.3 // indirect
 	github.com/go-errors/errors v1.5.1 // indirect
 	github.com/go-gorp/gorp/v3 v3.1.0 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.5 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
 	github.com/go-openapi/jsonpointer v1.0.1 // indirect
@@ -114,18 +116,19 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
-	github.com/openshift/api v0.0.0-20260914154154-9edb1b2245e2 // indirect
+	github.com/openshift/api v0.0.0-20261023091600-9809689a2448 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/prometheus/client_golang v1.24.1 // indirect
+	github.com/prometheus/client_golang v1.25.0 // indirect
 	github.com/prometheus/client_model v0.6.3 // indirect
-	github.com/prometheus/common v0.71.0 // indirect
+	github.com/prometheus/common v0.72.0 // indirect
 	github.com/prometheus/procfs v0.22.0 // indirect
 	github.com/rubenv/sql-migrate v1.8.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
+	github.com/spiffe/go-spiffe/v2 v2.9.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
 	go.opentelemetry.io/otel v1.46.0 // indirect
@@ -153,7 +156,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiserver v0.37.2 // indirect
 	k8s.io/component-helpers v0.37.2 // indirect
-	k8s.io/kube-aggregator v0.36.4 // indirect
+	k8s.io/kube-aggregator v0.37.2 // indirect
 	k8s.io/kube-openapi v0.0.0-20260821135717-be32def86098 // indirect
 	k8s.io/streaming v0.37.2 // indirect
 	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3 // indirect
@@ -165,3 +168,11 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.2 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
+
+replace open-cluster-management.io/api => github.com/ssijbabu/api v1.3.1-0.20261113090800-b805cf6c07e4
+
+replace open-cluster-management.io/ocm => ../ocm
+
+replace open-cluster-management.io/sdk-go => ../sdk-go
+
+replace open-cluster-management.io/addon-framework => ../addon-framework

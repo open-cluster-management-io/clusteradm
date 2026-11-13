@@ -16,6 +16,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.1.0
+	github.com/spiffe/go-spiffe/v2 v2.9.0
 	google.golang.org/grpc v1.85.0
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.22.1
@@ -128,7 +129,6 @@ require (
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
-	github.com/spiffe/go-spiffe/v2 v2.9.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
 	go.opentelemetry.io/otel v1.46.0 // indirect

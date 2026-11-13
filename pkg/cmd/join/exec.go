@@ -71,11 +71,17 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		return fmt.Errorf("no flags have been set: hub-apiserver, hub-token and cluster-name is required")
 	}
 
-	if o.token == "" {
-		return fmt.Errorf("token is missing")
-	}
-	if o.hubAPIServer == "" {
-		return fmt.Errorf("hub-server is missing")
+	if o.isSPIFFE() {
+		if err := o.checkSPIFFEFlags(cmd); err != nil {
+			return err
+		}
+	} else {
+		if o.token == "" {
+			return fmt.Errorf("token is missing")
+		}
+		if o.hubAPIServer == "" {
+			return fmt.Errorf("hub-server is missing")
+		}
 	}
 	if o.clusterName == "" {
 		return fmt.Errorf("cluster-name is missing")
@@ -171,14 +177,21 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		}
 	}
 
+	if o.isSPIFFE() {
+		o.setSPIFFEDriver()
+	}
+
 	// set addon kubeclient registration driver (only if not using default csr)
-	if o.addonKubeClientRegistrationAuth != "csr" {
+	if o.addonKubeClientRegistrationAuth != "csr" && !o.isSPIFFE() {
 		o.setAddonKubeClientRegistrationDriver()
 	}
 
 	o.klusterletChartConfig.Klusterlet.WorkConfiguration = operatorv1.WorkAgentConfiguration{
 		FeatureGates: genericclioptionsclusteradm.ConvertToFeatureGateAPI(
 			genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeWorkFeatureGates),
+	}
+	if o.isSPIFFE() {
+		o.enableSPIFFEWorkGate()
 	}
 
 	// set mode based on mode and singleton
@@ -199,6 +212,17 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		o.HubCAData = cabytes
 	}
 
+	// A spiffe cluster has no hub credential: there is no bootstrap kubeconfig to build or check.
+	if !o.isSPIFFE() {
+		if err := o.completeHubConfig(cmd); err != nil {
+			return err
+		}
+	}
+
+	return o.completeManagedCluster(cmd, args)
+}
+
+func (o *Options) completeHubConfig(cmd *cobra.Command) error {
 	// code logic of building hub client in join process:
 	// 1. use the token and insecure to fetch the ca data from cm in kube-public ns
 	// 2. if not found, assume using an authorized ca.
@@ -222,9 +246,13 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 			return err
 		}
 	}
+	return nil
+}
 
+func (o *Options) completeManagedCluster(cmd *cobra.Command, args []string) error {
 	// get managed cluster externalServerURL
 	var kubeClient *kubernetes.Clientset
+	var err error
 	switch o.mode {
 	case string(operatorv1.InstallModeHosted):
 		restConfig, err := clientcmd.BuildConfigFromFlags("", o.managedKubeconfigFile)
@@ -274,32 +302,30 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 
 func (o *Options) validate(ctx context.Context) error {
 	// preflight check
-	if err := preflightinterface.RunChecks(
-		ctx,
-		[]preflightinterface.Checker{
-			preflight.HubKubeconfigCheck{
-				Config: o.HubConfig,
-			},
-			preflight.DeployModeCheck{
-				Mode:                  o.mode,
-				InternalEndpoint:      o.forceHubInClusterEndpointLookup,
-				ManagedKubeconfigFile: o.managedKubeconfigFile,
-			},
-			preflight.ClusterNameCheck{
-				ClusterName: o.klusterletChartConfig.Klusterlet.ClusterName,
-			},
-		}, os.Stderr); err != nil {
+	checks := []preflightinterface.Checker{
+		preflight.DeployModeCheck{
+			Mode:                  o.mode,
+			InternalEndpoint:      o.forceHubInClusterEndpointLookup,
+			ManagedKubeconfigFile: o.managedKubeconfigFile,
+		},
+		preflight.ClusterNameCheck{
+			ClusterName: o.klusterletChartConfig.Klusterlet.ClusterName,
+		},
+	}
+	if !o.isSPIFFE() {
+		checks = append(checks, preflight.HubKubeconfigCheck{Config: o.HubConfig})
+	}
+	if err := preflightinterface.RunChecks(ctx, checks, os.Stderr); err != nil {
 		return err
 	}
 
-	err := o.setKubeconfig()
-	if err != nil {
-		return err
-	}
-
-	err = o.setGRPCConfig()
-	if err != nil {
-		return err
+	if !o.isSPIFFE() {
+		if err := o.setKubeconfig(); err != nil {
+			return err
+		}
+		if err := o.setGRPCConfig(); err != nil {
+			return err
+		}
 	}
 
 	// get ManagedKubeconfig from given file
@@ -350,6 +376,8 @@ func (o *Options) validate(ctx context.Context) error {
 		if o.grpcServer == "" {
 			return gherrors.New("grpc-server is required when registration-auth type is grpc")
 		}
+	case operatorv1.SPIFFEAuthType:
+		// checked in complete
 	case operatorv1.CSRAuthType:
 		// default auth type. do nothing
 	default:
@@ -360,6 +388,10 @@ func (o *Options) validate(ctx context.Context) error {
 	switch o.addonKubeClientRegistrationAuth {
 	case "csr":
 		// default, no additional validation needed
+	case operatorv1.SPIFFEAuthType:
+		if !o.isSPIFFE() {
+			return gherrors.New("addon-kubeclient-registration-auth spiffe needs registration-auth spiffe")
+		}
 	case "token":
 		if o.addonTokenExpirationSeconds < 0 {
 			return gherrors.New("addon-token-expiration-seconds must be non-negative")
@@ -398,7 +430,8 @@ func (o *Options) run(ctx context.Context) error {
 
 	r := reader.NewResourceReader(f, o.ClusteradmFlags.DryRun, o.Streams)
 
-	if err = o.applyKlusterlet(ctx, r, operatorClient, apiExtensionsClient); err != nil {
+	klusterlet, err := o.applyKlusterlet(ctx, r, operatorClient, apiExtensionsClient)
+	if err != nil {
 		return err
 	}
 
@@ -416,6 +449,13 @@ func (o *Options) run(ctx context.Context) error {
 		}
 	}
 
+	if o.isSPIFFE() {
+		if !o.ClusteradmFlags.DryRun {
+			o.printSPIFFENextSteps(o.Streams.Out, klusterlet)
+		}
+		return nil
+	}
+
 	fmt.Fprintf(o.Streams.Out, "Please log onto the hub cluster and run the following command:\n\n"+
 		"    %s accept --clusters %s\n\n", helpers.GetExampleHeader(), o.klusterletChartConfig.Klusterlet.ClusterName)
 	fmt.Fprintln(o.Streams.Out, "This is not needed when the ManagedClusterAutoApproval feature is enabled")
@@ -423,10 +463,13 @@ func (o *Options) run(ctx context.Context) error {
 
 }
 
-func (o *Options) applyKlusterlet(ctx context.Context, r *reader.ResourceReader, operatorClient operatorclient.Interface, apiExtensionsClient apiextensionsclient.Interface) error {
+// applyKlusterlet applies the Klusterlet. With spiffe and --wait it returns the Klusterlet once it
+// is SPIFFEAdmissionReady.
+func (o *Options) applyKlusterlet(ctx context.Context, r *reader.ResourceReader, operatorClient operatorclient.Interface,
+	apiExtensionsClient apiextensionsclient.Interface) (*operatorv1.Klusterlet, error) {
 	available, err := checkIfRegistrationOperatorAvailable(ctx, o.ClusteradmFlags.KubectlFactory)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	o.klusterletChartConfig.CreateNamespace = o.createNameSpace
@@ -438,11 +481,11 @@ func (o *Options) applyKlusterlet(ctx context.Context, r *reader.ResourceReader,
 
 	crds, raw, err := chart.RenderKlusterletChart(ctx, o.klusterletChartConfig, OperatorNamespace)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := r.ApplyRaw(crds); err != nil {
-		return err
+		return nil, err
 	}
 
 	if !o.ClusteradmFlags.DryRun {
@@ -453,12 +496,12 @@ func (o *Options) applyKlusterlet(ctx context.Context, r *reader.ResourceReader,
 			"klusterlets.operator.open-cluster-management.io",
 			o.wait,
 		); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	if err := r.ApplyRaw(raw); err != nil {
-		return err
+		return nil, err
 	}
 
 	if !available && o.wait && !o.ClusteradmFlags.DryRun {
@@ -470,23 +513,33 @@ func (o *Options) applyKlusterlet(ctx context.Context, r *reader.ResourceReader,
 			config.KlusterletName,
 		)
 		if err != nil {
-			return err
+			return nil, err
 		}
+	}
+
+	if o.isSPIFFE() {
+		// The agents can't start before the platform issues their SVIDs, which it may do only
+		// once the Klusterlet has secured its namespaces.
+		if o.wait && !o.ClusteradmFlags.DryRun {
+			return waitForSPIFFEAdmission(ctx, o.Streams.Out, operatorClient, int64(o.ClusteradmFlags.Timeout),
+				o.klusterletChartConfig.Klusterlet.Name)
+		}
+		return nil, nil
 	}
 
 	if o.wait && !o.ClusteradmFlags.DryRun {
 		err = waitUntilKlusterletConditionIsTrue(
 			ctx, o.Streams.Out, operatorClient, int64(o.ClusteradmFlags.Timeout), o.klusterletChartConfig.Klusterlet.Name)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		err = o.waitUntilManagedClusterIsCreated(ctx, int64(o.ClusteradmFlags.Timeout), o.klusterletChartConfig.Klusterlet.ClusterName)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 func checkIfRegistrationOperatorAvailable(ctx context.Context, f util.Factory) (bool, error) {

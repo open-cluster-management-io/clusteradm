@@ -42,7 +42,8 @@ var (
 	releaseName = "multicluster-controlplane"
 )
 
-var validRegistrationDriver = sets.New(operatorv1.CSRAuthType, operatorv1.AwsIrsaAuthType, operatorv1.GRPCAuthType)
+var validRegistrationDriver = sets.New(operatorv1.CSRAuthType, operatorv1.AwsIrsaAuthType, operatorv1.GRPCAuthType,
+	operatorv1.SPIFFEAuthType)
 
 func (o *Options) complete(cmd *cobra.Command, _ []string) (err error) {
 	klog.V(1).InfoS("init options:", "dry-run", o.ClusteradmFlags.DryRun, "force", o.force, "output-file", o.outputFile)
@@ -131,7 +132,11 @@ func (o *Options) complete(cmd *cobra.Command, _ []string) (err error) {
 			}
 		}
 
-		o.clusterManagerChartConfig.CreateBootstrapToken = o.useBootstrapToken
+		if err := o.applySPIFFE(); err != nil {
+			return err
+		}
+
+		o.clusterManagerChartConfig.CreateBootstrapToken = o.useBootstrapToken && !o.spiffeOnly()
 
 		if o.imagePullCredFile != "" {
 			content, err := os.ReadFile(o.imagePullCredFile)
@@ -193,8 +198,12 @@ func (o *Options) validate(ctx context.Context) error {
 
 	for _, driver := range o.registrationDrivers {
 		if !validRegistrationDriver.Has(driver) {
-			return fmt.Errorf("only csr,awsirsa and grpc are valid drivers")
+			return fmt.Errorf("only csr,awsirsa,grpc and spiffe are valid drivers")
 		}
+	}
+
+	if err := o.validateSPIFFEFlags(); err != nil {
+		return err
 	}
 
 	if genericclioptionsclusteradm.HubMutableFeatureGate.Enabled("ManagedClusterAutoApproval") {
@@ -242,9 +251,12 @@ func (o *Options) run(ctx context.Context) error {
 			fmt.Fprintln(o.Streams.Out, "skip creating namespace")
 		}
 
-		if !o.useBootstrapToken {
+		switch {
+		case o.spiffeOnly():
+			// SPIFFE agents need no bootstrap token or ServiceAccount.
+		case !o.useBootstrapToken:
 			o.clusterManagerChartConfig.CreateBootstrapSA = true
-		} else {
+		default:
 			o.clusterManagerChartConfig.CreateBootstrapToken = true
 		}
 
@@ -256,7 +268,8 @@ func (o *Options) run(ctx context.Context) error {
 
 		// A values file can set both createBootstrapSA and createBootstrapToken to false, which matches the chart
 		// but breaks join token retrieval below (it follows --use-bootstrap-token, not the chart defaults).
-		if !o.ClusteradmFlags.DryRun && !o.clusterManagerChartConfig.CreateBootstrapSA && !o.clusterManagerChartConfig.CreateBootstrapToken {
+		if !o.ClusteradmFlags.DryRun && !o.spiffeOnly() &&
+			!o.clusterManagerChartConfig.CreateBootstrapSA && !o.clusterManagerChartConfig.CreateBootstrapToken {
 			klog.V(1).InfoS("cluster-manager values disabled both bootstrap resources; reapplying bootstrap settings from --use-bootstrap-token for join token retrieval",
 				"useBootstrapToken", o.useBootstrapToken)
 			if !o.useBootstrapToken {
@@ -314,6 +327,10 @@ func (o *Options) run(ctx context.Context) error {
 				int64(o.ClusteradmFlags.Timeout)); err != nil {
 				return err
 			}
+		}
+
+		if o.spiffeOnly() {
+			return o.finishSPIFFEOnly(ctx, r, kubeClient)
 		}
 
 		// if service-account wait for the sa secret
@@ -389,6 +406,11 @@ func (o *Options) run(ctx context.Context) error {
 				"Replace <cluster_name> with a cluster name of your choice. For example, cluster1.\n\n",
 				cmd,
 			)
+			if o.spiffeEnabled() {
+				if err := o.printSPIFFEJoin(ctx, o.Streams.Out, kubeClient); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil
@@ -479,6 +501,12 @@ func getRegistrationDrivers(o *Options) ([]operatorv1.RegistrationDriverHub, err
 			}
 			awsirsa := &operatorv1.AwsIrsaConfig{HubClusterArn: hubClusterArn, Tags: o.awsResourceTags, AutoApprovedIdentities: o.autoApprovedARNPatterns}
 			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: operatorv1.AwsIrsaAuthType, AwsIrsa: awsirsa}
+		case operatorv1.SPIFFEAuthType:
+			c, _, err := o.spiffeConfig()
+			if err != nil {
+				return registrationDrivers, err
+			}
+			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: operatorv1.SPIFFEAuthType, SPIFFE: c}
 		case operatorv1.GRPCAuthType:
 			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: operatorv1.GRPCAuthType}
 			if len(o.autoApprovedGRPCIdentities) != 0 {

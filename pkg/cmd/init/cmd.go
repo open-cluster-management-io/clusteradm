@@ -95,7 +95,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	o.Helm.AddFlags(singletonSet)
 	cmd.Flags().AddFlagSet(singletonSet)
 	cmd.Flags().StringSliceVar(&o.registrationDrivers, "registration-drivers", []string{},
-		"The type of authentication to use for registering and authenticating with hub. Only csr, awsirsa and grpc are accepted as valid inputs. This flag can be repeated to specify multiple authentication types.")
+		"The type of authentication to use for registering and authenticating with hub. Only csr, awsirsa, grpc and spiffe are accepted as valid inputs. This flag can be repeated to specify multiple authentication types.")
 	cmd.Flags().StringVar(&o.hubClusterArn, "hub-cluster-arn", "",
 		"The hubCluster ARN to be passed if awsirsa is one of the registrationAuths and the cluster name in EKS kubeconfig doesn't contain hubClusterArn")
 	cmd.Flags().StringSliceVar(&o.awsResourceTags, "aws-resource-tags", []string{},
@@ -108,6 +108,22 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().BoolVar(&o.enableSyncLabels, "enable-sync-labels", false, "If true, sync the labels from clustermanager to all hub resources.")
 	cmd.Flags().StringVar(&o.grpcServer, "grpc-server", "", "The gRPC server address of the hub")
 	cmd.Flags().StringVar(&o.grpcEndpointType, "grpc-endpoint-type", "hostname", "The gRPC server endpoint type. The supported types are hostname and loadBalancer. The default type is hostname.")
+	cmd.Flags().StringVar(&o.spiffe.trustDomain, "spiffe-trust-domain", "",
+		"The hub's SPIFFE trust domain, for example ocm-hub.example.org. Required with the spiffe registration driver.")
+	cmd.Flags().StringSliceVar(&o.spiffe.agentTrustDomains, "spiffe-agent-trust-domains", nil,
+		"SPIFFE trust domains whose agents may register, federated with the hub's. Defaults to the hub's trust domain.")
+	cmd.Flags().StringVar(&o.spiffe.serverID, "spiffe-server-id", "",
+		"The SPIFFE ID of the hub gRPC server. Defaults to spiffe://<trust domain>/ocm/hub/grpc-server.")
+	cmd.Flags().StringVar(&o.spiffe.endpointType, "spiffe-endpoint-type", "loadBalancer",
+		"How the SPIFFE gRPC listener is exposed: hostname or loadBalancer.")
+	cmd.Flags().StringVar(&o.spiffe.server, "spiffe-server", "",
+		"The host name of the SPIFFE gRPC listener. Required with --spiffe-endpoint-type hostname.")
+	cmd.Flags().StringVar(&o.spiffe.agentIDTemplate, "spiffe-agent-id-template", "",
+		"The layout of agent SPIFFE IDs, for example spiffe://{trustDomain}/ocm/cluster/{cluster}/agent/{role}. "+
+			"Pass the same value to clusteradm join: join can't read it from the hub.")
+	cmd.Flags().StringVar(&o.spiffe.addOnAgentIDTemplate, "spiffe-addon-agent-id-template", "",
+		"The layout of add-on agent SPIFFE IDs, for example spiffe://{trustDomain}/ocm/cluster/{cluster}/addon/{addon}/agent/{agent}. "+
+			"Pass the same value to clusteradm join: join can't read it from the hub.")
 	cmd.Flags().StringSliceVar(&o.autoApprovedGRPCIdentities, "auto-approved-grpc-identities", []string{},
 		"List of users or identities that are accepted and whatever matches can be auto accepted to join hub for grpc clusters")
 	return cmd

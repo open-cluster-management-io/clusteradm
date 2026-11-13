@@ -108,8 +108,19 @@ func (o *Options) accept(ctx context.Context, kubeClient *kubernetes.Clientset, 
 	// awrirsa authentication doesn't create CSR on hub, hence there is nothing to approve
 	_, hasEksArn := managedCluster.Annotations["agent.open-cluster-management.io/managed-cluster-arn"]
 
+	isSPIFFE, pinPatch, err := spiffeAcceptance(managedCluster, o.SPIFFETrustDomain)
+	if err != nil {
+		return false, err
+	}
+	if pinPatch != nil && !o.ClusteradmFlags.DryRun {
+		if _, err := clusterClient.ClusterV1().ManagedClusters().Patch(ctx, clusterName, types.MergePatchType, pinPatch,
+			metav1.PatchOptions{}); err != nil {
+			return false, fmt.Errorf("fail to pin managed cluster %s to trust domain %s: %v", clusterName, o.SPIFFETrustDomain, err)
+		}
+	}
+
 	var approved bool
-	if !hasEksArn {
+	if !hasEksArn && !isSPIFFE {
 		approved, err = o.approveCSR(ctx, kubeClient, clusterName, waitMode)
 		if err != nil {
 			return approved, fmt.Errorf("fail to approve the csr for cluster %s: %v", clusterName, err)

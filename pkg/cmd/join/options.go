@@ -121,6 +121,9 @@ type Options struct {
 
 	// Token expiration seconds for addon registration
 	addonTokenExpirationSeconds int64
+
+	// spiffe holds the settings of the spiffe registration driver.
+	spiffe spiffeOptions
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Options {

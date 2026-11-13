@@ -88,7 +88,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().BoolVar(&o.createNameSpace, "create-namespace", true, "If true, create the operator namespace(open-cluster-management) and the agent namespace(open-cluster-management-agent for Default mode, <klusterlet-name> for Hosted mode), otherwise use existing one")
 	cmd.Flags().BoolVar(&o.enableSyncLabels, "enable-sync-labels", false, "If true, sync the labels from klusterlet to all agent resources.")
 	cmd.Flags().Int32Var(&o.clientCertExpirationSeconds, "client-cert-expiration-seconds", 31536000, "clientCertExpirationSeconds represents the seconds of a client certificate to expire.")
-	cmd.Flags().StringVar(&o.registrationAuth, "registration-auth", "csr", "The type of authentication to use for registering and authenticating with hub. The supported types including: csr, grpc and awsirsa. The default type is csr.")
+	cmd.Flags().StringVar(&o.registrationAuth, "registration-auth", "csr", "The type of authentication to use for registering and authenticating with hub. The supported types including: csr, grpc, awsirsa and spiffe. The default type is csr.")
 	cmd.Flags().StringVar(&o.hubClusterArn, "hub-cluster-arn", "", "The arn of the hub cluster(i.e. EKS cluster) to which managed-cluster will join")
 	cmd.Flags().StringVar(&o.managedClusterArn, "managed-cluster-arn", "", "The arn of the managed cluster(i.e. EKS cluster) which will be joining the hub")
 	cmd.Flags().StringArrayVar(&o.klusterletAnnotations, "klusterlet-annotation", []string{}, fmt.Sprintf("Annotations to set on the ManagedCluster, in key=value format. Note: each key will be automatically prefixed with '%s/', if not set.", operatorv1.ClusterAnnotationsKeyPrefix))
@@ -97,5 +97,17 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().StringVar(&o.grpcCAFile, "grpc-ca-file", "", "Path to gRPC server CA PEM; required if --grpc-server is set")
 	cmd.Flags().StringVar(&o.addonKubeClientRegistrationAuth, "addon-kubeclient-registration-auth", "csr", "The type of authentication to use for kubeClient type addon registration. Supported types: csr, token. Default is csr.")
 	cmd.Flags().Int64Var(&o.addonTokenExpirationSeconds, "addon-token-expiration-seconds", 0, "Token expiration seconds for addon registration when using token auth type. If not specified or 0, the system default will be used. Only applies when --addon-kubeclient-registration-auth=token.")
+	cmd.Flags().StringVar(&o.spiffe.hubGRPCEndpoint, "hub-grpc-endpoint", "",
+		"host:port of the hub's SPIFFE gRPC listener. Required with --registration-auth spiffe.")
+	cmd.Flags().StringVar(&o.spiffe.hubSPIFFEID, "hub-spiffe-id", "",
+		"The only SPIFFE ID the agents accept from the hub, for example spiffe://ocm-hub.example.org/ocm/hub/grpc-server. Required with --registration-auth spiffe.")
+	cmd.Flags().StringVar(&o.spiffe.trustDomain, "spiffe-trust-domain", "",
+		"The agents' SPIFFE trust domain, when it differs from the hub's. The hub must list it in its agent trust domains.")
+	cmd.Flags().StringVar(&o.spiffe.workloadAPISocket, "spiffe-workload-api-socket", "",
+		"The address of the local SPIRE agent's Workload API. Defaults to unix:///spiffe-workload-api/spire-agent.sock.")
+	cmd.Flags().StringVar(&o.spiffe.agentIDTemplate, "spiffe-agent-id-template", "",
+		"The layout of agent SPIFFE IDs. It must equal the hub's: join can't read it from the hub, so pass the value given to clusteradm init.")
+	cmd.Flags().StringVar(&o.spiffe.addOnAgentIDTemplate, "spiffe-addon-agent-id-template", "",
+		"The layout of add-on agent SPIFFE IDs. It must equal the hub's: join can't read it from the hub, so pass the value given to clusteradm init.")
 	return cmd
 }

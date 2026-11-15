@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"regexp"
 	"strconv"
 
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
@@ -19,6 +20,7 @@ import (
 	operatorv1 "open-cluster-management.io/api/operator/v1"
 	grpcauthn "open-cluster-management.io/sdk-go/pkg/server/grpc/authn"
 
+	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"open-cluster-management.io/clusteradm/pkg/helpers"
 )
 
@@ -38,6 +40,8 @@ type spiffeOptions struct {
 	server               string
 	agentIDTemplate      string
 	addOnAgentIDTemplate string
+	// autoApprovedIdentities are the SPIFFE IDs whose clusters are accepted automatically.
+	autoApprovedIdentities []string
 	// resolvedServerID is the hub's SPIFFE ID, checked and set by complete.
 	resolvedServerID string
 }
@@ -59,11 +63,17 @@ func (o *Options) spiffeConfig() (*operatorv1.SPIFFERegistrationConfig, string, 
 		return nil, "", fmt.Errorf("--spiffe-trust-domain is required with spiffe")
 	}
 	c := &operatorv1.SPIFFERegistrationConfig{
-		TrustDomain:          o.spiffe.trustDomain,
-		AgentTrustDomains:    o.spiffe.agentTrustDomains,
-		ServerSPIFFEID:       o.spiffe.serverID,
-		AgentIDTemplate:      o.spiffe.agentIDTemplate,
-		AddOnAgentIDTemplate: o.spiffe.addOnAgentIDTemplate,
+		TrustDomain:            o.spiffe.trustDomain,
+		AgentTrustDomains:      o.spiffe.agentTrustDomains,
+		ServerSPIFFEID:         o.spiffe.serverID,
+		AgentIDTemplate:        o.spiffe.agentIDTemplate,
+		AddOnAgentIDTemplate:   o.spiffe.addOnAgentIDTemplate,
+		AutoApprovedIdentities: o.spiffe.autoApprovedIdentities,
+	}
+	for _, id := range c.AutoApprovedIdentities {
+		if !autoApprovedIdentityPattern.MatchString(id) {
+			return nil, "", fmt.Errorf("--spiffe-auto-approved-identities %q: want a SPIFFE ID in which * stands for a whole path segment", id)
+		}
 	}
 	serverID, err := spiffeServerID(c)
 	if err != nil {
@@ -119,14 +129,22 @@ func (o *Options) spiffeEndpoint() (operatorv1.EndpointExposure, error) {
 	return endpoint, nil
 }
 
-// validateSPIFFEFlags refuses spiffe flags without the spiffe driver.
+// autoApprovedIdentityPattern is the ClusterManager CRD's pattern for autoApprovedIdentities.
+var autoApprovedIdentityPattern = regexp.MustCompile(`^spiffe://[a-z0-9._-]+(/([A-Za-z0-9._-]+|\*))+$`)
+
+// validateSPIFFEFlags refuses spiffe flags without the spiffe driver, and auto-approved
+// identities without the ManagedClusterAutoApproval feature gate, as for the other drivers.
 func (o *Options) validateSPIFFEFlags() error {
+	if len(o.spiffe.autoApprovedIdentities) > 0 &&
+		!genericclioptionsclusteradm.HubMutableFeatureGate.Enabled("ManagedClusterAutoApproval") {
+		return fmt.Errorf("should enable feature gate ManagedClusterAutoApproval before passing --spiffe-auto-approved-identities")
+	}
 	if o.spiffeEnabled() {
 		return nil
 	}
 	s := o.spiffe
 	if s.trustDomain != "" || len(s.agentTrustDomains) > 0 || s.serverID != "" || s.server != "" ||
-		s.agentIDTemplate != "" || s.addOnAgentIDTemplate != "" {
+		s.agentIDTemplate != "" || s.addOnAgentIDTemplate != "" || len(s.autoApprovedIdentities) > 0 {
 		return fmt.Errorf("the --spiffe-* flags need --registration-drivers to include spiffe")
 	}
 	return nil

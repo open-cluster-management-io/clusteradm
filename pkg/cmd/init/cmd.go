@@ -124,6 +124,9 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().StringVar(&o.spiffe.addOnAgentIDTemplate, "spiffe-addon-agent-id-template", "",
 		"The layout of add-on agent SPIFFE IDs, for example spiffe://{trustDomain}/ocm/cluster/{cluster}/addon/{addon}/agent/{agent}. "+
 			"Pass the same value to clusteradm join: join can't read it from the hub.")
+	cmd.Flags().StringSliceVar(&o.spiffe.autoApprovedIdentities, "spiffe-auto-approved-identities", nil,
+		"SPIFFE IDs, with * for a whole path segment, whose clusters are accepted automatically, for example "+
+			"spiffe://ocm-hub.example.org/ocm/cluster/*/agent/registration. Needs the ManagedClusterAutoApproval feature gate.")
 	cmd.Flags().StringSliceVar(&o.autoApprovedGRPCIdentities, "auto-approved-grpc-identities", []string{},
 		"List of users or identities that are accepted and whatever matches can be auto accepted to join hub for grpc clusters")
 	return cmd

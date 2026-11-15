@@ -4,6 +4,7 @@ package init
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -14,6 +15,8 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
 	operatorv1 "open-cluster-management.io/api/operator/v1"
+
+	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
 func TestSPIFFEServerIDErrors(t *testing.T) {
@@ -148,7 +151,7 @@ func TestInitSPIFFEFlags(t *testing.T) {
 	o, _ := spiffeInitOptions(t, nil, spiffeOptions{})
 	cmd := NewCmd(o.ClusteradmFlags, o.Streams)
 	for _, f := range []string{"spiffe-trust-domain", "spiffe-agent-trust-domains", "spiffe-server-id", "spiffe-endpoint-type",
-		"spiffe-server", "spiffe-agent-id-template", "spiffe-addon-agent-id-template"} {
+		"spiffe-server", "spiffe-agent-id-template", "spiffe-addon-agent-id-template", "spiffe-auto-approved-identities"} {
 		if cmd.Flags().Lookup(f) == nil {
 			t.Errorf("no --%s flag", f)
 		}
@@ -159,5 +162,44 @@ func TestValidateSPIFFEFlagsWithDriver(t *testing.T) {
 	o, _ := spiffeInitOptions(t, []string{"spiffe"}, spiffeOptions{trustDomain: "ocm-hub.example.org"})
 	if err := o.validateSPIFFEFlags(); err != nil {
 		t.Errorf("spiffe flags with the spiffe driver: %v", err)
+	}
+}
+
+func TestSPIFFEAutoApprovedIdentities(t *testing.T) {
+	const id = "spiffe://ocm-hub.example.org/ocm/cluster/*/agent/registration"
+	setGate := func(on bool) {
+		if err := genericclioptionsclusteradm.HubMutableFeatureGate.Set(fmt.Sprintf("ManagedClusterAutoApproval=%v", on)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	defer setGate(false)
+
+	setGate(false)
+	o, _ := spiffeInitOptions(t, []string{"spiffe"}, spiffeOptions{trustDomain: "ocm-hub.example.org", autoApprovedIdentities: []string{id}})
+	if err := o.validateSPIFFEFlags(); err == nil || !strings.Contains(err.Error(), "ManagedClusterAutoApproval") {
+		t.Errorf("without the feature gate: %v", err)
+	}
+
+	setGate(true)
+	if err := o.validateSPIFFEFlags(); err != nil {
+		t.Errorf("with the feature gate: %v", err)
+	}
+	if err := o.complete(&cobra.Command{}, nil); err != nil {
+		t.Fatal(err)
+	}
+	got := o.clusterManagerChartConfig.ClusterManager.RegistrationConfiguration.RegistrationDrivers[0].SPIFFE.AutoApprovedIdentities
+	if len(got) != 1 || got[0] != id {
+		t.Errorf("autoApprovedIdentities %v", got)
+	}
+
+	o, _ = spiffeInitOptions(t, []string{"csr"}, spiffeOptions{autoApprovedIdentities: []string{id}})
+	if err := o.validateSPIFFEFlags(); err == nil || !strings.Contains(err.Error(), "--spiffe-*") {
+		t.Errorf("without the spiffe driver: %v", err)
+	}
+
+	o, _ = spiffeInitOptions(t, []string{"spiffe"}, spiffeOptions{trustDomain: "ocm-hub.example.org",
+		autoApprovedIdentities: []string{"spiffe://ocm-hub.example.org/ocm/clu*ster"}})
+	if err := o.complete(&cobra.Command{}, nil); err == nil || !strings.Contains(err.Error(), "--spiffe-auto-approved-identities") {
+		t.Errorf("a partial wildcard: %v", err)
 	}
 }

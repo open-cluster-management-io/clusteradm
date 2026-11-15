@@ -319,13 +319,14 @@ func (o *Options) validate(ctx context.Context) error {
 		return err
 	}
 
-	if !o.isSPIFFE() {
-		if err := o.setKubeconfig(); err != nil {
-			return err
-		}
-		if err := o.setGRPCConfig(); err != nil {
-			return err
-		}
+	err := o.setKubeconfig()
+	if err != nil {
+		return err
+	}
+
+	err = o.setGRPCConfig()
+	if err != nil {
+		return err
 	}
 
 	// get ManagedKubeconfig from given file
@@ -430,8 +431,7 @@ func (o *Options) run(ctx context.Context) error {
 
 	r := reader.NewResourceReader(f, o.ClusteradmFlags.DryRun, o.Streams)
 
-	klusterlet, err := o.applyKlusterlet(ctx, r, operatorClient, apiExtensionsClient)
-	if err != nil {
+	if err = o.applyKlusterlet(ctx, r, operatorClient, apiExtensionsClient); err != nil {
 		return err
 	}
 
@@ -451,7 +451,7 @@ func (o *Options) run(ctx context.Context) error {
 
 	if o.isSPIFFE() {
 		if !o.ClusteradmFlags.DryRun {
-			o.printSPIFFENextSteps(o.Streams.Out, klusterlet)
+			o.printSPIFFENextSteps(o.Streams.Out, o.spiffeKlusterlet)
 		}
 		return nil
 	}
@@ -463,13 +463,10 @@ func (o *Options) run(ctx context.Context) error {
 
 }
 
-// applyKlusterlet applies the Klusterlet. With spiffe and --wait it returns the Klusterlet once it
-// is SPIFFEAdmissionReady.
-func (o *Options) applyKlusterlet(ctx context.Context, r *reader.ResourceReader, operatorClient operatorclient.Interface,
-	apiExtensionsClient apiextensionsclient.Interface) (*operatorv1.Klusterlet, error) {
+func (o *Options) applyKlusterlet(ctx context.Context, r *reader.ResourceReader, operatorClient operatorclient.Interface, apiExtensionsClient apiextensionsclient.Interface) error {
 	available, err := checkIfRegistrationOperatorAvailable(ctx, o.ClusteradmFlags.KubectlFactory)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	o.klusterletChartConfig.CreateNamespace = o.createNameSpace
@@ -481,11 +478,11 @@ func (o *Options) applyKlusterlet(ctx context.Context, r *reader.ResourceReader,
 
 	crds, raw, err := chart.RenderKlusterletChart(ctx, o.klusterletChartConfig, OperatorNamespace)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if err := r.ApplyRaw(crds); err != nil {
-		return nil, err
+		return err
 	}
 
 	if !o.ClusteradmFlags.DryRun {
@@ -496,12 +493,12 @@ func (o *Options) applyKlusterlet(ctx context.Context, r *reader.ResourceReader,
 			"klusterlets.operator.open-cluster-management.io",
 			o.wait,
 		); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	if err := r.ApplyRaw(raw); err != nil {
-		return nil, err
+		return err
 	}
 
 	if !available && o.wait && !o.ClusteradmFlags.DryRun {
@@ -513,7 +510,7 @@ func (o *Options) applyKlusterlet(ctx context.Context, r *reader.ResourceReader,
 			config.KlusterletName,
 		)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
@@ -521,25 +518,26 @@ func (o *Options) applyKlusterlet(ctx context.Context, r *reader.ResourceReader,
 		// The agents can't start before the platform issues their SVIDs, which it may do only
 		// once the Klusterlet has secured its namespaces.
 		if o.wait && !o.ClusteradmFlags.DryRun {
-			return waitForSPIFFEAdmission(ctx, o.Streams.Out, operatorClient, int64(o.ClusteradmFlags.Timeout),
-				o.klusterletChartConfig.Klusterlet.Name)
+			o.spiffeKlusterlet, err = waitForSPIFFEAdmission(ctx, o.Streams.Out, operatorClient,
+				int64(o.ClusteradmFlags.Timeout), o.klusterletChartConfig.Klusterlet.Name)
+			return err
 		}
-		return nil, nil
+		return nil
 	}
 
 	if o.wait && !o.ClusteradmFlags.DryRun {
 		err = waitUntilKlusterletConditionIsTrue(
 			ctx, o.Streams.Out, operatorClient, int64(o.ClusteradmFlags.Timeout), o.klusterletChartConfig.Klusterlet.Name)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		err = o.waitUntilManagedClusterIsCreated(ctx, int64(o.ClusteradmFlags.Timeout), o.klusterletChartConfig.Klusterlet.ClusterName)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
-	return nil, nil
+	return nil
 }
 
 func checkIfRegistrationOperatorAvailable(ctx context.Context, f util.Factory) (bool, error) {
@@ -712,6 +710,11 @@ func (o *Options) createClientcmdapiv1Config(externalClientUnSecure *kubernetes.
 }
 
 func (o *Options) setKubeconfig() error {
+	// A spiffe agent has no hub kubeconfig.
+	if o.isSPIFFE() {
+		return nil
+	}
+
 	// replace apiserver if the flag is set, the apiserver value should not be set
 	// to in-cluster endpoint until preflight check is finished
 	if o.forceHubInClusterEndpointLookup {

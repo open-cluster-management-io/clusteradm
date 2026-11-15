@@ -38,6 +38,8 @@ type spiffeOptions struct {
 	server               string
 	agentIDTemplate      string
 	addOnAgentIDTemplate string
+	// resolvedServerID is the hub's SPIFFE ID, checked and set by complete.
+	resolvedServerID string
 }
 
 func (o *Options) spiffeEnabled() bool {
@@ -193,11 +195,8 @@ func serviceAddress(svc *corev1.Service) string {
 }
 
 // printSPIFFEJoin prints the join command for spiffe clusters. It has no token.
-func (o *Options) printSPIFFEJoin(ctx context.Context, w io.Writer, kubeClient kubernetes.Interface) error {
-	_, serverID, err := o.spiffeConfig()
-	if err != nil {
-		return err
-	}
+func (o *Options) printSPIFFEJoin(ctx context.Context, w io.Writer, kubeClient kubernetes.Interface) {
+	serverID := o.spiffe.resolvedServerID
 	endpoint := o.spiffeHubEndpoint(ctx, kubeClient)
 	known := endpoint != ""
 	if !known {
@@ -221,7 +220,6 @@ func (o *Options) printSPIFFEJoin(ctx context.Context, w io.Writer, kubeClient k
 			"    kubectl -n %s get service %s -o jsonpath='{.status.loadBalancer.ingress[0]}'\n\n",
 			spiffeServiceNamespace, spiffeServiceName)
 	}
-	return nil
 }
 
 // finishSPIFFEOnly writes the outputs of a hub whose only driver is spiffe: no token is read or
@@ -236,7 +234,8 @@ func (o *Options) finishSPIFFEOnly(ctx context.Context, r rawApplied, kubeClient
 		return fmt.Errorf("--output json prints a join token; spiffe needs none, use --output text")
 	}
 	fmt.Fprint(o.Streams.Out, "The multicluster hub control plane has been initialized successfully!\n\n")
-	return o.printSPIFFEJoin(ctx, o.Streams.Out, kubeClient)
+	o.printSPIFFEJoin(ctx, o.Streams.Out, kubeClient)
+	return nil
 }
 
 type rawApplied interface{ RawAppliedResources() []byte }

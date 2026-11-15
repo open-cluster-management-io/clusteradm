@@ -132,7 +132,7 @@ func waitForSPIFFEAdmission(ctx context.Context, w io.Writer, client operatorcli
 	phase.Store("")
 	spinner := printer.NewSpinnerWithStatus(w,
 		"Waiting for the Klusterlet to secure its namespaces (SPIFFEAdmissionReady)...",
-		500*time.Millisecond, "done.\n", func() string { return phase.Load().(string) })
+		500*time.Millisecond, "done.\n", phaseStatus(phase))
 	spinner.Start()
 	defer spinner.Stop()
 
@@ -150,6 +150,11 @@ func waitForSPIFFEAdmission(ctx context.Context, w io.Writer, client operatorcli
 			return meta.IsStatusConditionTrue(k.Status.Conditions, operatorv1.ConditionSPIFFEAdmissionReady), nil
 		})
 	return klusterlet, wait.TimeoutError(err, phase, "timed out waiting for klusterlet %s to become SPIFFEAdmissionReady", name)
+}
+
+// phaseStatus reports the last phase seen, for the spinner, which shows it only on a terminal.
+func phaseStatus(phase *atomic.Value) func() string {
+	return func() string { return phase.Load().(string) }
 }
 
 // printSPIFFENextSteps tells the admin which SPIFFE IDs to issue and how to accept the cluster.

@@ -1472,8 +1472,10 @@ open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/
 open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1beta1
 open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1beta2
 open-cluster-management.io/api/client/operator/clientset/versioned
+open-cluster-management.io/api/client/operator/clientset/versioned/fake
 open-cluster-management.io/api/client/operator/clientset/versioned/scheme
 open-cluster-management.io/api/client/operator/clientset/versioned/typed/operator/v1
+open-cluster-management.io/api/client/operator/clientset/versioned/typed/operator/v1/fake
 open-cluster-management.io/api/client/work/clientset/versioned
 open-cluster-management.io/api/client/work/clientset/versioned/scheme
 open-cluster-management.io/api/client/work/clientset/versioned/typed/work/v1

@@ -4,6 +4,8 @@ package init
 import (
 	"bytes"
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -24,7 +26,15 @@ import (
 func spiffeInitOptions(t *testing.T, drivers []string, s spiffeOptions) (*Options, *bytes.Buffer) {
 	t.Helper()
 	out := &bytes.Buffer{}
-	f := cmdutil.NewFactory(genericclioptions.NewConfigFlags(false))
+	// Never the default kubeconfig: tests must not reach a real cluster.
+	cf := genericclioptions.NewConfigFlags(false)
+	kubeconfig := filepath.Join(t.TempDir(), "kubeconfig")
+	if err := os.WriteFile(kubeconfig, []byte("apiVersion: v1\nkind: Config\nclusters: [{name: c, cluster: {server: \"https://127.0.0.1:1\"}}]\n"+
+		"contexts: [{name: c, context: {cluster: c, user: u}}]\ncurrent-context: c\nusers: [{name: u, user: {}}]\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cf.KubeConfig = &kubeconfig
+	f := cmdutil.NewFactory(cf)
 	o := newOptions(genericclioptionsclusteradm.NewClusteradmFlags(f), genericiooptions.IOStreams{Out: out, ErrOut: out})
 	o.registry = "quay.io/open-cluster-management"
 	o.bundleVersion = "default"
@@ -140,9 +150,7 @@ func TestSPIFFEInitTemplates(t *testing.T) {
 		t.Errorf("agentIDTemplate %q", got)
 	}
 	out.Reset()
-	if err := o.printSPIFFEJoin(context.TODO(), out, nil); err != nil {
-		t.Fatal(err)
-	}
+	o.printSPIFFEJoin(context.TODO(), out, nil)
 	if !strings.Contains(out.String(), "--spiffe-agent-id-template '"+tpl+"'") {
 		t.Errorf("join command doesn't pass the template:\n%s", out)
 	}
@@ -150,11 +158,13 @@ func TestSPIFFEInitTemplates(t *testing.T) {
 
 func TestSPIFFEJoinCommand(t *testing.T) {
 	o, out := spiffeInitOptions(t, []string{"spiffe"}, spiffeOptions{trustDomain: "ocm-hub.example.org"})
-
-	// No address yet: a placeholder and how to read it.
-	if err := o.printSPIFFEJoin(context.TODO(), out, kubefake.NewSimpleClientset()); err != nil {
+	if err := o.complete(&cobra.Command{}, nil); err != nil {
 		t.Fatal(err)
 	}
+	out.Reset()
+
+	// No address yet: a placeholder and how to read it.
+	o.printSPIFFEJoin(context.TODO(), out, kubefake.NewSimpleClientset())
 	for _, want := range []string{"--registration-auth spiffe", "--hub-grpc-endpoint <grpc-spiffe address>",
 		"--hub-spiffe-id spiffe://ocm-hub.example.org/ocm/hub/grpc-server", "kubectl -n open-cluster-management-hub get service"} {
 		if !strings.Contains(out.String(), want) {
@@ -169,9 +179,7 @@ func TestSPIFFEJoinCommand(t *testing.T) {
 		Spec:   corev1.ServiceSpec{Ports: []corev1.ServicePort{{Name: "grpc", Port: 443}}},
 		Status: corev1.ServiceStatus{LoadBalancer: corev1.LoadBalancerStatus{Ingress: []corev1.LoadBalancerIngress{{IP: "10.0.0.7"}}}}}
 	out.Reset()
-	if err := o.printSPIFFEJoin(context.TODO(), out, kubefake.NewSimpleClientset(svc)); err != nil {
-		t.Fatal(err)
-	}
+	o.printSPIFFEJoin(context.TODO(), out, kubefake.NewSimpleClientset(svc))
 	if !strings.Contains(out.String(), "--hub-grpc-endpoint 10.0.0.7:443") || strings.Contains(out.String(), "kubectl") {
 		t.Errorf("output:\n%s", out)
 	}

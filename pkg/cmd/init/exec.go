@@ -407,9 +407,7 @@ func (o *Options) run(ctx context.Context) error {
 				cmd,
 			)
 			if o.spiffeEnabled() {
-				if err := o.printSPIFFEJoin(ctx, o.Streams.Out, kubeClient); err != nil {
-					return err
-				}
+				o.printSPIFFEJoin(ctx, o.Streams.Out, kubeClient)
 			}
 		}
 	}
@@ -502,10 +500,11 @@ func getRegistrationDrivers(o *Options) ([]operatorv1.RegistrationDriverHub, err
 			awsirsa := &operatorv1.AwsIrsaConfig{HubClusterArn: hubClusterArn, Tags: o.awsResourceTags, AutoApprovedIdentities: o.autoApprovedARNPatterns}
 			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: operatorv1.AwsIrsaAuthType, AwsIrsa: awsirsa}
 		case operatorv1.SPIFFEAuthType:
-			c, _, err := o.spiffeConfig()
+			c, serverID, err := o.spiffeConfig()
 			if err != nil {
 				return registrationDrivers, err
 			}
+			o.spiffe.resolvedServerID = serverID
 			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: operatorv1.SPIFFEAuthType, SPIFFE: c}
 		case operatorv1.GRPCAuthType:
 			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: operatorv1.GRPCAuthType}

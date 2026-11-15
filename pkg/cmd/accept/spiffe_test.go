@@ -2,12 +2,18 @@
 package accept
 
 import (
+	"io"
 	"strings"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
+	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
 	clusterv1 "open-cluster-management.io/api/cluster/v1"
+
+	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 )
 
 func TestSPIFFEAcceptance(t *testing.T) {
@@ -48,5 +54,14 @@ func TestSPIFFEAcceptance(t *testing.T) {
 				t.Errorf("patch %s", patch)
 			}
 		})
+	}
+}
+
+func TestAcceptSPIFFEFlag(t *testing.T) {
+	// Only the flags are read; the kubeconfig is never loaded.
+	f := cmdutil.NewFactory(genericclioptions.NewConfigFlags(false))
+	cmd := NewCmd(genericclioptionsclusteradm.NewClusteradmFlags(f), genericiooptions.IOStreams{Out: io.Discard, ErrOut: io.Discard})
+	if cmd.Flags().Lookup("spiffe-trust-domain") == nil {
+		t.Error("no --spiffe-trust-domain flag")
 	}
 }

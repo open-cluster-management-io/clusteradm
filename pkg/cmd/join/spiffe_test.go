@@ -66,7 +66,7 @@ func spiffeJoinOptions(t *testing.T) (*Options, *cobra.Command, string) {
 	o.mode = "default"
 	o.addonKubeClientRegistrationAuth = "csr"
 	o.spiffe = spiffeOptions{hubGRPCEndpoint: "ocm-grpc.hub.internal:443", hubSPIFFEID: testHubID}
-	// Only hosted mode reads it; the hub in-cluster lookup flag skips dialing it.
+	// The hub in-cluster lookup flag skips dialing it.
 	o.managedKubeconfigFile = ""
 	o.forceHubInClusterEndpointLookup = true
 	return o, cmd, kubeconfig
@@ -81,16 +81,11 @@ func TestSPIFFEJoinModes(t *testing.T) {
 	}{
 		{"default", "default", false, operatorv1.InstallModeDefault},
 		{"singleton", "default", true, operatorv1.InstallModeSingleton},
-		{"hosted", "hosted", false, operatorv1.InstallModeHosted},
-		{"singleton hosted", "hosted", true, operatorv1.InstallModeSingletonHosted},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			o, cmd, kubeconfig := spiffeJoinOptions(t)
+			o, cmd, _ := spiffeJoinOptions(t)
 			o.mode, o.singleton = c.mode, c.singleton
-			if c.mode == "hosted" {
-				o.managedKubeconfigFile = kubeconfig
-			}
 			if err := o.complete(cmd, nil); err != nil {
 				t.Fatal(err)
 			}
@@ -123,12 +118,7 @@ func TestSPIFFEJoinModes(t *testing.T) {
 				t.Fatal(err)
 			}
 			all := string(bytes.Join(raw, []byte("\n---\n")))
-			// Hosted mode keeps the admin's kubeconfig of the managed cluster, as for every driver;
-			// it isn't a hub credential.
 			allowed := []string{"image-pull-credentials"}
-			if c.mode == "hosted" {
-				allowed = append(allowed, "external-managed-kubeconfig")
-			}
 			for _, obj := range raw {
 				if strings.Contains(string(obj), "kind: Secret") && !containsAny(string(obj), allowed) {
 					t.Errorf("rendered a Secret other than the image pull credentials:\n%s", obj)
@@ -169,6 +159,9 @@ func TestSPIFFEJoinErrors(t *testing.T) {
 		{"template typo", func(o *Options, _ *cobra.Command) {
 			o.spiffe.agentIDTemplate = "spiffe://{trustDomain}/ocm/{clutser}/{role}"
 		}, "clutser"},
+		{"hosted mode", func(o *Options, _ *cobra.Command) { o.mode = "hosted" }, "--mode hosted is not supported with spiffe"},
+		{"singleton hosted mode", func(o *Options, _ *cobra.Command) { o.mode, o.singleton = "Hosted", true },
+			"--mode hosted is not supported with spiffe"},
 		{"token add-on driver", func(o *Options, cmd *cobra.Command) {
 			_ = cmd.Flags().Set("addon-kubeclient-registration-auth", "token")
 			o.addonKubeClientRegistrationAuth = "token"

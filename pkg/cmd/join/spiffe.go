@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"sync/atomic"
 	"text/tabwriter"
 	"time"
@@ -40,6 +41,12 @@ func (o *Options) isSPIFFE() bool { return o.registrationAuth == operatorv1.SPIF
 // checkSPIFFEFlags checks the join flags of a spiffe cluster. Agents use only their SVIDs, so a
 // token or hub API server passed by mistake is refused rather than ignored.
 func (o *Options) checkSPIFFEFlags(cmd *cobra.Command) error {
+	// The spiffe driver supports only the Default and Singleton modes: in the hosted modes the
+	// agents would need a stored credential for the managed cluster.
+	if strings.EqualFold(o.mode, string(operatorv1.InstallModeHosted)) {
+		return fmt.Errorf("--mode hosted is not supported with spiffe: use --mode default, " +
+			"with --singleton for the Singleton mode")
+	}
 	if o.token != "" {
 		return fmt.Errorf("--hub-token is not used with spiffe: agents authenticate with their SVIDs only")
 	}

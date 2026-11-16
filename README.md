@@ -10,7 +10,7 @@
 
 ## Overview
 
-[Open Cluster Management (OCM)](https://open-cluster-management.io/) is a CNCF sandbox project that enables end-to-end visibility and control across your Kubernetes clusters using a powerful hub-agent architecture. OCM provides:
+[Open Cluster Management (OCM)](https://open-cluster-management.io/) is a CNCF incubating project that enables end-to-end visibility and control across your Kubernetes clusters using a powerful hub-agent architecture. OCM provides:
 
 - **Cluster Lifecycle Management**: Register, manage, and monitor multiple Kubernetes clusters
 - **Application Distribution**: Deploy and manage applications across multiple clusters

@@ -7,7 +7,7 @@ require (
 	github.com/disiqueira/gotree v1.0.0
 	github.com/fatih/color v1.19.0
 	github.com/ghodss/yaml v1.0.0
-	github.com/gofrs/flock v0.13.1
+	github.com/gofrs/flock v0.13.2
 	github.com/google/uuid v1.6.0
 	github.com/jonboulle/clockwork v0.5.0
 	github.com/onsi/ginkgo/v2 v2.33.1
@@ -15,8 +15,8 @@ require (
 	github.com/openshift/library-go v0.0.0-20260911204104-f7fdf34b126f
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.10.2
-	github.com/spf13/pflag v1.0.10
-	google.golang.org/grpc v1.84.0
+	github.com/spf13/pflag v1.1.0
+	google.golang.org/grpc v1.85.0
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.22.1
 	k8s.io/api v0.37.2
@@ -141,7 +141,7 @@ require (
 	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/oauth2 v0.37.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/term v0.46.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/time v0.16.0 // indirect

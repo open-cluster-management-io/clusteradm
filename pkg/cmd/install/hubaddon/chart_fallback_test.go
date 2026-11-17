@@ -23,16 +23,16 @@ func TestMissingCRDChartError(t *testing.T) {
 	t.Setenv("HELM_REPOSITORY_CACHE", dir)
 
 	rf := repo.NewFile()
-	rf.Update(&repo.Entry{Name: repoName, URL: "https://charts.invalid"})
+	rf.Update(&repo.Entry{Name: chartRepoName, URL: "https://charts.invalid"})
 	if err := rf.WriteFile(repoConfig, 0o600); err != nil {
 		t.Fatal(err)
 	}
 	// An index without the CRDs chart, as in chart repos that predate it.
-	if err := repo.NewIndexFile().WriteFile(filepath.Join(dir, repoName+"-index.yaml"), 0o600); err != nil {
+	if err := repo.NewIndexFile().WriteFile(filepath.Join(dir, chartRepoName+"-index.yaml"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
-	_, err := (&action.ChartPathOptions{}).LocateChart(repoName+"/"+argocdAgentCRDsChart, cli.New())
+	_, err := (&action.ChartPathOptions{}).LocateChart(chartRepoName+"/argocd-agent", cli.New())
 	if err == nil {
 		t.Fatal("expected an error for a chart missing from the repo index")
 	}

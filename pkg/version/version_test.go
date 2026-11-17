@@ -136,8 +136,7 @@ func TestVersionFromBuildInfo(t *testing.T) {
 
 func TestGetVersionBundle(t *testing.T) {
 	expectedVersionBundle := VersionBundle{
-		OCM:         "v1.2.0",
-		PolicyAddon: "v0.18.0",
+		OCM: "v1.2.0",
 	}
 
 	tests := []struct {

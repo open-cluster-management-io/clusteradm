@@ -109,5 +109,9 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		"The layout of agent SPIFFE IDs. It must equal the hub's: join can't read it from the hub, so pass the value given to clusteradm init.")
 	cmd.Flags().StringVar(&o.spiffe.addOnAgentIDTemplate, "spiffe-addon-agent-id-template", "",
 		"The layout of add-on agent SPIFFE IDs. It must equal the hub's: join can't read it from the hub, so pass the value given to clusteradm init.")
+	cmd.Flags().StringVar(&o.spiffe.admissionEnforcement, "spiffe-admission-enforcement", "",
+		"Required with --registration-auth spiffe: how the operator enforces the admission rules that guard the agents' SVIDs. "+
+			"ValidatingAdmissionPolicy needs Kubernetes 1.30 or later on the managed cluster; ValidatingWebhook works on any version, "+
+			"and the operator then needs its own SPIRE entry with the webhook's DNS name.")
 	return cmd
 }

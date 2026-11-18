@@ -65,7 +65,8 @@ func spiffeJoinOptions(t *testing.T) (*Options, *cobra.Command, string) {
 	o.bundleVersion = "default"
 	o.mode = "default"
 	o.addonKubeClientRegistrationAuth = "csr"
-	o.spiffe = spiffeOptions{hubGRPCEndpoint: "ocm-grpc.hub.internal:443", hubSPIFFEID: testHubID}
+	o.spiffe = spiffeOptions{hubGRPCEndpoint: "ocm-grpc.hub.internal:443", hubSPIFFEID: testHubID,
+		admissionEnforcement: string(operatorv1.SPIFFEAdmissionValidatingAdmissionPolicy)}
 	// The hub in-cluster lookup flag skips dialing it.
 	o.managedKubeconfigFile = ""
 	o.forceHubInClusterEndpointLookup = true
@@ -85,6 +86,8 @@ func TestSPIFFEJoinModes(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			o, cmd, _ := spiffeJoinOptions(t)
+			// Offline: the webhook needs no look at the cluster's admission APIs.
+			o.spiffe.admissionEnforcement = string(operatorv1.SPIFFEAdmissionValidatingWebhook)
 			o.mode, o.singleton = c.mode, c.singleton
 			if err := o.complete(cmd, nil); err != nil {
 				t.Fatal(err)

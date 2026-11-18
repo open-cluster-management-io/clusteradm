@@ -114,6 +114,9 @@ func TestAcceptSPIFFEAgainstCluster(t *testing.T) {
 func denyPin(t *testing.T, cfg *rest.Config, name string) {
 	t.Helper()
 	kube := kubernetes.NewForConfigOrDie(cfg)
+	if !servesPolicies(t, kube) {
+		t.Skip("the hub refusal is simulated with a ValidatingAdmissionPolicy, which needs Kubernetes 1.30 or later")
+	}
 	fail := admissionv1.Fail
 	policy := &admissionv1.ValidatingAdmissionPolicy{ObjectMeta: metav1.ObjectMeta{Name: "deny-" + name},
 		Spec: admissionv1.ValidatingAdmissionPolicySpec{
@@ -136,4 +139,19 @@ func denyPin(t *testing.T, cfg *rest.Config, name string) {
 	if _, err := kube.AdmissionregistrationV1().ValidatingAdmissionPolicyBindings().Create(context.TODO(), binding, metav1.CreateOptions{}); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// servesPolicies reports whether the API server serves ValidatingAdmissionPolicies.
+func servesPolicies(t *testing.T, kube kubernetes.Interface) bool {
+	t.Helper()
+	resources, err := kube.Discovery().ServerResourcesForGroupVersion(admissionv1.SchemeGroupVersion.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range resources.APIResources {
+		if r.Name == "validatingadmissionpolicies" {
+			return true
+		}
+	}
+	return false
 }

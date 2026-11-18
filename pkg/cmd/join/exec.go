@@ -318,6 +318,13 @@ func (o *Options) validate(ctx context.Context) error {
 	if err := preflightinterface.RunChecks(ctx, checks, os.Stderr); err != nil {
 		return err
 	}
+	if o.isSPIFFE() {
+		if err := o.checkSPIFFEEnforcement(func() (kubernetes.Interface, error) {
+			return o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
+		}); err != nil {
+			return err
+		}
+	}
 
 	err := o.setKubeconfig()
 	if err != nil {

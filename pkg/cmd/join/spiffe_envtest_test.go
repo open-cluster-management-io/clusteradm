@@ -42,8 +42,35 @@ func envJoinOptions(t *testing.T, cfg *rest.Config, auth string) (*Options, *cob
 	o.createNameSpace = true
 	o.resourceQosClass = "Default"
 	o.addonKubeClientRegistrationAuth = "csr"
-	o.spiffe = spiffeOptions{hubGRPCEndpoint: "ocm-grpc.hub.internal:443", hubSPIFFEID: testHubID}
+	// The webhook works on every Kubernetes version the tests run against.
+	o.spiffe = spiffeOptions{hubGRPCEndpoint: "ocm-grpc.hub.internal:443", hubSPIFFEID: testHubID,
+		admissionEnforcement: string(operatorv1.SPIFFEAdmissionValidatingWebhook)}
 	return o, cmd, out
+}
+
+// ValidatingAdmissionPolicy enforcement is accepted where the API server serves it and refused,
+// naming the version, where it doesn't (Kubernetes older than 1.30).
+func TestJoinSPIFFEEnforcementAgainstCluster(t *testing.T) {
+	cfg := testEnvConfig(t)
+	o, cmd, _ := envJoinOptions(t, cfg, operatorv1.SPIFFEAuthType)
+	o.spiffe.admissionEnforcement = string(operatorv1.SPIFFEAdmissionValidatingAdmissionPolicy)
+	if err := o.complete(cmd, nil); err != nil {
+		t.Fatal(err)
+	}
+	err := o.validate(context.TODO())
+	v, verr := kubernetes.NewForConfigOrDie(cfg).Discovery().ServerVersion()
+	if verr != nil {
+		t.Fatal(verr)
+	}
+	if v.Minor >= "30" && len(v.Minor) == 2 {
+		if err != nil {
+			t.Errorf("Kubernetes %s: %v", v.GitVersion, err)
+		}
+		return
+	}
+	if err == nil || !strings.HasPrefix(err.Error(), "unsupported Kubernetes version "+v.GitVersion) {
+		t.Errorf("Kubernetes %s: %v, want the unsupported version", v.GitVersion, err)
+	}
 }
 
 func joinOnCluster(t *testing.T, o *Options, cmd *cobra.Command) error {
@@ -74,6 +101,11 @@ func TestJoinSPIFFEAgainstCluster(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "SPIFFEAdmissionReady") {
 		t.Errorf("output:\n%s", out)
+	}
+	// The operator gets the spiffe driver's permissions with the spiffe Klusterlet.
+	b, err := kubernetes.NewForConfigOrDie(cfg).RbacV1().ClusterRoleBindings().Get(context.TODO(), "klusterlet-spiffe", metav1.GetOptions{})
+	if err != nil || b.RoleRef.Name != "klusterlet-spiffe" {
+		t.Errorf("klusterlet-spiffe ClusterRoleBinding %+v, %v", b, err)
 	}
 }
 

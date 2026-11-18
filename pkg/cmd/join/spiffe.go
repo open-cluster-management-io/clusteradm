@@ -12,9 +12,12 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8swait "k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 
 	operatorclient "open-cluster-management.io/api/client/operator/clientset/versioned"
 	ocmfeature "open-cluster-management.io/api/feature"
@@ -26,6 +29,10 @@ import (
 	"open-cluster-management.io/clusteradm/pkg/helpers/wait"
 )
 
+// reasonWebhookNotReady is the SPIFFEAdmissionReady reason while the operator's webhook waits for
+// its SVID.
+const reasonWebhookNotReady = "WebhookNotReady"
+
 // spiffeOptions are the join flags for the spiffe registration driver.
 type spiffeOptions struct {
 	hubGRPCEndpoint      string
@@ -34,6 +41,7 @@ type spiffeOptions struct {
 	workloadAPISocket    string
 	agentIDTemplate      string
 	addOnAgentIDTemplate string
+	admissionEnforcement string
 }
 
 func (o *Options) isSPIFFE() bool { return o.registrationAuth == operatorv1.SPIFFEAuthType }
@@ -81,6 +89,13 @@ func (o *Options) checkSPIFFEFlags(cmd *cobra.Command) error {
 			return fmt.Errorf("--spiffe-addon-agent-id-template: %w", err)
 		}
 	}
+	switch operatorv1.SPIFFEAdmissionEnforcement(o.spiffe.admissionEnforcement) {
+	case operatorv1.SPIFFEAdmissionValidatingAdmissionPolicy, operatorv1.SPIFFEAdmissionValidatingWebhook:
+	default:
+		return fmt.Errorf("--spiffe-admission-enforcement is required with spiffe (got %q): use %s on Kubernetes "+
+			"1.30 or later, or %s on any version", o.spiffe.admissionEnforcement,
+			operatorv1.SPIFFEAdmissionValidatingAdmissionPolicy, operatorv1.SPIFFEAdmissionValidatingWebhook)
+	}
 	if cmd != nil && cmd.Flags().Changed("addon-kubeclient-registration-auth") &&
 		o.addonKubeClientRegistrationAuth != operatorv1.SPIFFEAuthType {
 		return fmt.Errorf("with spiffe, add-on agents register with their own SVIDs; "+
@@ -88,6 +103,36 @@ func (o *Options) checkSPIFFEFlags(cmd *cobra.Command) error {
 	}
 	o.addonKubeClientRegistrationAuth = operatorv1.SPIFFEAuthType
 	return nil
+}
+
+// checkSPIFFEEnforcement refuses ValidatingAdmissionPolicy enforcement on a managed cluster that
+// doesn't serve the API, Kubernetes older than 1.30, before anything is applied.
+func (o *Options) checkSPIFFEEnforcement(client func() (kubernetes.Interface, error)) error {
+	if operatorv1.SPIFFEAdmissionEnforcement(o.spiffe.admissionEnforcement) != operatorv1.SPIFFEAdmissionValidatingAdmissionPolicy {
+		return nil
+	}
+	kube, err := client()
+	if err != nil {
+		return err
+	}
+	resources, err := kube.Discovery().ServerResourcesForGroupVersion(admissionregistrationv1.SchemeGroupVersion.String())
+	if err != nil && !apierrors.IsNotFound(err) {
+		return fmt.Errorf("failed to check the managed cluster's admission APIs: %w", err)
+	}
+	if resources != nil {
+		for _, r := range resources.APIResources {
+			if r.Name == "validatingadmissionpolicies" {
+				return nil
+			}
+		}
+	}
+	version := "unknown"
+	if v, err := kube.Discovery().ServerVersion(); err == nil {
+		version = v.GitVersion
+	}
+	return fmt.Errorf("unsupported Kubernetes version %s: --spiffe-admission-enforcement %s needs Kubernetes 1.30 "+
+		"or later on the managed cluster; use %s", version, operatorv1.SPIFFEAdmissionValidatingAdmissionPolicy,
+		operatorv1.SPIFFEAdmissionValidatingWebhook)
 }
 
 // setSPIFFEDriver sets the Klusterlet's spiffe registration settings and feature gates.
@@ -102,6 +147,7 @@ func (o *Options) setSPIFFEDriver() {
 			WorkloadAPISocket:    o.spiffe.workloadAPISocket,
 			AgentIDTemplate:      o.spiffe.agentIDTemplate,
 			AddOnAgentIDTemplate: o.spiffe.addOnAgentIDTemplate,
+			AdmissionEnforcement: operatorv1.SPIFFEAdmissionEnforcement(o.spiffe.admissionEnforcement),
 		},
 	}
 	rc.AddOnKubeClientRegistrationDriver = &operatorv1.AddOnRegistrationDriver{AuthType: operatorv1.SPIFFEAuthType}
@@ -124,8 +170,11 @@ func enableFeature(gates []operatorv1.FeatureGate, feature string) []operatorv1.
 	return append(gates, operatorv1.FeatureGate{Feature: feature, Mode: operatorv1.FeatureGateModeTypeEnable})
 }
 
-// waitForSPIFFEAdmission waits until the Klusterlet has secured its namespaces and returns it.
-// Only then may the platform create the SPIRE entries for its agents.
+// waitForSPIFFEAdmission waits until the Klusterlet has secured its namespaces, and returns it.
+// Only then may the platform create the SPIRE entries for its agents. While the Klusterlet is
+// refused, for example because the operator lacks the spiffe driver's permissions, the reason is
+// shown. While the operator's webhook waits for its SVID, join says once which SPIRE entry the
+// operator needs.
 func waitForSPIFFEAdmission(ctx context.Context, w io.Writer, client operatorclient.Interface, timeout int64,
 	name string) (*operatorv1.Klusterlet, error) {
 	phase := &atomic.Value{}
@@ -137,17 +186,28 @@ func waitForSPIFFEAdmission(ctx context.Context, w io.Writer, client operatorcli
 	defer spinner.Stop()
 
 	var klusterlet *operatorv1.Klusterlet
+	toldWebhook := false
 	err := k8swait.PollUntilContextTimeout(ctx, 3*time.Second, time.Duration(timeout)*time.Second, true,
 		func(ctx context.Context) (bool, error) {
 			k, err := client.OperatorV1().Klusterlets().Get(ctx, name, metav1.GetOptions{})
 			if err != nil {
 				return wait.HandlePollError(ctx, err, phase)
 			}
-			if c := meta.FindStatusCondition(k.Status.Conditions, operatorv1.ConditionSPIFFEAdmissionReady); c != nil {
-				phase.Store(c.Reason)
-			}
 			klusterlet = k
-			return meta.IsStatusConditionTrue(k.Status.Conditions, operatorv1.ConditionSPIFFEAdmissionReady), nil
+			if c := meta.FindStatusCondition(k.Status.Conditions, operatorv1.ConditionKlusterletApplied); c != nil &&
+				c.Status == metav1.ConditionFalse {
+				phase.Store(c.Reason + ": " + c.Message)
+			}
+			c := meta.FindStatusCondition(k.Status.Conditions, operatorv1.ConditionSPIFFEAdmissionReady)
+			if c == nil {
+				return false, nil
+			}
+			phase.Store(c.Reason)
+			if c.Reason == reasonWebhookNotReady && !toldWebhook {
+				toldWebhook = true
+				fmt.Fprintf(w, "\nThe Klusterlet waits for its operator's webhook: %s\n", c.Message)
+			}
+			return c.Status == metav1.ConditionTrue, nil
 		})
 	return klusterlet, wait.TimeoutError(err, phase, "timed out waiting for klusterlet %s to become SPIFFEAdmissionReady", name)
 }
@@ -163,7 +223,9 @@ func (o *Options) printSPIFFENextSteps(w io.Writer, klusterlet *operatorv1.Klust
 	if klusterlet == nil {
 		fmt.Fprintf(w, "The Klusterlet %s is applied. Wait until its SPIFFEAdmissionReady condition is True before "+
 			"creating SPIRE entries for its agents; their SPIFFE IDs are in status.spiffe.agentIDs:\n\n"+
-			"    kubectl get klusterlet %s -o jsonpath='{.status.spiffe.agentIDs}'\n\n",
+			"    kubectl get klusterlet %s -o jsonpath='{.status.spiffe.agentIDs}'\n\n"+
+			"With --spiffe-admission-enforcement ValidatingWebhook, the operator needs its own SPIRE entry first; "+
+			"while it waits for it, SPIFFEAdmissionReady says which.\n\n",
 			o.klusterletChartConfig.Klusterlet.Name, o.klusterletChartConfig.Klusterlet.Name)
 	} else {
 		fmt.Fprintf(w, "Create SPIRE entries for these SPIFFE IDs for %s now:\n", cluster)
@@ -175,6 +237,10 @@ func (o *Options) printSPIFFENextSteps(w io.Writer, klusterlet *operatorv1.Klust
 		}
 		_ = tw.Flush()
 		fmt.Fprintln(w)
+		if s := klusterlet.Status.SPIFFE; s != nil && s.AdmissionEnforcement == operatorv1.SPIFFEAdmissionValidatingWebhook {
+			fmt.Fprintf(w, "The operator enforces the admission rules with its webhook, which serves as %s with "+
+				"DNS name %s. Keep that SPIRE entry.\n\n", s.WebhookSPIFFEID, s.WebhookDNSName)
+		}
 	}
 	fmt.Fprintf(w, "Then accept it on the hub:\n\n    %s accept --clusters %s\n\n", helpers.GetExampleHeader(), cluster)
 }

@@ -130,7 +130,9 @@ func (o *Options) spiffeEndpoint() (operatorv1.EndpointExposure, error) {
 }
 
 // autoApprovedIdentityPattern is the ClusterManager CRD's pattern for autoApprovedIdentities.
-var autoApprovedIdentityPattern = regexp.MustCompile(`^spiffe://[a-z0-9._-]+(/([A-Za-z0-9._-]+|\*))+$`)
+// A segment is * or a name that isn't . or .., which SPIFFE forbids.
+var autoApprovedIdentityPattern = regexp.MustCompile(
+	`^spiffe://[a-z0-9._-]+(/(([A-Za-z0-9._-]*[A-Za-z0-9_-][A-Za-z0-9._-]*|[.]{3,})|\*))+$`)
 
 // validateSPIFFEFlags refuses spiffe flags without the spiffe driver, and auto-approved
 // identities without the ManagedClusterAutoApproval feature gate, as for the other drivers.

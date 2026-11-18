@@ -197,9 +197,12 @@ func TestSPIFFEAutoApprovedIdentities(t *testing.T) {
 		t.Errorf("without the spiffe driver: %v", err)
 	}
 
-	o, _ = spiffeInitOptions(t, []string{"spiffe"}, spiffeOptions{trustDomain: "ocm-hub.example.org",
-		autoApprovedIdentities: []string{"spiffe://ocm-hub.example.org/ocm/clu*ster"}})
-	if err := o.complete(&cobra.Command{}, nil); err == nil || !strings.Contains(err.Error(), "--spiffe-auto-approved-identities") {
-		t.Errorf("a partial wildcard: %v", err)
+	for _, bad := range []string{"spiffe://ocm-hub.example.org/ocm/clu*ster", "spiffe://ocm-hub.example.org/ocm/../*/agent/registration",
+		"spiffe://ocm-hub.example.org/./*"} {
+		o, _ = spiffeInitOptions(t, []string{"spiffe"}, spiffeOptions{trustDomain: "ocm-hub.example.org",
+			autoApprovedIdentities: []string{bad}})
+		if err := o.complete(&cobra.Command{}, nil); err == nil || !strings.Contains(err.Error(), "--spiffe-auto-approved-identities") {
+			t.Errorf("%s: %v", bad, err)
+		}
 	}
 }

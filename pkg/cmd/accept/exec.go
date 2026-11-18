@@ -117,6 +117,9 @@ func (o *Options) accept(ctx context.Context, kubeClient *kubernetes.Clientset, 
 	} else {
 		approved = true
 	}
+	if !approved && managedCluster.Spec.HubAcceptsClient {
+		approved = true
+	}
 
 	err = o.updateManagedCluster(ctx, clusterClient, clusterName)
 	if err != nil {

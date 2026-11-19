@@ -301,6 +301,9 @@ func (h *Helm) UninstallRelease(name string) error {
 	}
 
 	client := action.NewUninstall(actionConfig)
+	if h.clusteradmFlags.DryRun {
+		client.DryRun = true
+	}
 	_, err := client.Run(name)
 	if err != nil {
 		return err

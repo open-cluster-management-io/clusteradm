@@ -51,7 +51,7 @@ var _ = ginkgo.Describe("install hub-addon", func() {
 		ginkgo.It("Should not create any built-in add-on deployment(s) because it's not a valid add-on name", func() {
 			o := Options{
 				ClusteradmFlags: clusteradmFlags,
-				names:           invalidAddon,
+				names:           []string{invalidAddon},
 			}
 
 			err := o.validate()

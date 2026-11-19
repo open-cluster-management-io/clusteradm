@@ -48,7 +48,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 		},
 	}
 
-	cmd.Flags().StringVar(&o.names, "names", "", "Names of the built-in add-on to install (comma separated). The built-in add-ons are: argocd, argocd-agent, governance-policy-framework")
+	cmd.Flags().StringSliceVar(&o.names, "names", []string{}, "Comma-separated names of the add-ons to install. The built-in add-ons are: argocd, argocd-agent, governance-policy-framework")
 	cmd.Flags().StringVar(&o.values.Namespace, "namespace", "open-cluster-management", "Namespace of the built-in add-on to install. Defaults to open-cluster-management")
 	cmd.Flags().BoolVar(&o.values.CreateNamespace, "create-namespace", false, "If true, automatically create the specified namespace")
 	cmd.Flags().StringVar(&o.outputFile, "output-file", "", "The generated resources will be copied in the specified file")

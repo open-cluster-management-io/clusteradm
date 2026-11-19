@@ -38,12 +38,11 @@ func (o *Options) validate() (err error) {
 		return err
 	}
 
-	if o.names == "" {
+	if len(o.names) == 0 {
 		return fmt.Errorf("names is missing")
 	}
 
-	names := strings.Split(o.names, ",")
-	for _, n := range names {
+	for _, n := range o.names {
 		if n != argocdAddonName && n != argocdAgentAddonName && n != policyFrameworkAddonName {
 			return fmt.Errorf("invalid add-on name %s", n)
 		}
@@ -55,8 +54,7 @@ func (o *Options) validate() (err error) {
 func (o *Options) run(ctx context.Context) error {
 	alreadyProvidedAddons := make(map[string]bool)
 	addons := make([]string, 0)
-	names := strings.Split(o.names, ",")
-	for _, n := range names {
+	for _, n := range o.names {
 		if _, ok := alreadyProvidedAddons[n]; !ok {
 			alreadyProvidedAddons[n] = true
 			addons = append(addons, strings.TrimSpace(n))

@@ -32,7 +32,7 @@ func TestMissingCRDChartError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err := (&action.ChartPathOptions{}).LocateChart(repoName+"/"+argocdAgentCRDsChart, cli.New())
+	_, err := (&action.ChartPathOptions{}).LocateChart(repoName+"/"+AddonCharts[ArgocdAgentAddonName].CRDChartName, cli.New())
 	if err == nil {
 		t.Fatal("expected an error for a chart missing from the repo index")
 	}

@@ -13,7 +13,7 @@ type Options struct {
 	//ClusteradmFlags: The generic options from the clusteradm cli-runtime.
 	ClusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags
 	//A list of comma separated addon names
-	names string
+	names []string
 	//The file to output the resources will be sent to the file.
 	values scenario.Values
 

@@ -31,7 +31,7 @@ func (o *Options) validate() (err error) {
 		return err
 	}
 
-	addonNames := parse.ParseUniqueNames(o.names)
+	addonNames := parse.UniqueNames(o.names)
 	if len(addonNames) == 0 {
 		return fmt.Errorf("names is missing")
 	}
@@ -50,7 +50,7 @@ func (o *Options) validate() (err error) {
 
 func (o *Options) run(ctx context.Context) error {
 	var errs []error
-	for _, a := range parse.ParseUniqueNames(o.names) {
+	for _, a := range parse.UniqueNames(o.names) {
 		// TODO: Remove following v1.5
 		if a == clusteradmhubaddoninstall.DeprecatedArgocdAgent {
 			a = clusteradmhubaddoninstall.ArgocdAgentAddonName

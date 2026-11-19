@@ -6,8 +6,9 @@ import (
 	"strings"
 )
 
-//nolint:revive
-func ParseLabels(labels []string) (map[string]string, error) {
+// parse.Labels parses a comma-separated list of
+// key=value pairs and returns a map of labels.
+func Labels(labels []string) (map[string]string, error) {
 	labelMap := make(map[string]string)
 	for _, labelString := range labels {
 		labelSlice := strings.Split(labelString, "=")
@@ -19,9 +20,9 @@ func ParseLabels(labels []string) (map[string]string, error) {
 	return labelMap, nil
 }
 
-// ParseUniqueNames parses a comma-separated list
+// parse.UniqueNames parses a comma-separated list
 // of names and returns a slice of unique non-empty names.
-func ParseUniqueNames(names []string) []string {
+func UniqueNames(names []string) []string {
 	sawName := map[string]bool{}
 	nameList := []string{}
 	for _, n := range names {

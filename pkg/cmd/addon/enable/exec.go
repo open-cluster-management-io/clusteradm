@@ -134,7 +134,7 @@ func NewClusterAddonInfo(cn string, o *Options, an string, configs []addonv1alph
 	}
 
 	// Parse provided labels
-	labels, err := parse.ParseLabels(o.Labels)
+	labels, err := parse.Labels(o.Labels)
 	if err != nil {
 		return nil, err
 	}

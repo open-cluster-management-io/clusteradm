@@ -150,7 +150,9 @@ func TestSPIFFEInitTemplates(t *testing.T) {
 		t.Errorf("agentIDTemplate %q", got)
 	}
 	out.Reset()
-	o.printSPIFFEJoin(context.TODO(), out, nil)
+	if err := o.printSPIFFEJoin(context.TODO(), out, nil); err != nil {
+		t.Fatal(err)
+	}
 	if !strings.Contains(out.String(), "--spiffe-agent-id-template '"+tpl+"'") {
 		t.Errorf("join command doesn't pass the template:\n%s", out)
 	}
@@ -164,7 +166,9 @@ func TestSPIFFEJoinCommand(t *testing.T) {
 	out.Reset()
 
 	// No address yet: a placeholder and how to read it.
-	o.printSPIFFEJoin(context.TODO(), out, kubefake.NewSimpleClientset())
+	if err := o.printSPIFFEJoin(context.TODO(), out, kubefake.NewSimpleClientset()); err != nil {
+		t.Fatal(err)
+	}
 	for _, want := range []string{"--registration-auth spiffe", "--hub-grpc-endpoint <grpc-spiffe address>",
 		"--hub-spiffe-id spiffe://ocm-hub.example.org/ocm/hub/grpc-server", "kubectl -n open-cluster-management-hub get service"} {
 		if !strings.Contains(out.String(), want) {
@@ -179,7 +183,9 @@ func TestSPIFFEJoinCommand(t *testing.T) {
 		Spec:   corev1.ServiceSpec{Ports: []corev1.ServicePort{{Name: "grpc", Port: 443}}},
 		Status: corev1.ServiceStatus{LoadBalancer: corev1.LoadBalancerStatus{Ingress: []corev1.LoadBalancerIngress{{IP: "10.0.0.7"}}}}}
 	out.Reset()
-	o.printSPIFFEJoin(context.TODO(), out, kubefake.NewSimpleClientset(svc))
+	if err := o.printSPIFFEJoin(context.TODO(), out, kubefake.NewSimpleClientset(svc)); err != nil {
+		t.Fatal(err)
+	}
 	if !strings.Contains(out.String(), "--hub-grpc-endpoint 10.0.0.7:443") || strings.Contains(out.String(), "kubectl") {
 		t.Errorf("output:\n%s", out)
 	}

@@ -160,6 +160,10 @@ func (o *Options) complete(cmd *cobra.Command, _ []string) (err error) {
 }
 
 func (o *Options) validate(ctx context.Context) error {
+	// The spiffe flags are checked even with --force, which skips only the reinitialization checks.
+	if err := o.validateSPIFFEFlags(); err != nil {
+		return err
+	}
 	if o.force {
 		return nil
 	}
@@ -200,10 +204,6 @@ func (o *Options) validate(ctx context.Context) error {
 		if !validRegistrationDriver.Has(driver) {
 			return fmt.Errorf("only csr,awsirsa,grpc and spiffe are valid drivers")
 		}
-	}
-
-	if err := o.validateSPIFFEFlags(); err != nil {
-		return err
 	}
 
 	if genericclioptionsclusteradm.HubMutableFeatureGate.Enabled("ManagedClusterAutoApproval") {
@@ -407,7 +407,9 @@ func (o *Options) run(ctx context.Context) error {
 				cmd,
 			)
 			if o.spiffeEnabled() {
-				o.printSPIFFEJoin(ctx, o.Streams.Out, kubeClient)
+				if err := o.printSPIFFEJoin(ctx, o.Streams.Out, kubeClient); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -500,11 +502,10 @@ func getRegistrationDrivers(o *Options) ([]operatorv1.RegistrationDriverHub, err
 			awsirsa := &operatorv1.AwsIrsaConfig{HubClusterArn: hubClusterArn, Tags: o.awsResourceTags, AutoApprovedIdentities: o.autoApprovedARNPatterns}
 			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: operatorv1.AwsIrsaAuthType, AwsIrsa: awsirsa}
 		case operatorv1.SPIFFEAuthType:
-			c, serverID, err := o.spiffeConfig()
+			c, _, err := o.spiffeConfig()
 			if err != nil {
 				return registrationDrivers, err
 			}
-			o.spiffe.resolvedServerID = serverID
 			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: operatorv1.SPIFFEAuthType, SPIFFE: c}
 		case operatorv1.GRPCAuthType:
 			registrationDriver = operatorv1.RegistrationDriverHub{AuthType: operatorv1.GRPCAuthType}

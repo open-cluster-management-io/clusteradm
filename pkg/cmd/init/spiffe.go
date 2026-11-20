@@ -42,8 +42,6 @@ type spiffeOptions struct {
 	addOnAgentIDTemplate string
 	// autoApprovedIdentities are the SPIFFE IDs whose clusters are accepted automatically.
 	autoApprovedIdentities []string
-	// resolvedServerID is the hub's SPIFFE ID, checked and set by complete.
-	resolvedServerID string
 }
 
 func (o *Options) spiffeEnabled() bool {
@@ -135,8 +133,16 @@ var autoApprovedIdentityPattern = regexp.MustCompile(
 	`^spiffe://[a-z0-9._-]+(/(([A-Za-z0-9._-]*[A-Za-z0-9_-][A-Za-z0-9._-]*|[.]{3,})|\*))+$`)
 
 // validateSPIFFEFlags refuses spiffe flags without the spiffe driver, and auto-approved
-// identities without the ManagedClusterAutoApproval feature gate, as for the other drivers.
+// identities without the ManagedClusterAutoApproval feature gate, as for the other drivers. It
+// also refuses, before anything is applied, what the spiffe driver doesn't support: the singleton
+// control plane, and --output json for a hub with no join token.
 func (o *Options) validateSPIFFEFlags() error {
+	if o.spiffeEnabled() && o.singleton {
+		return fmt.Errorf("--registration-drivers spiffe isn't supported with --singleton: the singleton control plane doesn't apply the spiffe settings")
+	}
+	if o.spiffeOnly() && o.output == "json" {
+		return fmt.Errorf("--output json prints a join token; spiffe needs none, use --output text")
+	}
 	if len(o.spiffe.autoApprovedIdentities) > 0 &&
 		!genericclioptionsclusteradm.HubMutableFeatureGate.Enabled("ManagedClusterAutoApproval") {
 		return fmt.Errorf("should enable feature gate ManagedClusterAutoApproval before passing --spiffe-auto-approved-identities")
@@ -214,32 +220,67 @@ func serviceAddress(svc *corev1.Service) string {
 	return ""
 }
 
-// printSPIFFEJoin prints the join command for spiffe clusters. It has no token.
-func (o *Options) printSPIFFEJoin(ctx context.Context, w io.Writer, kubeClient kubernetes.Interface) {
-	serverID := o.spiffe.resolvedServerID
+// effectiveSPIFFE returns the spiffe driver settings the hub gets, after a values file merge, and
+// the hub's SPIFFE ID they give.
+func (o *Options) effectiveSPIFFE() (*operatorv1.SPIFFERegistrationConfig, string, error) {
+	for _, d := range o.clusterManagerChartConfig.ClusterManager.RegistrationConfiguration.RegistrationDrivers {
+		if d.AuthType == operatorv1.SPIFFEAuthType && d.SPIFFE != nil {
+			serverID, err := spiffeServerID(d.SPIFFE)
+			return d.SPIFFE, serverID, err
+		}
+	}
+	return nil, "", fmt.Errorf("the cluster-manager configuration has no spiffe registration driver")
+}
+
+// spiffeJoinCommand is the join command for spiffe clusters, from the settings the hub gets. It
+// has no token. clusterName and enforcement are what the command line holds for them.
+func (o *Options) spiffeJoinCommand(endpoint, clusterName, enforcement string) (string, error) {
+	c, serverID, err := o.effectiveSPIFFE()
+	if err != nil {
+		return "", err
+	}
+	cmd := fmt.Sprintf("%s join --cluster-name %s --registration-auth spiffe \\\n"+
+		"      --hub-grpc-endpoint %s \\\n"+
+		"      --hub-spiffe-id %s \\\n"+
+		"      --spiffe-admission-enforcement %s",
+		helpers.GetExampleHeader(), clusterName, endpoint, serverID, enforcement)
+	if c.AgentIDTemplate != "" {
+		cmd += fmt.Sprintf(" \\\n      --spiffe-agent-id-template '%s'", c.AgentIDTemplate)
+	}
+	if c.AddOnAgentIDTemplate != "" {
+		cmd += fmt.Sprintf(" \\\n      --spiffe-addon-agent-id-template '%s'", c.AddOnAgentIDTemplate)
+	}
+	// As for the token join command: a foreground init gives a foreground join.
+	if o.wait {
+		cmd += " \\\n      --wait"
+	}
+	return cmd, nil
+}
+
+// printSPIFFEJoin prints the join command for spiffe clusters.
+func (o *Options) printSPIFFEJoin(ctx context.Context, w io.Writer, kubeClient kubernetes.Interface) error {
 	endpoint := o.spiffeHubEndpoint(ctx, kubeClient)
 	known := endpoint != ""
 	if !known {
 		endpoint = "<grpc-spiffe address>"
 	}
-	fmt.Fprintf(w, "Your hub is ready for SPIFFE registration. On each managed cluster, run the following; it prints\n"+
-		"the SPIFFE IDs to issue once the Klusterlet has secured its namespaces (SPIFFEAdmissionReady):\n\n"+
-		"    %s join --cluster-name <cluster_name> --registration-auth spiffe \\\n"+
-		"      --hub-grpc-endpoint %s \\\n"+
-		"      --hub-spiffe-id %s",
-		helpers.GetExampleHeader(), endpoint, serverID)
-	if o.spiffe.agentIDTemplate != "" {
-		fmt.Fprintf(w, " \\\n      --spiffe-agent-id-template '%s'", o.spiffe.agentIDTemplate)
+	cmd, err := o.spiffeJoinCommand(endpoint, "<cluster_name>", "<ValidatingAdmissionPolicy|ValidatingWebhook>")
+	if err != nil {
+		return err
 	}
-	if o.spiffe.addOnAgentIDTemplate != "" {
-		fmt.Fprintf(w, " \\\n      --spiffe-addon-agent-id-template '%s'", o.spiffe.addOnAgentIDTemplate)
+	next := "Then read the SPIFFE IDs to issue from the Klusterlet's status.spiffe.agentIDs once it is SPIFFEAdmissionReady."
+	if o.wait {
+		next = "It waits until the Klusterlet has secured its namespaces (SPIFFEAdmissionReady) and prints the SPIFFE IDs to issue."
 	}
-	fmt.Fprint(w, "\n\n")
+	fmt.Fprintf(w, "Your hub is ready for SPIFFE registration. On each managed cluster, run the following.\n%s\n"+
+		"ValidatingAdmissionPolicy needs Kubernetes 1.30 or later; ValidatingWebhook works on every version.\n\n    %s\n\n",
+		next, cmd)
 	if !known {
 		fmt.Fprintf(w, "The SPIFFE listener has no address yet. Read it once its load balancer is ready:\n\n"+
 			"    kubectl -n %s get service %s -o jsonpath='{.status.loadBalancer.ingress[0]}'\n\n",
 			spiffeServiceNamespace, spiffeServiceName)
 	}
+	return nil
 }
 
 // finishSPIFFEOnly writes the outputs of a hub whose only driver is spiffe: no token is read or
@@ -250,12 +291,22 @@ func (o *Options) finishSPIFFEOnly(ctx context.Context, r rawApplied, kubeClient
 			return err
 		}
 	}
-	if o.output == "json" {
-		return fmt.Errorf("--output json prints a join token; spiffe needs none, use --output text")
+	// The join command as a script that takes the cluster name and the admission enforcement.
+	if len(o.outputJoinCommandFile) > 0 {
+		endpoint := o.spiffeHubEndpoint(ctx, kubeClient)
+		if endpoint == "" {
+			endpoint = "<grpc-spiffe address>"
+		}
+		script, err := o.spiffeJoinCommand(endpoint, "$1", "$2")
+		if err != nil {
+			return err
+		}
+		if err := os.WriteFile(o.outputJoinCommandFile, []byte(script+"\n"), 0o755); err != nil {
+			return fmt.Errorf("--output-join-command-file: %w", err)
+		}
 	}
 	fmt.Fprint(o.Streams.Out, "The multicluster hub control plane has been initialized successfully!\n\n")
-	o.printSPIFFEJoin(ctx, o.Streams.Out, kubeClient)
-	return nil
+	return o.printSPIFFEJoin(ctx, o.Streams.Out, kubeClient)
 }
 
 type rawApplied interface{ RawAppliedResources() []byte }

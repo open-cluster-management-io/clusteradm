@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -118,7 +119,9 @@ func TestPrintSPIFFEJoinOptions(t *testing.T) {
 		t.Fatal(err)
 	}
 	out := &bytes.Buffer{}
-	o.printSPIFFEJoin(context.TODO(), out, nil)
+	if err := o.printSPIFFEJoin(context.TODO(), out, nil); err != nil {
+		t.Fatal(err)
+	}
 	if !strings.Contains(out.String(), "--spiffe-addon-agent-id-template") || !strings.Contains(out.String(), "no address yet") {
 		t.Errorf("output:\n%s", out)
 	}
@@ -130,20 +133,106 @@ func (r rawBytes) RawAppliedResources() []byte { return r }
 
 func TestFinishSPIFFEOnly(t *testing.T) {
 	o, out := spiffeInitOptions(t, []string{"spiffe"}, spiffeOptions{trustDomain: "ocm-hub.example.org", server: "hub.example.com"})
+	if err := o.complete(&cobra.Command{}, nil); err != nil {
+		t.Fatal(err)
+	}
 	o.outputFile = filepath.Join(t.TempDir(), "out.yaml")
+	o.outputJoinCommandFile = filepath.Join(t.TempDir(), "join.sh")
 	if err := o.finishSPIFFEOnly(context.TODO(), rawBytes("kind: ClusterManager"), nil); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(out.String(), "hub.example.com:443") {
 		t.Errorf("output:\n%s", out)
 	}
+	// The join command file, as a script of the cluster name and the admission enforcement.
+	script, err := os.ReadFile(o.outputJoinCommandFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"--cluster-name $1", "--spiffe-admission-enforcement $2", "--hub-grpc-endpoint hub.example.com:443",
+		"--hub-spiffe-id spiffe://ocm-hub.example.org/ocm/hub/grpc-server"} {
+		if !strings.Contains(string(script), want) {
+			t.Errorf("join command file misses %q:\n%s", want, script)
+		}
+	}
+	o.outputJoinCommandFile = filepath.Join(t.TempDir(), "missing", "join.sh")
+	if err := o.finishSPIFFEOnly(context.TODO(), rawBytes("x"), nil); err == nil {
+		t.Error("no error writing the join command file to a missing directory")
+	}
+	o.outputJoinCommandFile = ""
 	o.outputFile = filepath.Join(t.TempDir(), "missing", "out.yaml")
 	if err := o.finishSPIFFEOnly(context.TODO(), rawBytes("x"), nil); err == nil {
 		t.Error("no error writing to a missing directory")
 	}
-	o.outputFile, o.output = "", "json"
-	if err := o.finishSPIFFEOnly(context.TODO(), rawBytes("x"), nil); err == nil || !strings.Contains(err.Error(), "--output json") {
+}
+
+// What clusteradm init refuses with spiffe is refused before anything is applied, with --force too.
+func TestValidateSPIFFEBeforeApply(t *testing.T) {
+	o, _ := spiffeInitOptions(t, []string{"spiffe"}, spiffeOptions{trustDomain: "ocm-hub.example.org"})
+	o.force = true
+	o.output = "json"
+	if err := o.validate(context.TODO()); err == nil || !strings.Contains(err.Error(), "--output json") {
 		t.Errorf("json output: %v", err)
+	}
+	o.output = "text"
+	o.singleton = true
+	if err := o.validate(context.TODO()); err == nil || !strings.Contains(err.Error(), "--singleton") {
+		t.Errorf("singleton: %v", err)
+	}
+	o.singleton = false
+	o.spiffe.autoApprovedIdentities = []string{"spiffe://ocm-hub.example.org/ocm/cluster/*/agent/registration"}
+	if err := genericclioptionsclusteradm.HubMutableFeatureGate.Set("ManagedClusterAutoApproval=false"); err != nil {
+		t.Fatal(err)
+	}
+	if err := o.validate(context.TODO()); err == nil || !strings.Contains(err.Error(), "ManagedClusterAutoApproval") {
+		t.Errorf("auto-approved identities without the feature gate, with --force: %v", err)
+	}
+	// With spiffe next to another driver, json output still prints that driver's token.
+	o, _ = spiffeInitOptions(t, []string{"csr", "spiffe"}, spiffeOptions{trustDomain: "ocm-hub.example.org"})
+	o.force, o.output = true, "json"
+	if err := o.validate(context.TODO()); err != nil {
+		t.Errorf("json output with csr and spiffe: %v", err)
+	}
+}
+
+// The printed join command uses what the hub gets after a values file merge, and asks join to
+// wait when init waited.
+func TestSPIFFEJoinAfterValuesMerge(t *testing.T) {
+	o, out := spiffeInitOptions(t, []string{"spiffe"}, spiffeOptions{trustDomain: "ocm-hub.example.org", server: "hub.example.com"})
+	if err := o.complete(&cobra.Command{}, nil); err != nil {
+		t.Fatal(err)
+	}
+	// What a values file sets.
+	c := o.clusterManagerChartConfig.ClusterManager.RegistrationConfiguration.RegistrationDrivers[0].SPIFFE
+	c.ServerSPIFFEID = "spiffe://ocm-hub.example.org/hub/server"
+	c.AgentIDTemplate = "spiffe://{trustDomain}/k8s/{cluster}/{role}"
+	o.wait = true
+	if err := o.printSPIFFEJoin(context.TODO(), out, nil); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"--hub-spiffe-id spiffe://ocm-hub.example.org/hub/server",
+		"--spiffe-agent-id-template 'spiffe://{trustDomain}/k8s/{cluster}/{role}'", "--wait", "prints the SPIFFE IDs to issue",
+		"--spiffe-admission-enforcement <ValidatingAdmissionPolicy|ValidatingWebhook>"} {
+		if !strings.Contains(out.String(), want) {
+			t.Errorf("output misses %q:\n%s", want, out)
+		}
+	}
+	o.wait = false
+	out.Reset()
+	if err := o.printSPIFFEJoin(context.TODO(), out, nil); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(out.String(), "--wait") || !strings.Contains(out.String(), "status.spiffe.agentIDs") {
+		t.Errorf("without --wait:\n%s", out)
+	}
+	// A merged server ID outside the trust domain is an error.
+	c.ServerSPIFFEID = "spiffe://other.example.org/hub"
+	if err := o.printSPIFFEJoin(context.TODO(), out, nil); err == nil {
+		t.Error("no error for a server ID outside the trust domain")
+	}
+	o.clusterManagerChartConfig.ClusterManager.RegistrationConfiguration.RegistrationDrivers = nil
+	if err := o.printSPIFFEJoin(context.TODO(), out, nil); err == nil {
+		t.Error("no error without a spiffe driver")
 	}
 }
 

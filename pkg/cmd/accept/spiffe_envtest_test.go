@@ -4,13 +4,22 @@ package accept
 import (
 	"bytes"
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	crand "crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	admissionv1 "k8s.io/api/admissionregistration/v1"
+	certificatesv1 "k8s.io/api/certificates/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"k8s.io/client-go/kubernetes"
@@ -87,6 +96,59 @@ func TestAcceptSPIFFEAgainstCluster(t *testing.T) {
 		}
 	})
 
+	t.Run("an unpinned cluster with a pending CSR is a csr cluster: not pinned, its CSR goes the csr way", func(t *testing.T) {
+		name := "csr-pending-" + rand.String(5)
+		createCluster(t, clusters, name, nil)
+		createCSR(t, cfg, name)
+		_, err := acceptOn(t, cfg, "east.example.org", false, name)
+		if err == nil || !strings.Contains(err.Error(), "no csr is approved") {
+			t.Errorf("error %v, want the csr path", err)
+		}
+		mc, _ := clusters.ClusterV1().ManagedClusters().Get(context.TODO(), name, metav1.GetOptions{})
+		if _, pinned := mc.Annotations[spiffeTrustDomainAnnotation]; pinned {
+			t.Errorf("a csr cluster was pinned: %v", mc.Annotations)
+		}
+	})
+
+	t.Run("with --wait, a refusal returns at once", func(t *testing.T) {
+		name := "spiffe-" + rand.String(5)
+		createCluster(t, clusters, name, map[string]string{spiffeTrustDomainAnnotation: "west.example.org"})
+		o := NewOptions(envFlags(cfg), genericiooptions.IOStreams{Out: &bytes.Buffer{}, ErrOut: &bytes.Buffer{}})
+		o.SPIFFETrustDomain, o.Wait, o.ClusteradmFlags.Timeout = "east.example.org", true, 60
+		o.Values.Clusters = []string{name}
+		start := time.Now()
+		err := o.Run(context.TODO())
+		if err == nil || !strings.Contains(err.Error(), "west.example.org") {
+			t.Errorf("error %v, want the refusal", err)
+		}
+		if took := time.Since(start); took > 20*time.Second {
+			t.Errorf("took %s: the refusal was retried until the timeout", took)
+		}
+	})
+
+	t.Run("a pin from an outdated read is refused", func(t *testing.T) {
+		name := "spiffe-" + rand.String(5)
+		createCluster(t, clusters, name, nil)
+		read, err := clusters.ClusterV1().ManagedClusters().Get(context.TODO(), name, metav1.GetOptions{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, patch, err := spiffeAcceptance(read, "east.example.org", false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Another accept pins it first.
+		other := read.DeepCopy()
+		other.Annotations = map[string]string{spiffeTrustDomainAnnotation: "west.example.org"}
+		if _, err := clusters.ClusterV1().ManagedClusters().Update(context.TODO(), other, metav1.UpdateOptions{}); err != nil {
+			t.Fatal(err)
+		}
+		_, err = clusters.ClusterV1().ManagedClusters().Patch(context.TODO(), name, types.MergePatchType, patch, metav1.PatchOptions{})
+		if !apierrors.IsConflict(err) {
+			t.Errorf("the outdated pin got %v, want a conflict", err)
+		}
+	})
+
 	t.Run("a hub that refuses the pin", func(t *testing.T) {
 		name := "spiffe-refused-" + rand.String(5)
 		createCluster(t, clusters, name, nil)
@@ -154,4 +216,29 @@ func servesPolicies(t *testing.T, kube kubernetes.Interface) bool {
 		}
 	}
 	return false
+}
+
+// createCSR creates a pending CSR labeled for cluster name, as a registering csr agent does.
+func createCSR(t *testing.T, cfg *rest.Config, name string) {
+	t.Helper()
+	key, err := ecdsa.GenerateKey(elliptic.P256(), crand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	der, err := x509.CreateCertificateRequest(crand.Reader, &x509.CertificateRequest{
+		Subject: pkix.Name{CommonName: "system:open-cluster-management:" + name + ":agent"}}, key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	csr := &certificatesv1.CertificateSigningRequest{
+		ObjectMeta: metav1.ObjectMeta{GenerateName: name + "-", Labels: map[string]string{clusterLabel: name}},
+		Spec: certificatesv1.CertificateSigningRequestSpec{
+			Request:    pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: der}),
+			SignerName: certificatesv1.KubeAPIServerClientSignerName,
+			Usages:     []certificatesv1.KeyUsage{certificatesv1.UsageClientAuth},
+		}}
+	if _, err := kubernetes.NewForConfigOrDie(cfg).CertificatesV1().CertificateSigningRequests().Create(context.TODO(), csr,
+		metav1.CreateOptions{}); err != nil {
+		t.Fatal(err)
+	}
 }

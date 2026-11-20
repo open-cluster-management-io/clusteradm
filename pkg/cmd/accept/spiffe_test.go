@@ -21,23 +21,26 @@ func TestSPIFFEAcceptance(t *testing.T) {
 		Annotations: map[string]string{spiffeTrustDomainAnnotation: "east.example.org"}}}
 	plain := &clusterv1.ManagedCluster{ObjectMeta: metav1.ObjectMeta{Name: "cluster2"}}
 
+	plain.ResourceVersion = "42"
 	cases := []struct {
-		name      string
-		mc        *clusterv1.ManagedCluster
-		td        string
-		spiffe    bool
-		wantPatch bool
-		wantErr   string
+		name       string
+		mc         *clusterv1.ManagedCluster
+		td         string
+		pendingCSR bool
+		spiffe     bool
+		wantPatch  bool
+		wantErr    string
 	}{
-		{"pinned cluster: no CSR", pinned, "", true, false, ""},
-		{"csr cluster", plain, "", false, false, ""},
-		{"same trust domain", pinned, "east.example.org", true, false, ""},
-		{"other trust domain refused", pinned, "west.example.org", true, false, "registered from trust domain east.example.org"},
-		{"unpinned cluster gets the pin", plain, "east.example.org", true, true, ""},
+		{"pinned cluster: no CSR", pinned, "", false, true, false, ""},
+		{"csr cluster", plain, "", true, false, false, ""},
+		{"same trust domain", pinned, "east.example.org", false, true, false, ""},
+		{"other trust domain refused", pinned, "west.example.org", false, true, false, "registered from trust domain east.example.org"},
+		{"unpinned cluster gets the pin", plain, "east.example.org", false, true, true, ""},
+		{"an unpinned cluster with a pending CSR is a csr cluster: no pin", plain, "east.example.org", true, false, false, ""},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			isSPIFFE, patch, err := spiffeAcceptance(c.mc, c.td)
+			isSPIFFE, patch, err := spiffeAcceptance(c.mc, c.td, c.pendingCSR)
 			if c.wantErr != "" {
 				if err == nil || !strings.Contains(err.Error(), c.wantErr) {
 					t.Errorf("error %v, want %q", err, c.wantErr)
@@ -50,8 +53,9 @@ func TestSPIFFEAcceptance(t *testing.T) {
 			if isSPIFFE != c.spiffe || (patch != nil) != c.wantPatch {
 				t.Errorf("spiffe %v patch %s", isSPIFFE, patch)
 			}
-			if c.wantPatch && !strings.Contains(string(patch), `"open-cluster-management.io/spiffe-trust-domain":"east.example.org"`) {
-				t.Errorf("patch %s", patch)
+			if c.wantPatch && (!strings.Contains(string(patch), `"open-cluster-management.io/spiffe-trust-domain":"east.example.org"`) ||
+				!strings.Contains(string(patch), `"resourceVersion":"42"`)) {
+				t.Errorf("patch %s, want the pin guarded by the resourceVersion read", patch)
 			}
 		})
 	}

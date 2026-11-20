@@ -82,13 +82,13 @@ func (o *Options) runWithClient(ctx context.Context, kubeClient *kubernetes.Clie
 		} else {
 			err := wait.PollUntilContextTimeout(ctx, 3*time.Second, time.Duration(o.ClusteradmFlags.Timeout)*time.Second, true, func(ctx context.Context) (bool, error) {
 				approved, err := o.accept(ctx, kubeClient, clusterClient, clusterName, true)
-				if !approved {
-					return false, nil
+				switch {
+				case errors.IsNotFound(err) || errors.IsConflict(err):
+					return false, nil // not there yet, or changed meanwhile: try again
+				case err != nil:
+					return false, err // a refusal, such as another trust domain, is final
 				}
-				if errors.IsNotFound(err) {
-					return false, nil
-				}
-				return true, err
+				return approved, nil
 			})
 			errs = append(errs, err)
 		}
@@ -101,21 +101,27 @@ func (o *Options) accept(ctx context.Context, kubeClient *kubernetes.Clientset, 
 		clusterName,
 		metav1.GetOptions{})
 	if err != nil {
-		return false, fmt.Errorf("fail to get managedcluster %s: %v", clusterName, err)
+		return false, fmt.Errorf("fail to get managedcluster %s: %w", clusterName, err)
 	}
 	// when a managed cluster registers with hub using awsirsa registration-auth, it will add this annotation
 	// to ManagedCluster resource, presence of which is used to decide the requested authentication type.
 	// awrirsa authentication doesn't create CSR on hub, hence there is nothing to approve
 	_, hasEksArn := managedCluster.Annotations["agent.open-cluster-management.io/managed-cluster-arn"]
 
-	isSPIFFE, pinPatch, err := spiffeAcceptance(managedCluster, o.SPIFFETrustDomain)
+	pendingCSR := false
+	if o.SPIFFETrustDomain != "" {
+		if pendingCSR, err = hasPendingCSR(ctx, kubeClient, clusterName); err != nil {
+			return false, err
+		}
+	}
+	isSPIFFE, pinPatch, err := spiffeAcceptance(managedCluster, o.SPIFFETrustDomain, pendingCSR)
 	if err != nil {
 		return false, err
 	}
 	if pinPatch != nil && !o.ClusteradmFlags.DryRun {
 		if _, err := clusterClient.ClusterV1().ManagedClusters().Patch(ctx, clusterName, types.MergePatchType, pinPatch,
 			metav1.PatchOptions{}); err != nil {
-			return false, fmt.Errorf("fail to pin managed cluster %s to trust domain %s: %v", clusterName, o.SPIFFETrustDomain, err)
+			return false, fmt.Errorf("fail to pin managed cluster %s to trust domain %s: %w", clusterName, o.SPIFFETrustDomain, err)
 		}
 	}
 

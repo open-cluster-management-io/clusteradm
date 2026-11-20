@@ -319,7 +319,15 @@ func (o *Options) validate(ctx context.Context) error {
 		return err
 	}
 	if o.isSPIFFE() {
+		// The cluster run applies the Klusterlet to: the CAPI workload cluster with --capi-import.
 		if err := o.checkSPIFFEEnforcement(func() (kubernetes.Interface, error) {
+			if o.capiOptions.Enable {
+				getter, err := o.capiOptions.ToClientGetter(ctx)
+				if err != nil {
+					return nil, err
+				}
+				return util.NewFactory(getter).KubernetesClientSet()
+			}
 			return o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
 		}); err != nil {
 			return err

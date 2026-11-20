@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -252,5 +253,40 @@ func TestSPIFFEJoinValidateChecksEnforcement(t *testing.T) {
 	}
 	if err := o.validate(context.TODO()); err == nil || !strings.Contains(err.Error(), "failed to check the managed cluster's admission APIs") {
 		t.Errorf("validate: %v", err)
+	}
+}
+
+// The check follows the enforcement the Klusterlet gets after a values file merge, not the flag.
+func TestCheckSPIFFEEnforcementAfterValuesMerge(t *testing.T) {
+	o, cmd, _ := spiffeJoinOptions(t)
+	if err := o.complete(cmd, nil); err != nil {
+		t.Fatal(err)
+	}
+	s := o.klusterletChartConfig.Klusterlet.RegistrationConfiguration.RegistrationDriver.SPIFFE
+	// The flag asks for policies; the values file switches to the webhook: no check is needed.
+	s.AdmissionEnforcement = operatorv1.SPIFFEAdmissionValidatingWebhook
+	if err := o.checkSPIFFEEnforcement(func() (kubernetes.Interface, error) { panic("the webhook needs no client") }); err != nil {
+		t.Errorf("webhook from the values file: %v", err)
+	}
+	// The flag asks for the webhook; the values file switches to policies: checked.
+	o.spiffe.admissionEnforcement = string(operatorv1.SPIFFEAdmissionValidatingWebhook)
+	s.AdmissionEnforcement = operatorv1.SPIFFEAdmissionValidatingAdmissionPolicy
+	old := fakekube.NewSimpleClientset()
+	old.Discovery().(*fakediscovery.FakeDiscovery).FakedServerVersion = &version.Info{GitVersion: "v1.29.14"}
+	if err := o.checkSPIFFEEnforcement(clientOf(old)); err == nil || !strings.Contains(err.Error(), "unsupported Kubernetes version v1.29.14") {
+		t.Errorf("policies from the values file on 1.29: %v", err)
+	}
+}
+
+// With --capi-import, the check reads the CAPI workload cluster, which run installs to.
+func TestCheckSPIFFEEnforcementCAPI(t *testing.T) {
+	o, cmd, _ := spiffeJoinOptions(t)
+	if err := o.complete(cmd, nil); err != nil {
+		t.Fatal(err)
+	}
+	o.capiOptions.Enable = true
+	o.capiOptions.KubeConfigFile = filepath.Join(t.TempDir(), "missing-kubeconfig")
+	if err := o.validate(context.TODO()); err == nil || !strings.Contains(err.Error(), "missing-kubeconfig") {
+		t.Errorf("validate with --capi-import: %v, want the CAPI cluster's client to be used", err)
 	}
 }

@@ -106,9 +106,10 @@ func (o *Options) checkSPIFFEFlags(cmd *cobra.Command) error {
 }
 
 // checkSPIFFEEnforcement refuses ValidatingAdmissionPolicy enforcement on a managed cluster that
-// doesn't serve the API, Kubernetes older than 1.30, before anything is applied.
+// doesn't serve the API, Kubernetes older than 1.30, before anything is applied. It checks the
+// enforcement the Klusterlet gets: a --klusterlet-values-file can change the flag's.
 func (o *Options) checkSPIFFEEnforcement(client func() (kubernetes.Interface, error)) error {
-	if operatorv1.SPIFFEAdmissionEnforcement(o.spiffe.admissionEnforcement) != operatorv1.SPIFFEAdmissionValidatingAdmissionPolicy {
+	if o.effectiveAdmissionEnforcement() != operatorv1.SPIFFEAdmissionValidatingAdmissionPolicy {
 		return nil
 	}
 	kube, err := client()
@@ -133,6 +134,15 @@ func (o *Options) checkSPIFFEEnforcement(client func() (kubernetes.Interface, er
 	return fmt.Errorf("unsupported Kubernetes version %s: --spiffe-admission-enforcement %s needs Kubernetes 1.30 "+
 		"or later on the managed cluster; use %s", version, operatorv1.SPIFFEAdmissionValidatingAdmissionPolicy,
 		operatorv1.SPIFFEAdmissionValidatingWebhook)
+}
+
+// effectiveAdmissionEnforcement is the admission enforcement the Klusterlet gets, after a
+// --klusterlet-values-file merge.
+func (o *Options) effectiveAdmissionEnforcement() operatorv1.SPIFFEAdmissionEnforcement {
+	if s := o.klusterletChartConfig.Klusterlet.RegistrationConfiguration.RegistrationDriver.SPIFFE; s != nil {
+		return s.AdmissionEnforcement
+	}
+	return operatorv1.SPIFFEAdmissionEnforcement(o.spiffe.admissionEnforcement)
 }
 
 // setSPIFFEDriver sets the Klusterlet's spiffe registration settings and feature gates.

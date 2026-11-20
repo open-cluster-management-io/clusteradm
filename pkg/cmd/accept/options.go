@@ -21,6 +21,9 @@ type Options struct {
 
 	Requesters []string
 
+	// SPIFFETrustDomain, if set, is the trust domain the clusters' agents must have registered from.
+	SPIFFETrustDomain string
+
 	Streams genericiooptions.IOStreams
 }
 

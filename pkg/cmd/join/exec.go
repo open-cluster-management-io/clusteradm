@@ -71,11 +71,17 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		return fmt.Errorf("no flags have been set: hub-apiserver, hub-token and cluster-name is required")
 	}
 
-	if o.token == "" {
-		return fmt.Errorf("token is missing")
-	}
-	if o.hubAPIServer == "" {
-		return fmt.Errorf("hub-server is missing")
+	if o.isSPIFFE() {
+		if err := o.checkSPIFFEFlags(cmd); err != nil {
+			return err
+		}
+	} else {
+		if o.token == "" {
+			return fmt.Errorf("token is missing")
+		}
+		if o.hubAPIServer == "" {
+			return fmt.Errorf("hub-server is missing")
+		}
 	}
 	if o.clusterName == "" {
 		return fmt.Errorf("cluster-name is missing")
@@ -171,14 +177,21 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		}
 	}
 
+	if o.isSPIFFE() {
+		o.setSPIFFEDriver()
+	}
+
 	// set addon kubeclient registration driver (only if not using default csr)
-	if o.addonKubeClientRegistrationAuth != "csr" {
+	if o.addonKubeClientRegistrationAuth != "csr" && !o.isSPIFFE() {
 		o.setAddonKubeClientRegistrationDriver()
 	}
 
 	o.klusterletChartConfig.Klusterlet.WorkConfiguration = operatorv1.WorkAgentConfiguration{
 		FeatureGates: genericclioptionsclusteradm.ConvertToFeatureGateAPI(
 			genericclioptionsclusteradm.SpokeMutableFeatureGate, ocmfeature.DefaultSpokeWorkFeatureGates),
+	}
+	if o.isSPIFFE() {
+		o.enableSPIFFEWorkGate()
 	}
 
 	// set mode based on mode and singleton
@@ -199,6 +212,17 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 		o.HubCAData = cabytes
 	}
 
+	// A spiffe cluster has no hub credential: there is no bootstrap kubeconfig to build or check.
+	if !o.isSPIFFE() {
+		if err := o.completeHubConfig(cmd); err != nil {
+			return err
+		}
+	}
+
+	return o.completeManagedCluster(cmd, args)
+}
+
+func (o *Options) completeHubConfig(cmd *cobra.Command) error {
 	// code logic of building hub client in join process:
 	// 1. use the token and insecure to fetch the ca data from cm in kube-public ns
 	// 2. if not found, assume using an authorized ca.
@@ -222,9 +246,13 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 			return err
 		}
 	}
+	return nil
+}
 
+func (o *Options) completeManagedCluster(cmd *cobra.Command, args []string) error {
 	// get managed cluster externalServerURL
 	var kubeClient *kubernetes.Clientset
+	var err error
 	switch o.mode {
 	case string(operatorv1.InstallModeHosted):
 		restConfig, err := clientcmd.BuildConfigFromFlags("", o.managedKubeconfigFile)
@@ -274,22 +302,36 @@ func (o *Options) complete(cmd *cobra.Command, args []string) (err error) {
 
 func (o *Options) validate(ctx context.Context) error {
 	// preflight check
-	if err := preflightinterface.RunChecks(
-		ctx,
-		[]preflightinterface.Checker{
-			preflight.HubKubeconfigCheck{
-				Config: o.HubConfig,
-			},
-			preflight.DeployModeCheck{
-				Mode:                  o.mode,
-				InternalEndpoint:      o.forceHubInClusterEndpointLookup,
-				ManagedKubeconfigFile: o.managedKubeconfigFile,
-			},
-			preflight.ClusterNameCheck{
-				ClusterName: o.klusterletChartConfig.Klusterlet.ClusterName,
-			},
-		}, os.Stderr); err != nil {
+	checks := []preflightinterface.Checker{
+		preflight.DeployModeCheck{
+			Mode:                  o.mode,
+			InternalEndpoint:      o.forceHubInClusterEndpointLookup,
+			ManagedKubeconfigFile: o.managedKubeconfigFile,
+		},
+		preflight.ClusterNameCheck{
+			ClusterName: o.klusterletChartConfig.Klusterlet.ClusterName,
+		},
+	}
+	if !o.isSPIFFE() {
+		checks = append(checks, preflight.HubKubeconfigCheck{Config: o.HubConfig})
+	}
+	if err := preflightinterface.RunChecks(ctx, checks, os.Stderr); err != nil {
 		return err
+	}
+	if o.isSPIFFE() {
+		// The cluster run applies the Klusterlet to: the CAPI workload cluster with --capi-import.
+		if err := o.checkSPIFFEEnforcement(func() (kubernetes.Interface, error) {
+			if o.capiOptions.Enable {
+				getter, err := o.capiOptions.ToClientGetter(ctx)
+				if err != nil {
+					return nil, err
+				}
+				return util.NewFactory(getter).KubernetesClientSet()
+			}
+			return o.ClusteradmFlags.KubectlFactory.KubernetesClientSet()
+		}); err != nil {
+			return err
+		}
 	}
 
 	err := o.setKubeconfig()
@@ -350,6 +392,8 @@ func (o *Options) validate(ctx context.Context) error {
 		if o.grpcServer == "" {
 			return gherrors.New("grpc-server is required when registration-auth type is grpc")
 		}
+	case operatorv1.SPIFFEAuthType:
+		// checked in complete
 	case operatorv1.CSRAuthType:
 		// default auth type. do nothing
 	default:
@@ -360,6 +404,10 @@ func (o *Options) validate(ctx context.Context) error {
 	switch o.addonKubeClientRegistrationAuth {
 	case "csr":
 		// default, no additional validation needed
+	case operatorv1.SPIFFEAuthType:
+		if !o.isSPIFFE() {
+			return gherrors.New("addon-kubeclient-registration-auth spiffe needs registration-auth spiffe")
+		}
 	case "token":
 		if o.addonTokenExpirationSeconds < 0 {
 			return gherrors.New("addon-token-expiration-seconds must be non-negative")
@@ -414,6 +462,13 @@ func (o *Options) run(ctx context.Context) error {
 		if err := sh.Close(); err != nil {
 			return err
 		}
+	}
+
+	if o.isSPIFFE() {
+		if !o.ClusteradmFlags.DryRun {
+			o.printSPIFFENextSteps(o.Streams.Out, o.spiffeKlusterlet)
+		}
+		return nil
 	}
 
 	fmt.Fprintf(o.Streams.Out, "Please log onto the hub cluster and run the following command:\n\n"+
@@ -472,6 +527,17 @@ func (o *Options) applyKlusterlet(ctx context.Context, r *reader.ResourceReader,
 		if err != nil {
 			return err
 		}
+	}
+
+	if o.isSPIFFE() {
+		// The agents can't start before the platform issues their SVIDs, which it may do only
+		// once the Klusterlet has secured its namespaces.
+		if o.wait && !o.ClusteradmFlags.DryRun {
+			o.spiffeKlusterlet, err = waitForSPIFFEAdmission(ctx, o.Streams.Out, operatorClient,
+				int64(o.ClusteradmFlags.Timeout), o.klusterletChartConfig.Klusterlet.Name)
+			return err
+		}
+		return nil
 	}
 
 	if o.wait && !o.ClusteradmFlags.DryRun {
@@ -659,6 +725,11 @@ func (o *Options) createClientcmdapiv1Config(externalClientUnSecure *kubernetes.
 }
 
 func (o *Options) setKubeconfig() error {
+	// A spiffe agent has no hub kubeconfig.
+	if o.isSPIFFE() {
+		return nil
+	}
+
 	// replace apiserver if the flag is set, the apiserver value should not be set
 	// to in-cluster endpoint until preflight check is finished
 	if o.forceHubInClusterEndpointLookup {

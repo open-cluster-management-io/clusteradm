@@ -5,6 +5,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 
+	operatorv1 "open-cluster-management.io/api/operator/v1"
 	"open-cluster-management.io/clusteradm/pkg/clusterprovider/capi"
 	genericclioptionsclusteradm "open-cluster-management.io/clusteradm/pkg/genericclioptions"
 	"open-cluster-management.io/ocm/pkg/operator/helpers/chart"
@@ -121,6 +122,11 @@ type Options struct {
 
 	// Token expiration seconds for addon registration
 	addonTokenExpirationSeconds int64
+
+	// spiffe holds the settings of the spiffe registration driver.
+	spiffe spiffeOptions
+	// spiffeKlusterlet is the applied Klusterlet once it is SPIFFEAdmissionReady (with --wait).
+	spiffeKlusterlet *operatorv1.Klusterlet
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Options {

@@ -531,7 +531,7 @@ func autoConvert_v1beta1_AddOnDeploymentConfigSpec_To_v1alpha1_AddOnDeploymentCo
 	if err := Convert_v1beta1_ProxyConfig_To_v1alpha1_ProxyConfig(&in.ProxyConfig, &out.ProxyConfig, s); err != nil {
 		return err
 	}
-	out.AgentInstallNamespace = in.AgentInstallNamespace
+	out.AgentInstallNamespace = (*string)(unsafe.Pointer(in.AgentInstallNamespace))
 	out.ResourceRequirements = *(*[]v1alpha1.ContainerResourceRequirements)(unsafe.Pointer(&in.ResourceRequirements))
 	return nil
 }
@@ -548,7 +548,7 @@ func autoConvert_v1alpha1_AddOnDeploymentConfigSpec_To_v1beta1_AddOnDeploymentCo
 	if err := Convert_v1alpha1_ProxyConfig_To_v1beta1_ProxyConfig(&in.ProxyConfig, &out.ProxyConfig, s); err != nil {
 		return err
 	}
-	out.AgentInstallNamespace = in.AgentInstallNamespace
+	out.AgentInstallNamespace = (*string)(unsafe.Pointer(in.AgentInstallNamespace))
 	out.ResourceRequirements = *(*[]ContainerResourceRequirements)(unsafe.Pointer(&in.ResourceRequirements))
 	return nil
 }
@@ -1309,6 +1309,7 @@ func autoConvert_v1alpha1_ManagedClusterAddOnStatus_To_v1beta1_ManagedClusterAdd
 func autoConvert_v1beta1_NodePlacement_To_v1alpha1_NodePlacement(in *NodePlacement, out *v1alpha1.NodePlacement, s conversion.Scope) error {
 	out.NodeSelector = *(*map[string]string)(unsafe.Pointer(&in.NodeSelector))
 	out.Tolerations = *(*[]corev1.Toleration)(unsafe.Pointer(&in.Tolerations))
+	out.Affinity = (*corev1.Affinity)(unsafe.Pointer(in.Affinity))
 	return nil
 }
 
@@ -1320,6 +1321,7 @@ func Convert_v1beta1_NodePlacement_To_v1alpha1_NodePlacement(in *NodePlacement, 
 func autoConvert_v1alpha1_NodePlacement_To_v1beta1_NodePlacement(in *v1alpha1.NodePlacement, out *NodePlacement, s conversion.Scope) error {
 	out.NodeSelector = *(*map[string]string)(unsafe.Pointer(&in.NodeSelector))
 	out.Tolerations = *(*[]corev1.Toleration)(unsafe.Pointer(&in.Tolerations))
+	out.Affinity = (*corev1.Affinity)(unsafe.Pointer(in.Affinity))
 	return nil
 }
 

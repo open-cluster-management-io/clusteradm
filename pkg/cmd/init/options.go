@@ -80,6 +80,9 @@ type Options struct {
 	// autoApprovedGRPCIdentities are a list of users or identities that are accepted and whatever matches can
 	// be auto accepted to join hub for grpc clusters.
 	autoApprovedGRPCIdentities []string
+
+	// spiffe holds the settings of the spiffe registration driver.
+	spiffe spiffeOptions
 }
 
 func newOptions(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, streams genericiooptions.IOStreams) *Options {

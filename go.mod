@@ -10,7 +10,7 @@ require (
 	github.com/gofrs/flock v0.13.2
 	github.com/google/uuid v1.6.0
 	github.com/jonboulle/clockwork v0.5.0
-	github.com/onsi/ginkgo/v2 v2.33.1
+	github.com/onsi/ginkgo/v2 v2.34.0
 	github.com/onsi/gomega v1.44.0
 	github.com/openshift/library-go v0.0.0-20261030161254-298cf2d19148
 	github.com/pkg/errors v0.9.1
@@ -131,10 +131,10 @@ require (
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
-	go.opentelemetry.io/otel v1.46.0 // indirect
+	go.opentelemetry.io/otel v1.47.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.45.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.46.0 // indirect
-	go.opentelemetry.io/otel/trace v1.46.0 // indirect
+	go.opentelemetry.io/otel/trace v1.47.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
@@ -169,10 +169,10 @@ require (
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
-replace open-cluster-management.io/api => github.com/ssijbabu/api v1.3.1-0.20261120193913-0adf5a6ae3ae
+replace open-cluster-management.io/api => github.com/ssijbabu/api v1.3.1-0.20261120195137-1f77f8282d1d
 
-replace open-cluster-management.io/ocm => github.com/ssijbabu/ocm v1.3.1-0.20261120194437-77f08cb64f41
+replace open-cluster-management.io/ocm => github.com/ssijbabu/ocm v1.3.1-0.20261120200501-c6238d41cea5
 
-replace open-cluster-management.io/sdk-go => github.com/ssijbabu/sdk-go v1.4.1-0.20261120194007-076e6d2071ac
+replace open-cluster-management.io/sdk-go => github.com/ssijbabu/sdk-go v1.4.1-0.20261120195631-f2b7be8e5cee
 
-replace open-cluster-management.io/addon-framework => github.com/ssijbabu/addon-framework v1.4.1-0.20261120194134-ab2ae40a0875
+replace open-cluster-management.io/addon-framework => github.com/ssijbabu/addon-framework v1.4.1-0.20261120195915-bc2c9091591c

@@ -338,7 +338,7 @@ github.com/monochromegane/go-gitignore
 # github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822
 ## explicit
 github.com/munnerz/goautoneg
-# github.com/onsi/ginkgo/v2 v2.33.1
+# github.com/onsi/ginkgo/v2 v2.34.0
 ## explicit; go 1.25.0
 github.com/onsi/ginkgo/v2
 github.com/onsi/ginkgo/v2/config
@@ -542,8 +542,8 @@ github.com/x448/float16
 # github.com/xlab/treeprint v1.2.0
 ## explicit; go 1.13
 github.com/xlab/treeprint
-# go.opentelemetry.io/otel v1.46.0
-## explicit; go 1.25.0
+# go.opentelemetry.io/otel v1.47.0
+## explicit; go 1.26.0
 go.opentelemetry.io/otel/attribute
 go.opentelemetry.io/otel/attribute/internal
 go.opentelemetry.io/otel/attribute/internal/xxhash
@@ -553,8 +553,8 @@ go.opentelemetry.io/otel/semconv/v1.43.0
 ## explicit; go 1.25.0
 # go.opentelemetry.io/otel/sdk/metric v1.46.0
 ## explicit; go 1.25.0
-# go.opentelemetry.io/otel/trace v1.46.0
-## explicit; go 1.25.0
+# go.opentelemetry.io/otel/trace v1.47.0
+## explicit; go 1.26.0
 go.opentelemetry.io/otel/trace
 go.opentelemetry.io/otel/trace/embedded
 go.opentelemetry.io/otel/trace/internal/telemetry
@@ -1457,7 +1457,7 @@ k8s.io/utils/internal/third_party/forked/golang/net
 k8s.io/utils/net
 k8s.io/utils/ptr
 k8s.io/utils/trace
-# open-cluster-management.io/api v1.4.1-0.20261023183208-940bd2e3ecb2 => github.com/ssijbabu/api v1.3.1-0.20261120193913-0adf5a6ae3ae
+# open-cluster-management.io/api v1.4.1-0.20261023183208-940bd2e3ecb2 => github.com/ssijbabu/api v1.3.1-0.20261120195137-1f77f8282d1d
 ## explicit; go 1.26.0
 open-cluster-management.io/api/addon/v1alpha1
 open-cluster-management.io/api/addon/v1beta1
@@ -1504,12 +1504,12 @@ open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versio
 open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned/scheme
 open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned/typed/authentication/v1alpha1
 open-cluster-management.io/managed-serviceaccount/pkg/generated/clientset/versioned/typed/authentication/v1beta1
-# open-cluster-management.io/ocm v1.4.0 => github.com/ssijbabu/ocm v1.3.1-0.20261120194437-77f08cb64f41
+# open-cluster-management.io/ocm v1.4.0 => github.com/ssijbabu/ocm v1.3.1-0.20261120200501-c6238d41cea5
 ## explicit; go 1.26.0
 open-cluster-management.io/ocm/deploy/cluster-manager/chart
 open-cluster-management.io/ocm/deploy/klusterlet/chart
 open-cluster-management.io/ocm/pkg/operator/helpers/chart
-# open-cluster-management.io/sdk-go v1.4.0 => github.com/ssijbabu/sdk-go v1.4.1-0.20261120194007-076e6d2071ac
+# open-cluster-management.io/sdk-go v1.4.0 => github.com/ssijbabu/sdk-go v1.4.1-0.20261120195631-f2b7be8e5cee
 ## explicit; go 1.26.0
 open-cluster-management.io/sdk-go/pkg/apis/cluster/v1beta1
 open-cluster-management.io/sdk-go/pkg/apis/cluster/v1beta2
@@ -1689,7 +1689,7 @@ sigs.k8s.io/structured-merge-diff/v6/value
 sigs.k8s.io/yaml
 sigs.k8s.io/yaml/goyaml.v3
 sigs.k8s.io/yaml/kyaml
-# open-cluster-management.io/api => github.com/ssijbabu/api v1.3.1-0.20261120193913-0adf5a6ae3ae
-# open-cluster-management.io/ocm => github.com/ssijbabu/ocm v1.3.1-0.20261120194437-77f08cb64f41
-# open-cluster-management.io/sdk-go => github.com/ssijbabu/sdk-go v1.4.1-0.20261120194007-076e6d2071ac
-# open-cluster-management.io/addon-framework => github.com/ssijbabu/addon-framework v1.4.1-0.20261120194134-ab2ae40a0875
+# open-cluster-management.io/api => github.com/ssijbabu/api v1.3.1-0.20261120195137-1f77f8282d1d
+# open-cluster-management.io/ocm => github.com/ssijbabu/ocm v1.3.1-0.20261120200501-c6238d41cea5
+# open-cluster-management.io/sdk-go => github.com/ssijbabu/sdk-go v1.4.1-0.20261120195631-f2b7be8e5cee
+# open-cluster-management.io/addon-framework => github.com/ssijbabu/addon-framework v1.4.1-0.20261120195915-bc2c9091591c

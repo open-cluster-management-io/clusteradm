@@ -32,9 +32,9 @@ require (
 	open-cluster-management.io/managed-serviceaccount v0.12.0
 	open-cluster-management.io/ocm v1.4.0
 	open-cluster-management.io/sdk-go v1.4.0
-	sigs.k8s.io/apiserver-network-proxy v0.37.0
-	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.37.0
-	sigs.k8s.io/controller-runtime v0.25.2
+	sigs.k8s.io/apiserver-network-proxy v0.37.1
+	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.37.1
+	sigs.k8s.io/controller-runtime v0.25.3
 	sigs.k8s.io/kustomize/kyaml v0.21.2
 )
 

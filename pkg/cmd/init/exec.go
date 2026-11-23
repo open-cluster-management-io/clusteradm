@@ -417,7 +417,7 @@ func (o *Options) deploySingletonControlplane(ctx context.Context, kubeClient ku
 		return err
 	}
 
-	err = o.Helm.InstallChart(ctx, releaseName, repoName, chartName)
+	err = o.Helm.InstallChart(ctx, releaseName, repoName, chartName, "")
 	if err != nil {
 		return err
 	}

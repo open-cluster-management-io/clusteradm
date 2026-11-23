@@ -78,8 +78,7 @@ func versionFromBuildInfo(info *debug.BuildInfo, fallbackCommit string) (string,
 }
 
 type VersionBundle struct {
-	OCM         string `json:"ocm"`
-	PolicyAddon string `json:"policy_addon"`
+	OCM string `json:"ocm"`
 }
 
 var (

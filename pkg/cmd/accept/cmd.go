@@ -51,5 +51,7 @@ func NewCmd(clusteradmFlags *genericclioptionsclusteradm.ClusteradmFlags, stream
 	cmd.Flags().BoolVar(&o.Wait, "wait", false, "If set, wait for the managedcluster and CSR in foreground.")
 	cmd.Flags().BoolVar(&o.SkipApproveCheck, "skip-approve-check", false, "If set, then skip check and approve csr directly.")
 	cmd.Flags().StringSliceVar(&o.Requesters, "requesters", o.Requesters, "Common Names of agents to be approved.")
+	cmd.Flags().StringVar(&o.SPIFFETrustDomain, "spiffe-trust-domain", "",
+		"For spiffe clusters: refuse a cluster that registered from another trust domain, and pin an unpinned one to this one.")
 	return cmd
 }

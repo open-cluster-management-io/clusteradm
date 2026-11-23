@@ -26,7 +26,7 @@ func newAddonTemplate(o *Options) (*addonv1alpha1.AddOnTemplate, error) {
 	}
 
 	// Parse labels
-	labels, err := o.parseLabels()
+	labels, err := parse.Labels(o.Labels)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func newAddonTemplate(o *Options) (*addonv1alpha1.AddOnTemplate, error) {
 
 func newClusterManagementAddon(o *Options) (*addonv1alpha1.ClusterManagementAddOn, error) {
 	// Parse labels
-	labels, err := o.parseLabels()
+	labels, err := parse.Labels(o.Labels)
 	if err != nil {
 		return nil, err
 	}
@@ -274,11 +274,6 @@ func (o *Options) readManifests() ([]workapiv1.Manifest, error) {
 	}
 
 	return manifests, nil
-}
-
-// parseLabels parses the labels flag and returns a map of labels
-func (o *Options) parseLabels() (map[string]string, error) {
-	return parse.ParseLabels(o.Labels)
 }
 
 // parsePlacementRef parses the placement-ref flag and returns namespace and name

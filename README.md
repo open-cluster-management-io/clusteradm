@@ -302,7 +302,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 - **Slack**: [#open-cluster-mgmt](https://kubernetes.slack.com/archives/C01GE7YSUUF) on Kubernetes Slack
 - **Mailing List**: [open-cluster-management@googlegroups.com](https://groups.google.com/g/open-cluster-management)
 - **YouTube**: [OCM Community](https://www.youtube.com/channel/UC7xxOh2jBM5Jfwt3fsBzOZw)
-- **Community Meetings**: [Calendar](https://calendar.google.com/calendar/u/0/embed?src=openclustermanagement@gmail.com)
+- **Community Meetings**: [Calendar](https://zoom-lfx.platform.linuxfoundation.org/meetings/openclustermanagement?view=list)
 
 ## License
 
